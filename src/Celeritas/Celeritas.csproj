@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <OptimizationPreference>Speed</OptimizationPreference>
+        
+        <!-- NuGet Package metadata -->
+        <PackageId>Celeritas</PackageId>
+        <Version>0.9.0</Version>
+        <Authors>Vladimir V. Shein</Authors>
+        <Company>Vladimir V. Shein</Company>
+        <Product>Celeritas Music Engine</Product>
+        <Description>High-Performance Music Engine for .NET with SIMD acceleration (AVX-512, AVX2, SSE2, ARM NEON). Provides harmonic analysis, chord recognition, key detection, voice leading, melody harmonization, rhythm analysis, MIDI I/O, and pitch class set analysis.</Description>
+        <Copyright>Copyright (c) 2025 Vladimir V. Shein</Copyright>
+        <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+        <PackageProjectUrl>https://github.com/sheinv78/Celeritas</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/sheinv78/Celeritas</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>music;midi;simd;audio;daw;chord;harmony;analysis;avx512;avx2;neon;voice-leading;key-detection;rhythm;melody;counterpoint</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageReleaseNotes>v0.9.0: Ornaments, Figured Bass, ARM NEON SIMD, WebAssembly SIMD, Python bindings</PackageReleaseNotes>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        
+        <!-- ANTLR4 code generation -->
+        <Antlr4UseCSharpGenerator>true</Antlr4UseCSharpGenerator>
+        
+        <!-- Suppress transitive dependency warnings -->
+        <NoWarn>$(NoWarn);NU1903</NoWarn>
+        
+        <!-- Code Analysis -->
+        <AnalysisLevel>latest</AnalysisLevel>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Melanchall.DryWetMidi" Version="8.0.3" />
+      <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
+      <PackageReference Include="Antlr4BuildTasks" Version="12.8.0" PrivateAssets="all" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Antlr4 Include="Grammar\MusicNotation.g4">
+        <Package>Celeritas.Core.Grammar</Package>
+        <Listener>false</Listener>
+        <Visitor>true</Visitor>
+      </Antlr4>
+    </ItemGroup>
+    
+    <ItemGroup>
+      <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+      <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+</Project>

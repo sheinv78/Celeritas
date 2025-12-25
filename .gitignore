@@ -1,0 +1,13 @@
+.idea
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+nupkgs/
+*.nupkg
+*.snupkg
+# Test artifacts
+test-data/*.mid
+# Benchmark results
+BenchmarkDotNet.Artifacts/

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "celeritas"
+version = "0.1.0"
+description = "High-Performance Music Engine - Python bindings for Celeritas"
+readme = "README.md"
+authors = [
+    { name = "Vladimir V. Shein", email = "sheinv78@gmail.com" }
+]
+license = { text = "BSL-1.1" }
+keywords = ["music", "audio", "midi", "music-theory", "chord-analysis", "simd"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://github.com/sheinv78/Celeritas"
+Repository = "https://github.com/sheinv78/Celeritas"
+Issues = "https://github.com/sheinv78/Celeritas/issues"
+
+[tool.setuptools]
+packages = ["celeritas"]
+package-dir = {"" = "."}
