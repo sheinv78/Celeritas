@@ -199,25 +199,63 @@ public static partial class MusicNotation
     private static bool IsPowerOfTwo(long n) => n > 0 && (n & (n - 1)) == 0;
 
     /// <summary>
-    /// Format note sequence to string
+    /// Format note sequence to string with chord grouping
     /// </summary>
     /// <param name="sequence">Sequence of note events</param>
     /// <param name="useDot">Enable dotted note notation</param>
     /// <param name="useLetters">Use letter notation (q, h, e, w) instead of numbers</param>
-    /// <returns>Formatted sequence (e.g., "C4/4 E4/8 G4/2." or "C4:q E4:e G4:h.")</returns>
-    public static string FormatNoteSequence(ReadOnlySpan<NoteEvent> sequence, bool useDot = true, bool useLetters = false)
+    /// <param name="groupChords">Group simultaneous notes as chords [C4 E4 G4]/4</param>
+    /// <returns>Formatted sequence (e.g., "C4/4 [E4 G4]/4 R/2" or "C4:q [E4 G4]:q R:h")</returns>
+    public static string FormatNoteSequence(ReadOnlySpan<NoteEvent> sequence, bool useDot = true, bool useLetters = false, bool groupChords = true)
     {
         if (sequence.IsEmpty)
             return string.Empty;
 
         var separator = useLetters ? ':' : '/';
         var sb = new System.Text.StringBuilder();
-        for (var i = 0; i < sequence.Length; i++)
-        {
-            if (i > 0) sb.Append(' ');
-            var note = sequence[i];
+        var i = 0;
 
-            // Handle rests
+        while (i < sequence.Length)
+        {
+            if (sb.Length > 0) sb.Append(' ');
+
+            // Check if next notes form a chord (same offset and duration)
+            if (groupChords && i < sequence.Length - 1)
+            {
+                var chordNotes = new List<NoteEvent> { sequence[i] };
+                var chordOffset = sequence[i].Offset;
+                var chordDuration = sequence[i].Duration;
+
+                // Collect all notes with same offset and duration
+                var j = i + 1;
+                while (j < sequence.Length &&
+                       sequence[j].Offset == chordOffset &&
+                       sequence[j].Duration == chordDuration &&
+                       sequence[j].Pitch != REST_PITCH)
+                {
+                    chordNotes.Add(sequence[j]);
+                    j++;
+                }
+
+                // If we found a chord (2+ notes), format as chord
+                if (chordNotes.Count > 1 && sequence[i].Pitch != REST_PITCH)
+                {
+                    sb.Append('[');
+                    for (var k = 0; k < chordNotes.Count; k++)
+                    {
+                        if (k > 0) sb.Append(' ');
+                        sb.Append(ToNotation(chordNotes[k].Pitch));
+                    }
+                    sb.Append(']');
+                    sb.Append(separator);
+                    sb.Append(FormatDuration(chordDuration, useDot, useLetters));
+                    i = j;
+                    continue;
+                }
+            }
+
+            // Single note or rest
+            var note = sequence[i];
             if (note.Pitch == REST_PITCH)
             {
                 sb.Append('R');
@@ -229,7 +267,149 @@ public static partial class MusicNotation
 
             sb.Append(separator);
             sb.Append(FormatDuration(note.Duration, useDot, useLetters));
+            i++;
         }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Format a single directive to string notation
+    /// </summary>
+    public static string FormatDirective(NotationDirective directive, bool useLetters = false)
+    {
+        return directive switch
+        {
+            TempoBpmDirective bpm => bpm.TargetBpm.HasValue && bpm.RampDuration.HasValue
+                ? $"@bpm {bpm.Bpm} -> {bpm.TargetBpm} {(useLetters ? ':' : '/')}{FormatDuration(bpm.RampDuration.Value, useDot: true, useLetters)}"
+                : $"@bpm {bpm.Bpm}",
+
+            TempoCharacterDirective tempo => NeedsQuotes(tempo.Character)
+                ? $"@tempo \"{tempo.Character}\""
+                : $"@tempo {tempo.Character}",
+
+            SectionDirective section => NeedsQuotes(section.Label)
+                ? $"@section \"{section.Label}\""
+                : $"@section {section.Label}",
+
+            PartDirective part => NeedsQuotes(part.Name)
+                ? $"@part \"{part.Name}\""
+                : $"@part {part.Name}",
+
+            DynamicsDirective dyn => dyn.Type switch
+            {
+                DynamicsType.Static => $"@dynamics {dyn.StartLevel}",
+                DynamicsType.Crescendo => dyn.TargetLevel != null
+                    ? $"@cresc to {dyn.TargetLevel}"
+                    : "@cresc",
+                DynamicsType.Diminuendo => dyn.TargetLevel != null
+                    ? $"@dim to {dyn.TargetLevel}"
+                    : "@dim",
+                _ => throw new ArgumentException($"Unknown dynamics type: {dyn.Type}")
+            },
+
+            _ => throw new ArgumentException($"Unknown directive type: {directive.GetType().Name}")
+        };
+
+        static bool NeedsQuotes(string value) =>
+            value.Contains(' ') || value.Contains('\t') || !char.IsLower(value[0]);
+    }
+
+    /// <summary>
+    /// Format notes and directives together in timeline order
+    /// </summary>
+    public static string FormatWithDirectives(
+        ReadOnlySpan<NoteEvent> notes,
+        ReadOnlySpan<NotationDirective> directives,
+        bool useDot = true,
+        bool useLetters = false,
+        bool groupChords = true)
+    {
+        if (notes.IsEmpty && directives.IsEmpty)
+            return string.Empty;
+
+        var sb = new System.Text.StringBuilder();
+        var noteIndex = 0;
+        var directiveIndex = 0;
+        var currentTime = Rational.Zero;
+
+        while (noteIndex < notes.Length || directiveIndex < directives.Length)
+        {
+            // Insert directives that occur at or before current time
+            while (directiveIndex < directives.Length && directives[directiveIndex].Time <= currentTime)
+            {
+                if (sb.Length > 0) sb.Append(' ');
+                sb.Append(FormatDirective(directives[directiveIndex], useLetters));
+                directiveIndex++;
+            }
+
+            // Add next note/chord
+            if (noteIndex < notes.Length)
+            {
+                var nextNoteTime = notes[noteIndex].Offset;
+
+                // Check if there are directives before next note
+                if (directiveIndex < directives.Length && directives[directiveIndex].Time < nextNoteTime)
+                {
+                    currentTime = directives[directiveIndex].Time;
+                    continue;
+                }
+
+                // Format note(s) starting at this time
+                if (sb.Length > 0) sb.Append(' ');
+
+                // Check for chord (groupChords logic from FormatNoteSequence)
+                if (groupChords && noteIndex < notes.Length - 1)
+                {
+                    var chordNotes = new List<NoteEvent> { notes[noteIndex] };
+                    var chordOffset = notes[noteIndex].Offset;
+                    var chordDuration = notes[noteIndex].Duration;
+
+                    var j = noteIndex + 1;
+                    while (j < notes.Length &&
+                           notes[j].Offset == chordOffset &&
+                           notes[j].Duration == chordDuration &&
+                           notes[j].Pitch != REST_PITCH)
+                    {
+                        chordNotes.Add(notes[j]);
+                        j++;
+                    }
+
+                    if (chordNotes.Count > 1 && notes[noteIndex].Pitch != REST_PITCH)
+                    {
+                        var separator = useLetters ? ':' : '/';
+                        sb.Append('[');
+                        for (var k = 0; k < chordNotes.Count; k++)
+                        {
+                            if (k > 0) sb.Append(' ');
+                            sb.Append(ToNotation(chordNotes[k].Pitch));
+                        }
+                        sb.Append(']');
+                        sb.Append(separator);
+                        sb.Append(FormatDuration(chordDuration, useDot, useLetters));
+                        currentTime = chordOffset + chordDuration;
+                        noteIndex = j;
+                        continue;
+                    }
+                }
+
+                // Single note
+                var note = notes[noteIndex];
+                var sep = useLetters ? ':' : '/';
+                if (note.Pitch == REST_PITCH)
+                {
+                    sb.Append('R');
+                }
+                else
+                {
+                    sb.Append(ToNotation(note.Pitch));
+                }
+                sb.Append(sep);
+                sb.Append(FormatDuration(note.Duration, useDot, useLetters));
+                currentTime = note.Offset + note.Duration;
+                noteIndex++;
+            }
+        }
+
         return sb.ToString();
     }
 

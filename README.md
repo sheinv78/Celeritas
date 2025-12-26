@@ -93,7 +93,8 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 - **🎵 Directives** — BPM, tempo character (Presto, Vivace), sections, parts, dynamics
 - **⚡ Tempo Control** — BPM with ramps: `@bpm 120 -> 140 /2` (accelerando/ritardardo)
 - **🔊 Dynamics** — Volume levels (pp, mf, ff), crescendo/diminuendo with `@dynamics`, `@cresc`, `@dim`
-- **🚀 AOT-Ready** — Native AOT compilation support for minimal overhead
+- **� Round-Trip Formatting** — Export to notation: `FormatNoteSequence`, `FormatWithDirectives` with chord grouping
+- **�🚀 AOT-Ready** — Native AOT compilation support for minimal overhead
 
 ### Harmonic Analysis
 
@@ -281,6 +282,35 @@ string numericFormat = MusicNotation.FormatNoteSequence(jazzPattern, useDot: tru
 
 string letterFormat = MusicNotation.FormatNoteSequence(jazzPattern, useDot: true, useLetters: true);
 // Returns: "C4:q. E4:e G4:h."
+
+// ===== Round-Trip: Export with Chords and Directives =====
+
+// Format chords (simultaneous notes grouped automatically)
+var chordMusic = MusicNotation.Parse("[C4 E4 G4]/4 [D4 F4 A4]/4 B4/2");
+var formatted = MusicNotation.FormatNoteSequence(chordMusic, groupChords: true);
+// Returns: "[C4 E4 G4]/4 [D4 F4 A4]/4 B4/2"
+
+// Format directives (tempo, dynamics, sections)
+var result = MusicNotationAntlrParser.Parse("@bpm 120 @dynamics mf C4/4 E4/4 G4/4");
+var withDirectives = MusicNotation.FormatWithDirectives(result.Notes, result.Directives);
+// Returns: "@bpm 120 @dynamics mf C4/4 E4/4 G4/4"
+
+// Format BPM ramps (accelerando/ritardando)
+var rampResult = MusicNotationAntlrParser.Parse("@bpm 120 -> 140 /2 C4/1 D4/1");
+var rampFormatted = MusicNotation.FormatWithDirectives(rampResult.Notes, rampResult.Directives);
+// Returns: "@bpm 120 -> 140 /2 C4/1 D4/1"
+
+// Format dynamics changes (crescendo/diminuendo)
+var dynamicsResult = MusicNotationAntlrParser.Parse("@dynamics p @cresc to ff C4/2 @dim to pp D4/2");
+var dynamicsFormatted = MusicNotation.FormatWithDirectives(dynamicsResult.Notes, dynamicsResult.Directives);
+// Returns: "@dynamics p @cresc to ff C4/2 @dim to pp D4/2"
+
+// Complete round-trip with everything
+var complex = MusicNotationAntlrParser.Parse(
+    "@bpm 120 @section intro @dynamics mf [C4 E4 G4]/4 @cresc to ff [D4 F4]/4 C5/2");
+var roundTrip = MusicNotation.FormatWithDirectives(complex.Notes, complex.Directives, groupChords: true);
+var reparsed = MusicNotationAntlrParser.Parse(roundTrip);
+// Perfect round-trip: reparsed equals original!
 
 // ===== Polyphony (Multiple Independent Voices) =====
 

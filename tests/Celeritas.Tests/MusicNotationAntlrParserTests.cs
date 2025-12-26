@@ -283,6 +283,149 @@ public class MusicNotationAntlrParserTests
     }
 
     [Fact]
+    public void RoundTrip_Chords_BracketNotation()
+    {
+        var input = "[C4 E4 G4]/4 [D4 F4 A4]/4";
+        var notes = MusicNotationAntlrParser.ParseNotes(input);
+        var output = MusicNotation.FormatNoteSequence(notes, useDot: true, useLetters: false, groupChords: true);
+        var reparsed = MusicNotationAntlrParser.ParseNotes(output);
+
+        Assert.Equal(notes.Length, reparsed.Length);
+        Assert.Equal(6, notes.Length); // 3+3 notes
+
+        // First chord: C4 E4 G4
+        Assert.Equal(60, notes[0].Pitch); // C4
+        Assert.Equal(64, notes[1].Pitch); // E4
+        Assert.Equal(67, notes[2].Pitch); // G4
+        Assert.Equal(Rational.Zero, notes[0].Offset);
+        Assert.Equal(Rational.Zero, notes[1].Offset);
+        Assert.Equal(Rational.Zero, notes[2].Offset);
+
+        // Second chord: D4 F4 A4
+        Assert.Equal(62, notes[3].Pitch); // D4
+        Assert.Equal(65, notes[4].Pitch); // F4
+        Assert.Equal(69, notes[5].Pitch); // A4
+        Assert.Equal(new Rational(1, 4), notes[3].Offset);
+        Assert.Equal(new Rational(1, 4), notes[4].Offset);
+        Assert.Equal(new Rational(1, 4), notes[5].Offset);
+    }
+
+    [Fact]
+    public void RoundTrip_Chords_ParenNotation()
+    {
+        var input = "(C4 E4 G4):q";
+        var notes = MusicNotationAntlrParser.ParseNotes(input);
+        var output = MusicNotation.FormatNoteSequence(notes, useDot: true, useLetters: true, groupChords: true);
+        var reparsed = MusicNotationAntlrParser.ParseNotes(output);
+
+        Assert.Equal(notes.Length, reparsed.Length);
+        Assert.Equal(3, notes.Length);
+        Assert.Equal(Rational.Zero, notes[0].Offset);
+        Assert.Equal(Rational.Zero, notes[1].Offset);
+        Assert.Equal(Rational.Zero, notes[2].Offset);
+    }
+
+    [Fact]
+    public void RoundTrip_MixedChordsAndNotes()
+    {
+        var input = "C4/4 [E4 G4]/4 B4/2";
+        var notes = MusicNotationAntlrParser.ParseNotes(input);
+        var output = MusicNotation.FormatNoteSequence(notes, useDot: true, useLetters: false, groupChords: true);
+        var reparsed = MusicNotationAntlrParser.ParseNotes(output);
+
+        Assert.Equal(notes.Length, reparsed.Length);
+        Assert.Equal(4, notes.Length);
+    }
+
+    [Fact]
+    public void FormatWithDirectives_BpmAndNotes()
+    {
+        var result = MusicNotationAntlrParser.Parse("@bpm 120 C4/4 E4/4 G4/4");
+        var formatted = MusicNotation.FormatWithDirectives(result.Notes, result.Directives);
+        var reparsed = MusicNotationAntlrParser.Parse(formatted);
+
+        Assert.Single(reparsed.Directives);
+        Assert.IsType<TempoBpmDirective>(reparsed.Directives[0]);
+        Assert.Equal(120, ((TempoBpmDirective)reparsed.Directives[0]).Bpm);
+        Assert.Equal(3, reparsed.Notes.Length);
+    }
+
+    [Fact]
+    public void FormatWithDirectives_TempoAndDynamics()
+    {
+        var result = MusicNotationAntlrParser.Parse("@tempo allegro @dynamics mf C4/4 E4/4");
+        var formatted = MusicNotation.FormatWithDirectives(result.Notes, result.Directives);
+        var reparsed = MusicNotationAntlrParser.Parse(formatted);
+
+        Assert.Equal(2, reparsed.Directives.Length);
+        Assert.IsType<TempoCharacterDirective>(reparsed.Directives[0]);
+        Assert.IsType<DynamicsDirective>(reparsed.Directives[1]);
+    }
+
+    [Fact]
+    public void FormatWithDirectives_BpmRamp()
+    {
+        var result = MusicNotationAntlrParser.Parse("@bpm 120 -> 140 /2 C4/1");
+        var formatted = MusicNotation.FormatWithDirectives(result.Notes, result.Directives);
+        var reparsed = MusicNotationAntlrParser.Parse(formatted);
+
+        Assert.Single(reparsed.Directives);
+        var bpm = reparsed.Directives[0] as TempoBpmDirective;
+        Assert.NotNull(bpm);
+        Assert.Equal(120, bpm.Bpm);
+        Assert.Equal(140, bpm.TargetBpm);
+        Assert.Equal(new Rational(1, 2), bpm.RampDuration);
+    }
+
+    [Fact]
+    public void FormatWithDirectives_CrescendoAndDiminuendo()
+    {
+        var result = MusicNotationAntlrParser.Parse("@dynamics p @cresc to ff C4/2 @dim to pp D4/2");
+        var formatted = MusicNotation.FormatWithDirectives(result.Notes, result.Directives);
+        var reparsed = MusicNotationAntlrParser.Parse(formatted);
+
+        Assert.Equal(3, reparsed.Directives.Length);
+
+        var dyn1 = reparsed.Directives[0] as DynamicsDirective;
+        Assert.Equal(DynamicsType.Static, dyn1!.Type);
+        Assert.Equal("p", dyn1.StartLevel);
+
+        var dyn2 = reparsed.Directives[1] as DynamicsDirective;
+        Assert.Equal(DynamicsType.Crescendo, dyn2!.Type);
+        Assert.Equal("ff", dyn2.TargetLevel);
+
+        var dyn3 = reparsed.Directives[2] as DynamicsDirective;
+        Assert.Equal(DynamicsType.Diminuendo, dyn3!.Type);
+        Assert.Equal("pp", dyn3.TargetLevel);
+    }
+
+    [Fact]
+    public void FormatWithDirectives_SectionAndPart()
+    {
+        var result = MusicNotationAntlrParser.Parse("@section intro @part soprano C4/4");
+        var formatted = MusicNotation.FormatWithDirectives(result.Notes, result.Directives);
+        var reparsed = MusicNotationAntlrParser.Parse(formatted);
+
+        Assert.Equal(2, reparsed.Directives.Length);
+
+        var section = reparsed.Directives[0] as SectionDirective;
+        Assert.Equal("intro", section!.Label);
+
+        var part = reparsed.Directives[1] as PartDirective;
+        Assert.Equal("soprano", part!.Name);
+    }
+
+    [Fact]
+    public void FormatDirective_QuotedStrings()
+    {
+        var result = MusicNotationAntlrParser.Parse("@tempo \"Allegro con brio\" @section \"Verse 1\" C4/4");
+        var formatted = MusicNotation.FormatWithDirectives(result.Notes, result.Directives);
+
+        Assert.Contains("\"Allegro con brio\"", formatted);
+        Assert.Contains("\"Verse 1\"", formatted);
+    }
+
+    [Fact]
     public void Parse_TimeSignatureChange()
     {
         // Change from 4/4 to 3/4 mid-sequence
