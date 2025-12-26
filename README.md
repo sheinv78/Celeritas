@@ -185,373 +185,94 @@ Update to latest version:
 dotnet tool update --global Celeritas.CLI
 ```
 
-### Basic Usage
+## 📘 Documentation
+
+### Quick Start Examples
+
+**Parse music notation:**
 
 ```csharp
 using Celeritas.Core;
-using Celeritas.Core.Analysis;
 
-// ===== Human-Friendly Note Input =====
-
-// Simple note parsing
+// Simple notes
 var notes = MusicNotation.Parse("C4 E4 G4 B4");
 
-// Musical sequences with durations (just like writing sheet music!)
-var twinkleTwinkle = MusicNotation.Parse(
-    "C4/4 C4/4 G4/4 G4/4 A4/4 A4/4 G4/2");
-// Automatically creates notes with correct timing
-
-// Chords - multiple notes at same time (use brackets)
-var chord = MusicNotation.Parse("[C4 E4 G4]/4"); // C major quarter
-var withParens = MusicNotation.Parse("(C4 E4 G4):q"); // Same with letters
-var progression = MusicNotation.Parse("[C4 E4 G4]/4 [D4 F4 A4]/4 [E4 G4 B4]/4");
-
-// Polyphonic chords - each note can have its own duration!
-var polyphonic = MusicNotation.Parse("[C4/1 E4/2 G4/4]");
-// C4 = whole note, E4 = half note, G4 = quarter - all start together
-// Next element starts after the longest note (C4/1)
-
-var mixedChord = MusicNotation.Parse("[C4/1 E4/2 G4/4] D5/4");
-// D5 starts at beat 2 (after the whole note C4)
-
-// Chord with default + individual durations (individual takes precedence)
-var hybrid = MusicNotation.Parse("[C4 E4/2 G4]/4");
-// C4 = 1/4 (default), E4 = 1/2 (individual), G4 = 1/4 (default)
-
-// Rests (pauses) - use R for rest
-var melodyWithRests = MusicNotation.Parse("C4/4 R/4 E4/4 R/2 G4/2.");
-// R/4 = quarter rest, R/2 = half rest
-
-// Dotted notes (dot adds half the duration)
-var jazzPattern = MusicNotation.Parse("C4/4. E4/8 G4/2.");
-// C4 = 3/8 (dotted quarter), E4 = 1/8, G4 = 3/4 (dotted half)
-
-// Ties (merge consecutive notes of same pitch)
-var syncopation = MusicNotation.Parse("C4/4~ C4/4");
-// Two quarters tied = one half note (1 note with Duration = 1/2)
-
-// Ties across measure bars
-var tieAcrossBar = MusicNotation.Parse("4/4: C4/2 E4/4 G4/4~ | G4/4 A4/4 B4/2");
-// G4 tied:  1/4 + 1/4 = 1/2 duration, single note spanning the barline
-
-// Alternative syntax with letters (q=quarter, h=half, e=eighth, w=whole)
-var altSyntax = MusicNotation.Parse("C4:q E4:e G4:h C5:w");
-
-// Dotted notes work with letter syntax too!
-var dottedLetters = MusicNotation.Parse("C4:q. E4:e G4:h.");
-// Same as: "C4/4. E4/8 G4/2."
-
-// Rests work with letter syntax too
-var restsWithLetters = MusicNotation.Parse("C4:q R:q E4:e R:h");
-
-// Time signature in string (parsed automatically!)
-var waltzInline = MusicNotation.Parse("3/4: C4/4 E4/4 G4/4");
-var common = MusicNotation.Parse("4/4| C4/4 E4/4 G4/4 C5/4");
-var compound = MusicNotation.Parse("6/8 | C4:q E4:e G4:h");
-
-// Time signature changes mid-sequence!
-var meterChange = MusicNotation.Parse(
-    "4/4: C4/4 E4/4 G4/4 C5/4 | 3/4: D4/4 F4/4 A4/4 | 2/4: E4/2");
-// First measure: 4/4 (4 quarters), second: 3/4 (3 quarters), third: 2/4 (half note)
-
-// Complex meter changes with validation
-var validatedMeters = MusicNotation.Parse(
-    "4/4: C4/1 | 3/4: D4/2. | 6/8: E4/4. F4/4.",
-    validateMeasures: true);
-// Each measure validates against its own time signature! 
-
-// Measure bars for structure (bars split with |)
-var twoMeasures = MusicNotation.Parse("3/4: C4/4 E4/4 G4/4 | D4/4 F4/4 A4/4 |");
-
-// Chords in measures
-var withChords = MusicNotation.Parse("4/4: C4/4 [E4 G4]/4 C5/2 | [D4 F4 A4]/1");
-
-// Validate that measures match time signature
-var validatedMeasures = MusicNotation.Parse(
-    "4/4: C4/4 E4/4 G4/2 | D4/2 R/4 A4/4",
-    validateMeasures: true);
-// Throws if measure durations don't match!
-
-// Export back to string notation (round-trip)
-string exported = MusicNotation.FormatNoteSequence(jazzPattern);
-// Returns: "C4/4. E4/8 G4/2." (default: numeric format)
-
-// Control output format
-string numericFormat = MusicNotation.FormatNoteSequence(jazzPattern, useDot: true, useLetters: false);
-// Returns: "C4/4. E4/8 G4/2."
-
-string letterFormat = MusicNotation.FormatNoteSequence(jazzPattern, useDot: true, useLetters: true);
-// Returns: "C4:q. E4:e G4:h."
-
-// ===== Round-Trip: Export with Chords and Directives =====
-
-// Format chords (simultaneous notes grouped automatically)
-var chordMusic = MusicNotation.Parse("[C4 E4 G4]/4 [D4 F4 A4]/4 B4/2");
-var formatted = MusicNotation.FormatNoteSequence(chordMusic, groupChords: true);
-// Returns: "[C4 E4 G4]/4 [D4 F4 A4]/4 B4/2"
-
-// Format directives (tempo, dynamics, sections)
-var result = MusicNotationAntlrParser.Parse("@bpm 120 @dynamics mf C4/4 E4/4 G4/4");
-var withDirectives = MusicNotation.FormatWithDirectives(result.Notes, result.Directives);
-// Returns: "@bpm 120 @dynamics mf C4/4 E4/4 G4/4"
-
-// Format BPM ramps (accelerando/ritardando)
-var rampResult = MusicNotationAntlrParser.Parse("@bpm 120 -> 140 /2 C4/1 D4/1");
-var rampFormatted = MusicNotation.FormatWithDirectives(rampResult.Notes, rampResult.Directives);
-// Returns: "@bpm 120 -> 140 /2 C4/1 D4/1"
-
-// Format dynamics changes (crescendo/diminuendo)
-var dynamicsResult = MusicNotationAntlrParser.Parse("@dynamics p @cresc to ff C4/2 @dim to pp D4/2");
-var dynamicsFormatted = MusicNotation.FormatWithDirectives(dynamicsResult.Notes, dynamicsResult.Directives);
-// Returns: "@dynamics p @cresc to ff C4/2 @dim to pp D4/2"
-
-// Complete round-trip with everything
-var complex = MusicNotationAntlrParser.Parse(
-    "@bpm 120 @section intro @dynamics mf [C4 E4 G4]/4 @cresc to ff [D4 F4]/4 C5/2");
-var roundTrip = MusicNotation.FormatWithDirectives(complex.Notes, complex.Directives, groupChords: true);
-var reparsed = MusicNotationAntlrParser.Parse(roundTrip);
-// Perfect round-trip: reparsed equals original!
-
-// ===== Polyphony (Multiple Independent Voices) =====
-
-// Polyphonic blocks: << voice1 | voice2 | voice3 >>
-// Each voice is independent, all start at the same time
-// Block duration = max(voice durations)
-
-// Piano style: bass note + melody
-var pianoPattern = MusicNotation.Parse("<< C2/1 | C4/4 E4/4 G4/4 C5/4 >>");
-// Bass C2 holds for 1 whole note
-// Treble plays 4 quarter notes (C4 E4 G4 C5)
-// Next element starts after 1 whole note (max duration)
-
-// Two voices with different rhythms
-var twoVoices = MusicNotation.Parse("<< C4/1 | E4/4 F4/4 G4/4 A4/4 >>");
-// Voice 1: C4 whole note
-// Voice 2: 4 quarter notes
-// Both start at same time, C4 sustains while upper voice moves
-
-// Three voices (SATB style)
-var satb = MusicNotation.Parse("<< C5/2 | G4/4 G4/4 | E4/2 | C3/2 >>");
-// Soprano: C5 half note
-// Alto: G4 G4 quarter notes  
-// Tenor: E4 half note
-// Bass: C3 half note
-
-// Polyphonic blocks with chords and rests
-var complex = MusicNotation.Parse("<< [C4 E4]/2 | R/4 G3/4 >>");
-// Upper: C4+E4 chord (half note)
-// Lower: quarter rest, then G3 quarter note
-
-// Multiple polyphonic blocks in sequence
-var progression = MusicNotation.Parse("<< C4/2 | E4/2 >> << D4/2 | F4/2 >>");
-// First block: C4 and E4 half notes (parallel)
-// Second block: D4 and F4 half notes (starts at 1/2)
-
-// Polyphony with time signatures and measures
-var structured = MusicNotation.Parse(
-    "4/4: << C4/2 D4/2 | E4/4 F4/4 G4/4 A4/4 >> | << G4/1 | C3/4 D3/4 E3/4 F3/4 >>");
-// Two measures, each with polyphonic content
-
-// Practical example: pedal bass under melody
-var pedalPoint = MusicNotation.Parse(
-    "<< C2/1 | C4/4 D4/4 E4/4 F4/4 >> << C2/1 | G4/4 F4/4 E4/4 D4/4 >>");
-// C2 bass sustains for 2 whole notes (pedal tone)
-// Melody changes every quarter note above it
-
-// ===== Dynamics (Volume and Expression) =====
-
-// Static dynamics: set volume level at a point
-var quiet = MusicNotation.Parse("@dynamics pp C4/4 E4/4 G4/4");
-// pp (pianissimo) = very soft
-
-var loud = MusicNotation.Parse("@dynamics ff C4/4 E4/4 G4/4");
-// ff (fortissimo) = very loud
-
-// All standard dynamics levels supported:
-// pppp, ppp, pp, p (soft) → mp, mf (medium) → f, ff, fff, ffff (loud)
-// Plus accents: sf (sforzando), sfz (sforzato), fp (forte-piano), rf (rinforzando)
-
-var fullRange = MusicNotation.Parse(
-    "@dynamics pp C4/4 @dynamics mp E4/4 @dynamics mf G4/4 @dynamics ff C5/4");
-// Gradual volume increase: pp → mp → mf → ff
-
-// Crescendo: gradual volume increase
-var cresc = MusicNotation.Parse("@dynamics p @cresc C4/4 D4/4 E4/4 F4/4");
-// Start soft (p), gradually get louder over 4 quarter notes
-
-var crescTarget = MusicNotation.Parse("@dynamics mp @cresc to ff C4/2 D4/2");
-// Start at mp, crescendo to ff over 1 whole note
-
-// Diminuendo (Decrescendo): gradual volume decrease
-var dim = MusicNotation.Parse("@dynamics f @dim C4/4 D4/4 E4/4 F4/4");
-// Start loud (f), gradually get softer
-
-var dimTarget = MusicNotation.Parse("@dynamics ff @dim to pp C4/2 D4/2");
-// Start at ff, diminuendo to pp
-
-// Mixing dynamics with other directives
-var expressive = MusicNotation.Parse(
-    "@bpm 120 @section intro @dynamics mf C4/4 E4/4 " +
-    "@cresc to ff G4/2 @section verse @dim to p C5/4 G4/4");
-// Full expressiveness: tempo + form + dynamics
-
-// Dynamics with polyphony
-var dynamicPoly = MusicNotation.Parse(
-    "@dynamics mf << C2/1 | @cresc to ff C4/4 D4/4 E4/4 F4/4 >>");
-// Bass at mf, melody crescendos from mf to ff
-
-// ===== Ornaments (Embellishments) =====
-
-// Trill - rapid alternation between main note and upper neighbor
-var trill = MusicNotation.Parse("C4/4{tr}");  // Default: interval=2, speed=8
-var customTrill = MusicNotation.Parse("C4/4{tr:1:16}");  // Half-step, 16 notes per quarter
-
-// Mordent - brief alternation with neighbor
-var upperMordent = MusicNotation.Parse("C4/4{mord}");  // Main-Upper-Main
-var lowerMordent = MusicNotation.Parse("C4/4{mord:1:2}");  // Main-Lower-Main (type=1 for lower)
-
-// Turn - four-note figure
-var turn = MusicNotation.Parse("C4/4{turn}");  // Upper-Main-Lower-Main
-var invertedTurn = MusicNotation.Parse("C4/4{turn:1}");  // Lower-Main-Upper-Main (type=1)
-
-// Appoggiatura - accented grace note
-var appogg = MusicNotation.Parse("C4/4{app}");  // Long appoggiatura (default)
-var acciaccatura = MusicNotation.Parse("C4/4{app:1}");  // Short (type=1)
-
-// Ornaments expand into multiple NoteEvent objects
-var expandedTrill = MusicNotation.Parse("C4/4{tr:2:8}");
-// Creates ~8 rapid notes alternating between C4 and D4
-Console.WriteLine($"Trill expanded to {expandedTrill.Length} notes");
-
-// ===== Analysis Examples (String-Based) =====
-
-// Chord analysis from string
-var chordResult = ChordAnalyzer.Identify("C4 E4 G4 B4");
-Console.WriteLine(chordResult);  // Output: Cmaj7
-
-// Progression analysis from chord symbols
-var progressionResult = ProgressionAnalyzer.AnalyzeFromSymbols(["Dm7", "G7", "Cmaj7", "Am7"]);
-Console.WriteLine(progressionResult.Summary);  // ii-V-I-vi in C major
-
-// Mode detection from string
-var mode = ModeLibrary.DetectModeWithRoot("C D Eb F G A Bb", rootHint: 0);
-Console.WriteLine(mode);  // C Dorian
-
-// Melody analysis from string
-var melodyResult = MelodyAnalyzer.Analyze("C4 D4 E4 F4 G4 A4 B4 C5");
-Console.WriteLine(melodyResult.ContourDescription);  // "Rising melody (net +12 semitones)"
-
-// Roman numeral analysis
-var key = new KeySignature("C", true);
-var romanChord = KeyAnalyzer.Analyze("G3 B3 D4", key);
-Console.WriteLine(romanChord.ToRomanNumeral());  // "V"
-Console.WriteLine(romanChord.Function);  // "Dominant"
-
-// ===== Same Examples with Arrays (for existing data) =====
-
-// Chord analysis from array
-var notesArray = MusicNotation.Parse("C4 E4 G4 B4");
-var chordFromArray = ChordAnalyzer.Identify(notesArray);
-
-// Mode detection from notes (automatic pitch class extraction)
-var scale = MusicNotation.Parse("C D Eb F G A Bb");
-var modeFromNotes = ModeLibrary.DetectModeWithRoot(scale);  // Automatically uses first note as root
-// Or specify root explicitly:
-var modeWithRoot = ModeLibrary.DetectModeWithRoot(scale, rootHint: 0);
-
-// Melody analysis from NoteEvent array
-var melodyNotes = MusicNotation.Parse("C4/4 D4/4 E4/4 F4/4 G4/4 A4/4 B4/4 C5/4");
-var melodyFromArray = MelodyAnalyzer.Analyze(melodyNotes);
-
-// ===== NoteBuffer & SIMD Operations =====
-
-// Work with NoteBuffer for performance-critical operations
-var sequence = MusicNotation.Parse("C4/4 C4/4 G4/4 G4/4 A4/4 A4/4 G4/2");
-var buffer = new NoteBuffer(sequence.Length);
-foreach (var note in sequence)
-    buffer.Add(note);
-
-// SIMD-accelerated transpose (processes 16 notes at once!)
-MusicMath.Transpose(buffer, 2);  // Up 2 semitones in ~30 microseconds
-
-// Rational arithmetic is auto-normalized (no manual Simplify needed)
-var duration = new Rational(12, 32);  // Automatically becomes 3/8
-var dottedRational = new Rational(3, 8);  // Dotted quarter
-Console.WriteLine(MusicNotation.FormatDuration(dottedRational));  // "4."
-
-// Rhythm analysis
-var rhythm = RhythmAnalyzer.Analyze(buffer);
-Console.WriteLine(rhythm.TextureDescription);  // "Active, driving rhythm..."
-
-// Form analysis with cadence detection
-var form = FormAnalyzer.Analyze(buffer, new FormAnalysisOptions(
-    MinRestForPhraseBoundary: new Rational(1, 2),
-    Key: key));
-Console.WriteLine(form.FormLabel);  // "A B A"
-
-// Melody harmonization (Viterbi algorithm)
-var harmonizer = new MelodyHarmonizer();
-var harmResult = harmonizer.Harmonize(melodyNotes, key);
-foreach (var c in harmResult.Chords)
-    Console.WriteLine(c.Symbol);  // "C", "G", "Am", "F"...
-
-// Harmonic color analysis (chromatic notes, modal turns, non-chord tones)
-var color = HarmonicColorAnalyzer.Analyze(melodyNotes, harmResult.Chords, key);
-Console.WriteLine($"Chromatic notes: {color.ChromaticNotes.Count}");
-Console.WriteLine($"Modal turns: {color.ModalTurns.Count}");
-
-// Voice leading solver (finds optimal SATB voicings)
-var solver = new VoiceLeadingSolver();
-var chordSymbols = new[] { "C", "G", "C" };
-var solution = solver.Solve(chordSymbols);
-// Returns SATB voicings with minimal voice movement
+// With durations and chords
+var melody = MusicNotation.Parse("C4/4 [E4 G4]/4 G4/2.");
+
+// Time signatures and measures
+var song = MusicNotation.Parse("4/4: C4/4 E4/4 G4/4 C5/4 | D4/1");
+
+// With directives (tempo, dynamics)
+var result = MusicNotationAntlrParser.Parse(
+    "@bpm 120 @dynamics mf C4/4 E4/4 G4/4");
 ```
+
+**Analyze chords and keys:**
+
+```csharp
+using Celeritas.Core.Analysis;
+
+// Chord identification
+var chord = ChordAnalyzer.Identify("C4 E4 G4 B4");
+Console.WriteLine(chord);  // Output: Cmaj7
+
+// Key detection
+var melody = MusicNotation.Parse("C4/4 D4/4 E4/4 F4/4 G4/4");
+var key = KeyAnalyzer.DetectKey(melody);
+Console.WriteLine(key);  // Output: C major
+
+// Modal analysis
+var scale = MusicNotation.Parse("D4 E4 F4 G4 A4 B4 C5 D5");
+var mode = ModeLibrary.DetectModeWithRoot(scale);
+Console.WriteLine(mode);  // Output: D Dorian
+```
+
+### 📚 Complete Documentation
+
+- **[Examples](examples/)** - Working code samples organized by topic
+  - [Notation Basics](examples/01-notation-basics.cs) - Parsing, chords, rests, ties
+  - [Round-Trip Formatting](examples/02-round-trip.cs) - Export back to notation
+  - [Directives](examples/03-directives.cs) - Tempo, dynamics, sections
+  - [Chord Analysis](examples/04-chord-analysis.cs) - Identification and inversions
+  - And more...
+
+- **[Cookbook](docs/COOKBOOK.md)** - Common patterns and recipes
+  - Quick start recipes
+  - Chord and key analysis
+  - Harmonization workflows
+  - MIDI processing
+  - Performance optimization
+
+- **[Python Guide](bindings/python/README.md)** - Using Celeritas from Python
 
 ## 🔧 CLI Tool
 
 ```bash
-# Transpose
-celeritas transpose --semitones 5 --notes C4 E4 G4
-
-# Analyze chord
+# Chord analysis
 celeritas analyze --notes C4 E4 G4 B4
 
-# Analyze progression
-celeritas progression --chords Dm7 G7 Cmaj7 Am7
-
-# Detect mode
+# Key detection
 celeritas mode --notes C D Eb F G A Bb --root C
 
-# Polyphony analysis
-celeritas polyphony --notes "4/4: [C4 E4 G4 C5]/1 | [D4 F4 A4 D5]/1"
+# Progression analysis
+celeritas progression --chords Dm7 G7 Cmaj7 Am7
 
-# Rhythm analysis
-celeritas rhythm --durations 1/4 1/4 1/8 1/8 --style jazz
+# MIDI file analysis
+celeritas midi analyze --in song.mid
 
-# Melody analysis
-celeritas melody --notes E4 E4 F4 G4 G4 F4 E4 D4
-
-# MIDI import/export
-celeritas midi import --in song.mid
-celeritas midi export --out output.mid --notes "4/4: C4/4 E4/4 G4/4"
-
-# MIDI export (chords)
-celeritas midi export --out chords.mid --notes "4/4: [C4 E4 G4]/4 R/4 [D4 F4 A4]/2"
-
-# MIDI processing
+# Transpose notes or MIDI
+celeritas transpose --semitones 5 --notes C4 E4 G4
 celeritas midi transpose --in song.mid --out transposed.mid --semitones 2
-celeritas midi analyze --in song.mid --format sections   # Default: detailed sections
-celeritas midi analyze --in song.mid --format summary    # One-screen summary
-celeritas midi analyze --in song.mid --format timeline   # Time-ordered (diagnostic)
-celeritas midi info --in song.mid                        # File statistics
-celeritas midi merge --inputs song1.mid song2.mid --out merged.mid
 
-# Pitch class set analysis
-celeritas pcset --notes C E G
+# Export to MIDI
+celeritas midi export --out output.mid --notes "4/4: C4/4 E4/4 G4/4"
 
 # System info
 celeritas info
 ```
+
+For complete CLI documentation, see `celeritas --help`.
 
 ## 🏗️ Building from Source
 
@@ -616,144 +337,21 @@ python test_celeritas.py
 
 ## 🎉 Recent Updates (v0.9.0 - December 2025)
 
-### ✅ Completed Roadmap Features
+All roadmap features completed:
 
-All remaining roadmap items have been successfully implemented:
+- ✅ **Ornamentation** - Trills, mordents, turns, appoggiaturas
+- ✅ **Figured Bass** - Baroque chord notation realization
+- ✅ **ARM NEON SIMD** - High-performance on Apple Silicon and ARM64
+- ✅ **WebAssembly SIMD** - Browser-based music processing
+- ✅ **Python Bindings** - Full ctypes wrapper with 35 passing tests
+- ✅ **Round-Trip Formatting** - Export notes with directives back to notation
 
-#### ⚡ Ornamentation System
-
-Complete ornament system for baroque/classical embellishments:
-
-- **Trill** - Rapid alternation between main note and upper neighbor
-  - Configurable speed (notes per quarter)
-  - Optional start with upper note
-  - Optional turn ending
-- **Mordent** - Brief alternation with neighbor note (upper/lower, single/double)
-- **Turn** - Four-note figure (upper-main-lower-main) with normal and inverted variants
-- **Appoggiatura** - Accented non-harmonic note (long/short acciaccatura)
-
-```csharp
-using Celeritas.Core.Ornamentation;
-
-var baseNote = new NoteEvent(64, Rational.Zero, new Rational(1, 2), 0.8f);
-var trill = new Trill 
-{ 
-    BaseNote = baseNote, 
-    Interval = 2,  // whole step
-    Speed = 8      // 8 notes per quarter
-};
-var expanded = trill.Expand(); // Returns array of rapid alternating notes
-```
-
-#### 🎼 Figured Bass Realization
-
-Convert figured bass notation (baroque chord symbols) to actual voicings:
-
-- Standard abbreviations: 6, 6/4, 7, 6/5, 4/3, 4/2, 9
-- Accidental handling (#, b, n)
-- Voice leading style options (Smooth, Strict, Free)
-- Pitch range constraints
-
-```csharp
-using Celeritas.Core.FiguredBass;
-
-var realizer = new FiguredBassRealizer();
-var symbol = new FiguredBassSymbol
-{
-    BassPitch = 60,         // C
-    Figures = new[] { 6 },  // First inversion
-    Time = Rational.Zero,
-    Duration = new Rational(1, 1)
-};
-var notes = realizer.RealizeSymbol(symbol); // Returns voiced chord
-```
-
-#### 💪 ARM NEON SIMD Support
-
-High-performance SIMD acceleration for ARM64 platforms:
-
-- Apple Silicon (M1, M2, M3, M4)
-- ARM-based Windows devices
-- Linux ARM64 servers
-- Processes 4 integers at a time (128-bit vectors)
-- Auto-detection and fallback
-
-#### 🌐 WebAssembly SIMD Support
-
-SIMD acceleration for browser deployment:
-
-- Enables high-performance music processing in browsers
-- Compatible with Chrome, Firefox, Safari, Edge
-- Vector128 hardware acceleration
-- Auto-fallback when SIMD unavailable
-
-```bash
-dotnet publish -c Release -r browser-wasm
-```
-
-#### 🐍 Python Bindings
-
-Complete Python wrapper via ctypes:
-
-```python
-from celeritas import (
-    NoteEvent,
-    Trill,
-    detect_key,
-    identify_chord,
-    midi_to_note_name,
-    parse_note,
-    transpose,
-)
-
-
-def pitches(note_names: list[str]) -> list[int]:
-    """Convert human-readable note names (e.g., 'C4', 'F#5', 'Bb3') to MIDI pitches."""
-    out: list[int] = []
-    for name in note_names:
-        note = parse_note(name)
-        if note is None:
-            raise ValueError(f"Could not parse note: {name}")
-        out.append(note.pitch)
-    return out
-
-# SIMD-accelerated transpose
-triad = pitches(["C4", "E4", "G4"])
-transposed = transpose(triad, 2)
-print([midi_to_note_name(p) for p in transposed])  # ['D4', 'F#4', 'A4']
-
-# Chord identification
-chord = identify_chord(pitches(["C4", "E4", "G4"]))  # "Cmaj"
-
-# Key detection
-key_name, is_major = detect_key(pitches(["C4", "D4", "E4", "F4", "G4", "A4", "B4"]))
-print(key_name, "major" if is_major else "minor")
-
-# Ornaments
-base_pitch = pitches(["C4"])[0]
-base_note = NoteEvent(
-    pitch=base_pitch,
-    time_numerator=0,
-    time_denominator=1,
-    duration_numerator=1,
-    duration_denominator=2,
-    velocity=80,
-)
-trill = Trill(base_note, interval=2, speed=8)
-notes = trill.expand()
-```
-
-Installation:
-
-```bash
-cd bindings/python
-pip install -e .
-```
+See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ### 📊 SIMD Platform Support
 
 | Platform        | SIMD     | Status | Performance      |
-| --------------- | -------- | ------ | ---------------- |
+|-----------------|----------|--------|------------------|
 | x64 Intel/AMD   | AVX-512  | ✅     | ~34M notes/sec   |
 | x64 Intel/AMD   | AVX2     | ✅     | ~13M notes/sec   |
 | x64 Intel/AMD   | SSE2     | ✅     | ~10M notes/sec   |
