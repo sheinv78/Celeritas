@@ -17,11 +17,13 @@
 Celeritas is a high-performance **symbolic music analysis and generation engine** focused on harmony, structure, and algorithmic composition. It leverages SIMD instructions (AVX-512, AVX2, SSE2, NEON) for maximum performance.
 
 **This is NOT:**
+
 - ❌ A DAW (Digital Audio Workstation)
 - ❌ A VST plugin
 - ❌ A synthesizer or audio engine
 
 **This IS:**
+
 - ✅ A symbolic music computation library
 - ✅ A music theory analysis toolkit
 - ✅ An algorithmic composition engine
@@ -38,6 +40,7 @@ Current version: **v0.9.0** (December 2025)
 ## Intended Use Cases
 
 ### ✅ Primary Use Cases
+
 - **Symbolic music analysis** — Chord identification, key detection, harmonic analysis
 - **Algorithmic composition** — Auto-harmonization, melody generation, progression analysis
 - **Music theory research** — Modal analysis, voice leading, counterpoint, form analysis
@@ -47,6 +50,7 @@ Current version: **v0.9.0** (December 2025)
 - **Notation software backends** — Harmonic analysis for score editors
 
 ### ⚠️ Not (Yet) Intended For
+
 - Real-time audio synthesis
 - Live performance (latency-sensitive operations)
 - Audio signal processing (DSP)
@@ -57,7 +61,7 @@ Current version: **v0.9.0** (December 2025)
 Celeritas is designed for extreme performance (AMD Ryzen 9 7900X, .NET 10, AVX-512):
 
 ```text
-Transpose_1M_Notes        :  29.5 µs   (~34 ns/note,  ~34 million notes/sec)
+Transpose_1M_Notes        : 29.5 µs   (~34 ns/note,  ~34 million notes/sec)
 Transpose_10M_Notes       : 742 µs    (~74 ns/note,  ~13 million notes/sec)
 ChordAnalysis_GetMask     : 1.0 ns    (bit mask generation)
 ChordAnalysis_Identify    : 1.7 ns    (chord identification from mask)
