@@ -1,25 +1,69 @@
 # Celeritas
 
-> **Celeritas** (Latin: *swiftness*) — High-Performance Music Engine for .NET
+> **Celeritas** (Latin:  *swiftness*) — High-Performance Music Engine for . NET
 >
 > **Author:** Vladimir V. Shein
 
-[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/license-BSL--1.1-blue.svg)](LICENSE.md)
+[![. NET](https://img.shields.io/badge/.NET-10. 0-512BD4)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/license-BSL--1.1-blue. svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]()
 
 <p align="center">
   <img src="assets/banner.jpg" alt="Celeritas Banner" width="800"/>
 </p>
 
-Celeritas is a blazingly fast music computation library for .NET, leveraging SIMD instructions (AVX-512, AVX2, SSE2) for maximum performance. Perfect for music software, DAWs, notation programs, and real-time audio applications.
+## What is Celeritas? 
+
+Celeritas is a high-performance **symbolic music analysis and generation engine** focused on harmony, structure, and algorithmic composition. 
+
+**This is NOT:**
+- ❌ A DAW (Digital Audio Workstation)
+- ❌ A VST plugin
+- ❌ A synthesizer or audio engine
+
+**This IS:**
+- ✅ A symbolic music computation library
+- ✅ A music theory analysis toolkit
+- ✅ An algorithmic composition engine
+- ✅ A research and educational tool
+
+## Project Status
+
+🚧 **Active Development** — Experimental / Research Project  
+⚠️ **API is not stable yet** — Breaking changes may occur
+
+Current version: **v0.9.0** (December 2025)  
+**246 tests** passing
+
+## Intended Use Cases
+
+Celeritas is designed primarily for: 
+
+### ✅ Primary Use Cases
+- **Symbolic music analysis** — Chord identification, key detection, harmonic analysis
+- **Algorithmic composition** — Auto-harmonization, melody generation, progression analysis
+- **Music theory research** — Modal analysis, voice leading, counterpoint, form analysis
+- **Offline batch processing** — MIDI file analysis and transformation
+- **Educational tools** — Music theory learning applications
+- **DAW integration** — Backend for compositional assistants via MIDI export
+- **Notation software backends** — Harmonic analysis for score editors
+
+### ⚠️ Not (Yet) Intended For
+- Real-time audio synthesis
+- Live performance (latency-sensitive operations)
+- Audio signal processing (DSP)
+- Spectral analysis (audio → symbolic is out of scope)
+
+---
+
+Celeritas is a blazingly fast music computation library for .NET, leveraging SIMD instructions (AVX-512, AVX2, SSE2) for maximum performance. Perfect for music software, DAWs, notation programs, algorithmic composition, and music theory research.
 
 ## 🎯 Performance
 
-Celeritas is designed for extreme performance (AMD Ryzen 9 7900X, .NET 10, AVX-512):
+Celeritas is designed for extreme performance (AMD Ryzen 9 7900X, . NET 10, AVX-512):
 
 ```
-Transpose_1M_Notes        : 29.5 µs   (~34 ns/note,  ~34 million notes/sec)
+Transpose_1M_Notes        :  29.5 µs   (~34 ns/note,  ~34 million notes/sec)
 Transpose_10M_Notes       : 742 µs    (~74 ns/note,  ~13 million notes/sec)
 ChordAnalysis_GetMask     : 1.0 ns    (bit mask generation)
 ChordAnalysis_Identify    : 1.7 ns    (chord identification from mask)
@@ -28,10 +72,10 @@ Progression_Analyze       : 2.3 µs    (full harmonic analysis)
 Quantize_1M_Notes         : 1.29 ms   (rhythmic quantization)
 ```
 
-Run benchmarks:
+Run benchmarks: 
 
 ```bash
-dotnet run --project src/Celeritas.Benchmarks -c Release
+dotnet run --project src/Celeritas. Benchmarks -c Release
 ```
 
 ## ✨ Features
@@ -40,13 +84,13 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 - **⚡ SIMD-Accelerated** — Auto-detection and optimized code paths for AVX-512, AVX2, SSE2
 - **🎵 NoteBuffer** — Efficient note storage with rational time representation
 - **📐 Rational Arithmetic** — Precise fractional time without floating-point errors (auto-normalized)
-- **🎼 Music Notation** — Human-friendly parsing: `"C4/4 [E4 G4]/4 G4/2."` supports notes, chords, rests
-- **🎹 Chord Notation** — Multiple simultaneous notes: `[C4 E4 G4]/4` or `(C4 E4 G4):q`
+- **🎼 Music Notation** — Human-friendly parsing:  `"C4/4 [E4 G4]/4 G4/2."` supports notes, chords, rests
+- **🎹 Chord Notation** — Multiple simultaneous notes:  `[C4 E4 G4]/4` or `(C4 E4 G4):q`
 - **⏸️ Rest Support** — Explicit rest notation with `R/4`, `R:q`, etc.
 - **🔗 Tie Support** — Merge notes across beats/measures with `C4/4~ C4/4` → single note
 - **🎯 Time Signatures** — Support for 4/4, 3/4, 6/8, and any custom meter
-- **� Measure Validation** — Parse measures with `|` bars and validate durations match time signature
-- **�🚀 AOT-Ready** — Native AOT compilation support for minimal overhead
+- **📏 Measure Validation** — Parse measures with `|` bars and validate durations match time signature
+- **🚀 AOT-Ready** — Native AOT compilation support for minimal overhead
 
 ### Harmonic Analysis
 - **🎹 Chord Recognition** — 30+ chord types, inversions, extended chords (9th, 11th, 13th)
@@ -69,7 +113,7 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 - **⚠️ Rule Checking** — Parallel 5th/octave detection, hidden perfects, spacing rules
 
 ### Rhythm Analysis
-- **🥁 Meter Detection** — Auto-detect time signature (4/4, 3/4, 6/8...) with confidence
+- **🥁 Meter Detection** — Auto-detect time signature (4/4, 3/4, 6/8.. .) with confidence
 - **🎵 Pattern Recognition** — Tresillo, Habanera, Clave, Shuffle, Bossa Nova
 - **📈 Prediction** — Markov chains for style-based rhythm generation (classical, jazz, rock, latin)
 - **🔀 Syncopation** — Syncopation and swing analysis
@@ -106,7 +150,7 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 dotnet add package Celeritas
 ```
 
-Or via NuGet Package Manager:
+Or via NuGet Package Manager: 
 ```
 Install-Package Celeritas
 ```
@@ -115,7 +159,7 @@ Install-Package Celeritas
 
 ```bash
 # Install globally
-dotnet tool install --global Celeritas.CLI
+dotnet tool install --global Celeritas. CLI
 
 # Use from anywhere
 celeritas --version
@@ -130,8 +174,8 @@ dotnet tool update --global Celeritas.CLI
 ### Basic Usage
 
 ```csharp
-using Celeritas.Core;
-using Celeritas.Core.Analysis;
+using Celeritas. Core;
+using Celeritas. Core.Analysis;
 
 // ===== Human-Friendly Note Input =====
 
@@ -148,8 +192,8 @@ var chord = MusicNotation.Parse("[C4 E4 G4]/4"); // C major quarter
 var withParens = MusicNotation.Parse("(C4 E4 G4):q"); // Same with letters
 var progression = MusicNotation.Parse("[C4 E4 G4]/4 [D4 F4 A4]/4 [E4 G4 B4]/4");
 
-// Polyphonic chords - each note can have its own duration!
-var polyphonic = MusicNotation.Parse("[C4/1 E4/2 G4/4]");
+// Polyphonic chords - each note can have its own duration! 
+var polyphonic = MusicNotation. Parse("[C4/1 E4/2 G4/4]");
 // C4 = whole note, E4 = half note, G4 = quarter - all start together
 // Next element starts after the longest note (C4/1)
 
@@ -174,33 +218,33 @@ var syncopation = MusicNotation.Parse("C4/4~ C4/4");
 
 // Ties across measure bars
 var tieAcrossBar = MusicNotation.Parse("4/4: C4/2 E4/4 G4/4~ | G4/4 A4/4 B4/2");
-// G4 tied: 1/4 + 1/4 = 1/2 duration, single note spanning the barline
+// G4 tied:  1/4 + 1/4 = 1/2 duration, single note spanning the barline
 
 // Alternative syntax with letters (q=quarter, h=half, e=eighth, w=whole)
 var altSyntax = MusicNotation.Parse("C4:q E4:e G4:h C5:w");
 
 // Dotted notes work with letter syntax too!
-var dottedLetters = MusicNotation.Parse("C4:q. E4:e G4:h.");
-// Same as: "C4/4. E4/8 G4/2."
+var dottedLetters = MusicNotation.Parse("C4:q.  E4:e G4:h.");
+// Same as:  "C4/4. E4/8 G4/2."
 
 // Rests work with letter syntax too
-var restsWithLetters = MusicNotation.Parse("C4:q R:q E4:e R:h");
+var restsWithLetters = MusicNotation. Parse("C4:q R: q E4:e R:h");
 
 // Time signature in string (parsed automatically!)
 var waltzInline = MusicNotation.Parse("3/4: C4/4 E4/4 G4/4");
 var common = MusicNotation.Parse("4/4| C4/4 E4/4 G4/4 C5/4");
 var compound = MusicNotation.Parse("6/8 | C4:q E4:e G4:h");
 
-// Time signature changes mid-sequence!
+// Time signature changes mid-sequence! 
 var meterChange = MusicNotation.Parse(
     "4/4: C4/4 E4/4 G4/4 C5/4 | 3/4: D4/4 F4/4 A4/4 | 2/4: E4/2");
 // First measure: 4/4 (4 quarters), second: 3/4 (3 quarters), third: 2/4 (half note)
 
 // Complex meter changes with validation
 var validated = MusicNotation.Parse(
-    "4/4: C4/1 | 3/4: D4/2. | 6/8: E4/4. F4/4.",
+    "4/4: C4/1 | 3/4: D4/2.  | 6/8: E4/4. F4/4.",
     validateMeasures: true);
-// Each measure validates against its own time signature!
+// Each measure validates against its own time signature! 
 
 // Measure bars for structure (bars split with |)
 var twoMeasures = MusicNotation.Parse("3/4: C4/4 E4/4 G4/4 | D4/4 F4/4 A4/4 |");
@@ -211,40 +255,40 @@ var withChords = MusicNotation.Parse("4/4: C4/4 [E4 G4]/4 C5/2 | [D4 F4 A4]/1");
 // Validate that measures match time signature
 var validated = MusicNotation.Parse(
     "4/4: C4/4 E4/4 G4/2 | D4/2 R/4 A4/4", 
-    validateMeasures: true);
-// Throws if measure durations don't match!
+    validateMeasures:  true);
+// Throws if measure durations don't match! 
 
 // Export back to string notation (round-trip)
 string exported = MusicNotation.FormatNoteSequence(jazzPattern);
-// Returns: "C4/4. E4/8 G4/2." (default: numeric format)
+// Returns: "C4/4. E4/8 G4/2." (default:  numeric format)
 
 // Control output format
-string numericFormat = MusicNotation.FormatNoteSequence(jazzPattern, useDot: true, useLetters: false);
+string numericFormat = MusicNotation. FormatNoteSequence(jazzPattern, useDot: true, useLetters: false);
 // Returns: "C4/4. E4/8 G4/2."
 
 string letterFormat = MusicNotation.FormatNoteSequence(jazzPattern, useDot: true, useLetters: true);
-// Returns: "C4:q. E4:e G4:h."
+// Returns: "C4:q.  E4:e G4:h."
 
 // ===== Ornaments (Embellishments) =====
 
 // Trill - rapid alternation between main note and upper neighbor
 var trill = MusicNotation.Parse("C4/4{tr}");  // Default: interval=2, speed=8
-var customTrill = MusicNotation.Parse("C4/4{tr:1:16}");  // Half-step, 16 notes per quarter
+var customTrill = MusicNotation. Parse("C4/4{tr: 1: 16}");  // Half-step, 16 notes per quarter
 
 // Mordent - brief alternation with neighbor
 var upperMordent = MusicNotation.Parse("C4/4{mord}");  // Main-Upper-Main
-var lowerMordent = MusicNotation.Parse("C4/4{mord:1:2}");  // Main-Lower-Main (type=1 for lower)
+var lowerMordent = MusicNotation.Parse("C4/4{mord:1: 2}");  // Main-Lower-Main (type=1 for lower)
 
 // Turn - four-note figure
-var turn = MusicNotation.Parse("C4/4{turn}");  // Upper-Main-Lower-Main
+var turn = MusicNotation. Parse("C4/4{turn}");  // Upper-Main-Lower-Main
 var invertedTurn = MusicNotation.Parse("C4/4{turn:1}");  // Lower-Main-Upper-Main (type=1)
 
 // Appoggiatura - accented grace note
 var appogg = MusicNotation.Parse("C4/4{app}");  // Long appoggiatura (default)
-var acciaccatura = MusicNotation.Parse("C4/4{app:1}");  // Short (type=1)
+var acciaccatura = MusicNotation. Parse("C4/4{app:1}");  // Short (type=1)
 
 // Ornaments expand into multiple NoteEvent objects
-var expandedTrill = MusicNotation.Parse("C4/4{tr:2:8}");
+var expandedTrill = MusicNotation.Parse("C4/4{tr: 2:8}");
 // Creates ~8 rapid notes alternating between C4 and D4
 Console.WriteLine($"Trill expanded to {expandedTrill.Length} notes");
 
@@ -252,11 +296,11 @@ Console.WriteLine($"Trill expanded to {expandedTrill.Length} notes");
 
 // Chord analysis from string
 var chord = ChordAnalyzer.Identify("C4 E4 G4 B4");
-Console.WriteLine(chord);  // Output: Cmaj7
+Console.WriteLine(chord);  // Output:  Cmaj7
 
 // Progression analysis from chord symbols
-var progression = ProgressionAnalyzer.AnalyzeFromSymbols(["Dm7", "G7", "Cmaj7", "Am7"]);
-Console.WriteLine(progression.Summary);  // ii-V-I-vi in C major
+var progression = ProgressionAnalyzer. AnalyzeFromSymbols(["Dm7", "G7", "Cmaj7", "Am7"]);
+Console.WriteLine(progression. Summary);  // ii-V-I-vi in C major
 
 // Mode detection from string
 var mode = ModeLibrary.DetectModeWithRoot("C D Eb F G A Bb", rootHint: 0);
@@ -268,7 +312,7 @@ Console.WriteLine(melody.ContourDescription);  // "Rising melody (net +12 semito
 
 // Roman numeral analysis
 var key = new KeySignature("C", true);
-var romanChord = KeyAnalyzer.Analyze("G3 B3 D4", key);
+var romanChord = KeyAnalyzer. Analyze("G3 B3 D4", key);
 Console.WriteLine(romanChord.ToRomanNumeral());  // "V"
 Console.WriteLine(romanChord.Function);  // "Dominant"
 
@@ -276,11 +320,11 @@ Console.WriteLine(romanChord.Function);  // "Dominant"
 
 // Chord analysis from array
 var notes = MusicNotation.Parse("C4 E4 G4 B4");
-var chordFromArray = ChordAnalyzer.Identify(notes);
+var chordFromArray = ChordAnalyzer. Identify(notes);
 
 // Mode detection from array
 var scale = MusicNotation.Parse("C D Eb F G A Bb");
-var modeFromArray = ModeLibrary.DetectModeWithRoot(scale.Select(n => n % 12).ToArray(), rootHint: 0);
+var modeFromArray = ModeLibrary.DetectModeWithRoot(scale. Select(n => n % 12).ToArray(), rootHint: 0);
 
 // Melody analysis from NoteEvent array
 var melodyNotes = MusicNotation.Parse("C4/4 D4/4 E4/4 F4/4 G4/4 A4/4 B4/4 C5/4");
@@ -290,7 +334,7 @@ var melodyFromArray = MelodyAnalyzer.Analyze(melodyNotes);
 
 // Work with NoteBuffer for performance-critical operations
 var sequence = MusicNotation.Parse("C4/4 C4/4 G4/4 G4/4 A4/4 A4/4 G4/2");
-var buffer = new NoteBuffer(sequence.Length);
+var buffer = new NoteBuffer(sequence. Length);
 foreach (var note in sequence)
     buffer.Add(note);
     
@@ -303,8 +347,8 @@ var dotted = new Rational(3, 8);       // Dotted quarter
 Console.WriteLine(MusicNotation.FormatDuration(dotted));  // "4."
 
 // Rhythm analysis
-var rhythm = RhythmAnalyzer.Analyze(buffer);
-Console.WriteLine(rhythm.TextureDescription);  // "Active, driving rhythm..."
+var rhythm = RhythmAnalyzer. Analyze(buffer);
+Console.WriteLine(rhythm. TextureDescription);  // "Active, driving rhythm..."
 
 // Form analysis with cadence detection
 var form = FormAnalyzer.Analyze(buffer, new FormAnalysisOptions(
@@ -316,7 +360,7 @@ Console.WriteLine(form.FormLabel);  // "A B A"
 var harmonizer = new MelodyHarmonizer();
 var result = harmonizer.Harmonize(melodyNotes, key);
 foreach (var chord in result.Chords)
-    Console.WriteLine(chord.Symbol);  // "C", "G", "Am", "F"...
+    Console.WriteLine(chord.Symbol);  // "C", "G", "Am", "F"... 
 
 // Harmonic color analysis (chromatic notes, modal turns, non-chord tones)
 var color = HarmonicColorAnalyzer.Analyze(melodyNotes, result.Chords, key);
@@ -326,7 +370,7 @@ Console.WriteLine($"Modal turns: {color.ModalTurns.Count}");
 // Voice leading solver (finds optimal SATB voicings)
 var solver = new VoiceLeadingSolver();
 var chordSymbols = new[] { "C", "G", "C" };
-var solution = solver.Solve(chordSymbols);
+var solution = solver. Solve(chordSymbols);
 // Returns SATB voicings with minimal voice movement
 ```
 
@@ -356,13 +400,13 @@ celeritas melody --notes E4 E4 F4 G4 G4 F4 E4 D4
 
 # MIDI import/export
 celeritas midi import --in song.mid
-celeritas midi export --notes C4@0:1 E4@1:1 G4@2:1 --out output.mid
+celeritas midi export --notes C4@0: 1 E4@1:1 G4@2:1 --out output.mid
 
 # MIDI processing
 celeritas midi transpose --in song.mid --out transposed.mid --semitones 2
-celeritas midi analyze --in song.mid --format sections  # Default: detailed sections
-celeritas midi analyze --in song.mid --format summary   # One-screen summary
-celeritas midi analyze --in song.mid --format timeline  # Time-ordered (diagnostic)
+celeritas midi analyze --in song.mid --format sections  # Default:  detailed sections
+celeritas midi analyze --in song. mid --format summary   # One-screen summary
+celeritas midi analyze --in song. mid --format timeline  # Time-ordered (diagnostic)
 celeritas midi info --in song.mid     # File statistics
 celeritas midi merge --inputs song1.mid song2.mid --out merged.mid
 
@@ -376,7 +420,7 @@ celeritas info
 ## 🏗️ Building from Source
 
 Requirements:
-- .NET 10.0 SDK or later
+- .NET 10. 0 SDK or later
 - CPU with SSE2 (minimum), AVX2 or AVX-512 (recommended)
 
 ```bash
@@ -400,7 +444,7 @@ dotnet publish src/Celeritas.CLI -c Release -r osx-arm64
 dotnet test
 ```
 
-Current: **246 tests**
+Current:  **246 tests**
 
 ## 🎯 Roadmap
 
@@ -436,7 +480,7 @@ All remaining roadmap items have been successfully implemented:
 
 #### ⚡ Ornamentation System
 
-Complete ornament system for baroque/classical embellishments:
+Complete ornament system for baroque/classical embellishments: 
 
 - **Trill** - Rapid alternation between main note and upper neighbor
   - Configurable speed (notes per quarter)
@@ -530,7 +574,7 @@ notes = trill.expand()
 Installation:
 ```bash
 cd bindings/python
-pip install -e .
+pip install -e . 
 ```
 
 ### 📊 SIMD Platform Support
@@ -548,7 +592,7 @@ pip install -e .
 
 Licensed under the [Business Source License 1.1 (BSL-1.1)](LICENSE.md).
 
-Change Date: 2030-01-01 (then: Apache-2.0)
+Change Date: 2030-01-01 (then:  Apache-2.0)
 
 Until the Change Date, commercial production use requires a commercial license.
 
@@ -560,11 +604,11 @@ For commercial use, [contact us](https://github.com/sheinv78/Celeritas/issues).
 
 ### License FAQ (short)
 
-- **Can I use this for learning / research / personal projects?** Yes.
+- **Can I use this for learning / research / personal projects?** Yes. 
 - **Can I use this in an open-source project?** Yes, if your project is distributed under an OSI-approved license.
 - **Can I use this in a commercial product or service?** Not without a commercial license (until the Change Date).
 - **What happens on the Change Date?** On 2030-01-01, Celeritas becomes available under Apache-2.0.
-- **Not sure if your use is commercial?** Please open an issue and describe your use case.
+- **Not sure if your use is commercial? ** Please open an issue and describe your use case.
 
 ## 📚 Dependencies
 
@@ -572,11 +616,11 @@ Celeritas uses the following third-party library:
 
 ### DryWetMIDI
 
-- **[Melanchall.DryWetMIDI](https://github.com/melanchall/drywetmidi)** 8.0.3
+- **[Melanchall. DryWetMIDI](https://github.com/melanchall/drywetmidi)** 8.0.3
 - **License:** MIT License
 - **Copyright:** © Maxim Dobroselsky
 - **Purpose:** MIDI file import/export
-- **MIT License Terms:** Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software.
+- **MIT License Terms:** Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions... 
 
 All other functionality (SIMD acceleration, harmonic analysis, voice leading, rhythm analysis, etc.) is implemented natively in Celeritas.
 
@@ -602,28 +646,28 @@ dotnet test
 
 ### Publishing (Maintainers)
 
-Releases are automated via GitHub Actions:
+Releases are automated via GitHub Actions: 
 
 1. **Development builds** - Automatic on push to main
-2. **Stable releases** - Create a tag:
+2. **Stable releases** - Create a tag: 
    ```bash
    git tag v0.9.0
    git push origin v0.9.0
    ```
 
-This triggers:
+This triggers: 
 - ✅ Build on Ubuntu, Windows, macOS
 - ✅ Run all tests
 - ✅ Create NuGet packages
-- ✅ Publish to NuGet.org (on tag)
+- ✅ Publish to NuGet. org (on tag)
 - ✅ Create GitHub Release with artifacts
 
-**Note:** Set `NUGET_API_KEY` secret in GitHub repository settings.
+**Note:** Set `NUGET_API_KEY` secret in GitHub repository settings. 
 
 ## 📧 Contact
 
 - **GitHub Issues:** Bugs and feature requests
-- **Email:** sheinv78@gmail.com
+- **Email:** sheinv78@gmail. com
 
 ---
 
