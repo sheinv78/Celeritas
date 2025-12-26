@@ -7,7 +7,10 @@
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <OptimizationPreference>Speed</OptimizationPreference>
-        
+
+        <!-- Enable native exports for Python bindings -->
+        <EnableDynamicLoading>true</EnableDynamicLoading>
+
         <!-- NuGet Package metadata -->
         <PackageId>Celeritas</PackageId>
         <Version>0.9.0</Version>
@@ -26,13 +29,13 @@
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        
+
         <!-- ANTLR4 code generation -->
         <Antlr4UseCSharpGenerator>true</Antlr4UseCSharpGenerator>
-        
+
         <!-- Suppress transitive dependency warnings -->
         <NoWarn>$(NoWarn);NU1903</NoWarn>
-        
+
         <!-- Code Analysis -->
         <AnalysisLevel>latest</AnalysisLevel>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
@@ -44,7 +47,7 @@
       <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
       <PackageReference Include="Antlr4BuildTasks" Version="12.8.0" PrivateAssets="all" />
     </ItemGroup>
-    
+
     <ItemGroup>
       <Antlr4 Include="Grammar\MusicNotation.g4">
         <Package>Celeritas.Core.Grammar</Package>
@@ -52,7 +55,7 @@
         <Visitor>true</Visitor>
       </Antlr4>
     </ItemGroup>
-    
+
     <ItemGroup>
       <None Include="..\..\README.md" Pack="true" PackagePath="\" />
       <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />

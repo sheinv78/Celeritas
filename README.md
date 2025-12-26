@@ -453,9 +453,11 @@ Console.WriteLine(romanChord.Function);  // "Dominant"
 var notesArray = MusicNotation.Parse("C4 E4 G4 B4");
 var chordFromArray = ChordAnalyzer.Identify(notesArray);
 
-// Mode detection from array
+// Mode detection from notes (automatic pitch class extraction)
 var scale = MusicNotation.Parse("C D Eb F G A Bb");
-var modeFromArray = ModeLibrary.DetectModeWithRoot(scale.Select(n => n % 12).ToArray(), rootHint: 0);
+var modeFromNotes = ModeLibrary.DetectModeWithRoot(scale);  // Automatically uses first note as root
+// Or specify root explicitly:
+var modeWithRoot = ModeLibrary.DetectModeWithRoot(scale, rootHint: 0);
 
 // Melody analysis from NoteEvent array
 var melodyNotes = MusicNotation.Parse("C4/4 D4/4 E4/4 F4/4 G4/4 A4/4 B4/4 C5/4");

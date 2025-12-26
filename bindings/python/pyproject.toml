@@ -35,3 +35,10 @@ Issues = "https://github.com/sheinv78/Celeritas/issues"
 [tool.setuptools]
 packages = ["celeritas"]
 package-dir = {"" = "."}
+
+[tool.pytest.ini_options]
+testpaths = ["test_celeritas.py"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1
 
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
 using Celeritas.Core.Simd;
@@ -30,18 +31,18 @@ public static class NativeExports
     /// <summary>
     /// Parse a single note from string notation
     /// </summary>
-    [UnmanagedCallersOnly(EntryPoint = "celeritas_parse_note")]
-    public static bool ParseNote(IntPtr notationPtr, IntPtr notePtr)
+    [UnmanagedCallersOnly(EntryPoint = "celeritas_parse_note", CallConvs = [typeof(CallConvCdecl)])]
+    public static byte ParseNote(IntPtr notationPtr, IntPtr notePtr)
     {
         try
         {
             var notation = Marshal.PtrToStringUTF8(notationPtr);
             if (string.IsNullOrEmpty(notation))
-                return false;
+                return 0;
 
             var notes = MusicNotation.Parse(notation);
             if (notes.Length == 0)
-                return false;
+                return 0;
 
             var note = notes[0];
             var cNote = new CNoteEvent
@@ -55,18 +56,18 @@ public static class NativeExports
             };
 
             Marshal.StructureToPtr(cNote, notePtr, false);
-            return true;
+            return 1;
         }
         catch
         {
-            return false;
+            return 0;
         }
     }
 
     /// <summary>
     /// Transpose an array of pitches using SIMD
     /// </summary>
-    [UnmanagedCallersOnly(EntryPoint = "celeritas_transpose")]
+    [UnmanagedCallersOnly(EntryPoint = "celeritas_transpose", CallConvs = [typeof(CallConvCdecl)])]
     public static void Transpose(IntPtr pitchesPtr, int count, int semitones)
     {
         try
@@ -86,8 +87,8 @@ public static class NativeExports
     /// <summary>
     /// Identify a chord from pitches
     /// </summary>
-    [UnmanagedCallersOnly(EntryPoint = "celeritas_identify_chord")]
-    public static bool IdentifyChord(IntPtr pitchesPtr, int count, IntPtr bufferPtr, int bufferSize)
+    [UnmanagedCallersOnly(EntryPoint = "celeritas_identify_chord", CallConvs = [typeof(CallConvCdecl)])]
+    public static byte IdentifyChord(IntPtr pitchesPtr, int count, IntPtr bufferPtr, int bufferSize)
     {
         try
         {
@@ -102,29 +103,30 @@ public static class NativeExports
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(symbol + '\0');
             Marshal.Copy(bytes, 0, bufferPtr, Math.Min(bytes.Length, bufferSize));
-            return true;
+            return 1;
         }
         catch
         {
-            return false;
+            return 0;
         }
     }
 
     /// <summary>
     /// Detect key from pitches
     /// </summary>
-    [UnmanagedCallersOnly(EntryPoint = "celeritas_detect_key")]
-    public static bool DetectKey(IntPtr pitchesPtr, int count, IntPtr bufferPtr, int bufferSize, IntPtr isMajorPtr)
+    [UnmanagedCallersOnly(EntryPoint = "celeritas_detect_key", CallConvs = [typeof(CallConvCdecl)])]
+    public static byte DetectKey(IntPtr pitchesPtr, int count, IntPtr bufferPtr, int bufferSize, IntPtr isMajorPtr)
     {
         try
         {
             var pitches = new int[count];
             Marshal.Copy(pitchesPtr, pitches, 0, count);
 
-            var notes = pitches.Select(p => new NoteEvent(p, Rational.Zero, new Rational(1, 4), 0.8f)).ToArray();
-
             var result = KeyProfiler.DetectFromPitches(pitches);
-            var keyName = result.Key.Root.ToString();
+
+            // Convert pitch class to note name
+            string[] noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            var keyName = noteNames[result.Key.Root];
 
             if (keyName.Length >= bufferSize)
                 keyName = keyName.Substring(0, bufferSize - 1);
@@ -133,11 +135,11 @@ public static class NativeExports
             Marshal.Copy(bytes, 0, bufferPtr, Math.Min(bytes.Length, bufferSize));
 
             Marshal.WriteInt32(isMajorPtr, result.Key.IsMajor ? 1 : 0);
-            return true;
+            return 1;
         }
         catch
         {
-            return false;
+            return 0;
         }
     }
 }

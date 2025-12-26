@@ -105,7 +105,7 @@ class CNoteEvent(ctypes.Structure):
 
 # Music Notation Functions
 _lib.celeritas_parse_note.argtypes = [ctypes.c_char_p, ctypes.POINTER(CNoteEvent)]
-_lib.celeritas_parse_note.restype = ctypes.c_bool
+_lib.celeritas_parse_note.restype = ctypes.c_byte
 
 _lib.celeritas_transpose.argtypes = [
     ctypes.POINTER(ctypes.c_int),
@@ -192,7 +192,7 @@ def identify_chord(pitches: List[int]) -> str:
         ctypes.c_char_p,
         ctypes.c_int
     ]
-    _lib.celeritas_identify_chord.restype = ctypes.c_bool
+    _lib.celeritas_identify_chord.restype = ctypes.c_byte
 
     n = len(pitches)
     pitch_array = (ctypes.c_int * n)(*pitches)
@@ -219,18 +219,18 @@ def detect_key(pitches: List[int]) -> Tuple[str, bool]:
         ctypes.c_int,
         ctypes.c_char_p,
         ctypes.c_int,
-        ctypes.POINTER(ctypes.c_bool)
+        ctypes.POINTER(ctypes.c_int)
     ]
-    _lib.celeritas_detect_key.restype = ctypes.c_bool
+    _lib.celeritas_detect_key.restype = ctypes.c_byte
 
     n = len(pitches)
     pitch_array = (ctypes.c_int * n)(*pitches)
     buffer = ctypes.create_string_buffer(16)
-    is_major = ctypes.c_bool()
+    is_major = ctypes.c_int()
 
     success = _lib.celeritas_detect_key(pitch_array, n, buffer, 16, ctypes.byref(is_major))
     if success:
-        return (buffer.value.decode('utf-8'), is_major.value)
+        return (buffer.value.decode('utf-8'), bool(is_major.value))
     return ("C", True)
 
 

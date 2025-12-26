@@ -78,6 +78,43 @@ Licensed under the Business Source License 1.1 (BSL-1.1).
 
 For commercial licensing, contact: sheinv78@gmail.com
 
+## Testing
+
+Run the test suite:
+
+```bash
+# Using unittest (standard library)
+python test_celeritas.py
+
+# Or with pytest
+pip install pytest
+pytest test_celeritas.py -v
+
+# With coverage
+pip install pytest-cov
+pytest test_celeritas.py --cov=celeritas --cov-report=html
+```
+
+**Test Coverage:** 35 tests (100% passing) covering NoteEvent, parsing, transpose (SIMD), chord/key detection, ornaments (trills, mordents), and integration scenarios.
+
+### Building Native Library
+
+The Python bindings require a native library built with NativeAOT:
+
+```bash
+# Build for Windows
+dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64
+
+# Build for Linux
+dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r linux-x64
+
+# Build for macOS
+dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r osx-x64
+
+# Copy to bindings folder (Windows example)
+cp ../../src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/Celeritas.Native.dll native/
+```
+
 ## Documentation
 
 Full documentation available at: https://github.com/sheinv78/Celeritas

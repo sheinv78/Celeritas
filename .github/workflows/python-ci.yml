@@ -1,0 +1,113 @@
+name: Python Bindings CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'bindings/python/**'
+      - 'src/Celeritas/**'
+      - '.github/workflows/python-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'bindings/python/**'
+      - 'src/Celeritas/**'
+
+jobs:
+  test-python:
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Python dependencies
+      working-directory: bindings/python
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov
+
+    - name: Build Celeritas native library
+      run: dotnet build src/Celeritas/Celeritas.csproj -c Release
+
+    - name: Copy native library (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        mkdir -p bindings/python/native
+        cp src/Celeritas/bin/Release/net10.0/Celeritas.dll bindings/python/native/Celeritas.Native.dll
+      shell: bash
+
+    - name: Copy native library (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        mkdir -p bindings/python/native
+        cp src/Celeritas/bin/Release/net10.0/Celeritas.so bindings/python/native/libCeleritas.Native.so
+
+    - name: Copy native library (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        mkdir -p bindings/python/native
+        cp src/Celeritas/bin/Release/net10.0/Celeritas.dylib bindings/python/native/libCeleritas.Native.dylib
+
+    - name: Run tests
+      working-directory: bindings/python
+      run: |
+        pytest test_celeritas.py -v --cov=celeritas --cov-report=xml --cov-report=term
+
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v4
+      with:
+        file: bindings/python/coverage.xml
+        flags: python
+        name: python-${{ matrix.python-version }}
+
+  lint-python:
+    name: Lint Python Code
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install linting tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black mypy
+
+    - name: Lint with flake8
+      working-directory: bindings/python
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+
+    - name: Check formatting with black
+      working-directory: bindings/python
+      run: black --check --diff .
+
+    - name: Type check with mypy
+      working-directory: bindings/python
+      run: mypy celeritas.py --ignore-missing-imports || true

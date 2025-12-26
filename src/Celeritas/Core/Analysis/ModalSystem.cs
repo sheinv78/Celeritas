@@ -390,6 +390,43 @@ public static class ModeLibrary
         return (bestKey, confidence);
     }
 
+    /// <summary>
+    /// Detect mode from pitch classes with root hint.
+    /// </summary>
+    /// <param name="pitchClasses">Collection of pitch classes (0-11).</param>
+    /// <param name="rootHint">Hint for the root note (pitch class).</param>
+    public static (ModalKey key, float confidence) DetectModeWithRoot(IEnumerable<int> pitchClasses, int rootHint)
+    {
+        var distribution = new float[12];
+        foreach (var pc in pitchClasses)
+        {
+            distribution[pc % 12] += 1f;
+        }
+        return DetectModeWithRoot(distribution, rootHint);
+    }
+
+    /// <summary>
+    /// Detect mode from notes with root hint (automatically extracts pitch classes).
+    /// </summary>
+    /// <param name="notes">Collection of note events.</param>
+    /// <param name="rootHint">Hint for the root note (pitch class). If null, uses first note's pitch class.</param>
+    public static (ModalKey key, float confidence) DetectModeWithRoot(IEnumerable<NoteEvent> notes, int? rootHint = null)
+    {
+        var noteList = notes.ToList();
+        if (noteList.Count == 0)
+            throw new ArgumentException("Notes collection is empty", nameof(notes));
+
+        var root = rootHint ?? (noteList[0].Pitch % 12);
+        var distribution = new float[12];
+
+        foreach (var note in noteList)
+        {
+            distribution[note.Pitch % 12] += 1f;
+        }
+
+        return DetectModeWithRoot(distribution, root);
+    }
+
     private static float ScoreAgainstMode(float[] distribution, ModalKey key)
     {
         var intervals = GetIntervals(key.Mode);
