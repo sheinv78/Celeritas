@@ -35,7 +35,7 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 ⚠️ **API is not stable yet** — Breaking changes may occur
 
 Current version: **v0.9.0** (December 2025)  
-**246 tests** passing
+**286 tests** passing (C#) + **35 tests** (Python)
 
 ## Intended Use Cases
 
@@ -578,10 +578,15 @@ dotnet publish src/Celeritas.CLI -c Release -r osx-arm64
 ## 🧪 Testing
 
 ```bash
+# C# tests
 dotnet test
+
+# Python tests
+cd bindings/python
+python test_celeritas.py
 ```
 
-Current:  **246 tests**
+**Current:** 286 C# tests + 35 Python tests, all passing
 
 ## 🎯 Roadmap
 
