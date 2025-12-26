@@ -778,7 +778,7 @@ For commercial use, [contact us](https://github.com/sheinv78/Celeritas/issues).
 
 ## 📚 Dependencies
 
-Celeritas uses the following third-party library:
+Celeritas uses the following third-party libraries:
 
 ### DryWetMIDI
 
@@ -786,6 +786,13 @@ Celeritas uses the following third-party library:
 - **License:** MIT License
 - **Copyright:** © Maxim Dobroselsky
 - **Purpose:** MIDI file import/export
+
+### ANTLR 4
+
+- **[Antlr4.Runtime.Standard](https://github.com/antlr/antlr4)** 4.13.1
+- **License:** BSD-3-Clause License
+- **Copyright:** © 2012-2022 The ANTLR Project
+- **Purpose:** Music notation parser generation
 
 All other functionality (SIMD acceleration, harmonic analysis, voice leading, rhythm analysis, etc.) is implemented natively in Celeritas.
 
