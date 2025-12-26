@@ -24,6 +24,12 @@ public sealed class Voice
         ? (Notes.Min(n => n.Pitch), Notes.Max(n => n.Pitch))
         : (0, 0);
 
+    /// <summary>Lowest pitch (MIDI) in this voice (0 if empty).</summary>
+    public int AmbitusStart => Range.Min;
+
+    /// <summary>Highest pitch (MIDI) in this voice (0 if empty).</summary>
+    public int AmbitusEnd => Range.Max;
+
     /// <summary>Average pitch of this voice.</summary>
     public float AveragePitch => Notes.Count > 0
         ? (float)Notes.Average(n => n.Pitch)
@@ -79,6 +85,52 @@ public static class VoiceSeparator
     /// </summary>
     public static VoiceSeparationResult Separate(NoteBuffer buffer, int maxVoices = 4)
         => Separate(buffer, maxVoices, DefaultOptions);
+
+    /// <summary>
+    /// Convenience SATB separation: returns exactly 4 voices named Soprano/Alto/Tenor/Bass.
+    /// </summary>
+    public static SatbSeparationResult SeparateIntoSATB(IEnumerable<NoteEvent> notes, VoiceSeparatorOptions? options = null)
+    {
+        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
+        buffer.AddRange(arr);
+        return SeparateIntoSATB(buffer, options);
+    }
+
+    /// <summary>
+    /// Convenience SATB separation: returns exactly 4 voices named Soprano/Alto/Tenor/Bass.
+    /// </summary>
+    public static SatbSeparationResult SeparateIntoSATB(NoteBuffer buffer, VoiceSeparatorOptions? options = null)
+    {
+        var res = Separate(buffer, maxVoices: 4, options ?? DefaultOptions);
+
+        // Ensure deterministic ordering: Index 0 is highest (soprano) per VoiceSeparator contract.
+        var voices = res.Voices.ToList();
+
+        while (voices.Count < 4)
+            voices.Add(new Voice { Index = voices.Count, Name = $"Voice {voices.Count + 1}" });
+
+        var soprano = RenameVoice(voices[0], "Soprano");
+        var alto = RenameVoice(voices[1], "Alto");
+        var tenor = RenameVoice(voices[2], "Tenor");
+        var bass = RenameVoice(voices[3], "Bass");
+
+        return new SatbSeparationResult
+        {
+            Full = res,
+            Soprano = soprano,
+            Alto = alto,
+            Tenor = tenor,
+            Bass = bass
+        };
+    }
+
+    private static Voice RenameVoice(Voice source, string name)
+    {
+        var v = new Voice { Index = source.Index, Name = name };
+        v.Notes.AddRange(source.Notes);
+        return v;
+    }
 
     /// <summary>
     /// Separate notes into voices with custom options.
@@ -368,6 +420,18 @@ public static class VoiceSeparator
         }
         return $"Voice {index + 1}";
     }
+}
+
+/// <summary>
+/// SATB (Soprano/Alto/Tenor/Bass) separation convenience result.
+/// </summary>
+public sealed class SatbSeparationResult
+{
+    public required VoiceSeparationResult Full { get; init; }
+    public required Voice Soprano { get; init; }
+    public required Voice Alto { get; init; }
+    public required Voice Tenor { get; init; }
+    public required Voice Bass { get; init; }
 }
 
 /// <summary>

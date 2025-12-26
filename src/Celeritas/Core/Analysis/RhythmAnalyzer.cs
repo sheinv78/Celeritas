@@ -142,6 +142,22 @@ public sealed class RhythmAnalysisResult
     public required float Syncopation { get; init; }
     public required float Density { get; init; }
     public required string TextureDescription { get; init; }
+    
+    /// <summary>Detected time signature (convenience accessor to Meter.TimeSignature).</summary>
+    public TimeSignature DetectedMeter => Meter.TimeSignature;
+    
+    /// <summary>Syncopation level expressed as a degree (0-1, same as Syncopation).</summary>
+    public float SyncopationDegree => Syncopation;
+    
+    /// <summary>Count of notes that fall on off-beats or weak positions.</summary>
+    public int OffBeatCount => Statistics.StrengthHistogram.TryGetValue(BeatStrength.Weak, out var weak) 
+        ? weak 
+        : 0;
+    
+    /// <summary>Percentage of notes on strong beats.</summary>
+    public float StrongBeatEmphasis => Statistics.TotalNotes > 0 
+        ? (Statistics.StrengthHistogram.TryGetValue(BeatStrength.Strong, out var strong) ? strong : 0) * 100f / Statistics.TotalNotes
+        : 0;
 }
 
 /// <summary>
@@ -278,6 +294,76 @@ public static class RhythmAnalyzer
     ];
 
     /// <summary>
+    /// Detect the most likely time signature from a sequence of notes.
+    /// </summary>
+    public static MeterDetectionResult DetectMeter(NoteBuffer buffer)
+    {
+        if (buffer.Count == 0)
+        {
+            return new MeterDetectionResult
+            {
+                TimeSignature = TimeSignature.Common,
+                Confidence = 0.5f,
+                Tempo = new Rational(120, 1),
+                Alternatives = [],
+                Reasoning = "No notes provided"
+            };
+        }
+
+        var onsets = new List<(Rational offset, Rational duration, int index)>(buffer.Count);
+        for (int i = 0; i < buffer.Count; i++)
+        {
+            onsets.Add((buffer.GetOffset(i), buffer.GetDuration(i), i));
+        }
+        onsets.Sort((a, b) => a.offset.CompareTo(b.offset));
+
+        return DetectMeterInternal(onsets);
+    }
+
+    /// <summary>
+    /// Detect the most likely time signature from a sequence of note events.
+    /// </summary>
+    public static MeterDetectionResult DetectMeter(IEnumerable<NoteEvent> notes)
+    {
+        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
+        buffer.AddRange(arr);
+        return DetectMeter(buffer);
+    }
+
+    /// <summary>
+    /// Identify rhythmic pattern in a sequence of notes.
+    /// Returns the best matching pattern with quality score.
+    /// </summary>
+    public static RhythmPatternMatch? IdentifyPattern(NoteBuffer buffer)
+    {
+        if (buffer.Count == 0)
+            return null;
+
+        var onsets = new List<(Rational offset, Rational duration, int index)>(buffer.Count);
+        for (int i = 0; i < buffer.Count; i++)
+        {
+            onsets.Add((buffer.GetOffset(i), buffer.GetDuration(i), i));
+        }
+        onsets.Sort((a, b) => a.offset.CompareTo(b.offset));
+
+        var matches = DetectPatterns(onsets);
+        return matches.OrderByDescending(m => m.MatchQuality).FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Identify rhythmic pattern in a sequence of note events.
+    /// Returns the best matching pattern with quality score.
+    /// </summary>
+    public static RhythmPatternMatch? IdentifyPattern(IEnumerable<NoteEvent> notes)
+    {
+        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
+        buffer.AddRange(arr);
+        return IdentifyPattern(buffer);
+    }
+
+    /// <summary>
     /// Analyze rhythm of a note buffer.
     /// </summary>
     public static RhythmAnalysisResult Analyze(NoteBuffer buffer, TimeSignature? knownMeter = null)
@@ -305,7 +391,7 @@ public static class RhythmAnalyzer
                 Alternatives = [],
                 Reasoning = "User-specified meter"
             }
-            : DetectMeter(onsets);
+            : DetectMeterInternal(onsets);
 
         // Analyze each event in metrical context
         var events = AnalyzeEvents(onsets, meter.TimeSignature);
@@ -360,7 +446,7 @@ public static class RhythmAnalyzer
         TextureDescription = "No rhythmic content"
     };
 
-    private static MeterDetectionResult DetectMeter(List<(Rational offset, Rational duration, int index)> onsets)
+    private static MeterDetectionResult DetectMeterInternal(List<(Rational offset, Rational duration, int index)> onsets)
     {
         if (onsets.Count < 2)
         {

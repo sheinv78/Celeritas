@@ -191,6 +191,233 @@ public static class ProgressionAdvisor
     }
 
     /// <summary>
+    /// Detect the type of cadence formed by the last two chords in a progression.
+    /// Returns the cadence type and description.
+    /// </summary>
+    public static CadenceType DetectCadence(string[] chordSymbols, KeySignature? key = null)
+    {
+        if (chordSymbols.Length < 2)
+            return CadenceType.None;
+
+        // Parse chords
+        var parsedChords = new List<(string symbol, int[] pitches, ChordInfo info)>();
+        foreach (var symbol in chordSymbols)
+        {
+            var pitches = ParseChordSymbol(symbol);
+            if (pitches.Length == 0) continue;
+
+            var mask = ChordAnalyzer.GetMask(pitches);
+            var info = ChordLibrary.GetChord(mask);
+            parsedChords.Add((symbol, pitches, info));
+        }
+
+        if (parsedChords.Count < 2)
+            return CadenceType.None;
+
+        // Determine key if not provided
+        var detectedKey = key ?? DetectKeyFromProgression(parsedChords).key;
+
+        // Analyze last two chords
+        var prev = parsedChords[^2];
+        var curr = parsedChords[^1];
+
+        var prevRoman = KeyAnalyzer.Analyze(prev.pitches, detectedKey);
+        var currRoman = KeyAnalyzer.Analyze(curr.pitches, detectedKey);
+
+        // Detect cadence patterns
+        if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.I)
+            return CadenceType.Authentic;
+
+        if (prevRoman.Degree == ScaleDegree.IV && currRoman.Degree == ScaleDegree.I)
+            return CadenceType.Plagal;
+
+        if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.VI)
+            return CadenceType.Deceptive;
+
+        if (currRoman.Degree == ScaleDegree.V)
+            return CadenceType.Half;
+
+        // Check for Phrygian cadence (iv6 -> V in minor)
+        if (!detectedKey.IsMajor && prevRoman.Degree == ScaleDegree.IV && currRoman.Degree == ScaleDegree.V)
+        {
+            var inv = GetInversion(prev.pitches);
+            if (inv == 1)
+                return CadenceType.Phrygian;
+        }
+
+        return CadenceType.None;
+    }
+
+    /// <summary>
+    /// Suggest the next chord(s) that would sound good after the given progression.
+    /// Returns a list of suggestions with reasoning and quality scores.
+    /// </summary>
+    public static List<ChordSuggestion> SuggestNext(string[] chordSymbols, int maxSuggestions = 5)
+    {
+        if (chordSymbols.Length == 0)
+        {
+            // No progression - suggest basic major chords
+            return
+            [
+                new ChordSuggestion("C", "Start with tonic in C major", 1.0f),
+                new ChordSuggestion("G", "Start with dominant", 0.9f),
+                new ChordSuggestion("Am", "Start with relative minor", 0.85f),
+                new ChordSuggestion("F", "Start with subdominant", 0.8f),
+                new ChordSuggestion("Dm", "Start with minor ii", 0.75f)
+            ];
+        }
+
+        // Parse progression and detect key
+        var parsedChords = new List<(string symbol, int[] pitches, ChordInfo info)>();
+        foreach (var symbol in chordSymbols)
+        {
+            var pitches = ParseChordSymbol(symbol);
+            if (pitches.Length == 0) continue;
+
+            var mask = ChordAnalyzer.GetMask(pitches);
+            var info = ChordLibrary.GetChord(mask);
+            parsedChords.Add((symbol, pitches, info));
+        }
+
+        if (parsedChords.Count == 0)
+            return [];
+
+        var (key, _) = DetectKeyFromProgression(parsedChords);
+        var lastChord = parsedChords[^1];
+        var lastRoman = KeyAnalyzer.Analyze(lastChord.pitches, key);
+
+        var suggestions = new List<ChordSuggestion>();
+
+        // Build chord suggestions based on the last chord's function
+        var lastDegree = lastRoman.Degree;
+
+        switch (lastDegree)
+        {
+            case ScaleDegree.I:
+                // After tonic: IV, V, vi are common
+                AddSuggestion(suggestions, key, ScaleDegree.IV, "Subdominant progression", 1.0f);
+                AddSuggestion(suggestions, key, ScaleDegree.V, "Move to dominant", 0.95f);
+                AddSuggestion(suggestions, key, ScaleDegree.VI, "Relative minor for contrast", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.III, "Mediant for color", 0.7f);
+                break;
+
+            case ScaleDegree.II:
+                // ii typically goes to V or I
+                AddSuggestion(suggestions, key, ScaleDegree.V, "Classic ii-V progression", 1.0f);
+                AddSuggestion(suggestions, key, ScaleDegree.I, "Direct resolution to tonic", 0.8f);
+                AddSuggestion(suggestions, key, ScaleDegree.IV, "Alternative subdominant", 0.7f);
+                break;
+
+            case ScaleDegree.III:
+                // iii can go to vi, IV, or ii
+                AddSuggestion(suggestions, key, ScaleDegree.VI, "Descending to relative minor", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.IV, "Move to subdominant", 0.85f);
+                AddSuggestion(suggestions, key, ScaleDegree.II, "Jazz-style descending", 0.8f);
+                break;
+
+            case ScaleDegree.IV:
+                // IV goes to I, V, or ii
+                AddSuggestion(suggestions, key, ScaleDegree.V, "Subdominant to dominant", 1.0f);
+                AddSuggestion(suggestions, key, ScaleDegree.I, "Plagal cadence", 0.95f);
+                AddSuggestion(suggestions, key, ScaleDegree.II, "Retrograde progression", 0.7f);
+                break;
+
+            case ScaleDegree.V:
+                // V strongly wants to resolve to I, or deceptively to vi
+                AddSuggestion(suggestions, key, ScaleDegree.I, "Perfect authentic cadence", 1.0f);
+                AddSuggestion(suggestions, key, ScaleDegree.VI, "Deceptive cadence", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.IV, "Avoid resolution, continue tension", 0.6f);
+                break;
+
+            case ScaleDegree.VI:
+                // vi can go to IV, II, or V
+                AddSuggestion(suggestions, key, ScaleDegree.IV, "Descending progression", 0.95f);
+                AddSuggestion(suggestions, key, ScaleDegree.II, "Circle progression", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.V, "Move to dominant", 0.85f);
+                break;
+
+            case ScaleDegree.VII:
+                // vii° typically resolves to I
+                AddSuggestion(suggestions, key, ScaleDegree.I, "Leading tone resolution", 1.0f);
+                AddSuggestion(suggestions, key, ScaleDegree.III, "Deceptive resolution", 0.7f);
+                break;
+
+            default:
+                // Generic suggestions
+                AddSuggestion(suggestions, key, ScaleDegree.I, "Resolve to tonic", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.V, "Build tension with dominant", 0.85f);
+                break;
+        }
+
+        // Add some color chords for variety
+        if (suggestions.Count < maxSuggestions)
+        {
+            AddSuggestion(suggestions, key, ScaleDegree.III, "Mediant for color", 0.65f);
+            AddSuggestion(suggestions, key, ScaleDegree.VII, "Leading tone diminished", 0.6f);
+        }
+
+        // Sort by score and return top suggestions
+        return suggestions
+            .OrderByDescending(s => s.Score)
+            .Take(maxSuggestions)
+            .ToList();
+    }
+
+    private static void AddSuggestion(List<ChordSuggestion> suggestions, KeySignature key, ScaleDegree degree, string reason, float score)
+    {
+        var symbol = GetChordSymbolForDegree(key, degree);
+        if (!suggestions.Any(s => s.Chord == symbol))
+        {
+            suggestions.Add(new ChordSuggestion(symbol, reason, score));
+        }
+    }
+
+    private static string GetChordSymbolForDegree(KeySignature key, ScaleDegree degree)
+    {
+        var scalePos = (int)degree - 1;
+        var intervals = key.IsMajor ? new[] { 0, 2, 4, 5, 7, 9, 11 } : new[] { 0, 2, 3, 5, 7, 8, 10 };
+        
+        if (scalePos < 0 || scalePos >= intervals.Length)
+            return "C";
+
+        var rootPc = (key.Root + intervals[scalePos]) % 12;
+        var rootName = UseFlatsForKey(key) ? NoteNamesFlat[rootPc] : NoteNames[rootPc];
+
+        // Determine quality based on degree
+        if (key.IsMajor)
+        {
+            return degree switch
+            {
+                ScaleDegree.I or ScaleDegree.IV or ScaleDegree.V => rootName,
+                ScaleDegree.II or ScaleDegree.III or ScaleDegree.VI => rootName + "m",
+                ScaleDegree.VII => rootName + "dim",
+                _ => rootName
+            };
+        }
+        else // Minor key
+        {
+            return degree switch
+            {
+                ScaleDegree.I or ScaleDegree.IV => rootName + "m",
+                ScaleDegree.III or ScaleDegree.VI or ScaleDegree.VII => rootName,
+                ScaleDegree.II => rootName + "dim",
+                ScaleDegree.V => rootName, // Often major in minor keys
+                _ => rootName
+            };
+        }
+    }
+
+    private static bool UseFlatsForKey(KeySignature key)
+    {
+        // Heuristic: prefer flats for traditional flat keys and their relative minors.
+        // Major: F, Bb, Eb, Ab, Db, Gb, Cb
+        // Minor: Dm, Gm, Cm, Fm, Bbm, Ebm, Abm
+        return key.IsMajor
+            ? key.Root is 5 or 10 or 3 or 8 or 1 or 6 or 11
+            : key.Root is 2 or 7 or 0 or 5 or 10 or 3 or 8;
+    }
+
+    /// <summary>
     /// Analyze a chord progression from symbols and generate a detailed report.
     /// </summary>
     public static ProgressionReport Analyze(string[] chordSymbols)
@@ -279,6 +506,77 @@ public static class ProgressionAdvisor
         // Generate suggestions (including modulation advice)
         var suggestions = GenerateSuggestions(chordDetails, cadences, key, parsedChords, modulations);
 
+        // Tension curve (0-1) based on chord character + function.
+        var tensionCurve = chordDetails
+            .Select(c => CharacterToTension(c.Character))
+            .ToArray();
+
+        var avgTension = tensionCurve.Length > 0 ? (float)tensionCurve.Average() : 0f;
+
+        // Complexity heuristic (0-1)
+        var uniqueRoots = parsedChords.Select(c => c.info.RootPitchClass).Distinct().Count();
+        var variety = chordDetails.Select(c => c.Character).Distinct().Count();
+        var hasAltered = chordDetails.Any(c => c.UsesAlteredScale);
+        var complexity = Clamp01(
+            (uniqueRoots / (float)Math.Max(1, parsedChords.Count)) * 0.35f +
+            (variety / 12f) * 0.15f +
+            (modulations.Count > 0 ? 0.25f : 0f) +
+            (hasModalMixture ? 0.15f : 0f) +
+            (hasAltered ? 0.10f : 0f));
+
+        // Highlights
+        var highlights = new List<string>();
+        if (cadences.Count > 0)
+            highlights.Add($"Cadences: {string.Join(", ", cadences.Select(c => c.Type).Distinct())}");
+        if (modulations.Count > 0)
+            highlights.Add($"Modulations/tonicizations: {modulations.Count}");
+        if (usesHarmonicMinor)
+            highlights.Add("Uses harmonic minor color (raised 7th)");
+        if (usesMelodicMinor)
+            highlights.Add("Uses melodic minor color (raised 6th/7th)");
+        if (hasModalMixture)
+            highlights.Add("Contains modal mixture / borrowed chords");
+
+        // Secondary dominants from tonicization events.
+        var secondaryDominants = modulations
+            .Where(m => m.Type == ModulationType.Tonicization)
+            .Select(m => new SecondaryDominantInfo
+            {
+                Position = m.Position,
+                Chord = chordDetails.Count > m.Position ? chordDetails[m.Position].Symbol : "",
+                Target = m.Position + 1 < chordDetails.Count ? chordDetails[m.Position + 1].Symbol : "",
+                TargetDegree = m.Position + 1 < parsedChords.Count
+                    ? FormatRomanNumeral(KeyAnalyzer.Analyze(parsedChords[m.Position + 1].pitches, key), parsedChords[m.Position + 1].info.Quality)
+                    : null
+            })
+            .Where(s => !string.IsNullOrWhiteSpace(s.Chord) && !string.IsNullOrWhiteSpace(s.Target))
+            .ToList();
+
+        // Borrowed chords: chord marked as chromatic in roman analysis.
+        var borrowedChords = chordDetails
+            .Select((c, i) => (c, i))
+            .Where(x => x.c.IsBorrowed)
+            .Select(x => new BorrowedChordInfo
+            {
+                Position = x.i,
+                Chord = x.c.Symbol,
+                SourceKey = key.IsMajor ? $"{key} minor" : $"{key} major"
+            })
+            .ToList();
+
+        // Basic voice-leading metrics (approximate).
+        var (avgMove, p5, p8) = AnalyzeVoiceLeading(parsedChords.Select(p => p.pitches).ToList());
+        var smoothness = Clamp01(1f - (avgMove / 12f));
+        var qualityRating = (smoothness, p5 + p8) switch
+        {
+            (>= 0.75f, 0) => "Excellent",
+            (>= 0.60f, <= 1) => "Good",
+            (>= 0.45f, <= 2) => "Fair",
+            _ => "Rough"
+        };
+
+        var summary = $"{pattern} in {key} (tension {avgTension:P0}, complexity {complexity:P0})";
+
         return new ProgressionReport
         {
             Key = key,
@@ -287,12 +585,101 @@ public static class ProgressionAdvisor
             Cadences = cadences,
             Modulations = modulations,
             Pattern = pattern,
+            Summary = summary,
             UsesHarmonicMinor = usesHarmonicMinor,
             UsesMelodicMinor = usesMelodicMinor,
             HasModalMixture = hasModalMixture,
             Suggestions = suggestions,
-            Narrative = narrative
+            Narrative = narrative,
+            Complexity = complexity,
+            AverageTension = avgTension,
+            TensionCurve = tensionCurve,
+            Highlights = highlights,
+            SecondaryDominants = secondaryDominants,
+            BorrowedChords = borrowedChords,
+            Smoothness = smoothness,
+            AverageMovement = avgMove,
+            ParallelFifths = p5,
+            ParallelOctaves = p8,
+            QualityRating = qualityRating
         };
+    }
+
+    /// <summary>
+    /// Backward/compat alias used by some examples.
+    /// </summary>
+    public static ProgressionReport AnalyzeFromSymbols(string[] chordSymbols) => Analyze(chordSymbols);
+
+    private static float Clamp01(float x) => x < 0 ? 0 : x > 1 ? 1 : x;
+
+    private static float CharacterToTension(ChordCharacter character) => character switch
+    {
+        ChordCharacter.Stable => 0.20f,
+        ChordCharacter.Bright => 0.25f,
+        ChordCharacter.Warm => 0.30f,
+        ChordCharacter.Dreamy => 0.35f,
+        ChordCharacter.Melancholic => 0.40f,
+        ChordCharacter.Modal => 0.45f,
+        ChordCharacter.Powerful => 0.50f,
+        ChordCharacter.Suspended => 0.60f,
+        ChordCharacter.Heroic => 0.60f,
+        ChordCharacter.Mysterious => 0.70f,
+        ChordCharacter.Dark => 0.75f,
+        ChordCharacter.Tense => 0.85f,
+        _ => 0.50f
+    };
+
+    private static (float avgMovement, int parallel5ths, int parallelOctaves) AnalyzeVoiceLeading(IReadOnlyList<int[]> chords)
+    {
+        if (chords.Count < 2)
+            return (0, 0, 0);
+
+        var totalMoves = 0f;
+        var totalVoices = 0;
+        var p5 = 0;
+        var p8 = 0;
+
+        for (var i = 0; i < chords.Count - 1; i++)
+        {
+            var a = chords[i].OrderBy(x => x).ToArray();
+            var b = chords[i + 1].OrderBy(x => x).ToArray();
+
+            var voices = Math.Min(a.Length, b.Length);
+            if (voices == 0)
+                continue;
+
+            for (var v = 0; v < voices; v++)
+            {
+                totalMoves += Math.Abs(b[v] - a[v]);
+                totalVoices++;
+            }
+
+            // Parallel perfect intervals between any pair of aligned voices.
+            for (var v1 = 0; v1 < voices; v1++)
+            {
+                for (var v2 = v1 + 1; v2 < voices; v2++)
+                {
+                    var intA = Math.Abs(a[v2] - a[v1]) % 12;
+                    var intB = Math.Abs(b[v2] - b[v1]) % 12;
+
+                    var dir1 = Math.Sign(b[v1] - a[v1]);
+                    var dir2 = Math.Sign(b[v2] - a[v2]);
+                    var isParallelMotion = dir1 != 0 && dir1 == dir2;
+
+                    if (!isParallelMotion)
+                        continue;
+
+                    if (intA == 7 && intB == 7)
+                        p5++;
+
+                    if ((intA == 0 || intA == 12) && (intB == 0 || intB == 12))
+                        p8++;
+                }
+            }
+        }
+
+        var avg = totalVoices > 0 ? totalMoves / totalVoices : 0f;
+        return (avg, p5, p8);
     }
 
     private static ChordAnalysisDetail AnalyzeChord(

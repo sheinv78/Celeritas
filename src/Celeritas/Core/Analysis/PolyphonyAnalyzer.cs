@@ -217,6 +217,115 @@ public sealed class IntervalStatistics
 public static class PolyphonyAnalyzer
 {
     /// <summary>
+    /// Convenience wrapper used by examples: checks basic counterpoint issues and returns counts.
+    /// </summary>
+    public static CounterpointRulesCheckResult CheckCounterpointRules(IEnumerable<NoteEvent> notes, int maxVoices = 4)
+    {
+        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
+        buffer.AddRange(arr);
+        return CheckCounterpointRules(buffer, maxVoices);
+    }
+
+    /// <summary>
+    /// Convenience wrapper used by examples: checks basic counterpoint issues and returns counts.
+    /// </summary>
+    public static CounterpointRulesCheckResult CheckCounterpointRules(NoteBuffer buffer, int maxVoices = 4)
+    {
+        var analysis = Analyze(buffer, maxVoices);
+        var violations = analysis.Violations;
+
+        var parallel5ths = violations.Count(v => v.Type == "Parallel Fifths");
+        var parallel8ves = violations.Count(v => v.Type == "Parallel Octaves");
+        var hidden = violations.Count(v => v.Type == "Hidden Perfect Interval");
+
+        var (voiceCrossing, spacing) = PolyphonyAnalyzerHelpers.AnalyzeCrossingsAndSpacing(analysis.Voices);
+
+        return new CounterpointRulesCheckResult
+        {
+            ParallelFifths = parallel5ths,
+            ParallelOctaves = parallel8ves,
+            HiddenParallels = hidden,
+            VoiceCrossing = voiceCrossing,
+            SpacingViolations = spacing,
+            QualityScore = PolyphonyAnalyzerHelpers.Clamp01(analysis.QualityScore - (spacing * 0.02f) - (voiceCrossing * 0.02f)),
+            Violations = violations
+        };
+    }
+
+    /// <summary>
+    /// Detect simple imitation (canon-like) between voices.
+    /// </summary>
+    public static ImitationDetectionResult DetectImitation(IEnumerable<NoteEvent> notes, int maxVoices = 4)
+    {
+        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
+        buffer.AddRange(arr);
+        return DetectImitation(buffer, maxVoices);
+    }
+
+    /// <summary>
+    /// Detect simple imitation (canon-like) between voices.
+    /// </summary>
+    public static ImitationDetectionResult DetectImitation(NoteBuffer buffer, int maxVoices = 4)
+    {
+        var voices = VoiceSeparator.Separate(buffer, maxVoices);
+        if (voices.Voices.Count < 2)
+            return ImitationDetectionResult.None;
+
+        // Build interval sequences for each voice.
+        var sequences = voices.Voices
+            .Select(v => v.Notes
+                .OrderBy(n => n.Offset)
+                .Select(n => n.Pitch)
+                .ToArray())
+            .ToArray();
+
+        // Use a small motif length for detection.
+        const int motifLen = 4;
+        for (var v1 = 0; v1 < sequences.Length; v1++)
+        {
+            var s1 = sequences[v1];
+            if (s1.Length < motifLen)
+                continue;
+
+            var i1 = PolyphonyAnalyzerHelpers.ToIntervals(s1);
+            for (var v2 = v1 + 1; v2 < sequences.Length; v2++)
+            {
+                var s2 = sequences[v2];
+                if (s2.Length < motifLen)
+                    continue;
+
+                var i2 = PolyphonyAnalyzerHelpers.ToIntervals(s2);
+                var match = PolyphonyAnalyzerHelpers.FindIntervalMatch(i1, i2, motifLen - 1);
+                if (match.HasValue)
+                {
+                    var (start1, start2) = match.Value;
+                    var p1 = s1[start1];
+                    var p2 = s2[start2];
+                    var interval = p2 - p1;
+
+                    // Estimate time delay using note offsets.
+                    var t1 = voices.Voices[v1].Notes.OrderBy(n => n.Offset).ElementAt(start1).Offset;
+                    var t2 = voices.Voices[v2].Notes.OrderBy(n => n.Offset).ElementAt(start2).Offset;
+                    var delay = t2 - t1;
+
+                    return new ImitationDetectionResult
+                    {
+                        HasImitation = true,
+                        Type = "Canon",
+                        Interval = interval,
+                        TimeDelay = delay,
+                        VoicesInvolved = [v1 + 1, v2 + 1]
+                    };
+                }
+            }
+        }
+
+        return ImitationDetectionResult.None;
+    }
+
+    /// <summary>
     /// Perform complete polyphony analysis on a NoteBuffer.
     /// </summary>
     public static PolyphonyAnalysisResult Analyze(NoteBuffer buffer, int maxVoices = 4)
@@ -638,5 +747,136 @@ public static class PolyphonyAnalyzer
         score = score * 0.7f + independence * 0.3f;
 
         return Math.Clamp(score, 0f, 1f);
+    }
+}
+
+public sealed class CounterpointRulesCheckResult
+{
+    public required int ParallelFifths { get; init; }
+    public required int ParallelOctaves { get; init; }
+    public required int HiddenParallels { get; init; }
+    public required int VoiceCrossing { get; init; }
+    public required int SpacingViolations { get; init; }
+    public required float QualityScore { get; init; }
+    public required IReadOnlyList<CounterpointViolation> Violations { get; init; }
+}
+
+public sealed class ImitationDetectionResult
+{
+    public required bool HasImitation { get; init; }
+    public string Type { get; init; } = "";
+    public int Interval { get; init; }
+    public Rational TimeDelay { get; init; }
+    public IReadOnlyList<int> VoicesInvolved { get; init; } = [];
+
+    public static ImitationDetectionResult None => new()
+    {
+        HasImitation = false,
+        Type = "",
+        Interval = 0,
+        TimeDelay = Rational.Zero,
+        VoicesInvolved = []
+    };
+}
+
+file static class PolyphonyAnalyzerHelpers
+{
+    public static float Clamp01(float x) => x < 0 ? 0 : x > 1 ? 1 : x;
+
+    public static (int crossings, int spacing) AnalyzeCrossingsAndSpacing(VoiceSeparationResult voices)
+    {
+        if (voices.Voices.Count < 2)
+            return (0, 0);
+
+        // Collect all distinct time points where any note starts.
+        var times = new SortedSet<Rational>();
+        foreach (var v in voices.Voices)
+        {
+            foreach (var n in v.Notes)
+                times.Add(n.Offset);
+        }
+
+        var crossings = 0;
+        var spacing = 0;
+
+        foreach (var t in times)
+        {
+            var sounding = voices.Voices
+                .Select(v => GetSoundingPitch(v, t))
+                .ToArray();
+
+            // Voice crossing: higher voice pitch < lower voice pitch at same time.
+            for (var i = 0; i < sounding.Length - 1; i++)
+            {
+                if (sounding[i].HasValue && sounding[i + 1].HasValue && sounding[i]!.Value < sounding[i + 1]!.Value)
+                    crossings++;
+            }
+
+            // Spacing: SA and AT within octave, TB within 2 octaves (heuristic).
+            for (var i = 0; i < sounding.Length - 1; i++)
+            {
+                if (!sounding[i].HasValue || !sounding[i + 1].HasValue)
+                    continue;
+
+                var dist = Math.Abs(sounding[i]!.Value - sounding[i + 1]!.Value);
+                var limit = i < 2 ? 12 : 24;
+                if (dist > limit)
+                    spacing++;
+            }
+        }
+
+        return (crossings, spacing);
+    }
+
+    private static int? GetSoundingPitch(Voice voice, Rational t)
+    {
+        // Linear scan is fine for small examples.
+        for (var i = voice.Notes.Count - 1; i >= 0; i--)
+        {
+            var n = voice.Notes[i];
+            if (n.Offset <= t && n.End > t)
+                return n.Pitch;
+        }
+
+        return null;
+    }
+
+    public static int[] ToIntervals(int[] pitches)
+    {
+        if (pitches.Length < 2)
+            return [];
+
+        var ints = new int[pitches.Length - 1];
+        for (var i = 1; i < pitches.Length; i++)
+            ints[i - 1] = pitches[i] - pitches[i - 1];
+
+        return ints;
+    }
+
+    public static (int start1, int start2)? FindIntervalMatch(int[] a, int[] b, int len)
+    {
+        if (a.Length < len || b.Length < len)
+            return null;
+
+        for (var i = 0; i <= a.Length - len; i++)
+        {
+            for (var j = 0; j <= b.Length - len; j++)
+            {
+                var ok = true;
+                for (var k = 0; k < len; k++)
+                {
+                    if (a[i + k] != b[j + k])
+                    {
+                        ok = false;
+                        break;
+                    }
+                }
+
+                if (ok)
+                    return (i, j);
+            }
+        }
+
+        return null;
     }
 }

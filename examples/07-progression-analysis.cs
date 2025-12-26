@@ -3,6 +3,7 @@
 
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
+using System.Linq;
 
 namespace CeleritasExamples;
 
@@ -29,9 +30,7 @@ class ProgressionAnalysis
         Console.WriteLine($"Pattern: {analysis2.Pattern}");  // I - V - vi - IV
 
         // ===== Tension Curve =====
-        // Note: AnalyzeFromSymbols doesn't exist - use Analyze(string[])
 
-        /*
         var tensionProgression = new[] { "C", "Am", "F", "G", "C" };
         var analysis3 = ProgressionAdvisor.AnalyzeFromSymbols(tensionProgression);
 
@@ -41,12 +40,9 @@ class ProgressionAnalysis
             var bar = new string('█', (int)(analysis3.TensionCurve[i] * 20));
             Console.WriteLine($"  {tensionProgression[i],6}: {bar} ({analysis3.TensionCurve[i]:P0})");
         }
-        */
 
         // ===== Cadence Detection =====
-        // Note: DetectCadence doesn't exist as standalone method
 
-        /*
         // Authentic cadence (V - I)
         var authentic = new[] { "G7", "C" };
         var cadence1 = ProgressionAdvisor.DetectCadence(authentic);
@@ -66,25 +62,19 @@ class ProgressionAnalysis
         var half = new[] { "C", "Dm", "G" };
         var cadence4 = ProgressionAdvisor.DetectCadence(half);
         Console.WriteLine($"{string.Join(" - ", half)}: {cadence4}");  // Half
-        */
 
         // ===== Chord Character Classification =====
-        // Note: ChordCharacter.Classify static method doesn't exist
 
-        /*
         var chords = new[] { "C", "Cmaj7", "Cm", "Cdim", "C7", "Caug" };
         Console.WriteLine($"\nChord characters:");
         foreach (var chord in chords)
         {
-            var character = ChordCharacter.Classify(chord);
-            Console.WriteLine($"  {chord,6}: {character.Mood} ({character.Stability}, {character.Brightness})");
+            var character = ChordCharacterClassifier.Classify(chord);
+            Console.WriteLine($"  {chord,6}: {character.Mood} ({character.Stability:P0}, {character.Brightness:P0})");
         }
-        */
 
         // ===== Progression Report =====
-        // Note: ProgressionReport.Generate static method doesn't exist
 
-        /*
         var complexProgression = new[] { "Cmaj7", "Am7", "Dm7", "G7", "Em7", "A7", "Dm7", "G7", "Cmaj7" };
         var report = ProgressionReport.Generate(complexProgression);
 
@@ -98,23 +88,18 @@ class ProgressionAnalysis
         {
             Console.WriteLine($"  • {highlight}");
         }
-        */
 
         // ===== Chord Recommendations =====
-        // Note: ProgressionAdvisor is static class, SuggestNext doesn't exist
 
-        /*
         // Get suggestions for next chord
         var currentChords = new[] { "C", "Am", "F" };
-        var advisor = new ProgressionAdvisor();
-        var suggestions = advisor.SuggestNext(currentChords);
+        var suggestions = ProgressionAdvisor.SuggestNext(currentChords);
 
         Console.WriteLine($"\nAfter {string.Join(" - ", currentChords)}, try:");
         foreach (var suggestion in suggestions.Take(5))
         {
             Console.WriteLine($"  {suggestion.Chord,6} - {suggestion.Reason} (score: {suggestion.Score:F2})");
         }
-        */
 
         // ===== Modal Progressions =====
         // Note: ModalProgressions class doesn't exist
@@ -145,37 +130,31 @@ class ProgressionAnalysis
         };
 
         var key = new KeySignature("C", true);
-        // Note: HarmonicColorAnalyzer.Analyze requires IReadOnlyList<ChordAssignment>, not tuples
-        // var colorAnalysis = HarmonicColorAnalyzer.Analyze(melody, chordProgression, key);
+        var colorAnalysis = HarmonicColorAnalyzer.Analyze(melody, chordProgression, key);
 
         Console.WriteLine($"\n=== Harmonic Color Analysis ===");
-        Console.WriteLine("(Color analysis commented - requires ChordAssignment list)");
-        // Note: ChromaticNotes property uses ChromaticPitchEvent which doesn't have Time property
-        /*
+
         Console.WriteLine($"Chromatic notes: {colorAnalysis.ChromaticNotes.Count}");
         foreach (var chromatic in colorAnalysis.ChromaticNotes)
         {
-            Console.WriteLine($"  {MusicMath.MidiToNoteName(chromatic.Pitch)} at {chromatic.Time}");
+            Console.WriteLine($"  {MusicMath.MidiToNoteName(chromatic.Pitch)} at {chromatic.Offset}");
         }
-        */
 
-        // Note: ModalTurnEvent.Type and Time properties don't exist
-        /*
         Console.WriteLine($"\nModal turns: {colorAnalysis.ModalTurns.Count}");
         foreach (var turn in colorAnalysis.ModalTurns)
         {
-            Console.WriteLine($"  {turn.Type} at {turn.Time}");
+            Console.WriteLine($"  {turn.Mode} chords[{turn.StartChordIndex}..{turn.EndChordIndex}] (conf: {turn.Confidence:F2})");
         }
-        */
 
-        // Note: NonChordTones property doesn't exist
-        /*
-        Console.WriteLine($"\nNon-chord tones: {colorAnalysis.NonChordTones.Count}");
-        foreach (var nct in colorAnalysis.NonChordTones)
+        var nonChordTones = colorAnalysis.MelodicHarmony
+            .Where(e => !e.IsChordTone)
+            .ToArray();
+
+        Console.WriteLine($"\nNon-chord tones: {nonChordTones.Length}");
+        foreach (var nct in nonChordTones)
         {
-            Console.WriteLine($"  {nct.Type} - {MusicMath.MidiToNoteName(nct.Pitch)} at {nct.Time}");
+            Console.WriteLine($"  {nct.Type} - {MusicMath.MidiToNoteName(nct.Pitch)} at {nct.Offset}");
         }
-        */
 
         // Note: colorAnalysis properties not available
         // Console.WriteLine($"\nColor assessment: {colorAnalysis.ColorfulnessRating}/10");
@@ -187,38 +166,31 @@ class ProgressionAnalysis
         var secDomAnalysis = ProgressionAdvisor.Analyze(withSecondaryDom);
 
         Console.WriteLine($"\n{string.Join(" - ", withSecondaryDom)}:");
-        // Note: HasSecondaryDominants and SecondaryDominants properties don't exist
-        // Console.WriteLine($"Secondary dominants: {secDomAnalysis.HasSecondaryDominants}");
-        /*
-        if (secDomAnalysis.SecondaryDominants.Any())
+
+        Console.WriteLine($"Secondary dominants: {secDomAnalysis.HasSecondaryDominants}");
+        if (secDomAnalysis.SecondaryDominants.Count > 0)
         {
             foreach (var secDom in secDomAnalysis.SecondaryDominants)
             {
                 Console.WriteLine($"  {secDom.Chord} → {secDom.Target} (V/{secDom.TargetDegree})");
             }
         }
-        */
 
         // ===== Borrowed Chords =====
-        // Note: HasBorrowedChords and BorrowedChords properties don't exist
-        /*
         var withBorrowed = new[] { "C", "Fm", "C", "G7", "C" };
         var borrowedAnalysis = ProgressionAdvisor.Analyze(withBorrowed);
 
         Console.WriteLine($"\n{string.Join(" - ", withBorrowed)}:");
         Console.WriteLine($"Borrowed chords: {borrowedAnalysis.HasBorrowedChords}");
-        if (borrowedAnalysis.BorrowedChords.Any())
+        if (borrowedAnalysis.BorrowedChords.Count > 0)
         {
             foreach (var borrowed in borrowedAnalysis.BorrowedChords)
             {
                 Console.WriteLine($"  {borrowed.Chord} from {borrowed.SourceKey}");
             }
         }
-        */
 
         // ===== Voice Leading Analysis =====
-        // Note: Smoothness, AverageMovement, ParallelFifths, ParallelOctaves, QualityRating don't exist
-        /*
         var voiceLeadingProg = new[] { "C", "F", "G", "C" };
         var vlAnalysis = ProgressionAdvisor.Analyze(voiceLeadingProg);
 
@@ -228,7 +200,6 @@ class ProgressionAnalysis
         Console.WriteLine($"  Parallel fifths: {vlAnalysis.ParallelFifths}");
         Console.WriteLine($"  Parallel octaves: {vlAnalysis.ParallelOctaves}");
         Console.WriteLine($"  Quality: {vlAnalysis.QualityRating}");
-        */
     }
 }
 

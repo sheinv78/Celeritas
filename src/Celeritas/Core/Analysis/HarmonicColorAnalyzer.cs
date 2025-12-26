@@ -40,6 +40,59 @@ public static class HarmonicColorAnalyzer
             MelodicHarmony: melodicHarmony);
     }
 
+    /// <summary>
+    /// Analyze melody + a tuple-based chord progression (as used in examples).
+    /// Each tuple is (ChordSymbol, StartTime). End times are inferred from the next chord,
+    /// and the last chord defaults to a duration of 1 whole note.
+    /// </summary>
+    public static HarmonicColorAnalysisResult Analyze(
+        ReadOnlySpan<NoteEvent> melody,
+        IReadOnlyList<(string Chord, Rational Start)> chordProgression,
+        KeySignature key,
+        HarmonicColorAnalysisOptions? options = null)
+    {
+        if (chordProgression.Count == 0)
+            return Analyze(melody, Array.Empty<ChordAssignment>(), key, options);
+
+        var chords = BuildChordAssignments(chordProgression);
+        return Analyze(melody, chords, key, options);
+    }
+
+    /// <summary>
+    /// Analyze melody + a tuple-based chord progression (as used in examples).
+    /// </summary>
+    public static HarmonicColorAnalysisResult Analyze(
+        NoteEvent[] melody,
+        (string Chord, Rational Start)[] chordProgression,
+        KeySignature key,
+        HarmonicColorAnalysisOptions? options = null)
+        => Analyze(melody.AsSpan(), (IReadOnlyList<(string Chord, Rational Start)>)chordProgression, key, options);
+
+    private static ChordAssignment[] BuildChordAssignments(IReadOnlyList<(string Chord, Rational Start)> chordProgression)
+    {
+        var n = chordProgression.Count;
+        var chords = new ChordAssignment[n];
+
+        for (var i = 0; i < n; i++)
+        {
+            var symbol = chordProgression[i].Chord;
+            var start = chordProgression[i].Start;
+            var end = i + 1 < n ? chordProgression[i + 1].Start : start + Rational.Whole;
+
+            // Defensive: avoid zero/negative duration chords.
+            if (end <= start)
+                end = start + Rational.Whole;
+
+            var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
+            var mask = ChordAnalyzer.GetMask(pitches);
+            var info = ChordLibrary.GetChord(mask);
+
+            chords[i] = new ChordAssignment(start, end, info, pitches, 0);
+        }
+
+        return chords;
+    }
+
     private static IReadOnlyList<ChromaticPitchEvent> AnalyzeChromaticNotes(
         IReadOnlyList<NoteEvent> melody,
         ushort baseScaleMask,

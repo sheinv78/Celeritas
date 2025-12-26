@@ -27,8 +27,14 @@ public class Trill : Ornament
     /// </summary>
     public bool EndWithTurn { get; init; } = false;
 
+    /// <summary>
+    /// Backward/compat alias used by examples.
+    /// </summary>
+    public bool HasTurnEnding { get; init; } = false;
+
     public override NoteEvent[] Expand()
     {
+        var endWithTurn = EndWithTurn || HasTurnEnding;
         var noteDuration = new Rational(1, Speed * 4); // Duration per trill note
         var upperNote = BaseNote.Pitch + Interval;
         var lowerNote = BaseNote.Pitch - (Interval == 2 ? 2 : 1); // For turn ending
@@ -38,7 +44,7 @@ public class Trill : Ornament
 
         // Calculate how many notes fit
         var totalNotes = (int)((BaseNote.Duration.Numerator * Speed * 4) / BaseNote.Duration.Denominator);
-        var maxNotes = totalNotes + (EndWithTurn ? 2 : 0);
+        var maxNotes = totalNotes + (endWithTurn ? 2 : 0);
 
         // Rent buffer from pool
         var buffer = ArrayPool<NoteEvent>.Shared.Rent(maxNotes);
@@ -47,7 +53,7 @@ public class Trill : Ornament
         try
         {
             // Reserve space for turn if needed
-            if (EndWithTurn && totalNotes >= 3)
+            if (endWithTurn && totalNotes >= 3)
             {
                 totalNotes -= 2; // Last two notes for the turn
             }
@@ -65,7 +71,7 @@ public class Trill : Ornament
             }
 
             // Add turn ending if requested
-            if (EndWithTurn && currentTime < endTime)
+            if (endWithTurn && currentTime < endTime)
             {
                 // Lower neighbor
                 buffer[count++] = new NoteEvent(lowerNote, currentTime, noteDuration, BaseNote.Velocity);
