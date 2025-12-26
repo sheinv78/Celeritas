@@ -11,3 +11,9 @@ nupkgs/
 test-data/*.mid
 # Benchmark results
 BenchmarkDotNet.Artifacts/
+# ANTLR debug files
+.antlr/
+*.interp
+*.tokens
+# Test scripts
+*.csx

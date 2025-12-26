@@ -13,6 +13,15 @@ from typing import List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
+
+_NOTE_NAMES_SHARP = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+]
+
+_NOTE_NAMES_FLAT = [
+    "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"
+]
+
 # Determine platform and load appropriate native library
 def _load_native_library():
     system = platform.system()
@@ -22,12 +31,12 @@ def _load_native_library():
         lib_name = "libCeleritas.Native.dylib"
     else:  # Linux
         lib_name = "libCeleritas.Native.so"
-    
+
     # Try to load from package directory
     lib_path = os.path.join(os.path.dirname(__file__), "native", lib_name)
     if os.path.exists(lib_path):
         return ctypes.CDLL(lib_path)
-    
+
     # Try system path
     try:
         return ctypes.CDLL(lib_name)
@@ -109,16 +118,16 @@ _lib.celeritas_transpose.restype = None
 def parse_note(notation: str) -> Optional[NoteEvent]:
     """
     Parse a single note from string notation (e.g., 'C4', 'F#5', 'Bb3')
-    
+
     Args:
         notation: Note notation string
-        
+
     Returns:
         NoteEvent or None if parsing failed
     """
     c_note = CNoteEvent()
     success = _lib.celeritas_parse_note(notation.encode('utf-8'), ctypes.byref(c_note))
-    
+
     if success:
         return NoteEvent(
             pitch=c_note.pitch,
@@ -134,11 +143,11 @@ def parse_note(notation: str) -> Optional[NoteEvent]:
 def transpose(pitches: List[int], semitones: int) -> List[int]:
     """
     Transpose a list of pitches using SIMD acceleration
-    
+
     Args:
         pitches: List of MIDI pitch values
         semitones: Number of semitones to transpose (positive = up, negative = down)
-        
+
     Returns:
         List of transposed pitches
     """
@@ -148,13 +157,32 @@ def transpose(pitches: List[int], semitones: int) -> List[int]:
     return list(pitch_array)
 
 
+def midi_to_note_name(pitch: int, prefer_flats: bool = False) -> str:
+    """Convert MIDI pitch (0-127) to scientific pitch notation (e.g., 60 -> 'C4').
+
+    Args:
+        pitch: MIDI pitch number (0-127)
+        prefer_flats: Use flats (Bb) instead of sharps (A#) when applicable
+
+    Returns:
+        Note name like 'C4', 'F#5', 'Bb3'
+    """
+    if not (0 <= pitch <= 127):
+        raise ValueError(f"MIDI pitch must be in [0..127], got {pitch}")
+
+    names = _NOTE_NAMES_FLAT if prefer_flats else _NOTE_NAMES_SHARP
+    pc = pitch % 12
+    octave = (pitch // 12) - 1  # MIDI standard: C-1 = 0
+    return f"{names[pc]}{octave}"
+
+
 def identify_chord(pitches: List[int]) -> str:
     """
     Identify a chord from a list of pitches
-    
+
     Args:
         pitches: List of MIDI pitch values
-        
+
     Returns:
         Chord symbol (e.g., 'Cmaj', 'Dm7', 'G7')
     """
@@ -165,11 +193,11 @@ def identify_chord(pitches: List[int]) -> str:
         ctypes.c_int
     ]
     _lib.celeritas_identify_chord.restype = ctypes.c_bool
-    
+
     n = len(pitches)
     pitch_array = (ctypes.c_int * n)(*pitches)
     buffer = ctypes.create_string_buffer(64)
-    
+
     success = _lib.celeritas_identify_chord(pitch_array, n, buffer, 64)
     if success:
         return buffer.value.decode('utf-8')
@@ -179,10 +207,10 @@ def identify_chord(pitches: List[int]) -> str:
 def detect_key(pitches: List[int]) -> Tuple[str, bool]:
     """
     Detect the key of a sequence of pitches
-    
+
     Args:
         pitches: List of MIDI pitch values
-        
+
     Returns:
         Tuple of (key_name, is_major)
     """
@@ -194,12 +222,12 @@ def detect_key(pitches: List[int]) -> Tuple[str, bool]:
         ctypes.POINTER(ctypes.c_bool)
     ]
     _lib.celeritas_detect_key.restype = ctypes.c_bool
-    
+
     n = len(pitches)
     pitch_array = (ctypes.c_int * n)(*pitches)
     buffer = ctypes.create_string_buffer(16)
     is_major = ctypes.c_bool()
-    
+
     success = _lib.celeritas_detect_key(pitch_array, n, buffer, 16, ctypes.byref(is_major))
     if success:
         return (buffer.value.decode('utf-8'), is_major.value)
@@ -208,7 +236,7 @@ def detect_key(pitches: List[int]) -> Tuple[str, bool]:
 
 class Trill:
     """Trill ornament - rapid alternation between main note and upper note"""
-    
+
     def __init__(self, base_note: NoteEvent, interval: int = 2, speed: int = 8,
                  start_with_upper: bool = False, end_with_turn: bool = False):
         self.base_note = base_note
@@ -216,18 +244,18 @@ class Trill:
         self.speed = speed
         self.start_with_upper = start_with_upper
         self.end_with_turn = end_with_turn
-    
+
     def expand(self) -> List[NoteEvent]:
         """Expand trill into sequence of notes"""
         notes = []
         note_duration = 1.0 / (self.speed * 4)
         upper_pitch = self.base_note.pitch + self.interval
-        
+
         current_time = self.base_note.time
         end_time = current_time + self.base_note.duration
-        
+
         use_upper = self.start_with_upper
-        
+
         while current_time < end_time:
             pitch = upper_pitch if use_upper else self.base_note.pitch
             notes.append(NoteEvent(
@@ -240,31 +268,31 @@ class Trill:
             ))
             current_time += note_duration
             use_upper = not use_upper
-        
+
         return notes
 
 
 class Mordent:
     """Mordent ornament - brief alternation with upper or lower neighbor"""
-    
+
     def __init__(self, base_note: NoteEvent, mordent_type: MordentType = MordentType.UPPER,
                  interval: int = 2, alternations: int = 1):
         self.base_note = base_note
         self.type = mordent_type
         self.interval = interval
         self.alternations = alternations
-    
+
     def expand(self) -> List[NoteEvent]:
         """Expand mordent into sequence of notes"""
         notes = []
         note_count = 2 * self.alternations + 1
         note_duration = self.base_note.duration / note_count
-        
+
         neighbor_pitch = (self.base_note.pitch + self.interval if self.type == MordentType.UPPER
                          else self.base_note.pitch - self.interval)
-        
+
         current_time = self.base_note.time
-        
+
         for i in range(note_count):
             pitch = self.base_note.pitch if i % 2 == 0 else neighbor_pitch
             notes.append(NoteEvent(
@@ -276,7 +304,7 @@ class Mordent:
                 velocity=self.base_note.velocity
             ))
             current_time += note_duration
-        
+
         return notes
 
 

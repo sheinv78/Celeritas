@@ -23,7 +23,7 @@ public static class MusicNotationAntlrParser
     public static ParseResult Parse(string input, bool validateMeasures = false)
     {
         if (string.IsNullOrWhiteSpace(input))
-            return new ParseResult([], null, []);
+            return new ParseResult([], null, [], []);
 
         var inputStream = new AntlrInputStream(input);
         var lexer = new MusicNotationLexer(inputStream);
@@ -49,7 +49,7 @@ public static class MusicNotationAntlrParser
         var visitor = new MusicNotationVisitorImpl(validateMeasures);
         var notes = visitor.Visit(tree);
 
-        return new ParseResult(notes, visitor.TimeSignature, errors);
+        return new ParseResult(notes, visitor.TimeSignature, visitor.Directives.ToArray(), errors);
     }
 
     /// <summary>
@@ -67,6 +67,7 @@ public static class MusicNotationAntlrParser
 public record ParseResult(
     NoteEvent[] Notes,
     TimeSignature? TimeSignature,
+    NotationDirective[] Directives,
     IReadOnlyList<string> Errors
 );
 
@@ -121,12 +122,14 @@ internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
 {
     private readonly bool _validateMeasures;
     private readonly List<NoteEvent> _notes = new();
+    private readonly List<NotationDirective> _directives = new();
     private readonly HashSet<int> _pendingTies = new(); // Pitches that have pending ties
     private Rational _currentTime = Rational.Zero;
     private int _currentMeasure = 1;
     private Rational _measureStart = Rational.Zero;
 
     public TimeSignature? TimeSignature { get; private set; }
+    public IReadOnlyList<NotationDirective> Directives => _directives;
 
     public MusicNotationVisitorImpl(bool validateMeasures)
     {
@@ -215,7 +218,11 @@ internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
 
     public override NoteEvent[] VisitElement(MusicNotationParser.ElementContext context)
     {
-        if (context.note() != null)
+        if (context.directive() != null)
+            VisitDirective(context.directive());
+        else if (context.polyphonicBlock() != null)
+            VisitPolyphonicBlock(context.polyphonicBlock());
+        else if (context.note() != null)
             VisitNote(context.note());
         else if (context.chord() != null)
             VisitChord(context.chord());
@@ -474,5 +481,201 @@ internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
         }
 
         return ornament.Expand();
+    }
+
+    // Polyphonic block parsing
+
+    public override NoteEvent[] VisitPolyphonicBlock(MusicNotationParser.PolyphonicBlockContext context)
+    {
+        var blockStartTime = _currentTime;
+        var maxVoiceDuration = Rational.Zero;
+
+        var voices = context.voice();
+
+        foreach (var voiceCtx in voices)
+        {
+            // Each voice starts at the same block start time
+            var voiceStartTime = blockStartTime;
+            _currentTime = voiceStartTime;
+
+            // Parse this voice
+            VisitVoice(voiceCtx);
+
+            // Track the duration of this voice
+            var voiceDuration = _currentTime - voiceStartTime;
+            if (voiceDuration > maxVoiceDuration)
+                maxVoiceDuration = voiceDuration;
+        }
+
+        // Advance timeline by the longest voice
+        _currentTime = blockStartTime + maxVoiceDuration;
+
+        return [];
+    }
+
+    // Directive parsing methods
+
+    public override NoteEvent[] VisitDirective(MusicNotationParser.DirectiveContext context)
+    {
+        if (context.bpmDirective() != null)
+            VisitBpmDirective(context.bpmDirective());
+        else if (context.tempoDirective() != null)
+            VisitTempoDirective(context.tempoDirective());
+        else if (context.characterDirective() != null)
+            VisitCharacterDirective(context.characterDirective());
+        else if (context.sectionDirective() != null)
+            VisitSectionDirective(context.sectionDirective());
+        else if (context.partDirective() != null)
+            VisitPartDirective(context.partDirective());
+        else if (context.dynamicsDirective() != null)
+            VisitDynamicsDirective(context.dynamicsDirective());
+
+        return [];
+    }
+
+    public override NoteEvent[] VisitBpmDirective(MusicNotationParser.BpmDirectiveContext context)
+    {
+        var bpm = int.Parse(context.INT(0).GetText());
+        int? targetBpm = null;
+        Rational? rampDuration = null;
+
+        // Check for ramp: @bpm 120 -> 140 /2
+        if (context.ARROW() != null)
+        {
+            targetBpm = int.Parse(context.INT(1).GetText());
+            if (context.duration() != null)
+            {
+                rampDuration = ParseDuration(context.duration());
+            }
+        }
+
+        _directives.Add(new TempoBpmDirective
+        {
+            Time = _currentTime,
+            Bpm = bpm,
+            TargetBpm = targetBpm,
+            RampDuration = rampDuration
+        });
+
+        return [];
+    }
+
+    public override NoteEvent[] VisitTempoDirective(MusicNotationParser.TempoDirectiveContext context)
+    {
+        var value = ParseDirectiveValue(context.directiveValue());
+        _directives.Add(new TempoCharacterDirective
+        {
+            Time = _currentTime,
+            Character = value
+        });
+        return [];
+    }
+
+    public override NoteEvent[] VisitCharacterDirective(MusicNotationParser.CharacterDirectiveContext context)
+    {
+        // For now, treat @character same as @tempo (musical character/expression)
+        var value = ParseDirectiveValue(context.directiveValue());
+        _directives.Add(new TempoCharacterDirective
+        {
+            Time = _currentTime,
+            Character = value
+        });
+        return [];
+    }
+
+    public override NoteEvent[] VisitSectionDirective(MusicNotationParser.SectionDirectiveContext context)
+    {
+        var label = ParseDirectiveValue(context.directiveValue());
+        _directives.Add(new SectionDirective
+        {
+            Time = _currentTime,
+            Label = label
+        });
+        return [];
+    }
+
+    public override NoteEvent[] VisitPartDirective(MusicNotationParser.PartDirectiveContext context)
+    {
+        var name = ParseDirectiveValue(context.directiveValue());
+        _directives.Add(new PartDirective
+        {
+            Time = _currentTime,
+            Name = name
+        });
+        return [];
+    }
+
+    public override NoteEvent[] VisitDynamicsDirective(MusicNotationParser.DynamicsDirectiveContext context)
+    {
+        if (context.DYNAMICS() != null)
+        {
+            // Static dynamics: @dynamics pp
+            var level = ParseDynamicsValue(context.dynamicsValue());
+            _directives.Add(new DynamicsDirective
+            {
+                Time = _currentTime,
+                Type = DynamicsType.Static,
+                StartLevel = level
+            });
+        }
+        else if (context.CRESC() != null)
+        {
+            // Crescendo: @cresc or @cresc to ff
+            string? targetLevel = null;
+            if (context.TO() != null && context.dynamicsValue() != null)
+            {
+                targetLevel = ParseDynamicsValue(context.dynamicsValue());
+            }
+            _directives.Add(new DynamicsDirective
+            {
+                Time = _currentTime,
+                Type = DynamicsType.Crescendo,
+                TargetLevel = targetLevel
+            });
+        }
+        else if (context.DIM() != null)
+        {
+            // Diminuendo: @dim or @dim to p
+            string? targetLevel = null;
+            if (context.TO() != null && context.dynamicsValue() != null)
+            {
+                targetLevel = ParseDynamicsValue(context.dynamicsValue());
+            }
+            _directives.Add(new DynamicsDirective
+            {
+                Time = _currentTime,
+                Type = DynamicsType.Diminuendo,
+                TargetLevel = targetLevel
+            });
+        }
+        return [];
+    }
+
+    private string ParseDirectiveValue(MusicNotationParser.DirectiveValueContext context)
+    {
+        if (context.STRING() != null)
+        {
+            // Remove surrounding quotes
+            var text = context.STRING().GetText();
+            return text.Substring(1, text.Length - 2);
+        }
+        else if (context.IDENT() != null)
+        {
+            return context.IDENT().GetText();
+        }
+        throw new ArgumentException("Invalid directive value");
+    }
+
+    private string ParseDynamicsValue(MusicNotationParser.DynamicsValueContext context)
+    {
+        if (context.DYNAMICS_LEVEL() != null)
+        {
+            return context.DYNAMICS_LEVEL().GetText().ToLower();
+        }
+        else if (context.IDENT() != null)
+        {
+            return context.IDENT().GetText();
+        }
+        throw new ArgumentException("Invalid dynamics value");
     }
 }

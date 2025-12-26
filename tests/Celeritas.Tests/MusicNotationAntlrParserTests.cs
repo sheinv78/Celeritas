@@ -319,4 +319,410 @@ public class MusicNotationAntlrParserTests
         Assert.Equal(new Rational(1, 1), notes[1].Offset);
         Assert.Equal(new Rational(7, 4), notes[2].Offset); // 1 + 3/4
     }
+
+    // === Directive Tests ===
+
+    [Fact]
+    public void Parse_BpmDirective_Simple()
+    {
+        var result = MusicNotationAntlrParser.Parse("@bpm 120 C4/4 E4/4");
+
+        Assert.Single(result.Directives);
+        var directive = result.Directives[0] as TempoBpmDirective;
+        Assert.NotNull(directive);
+        Assert.Equal(120, directive.Bpm);
+        Assert.Null(directive.TargetBpm);
+        Assert.Equal(Rational.Zero, directive.Time);
+    }
+
+    [Fact]
+    public void Parse_BpmDirective_WithEquals()
+    {
+        var result = MusicNotationAntlrParser.Parse("@bpm = 140 C4/4");
+
+        var directive = result.Directives[0] as TempoBpmDirective;
+        Assert.NotNull(directive);
+        Assert.Equal(140, directive.Bpm);
+    }
+
+    [Fact]
+    public void Parse_BpmDirective_Ramp()
+    {
+        var result = MusicNotationAntlrParser.Parse("@bpm 120 -> 140 /2 C4/4");
+
+        var directive = result.Directives[0] as TempoBpmDirective;
+        Assert.NotNull(directive);
+        Assert.Equal(120, directive.Bpm);
+        Assert.Equal(140, directive.TargetBpm);
+        Assert.Equal(new Rational(1, 2), directive.RampDuration);
+    }
+
+    [Fact]
+    public void Parse_BpmDirective_RampWithoutDuration()
+    {
+        var result = MusicNotationAntlrParser.Parse("@bpm 100 -> 120 C4/4");
+
+        var directive = result.Directives[0] as TempoBpmDirective;
+        Assert.NotNull(directive);
+        Assert.Equal(100, directive.Bpm);
+        Assert.Equal(120, directive.TargetBpm);
+        Assert.Null(directive.RampDuration);
+    }
+
+    [Fact]
+    public void Parse_TempoDirective_Identifier()
+    {
+        var result = MusicNotationAntlrParser.Parse("@tempo presto C4/4");
+
+        Assert.Single(result.Directives);
+        var directive = result.Directives[0] as TempoCharacterDirective;
+        Assert.NotNull(directive);
+        Assert.Equal("presto", directive.Character);
+        Assert.Equal(Rational.Zero, directive.Time);
+    }
+
+    [Fact]
+    public void Parse_TempoDirective_String()
+    {
+        var result = MusicNotationAntlrParser.Parse("@tempo \"Allegro con brio\" C4/4");
+
+        var directive = result.Directives[0] as TempoCharacterDirective;
+        Assert.NotNull(directive);
+        Assert.Equal("Allegro con brio", directive.Character);
+    }
+
+    [Fact]
+    public void Parse_SectionDirective()
+    {
+        var result = MusicNotationAntlrParser.Parse("@section verse C4/4 @section chorus E4/4");
+
+        Assert.Equal(2, result.Directives.Length);
+
+        var section1 = result.Directives[0] as SectionDirective;
+        Assert.NotNull(section1);
+        Assert.Equal("verse", section1.Label);
+        Assert.Equal(Rational.Zero, section1.Time);
+
+        var section2 = result.Directives[1] as SectionDirective;
+        Assert.NotNull(section2);
+        Assert.Equal("chorus", section2.Label);
+        Assert.Equal(new Rational(1, 4), section2.Time);
+    }
+
+    [Fact]
+    public void Parse_PartDirective()
+    {
+        var result = MusicNotationAntlrParser.Parse("@part soprano C4/4 @part alto G3/4");
+
+        Assert.Equal(2, result.Directives.Length);
+
+        var part1 = result.Directives[0] as PartDirective;
+        Assert.NotNull(part1);
+        Assert.Equal("soprano", part1.Name);
+
+        var part2 = result.Directives[1] as PartDirective;
+        Assert.NotNull(part2);
+        Assert.Equal("alto", part2.Name);
+        Assert.Equal(new Rational(1, 4), part2.Time);
+    }
+
+    [Fact]
+    public void Parse_MixedDirectives()
+    {
+        var result = MusicNotationAntlrParser.Parse(
+            "@bpm 120 @tempo allegro @section intro C4/4 E4/4 @section verse G4/2");
+
+        Assert.Equal(4, result.Directives.Length);
+        Assert.IsType<TempoBpmDirective>(result.Directives[0]);
+        Assert.IsType<TempoCharacterDirective>(result.Directives[1]);
+        Assert.IsType<SectionDirective>(result.Directives[2]);
+        Assert.IsType<SectionDirective>(result.Directives[3]);
+
+        Assert.Equal(3, result.Notes.Length);
+    }
+
+    [Fact]
+    public void Parse_DirectivesWithTimeSignature()
+    {
+        var result = MusicNotationAntlrParser.Parse(
+            "4/4: @bpm 120 @section intro C4/4 E4/4 | @section outro G4/2");
+
+        Assert.Equal(3, result.Directives.Length);
+        var sectionB = result.Directives[2] as SectionDirective;
+        Assert.NotNull(sectionB);
+        Assert.Equal("outro", sectionB.Label);
+        Assert.Equal(new Rational(1, 2), sectionB.Time); // After 2 quarter notes
+    }
+
+    // === Dynamics Tests ===
+
+    [Fact]
+    public void Parse_DynamicsDirective_Static()
+    {
+        var result = MusicNotationAntlrParser.Parse("@dynamics pp C4/4 @dynamics ff E4/4");
+
+        Assert.Equal(2, result.Directives.Length);
+
+        var dyn1 = result.Directives[0] as DynamicsDirective;
+        Assert.NotNull(dyn1);
+        Assert.Equal(DynamicsType.Static, dyn1.Type);
+        Assert.Equal("pp", dyn1.StartLevel);
+        Assert.Null(dyn1.TargetLevel);
+        Assert.Equal(Rational.Zero, dyn1.Time);
+
+        var dyn2 = result.Directives[1] as DynamicsDirective;
+        Assert.NotNull(dyn2);
+        Assert.Equal(DynamicsType.Static, dyn2.Type);
+        Assert.Equal("ff", dyn2.StartLevel);
+        Assert.Null(dyn2.TargetLevel);
+        Assert.Equal(new Rational(1, 4), dyn2.Time);
+    }
+
+    [Fact]
+    public void Parse_DynamicsDirective_AllLevels()
+    {
+        var result = MusicNotationAntlrParser.Parse(
+            "@dynamics pppp C4/16 @dynamics ppp D4/16 @dynamics pp E4/16 @dynamics p F4/16 " +
+            "@dynamics mp G4/16 @dynamics mf A4/16 @dynamics f B4/16 @dynamics ff C5/16 " +
+            "@dynamics fff D5/16 @dynamics ffff E5/16");
+
+        Assert.Equal(10, result.Directives.Length);
+        Assert.Equal(10, result.Notes.Length);
+
+        Assert.Equal("pppp", (result.Directives[0] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("ppp", (result.Directives[1] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("pp", (result.Directives[2] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("p", (result.Directives[3] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("mp", (result.Directives[4] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("mf", (result.Directives[5] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("f", (result.Directives[6] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("ff", (result.Directives[7] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("fff", (result.Directives[8] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("ffff", (result.Directives[9] as DynamicsDirective)?.StartLevel);
+    }
+
+    [Fact]
+    public void Parse_DynamicsDirective_SpecialAccents()
+    {
+        var result = MusicNotationAntlrParser.Parse(
+            "@dynamics sf C4/4 @dynamics sfz D4/4 @dynamics fp E4/4 @dynamics rf F4/4");
+
+        Assert.Equal(4, result.Directives.Length);
+
+        Assert.Equal("sf", (result.Directives[0] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("sfz", (result.Directives[1] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("fp", (result.Directives[2] as DynamicsDirective)?.StartLevel);
+        Assert.Equal("rf", (result.Directives[3] as DynamicsDirective)?.StartLevel);
+    }
+
+    [Fact]
+    public void Parse_DynamicsDirective_Crescendo()
+    {
+        var result = MusicNotationAntlrParser.Parse("@cresc C4/4 E4/4 @cresc to ff G4/2");
+
+        Assert.Equal(2, result.Directives.Length);
+
+        var cresc1 = result.Directives[0] as DynamicsDirective;
+        Assert.NotNull(cresc1);
+        Assert.Equal(DynamicsType.Crescendo, cresc1.Type);
+        Assert.Null(cresc1.StartLevel);
+        Assert.Null(cresc1.TargetLevel);
+        Assert.Equal(Rational.Zero, cresc1.Time);
+
+        var cresc2 = result.Directives[1] as DynamicsDirective;
+        Assert.NotNull(cresc2);
+        Assert.Equal(DynamicsType.Crescendo, cresc2.Type);
+        Assert.Null(cresc2.StartLevel);
+        Assert.Equal("ff", cresc2.TargetLevel);
+        Assert.Equal(new Rational(1, 2), cresc2.Time);
+    }
+
+    [Fact]
+    public void Parse_DynamicsDirective_Diminuendo()
+    {
+        var result = MusicNotationAntlrParser.Parse("@dim C4/4 E4/4 @dim to pp G4/2");
+
+        Assert.Equal(2, result.Directives.Length);
+
+        var dim1 = result.Directives[0] as DynamicsDirective;
+        Assert.NotNull(dim1);
+        Assert.Equal(DynamicsType.Diminuendo, dim1.Type);
+        Assert.Null(dim1.StartLevel);
+        Assert.Null(dim1.TargetLevel);
+        Assert.Equal(Rational.Zero, dim1.Time);
+
+        var dim2 = result.Directives[1] as DynamicsDirective;
+        Assert.NotNull(dim2);
+        Assert.Equal(DynamicsType.Diminuendo, dim2.Type);
+        Assert.Null(dim2.StartLevel);
+        Assert.Equal("pp", dim2.TargetLevel);
+        Assert.Equal(new Rational(1, 2), dim2.Time);
+    }
+
+    [Fact]
+    public void Parse_DynamicsDirective_MixedWithOtherDirectives()
+    {
+        var result = MusicNotationAntlrParser.Parse(
+            "@bpm 120 @section intro @dynamics mf C4/4 E4/4 @cresc to ff G4/2 @dim to p A4/4");
+
+        Assert.Equal(5, result.Directives.Length);
+        Assert.IsType<TempoBpmDirective>(result.Directives[0]);
+        Assert.IsType<SectionDirective>(result.Directives[1]);
+        Assert.IsType<DynamicsDirective>(result.Directives[2]);
+        Assert.IsType<DynamicsDirective>(result.Directives[3]);
+        Assert.IsType<DynamicsDirective>(result.Directives[4]);
+
+        var staticDyn = result.Directives[2] as DynamicsDirective;
+        Assert.Equal(DynamicsType.Static, staticDyn!.Type);
+        Assert.Equal("mf", staticDyn.StartLevel);
+
+        var cresc = result.Directives[3] as DynamicsDirective;
+        Assert.Equal(DynamicsType.Crescendo, cresc!.Type);
+        Assert.Equal("ff", cresc.TargetLevel);
+
+        var dim = result.Directives[4] as DynamicsDirective;
+        Assert.Equal(DynamicsType.Diminuendo, dim!.Type);
+        Assert.Equal("p", dim.TargetLevel);
+    }
+
+    // === Polyphony Tests ===
+
+    [Fact]
+    public void Parse_PolyphonicBlock_TwoVoices()
+    {
+        var notes = MusicNotationAntlrParser.ParseNotes("<< C4/1 | E4/4 F4/4 G4/4 A4/4 >>");
+
+        Assert.Equal(5, notes.Length);
+
+        // Bass (C4 whole note)
+        Assert.Equal(60, notes[0].Pitch);
+        Assert.Equal(new Rational(1, 1), notes[0].Duration);
+        Assert.Equal(Rational.Zero, notes[0].Offset);
+
+        // Upper voice (4 quarter notes)
+        Assert.Equal(64, notes[1].Pitch); // E4
+        Assert.Equal(Rational.Zero, notes[1].Offset);
+
+        Assert.Equal(65, notes[2].Pitch); // F4
+        Assert.Equal(new Rational(1, 4), notes[2].Offset);
+
+        Assert.Equal(67, notes[3].Pitch); // G4
+        Assert.Equal(new Rational(1, 2), notes[3].Offset);
+
+        Assert.Equal(69, notes[4].Pitch); // A4
+        Assert.Equal(new Rational(3, 4), notes[4].Offset);
+    }
+
+    [Fact]
+    public void Parse_PolyphonicBlock_ThreeVoices()
+    {
+        var notes = MusicNotationAntlrParser.ParseNotes("<< C5/2 | G4/4 G4/4 | C3/2 >>");
+
+        Assert.Equal(4, notes.Length);
+
+        // Soprano (C5 half note)
+        Assert.Equal(72, notes[0].Pitch);
+        Assert.Equal(Rational.Zero, notes[0].Offset);
+
+        // Alto (2 quarter notes)
+        Assert.Equal(67, notes[1].Pitch); // G4
+        Assert.Equal(Rational.Zero, notes[1].Offset);
+        Assert.Equal(67, notes[2].Pitch); // G4
+        Assert.Equal(new Rational(1, 4), notes[2].Offset);
+
+        // Bass (C3 half note)
+        Assert.Equal(48, notes[3].Pitch);
+        Assert.Equal(Rational.Zero, notes[3].Offset);
+    }
+
+    [Fact]
+    public void Parse_PolyphonicBlock_AdvancesByMaxDuration()
+    {
+        // Block with 2 voices, followed by a note
+        var notes = MusicNotationAntlrParser.ParseNotes("<< C4/1 | E4/4 F4/4 >> G4/4");
+
+        Assert.Equal(4, notes.Length);
+
+        // Last note (G4) should start after 1 whole note (max of C4/1)
+        Assert.Equal(67, notes[3].Pitch); // G4
+        Assert.Equal(new Rational(1, 1), notes[3].Offset);
+    }
+
+    [Fact]
+    public void Parse_PolyphonicBlock_WithChords()
+    {
+        var notes = MusicNotationAntlrParser.ParseNotes("<< [C4 E4]/2 | G3/2 >>");
+
+        Assert.Equal(3, notes.Length);
+
+        // Upper chord
+        Assert.Equal(60, notes[0].Pitch); // C4
+        Assert.Equal(64, notes[1].Pitch); // E4
+
+        // Bass
+        Assert.Equal(55, notes[2].Pitch); // G3
+        Assert.Equal(Rational.Zero, notes[2].Offset);
+    }
+
+    [Fact]
+    public void Parse_PolyphonicBlock_WithRests()
+    {
+        var notes = MusicNotationAntlrParser.ParseNotes("<< C4/4 R/4 | R/4 E4/4 >>");
+
+        Assert.Equal(4, notes.Length);
+
+        // Voice 1: C4, Rest
+        Assert.Equal(60, notes[0].Pitch);
+        Assert.Equal(MusicNotation.REST_PITCH, notes[1].Pitch);
+
+        // Voice 2: Rest, E4
+        Assert.Equal(MusicNotation.REST_PITCH, notes[2].Pitch);
+        Assert.Equal(64, notes[3].Pitch);
+    }
+
+    [Fact]
+    public void Parse_PolyphonicBlock_MultipleBlocks()
+    {
+        var notes = MusicNotationAntlrParser.ParseNotes(
+            "<< C4/2 | E4/2 >> << D4/2 | F4/2 >>");
+
+        Assert.Equal(4, notes.Length);
+
+        // First block
+        Assert.Equal(60, notes[0].Pitch); // C4
+        Assert.Equal(64, notes[1].Pitch); // E4
+
+        // Second block (starts at 1/2)
+        Assert.Equal(62, notes[2].Pitch); // D4
+        Assert.Equal(new Rational(1, 2), notes[2].Offset);
+        Assert.Equal(65, notes[3].Pitch); // F4
+        Assert.Equal(new Rational(1, 2), notes[3].Offset);
+    }
+
+    [Fact]
+    public void Parse_PolyphonicBlock_WithTimeSignature()
+    {
+        var notes = MusicNotationAntlrParser.ParseNotes(
+            "4/4: << C4/2 D4/2 | E4/4 F4/4 G4/4 A4/4 >>");
+
+        Assert.Equal(6, notes.Length);
+    }
+
+    [Fact]
+    public void Parse_PolyphonicBlock_PianoStyle()
+    {
+        // Piano: right hand melody, left hand sustained bass
+        var notes = MusicNotationAntlrParser.ParseNotes(
+            "<< C2/1 | C4/4 E4/4 G4/4 C5/4 >>");
+
+        Assert.Equal(5, notes.Length);
+
+        // Bass C2 whole note
+        Assert.Equal(36, notes[0].Pitch);
+        Assert.Equal(new Rational(1, 1), notes[0].Duration);
+
+        // Treble: C4, E4, G4, C5 quarter notes
+        Assert.Equal(60, notes[1].Pitch);
+        Assert.Equal(new Rational(1, 4), notes[1].Duration);
+    }
 }

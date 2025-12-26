@@ -87,8 +87,12 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 - **🎹 Chord Notation** — Multiple simultaneous notes: `[C4 E4 G4]/4` or `(C4 E4 G4):q`
 - **⏸️ Rest Support** — Explicit rest notation with `R/4`, `R:q`, etc.
 - **🔗 Tie Support** — Merge notes across beats/measures with `C4/4~ C4/4` → single note
+- **� Polyphony** — Independent voices: `<< bass | melody >>` for piano, SATB, counterpoint
 - **🎯 Time Signatures** — Support for 4/4, 3/4, 6/8, and any custom meter
 - **📏 Measure Validation** — Parse measures with `|` bars and validate durations match time signature
+- **🎵 Directives** — BPM, tempo character (Presto, Vivace), sections, parts, dynamics
+- **⚡ Tempo Control** — BPM with ramps: `@bpm 120 -> 140 /2` (accelerando/ritardardo)
+- **🔊 Dynamics** — Volume levels (pp, mf, ff), crescendo/diminuendo with `@dynamics`, `@cresc`, `@dim`
 - **🚀 AOT-Ready** — Native AOT compilation support for minimal overhead
 
 ### Harmonic Analysis
@@ -278,6 +282,94 @@ string numericFormat = MusicNotation.FormatNoteSequence(jazzPattern, useDot: tru
 string letterFormat = MusicNotation.FormatNoteSequence(jazzPattern, useDot: true, useLetters: true);
 // Returns: "C4:q. E4:e G4:h."
 
+// ===== Polyphony (Multiple Independent Voices) =====
+
+// Polyphonic blocks: << voice1 | voice2 | voice3 >>
+// Each voice is independent, all start at the same time
+// Block duration = max(voice durations)
+
+// Piano style: bass note + melody
+var pianoPattern = MusicNotation.Parse("<< C2/1 | C4/4 E4/4 G4/4 C5/4 >>");
+// Bass C2 holds for 1 whole note
+// Treble plays 4 quarter notes (C4 E4 G4 C5)
+// Next element starts after 1 whole note (max duration)
+
+// Two voices with different rhythms
+var twoVoices = MusicNotation.Parse("<< C4/1 | E4/4 F4/4 G4/4 A4/4 >>");
+// Voice 1: C4 whole note
+// Voice 2: 4 quarter notes
+// Both start at same time, C4 sustains while upper voice moves
+
+// Three voices (SATB style)
+var satb = MusicNotation.Parse("<< C5/2 | G4/4 G4/4 | E4/2 | C3/2 >>");
+// Soprano: C5 half note
+// Alto: G4 G4 quarter notes  
+// Tenor: E4 half note
+// Bass: C3 half note
+
+// Polyphonic blocks with chords and rests
+var complex = MusicNotation.Parse("<< [C4 E4]/2 | R/4 G3/4 >>");
+// Upper: C4+E4 chord (half note)
+// Lower: quarter rest, then G3 quarter note
+
+// Multiple polyphonic blocks in sequence
+var progression = MusicNotation.Parse("<< C4/2 | E4/2 >> << D4/2 | F4/2 >>");
+// First block: C4 and E4 half notes (parallel)
+// Second block: D4 and F4 half notes (starts at 1/2)
+
+// Polyphony with time signatures and measures
+var structured = MusicNotation.Parse(
+    "4/4: << C4/2 D4/2 | E4/4 F4/4 G4/4 A4/4 >> | << G4/1 | C3/4 D3/4 E3/4 F3/4 >>");
+// Two measures, each with polyphonic content
+
+// Practical example: pedal bass under melody
+var pedalPoint = MusicNotation.Parse(
+    "<< C2/1 | C4/4 D4/4 E4/4 F4/4 >> << C2/1 | G4/4 F4/4 E4/4 D4/4 >>");
+// C2 bass sustains for 2 whole notes (pedal tone)
+// Melody changes every quarter note above it
+
+// ===== Dynamics (Volume and Expression) =====
+
+// Static dynamics: set volume level at a point
+var quiet = MusicNotation.Parse("@dynamics pp C4/4 E4/4 G4/4");
+// pp (pianissimo) = very soft
+
+var loud = MusicNotation.Parse("@dynamics ff C4/4 E4/4 G4/4");
+// ff (fortissimo) = very loud
+
+// All standard dynamics levels supported:
+// pppp, ppp, pp, p (soft) → mp, mf (medium) → f, ff, fff, ffff (loud)
+// Plus accents: sf (sforzando), sfz (sforzato), fp (forte-piano), rf (rinforzando)
+
+var fullRange = MusicNotation.Parse(
+    "@dynamics pp C4/4 @dynamics mp E4/4 @dynamics mf G4/4 @dynamics ff C5/4");
+// Gradual volume increase: pp → mp → mf → ff
+
+// Crescendo: gradual volume increase
+var cresc = MusicNotation.Parse("@dynamics p @cresc C4/4 D4/4 E4/4 F4/4");
+// Start soft (p), gradually get louder over 4 quarter notes
+
+var crescTarget = MusicNotation.Parse("@dynamics mp @cresc to ff C4/2 D4/2");
+// Start at mp, crescendo to ff over 1 whole note
+
+// Diminuendo (Decrescendo): gradual volume decrease
+var dim = MusicNotation.Parse("@dynamics f @dim C4/4 D4/4 E4/4 F4/4");
+// Start loud (f), gradually get softer
+
+var dimTarget = MusicNotation.Parse("@dynamics ff @dim to pp C4/2 D4/2");
+// Start at ff, diminuendo to pp
+
+// Mixing dynamics with other directives
+var expressive = MusicNotation.Parse(
+    "@bpm 120 @section intro @dynamics mf C4/4 E4/4 " +
+    "@cresc to ff G4/2 @section verse @dim to p C5/4 G4/4");
+// Full expressiveness: tempo + form + dynamics
+
+// Dynamics with polyphony
+var dynamicPoly = MusicNotation.Parse(
+    "@dynamics mf << C2/1 | @cresc to ff C4/4 D4/4 E4/4 F4/4 >>");
+// Bass at mf, melody crescendos from mf to ff
+
 // ===== Ornaments (Embellishments) =====
 
 // Trill - rapid alternation between main note and upper neighbor
@@ -399,7 +491,7 @@ celeritas progression --chords Dm7 G7 Cmaj7 Am7
 celeritas mode --notes C D Eb F G A Bb --root C
 
 # Polyphony analysis
-celeritas polyphony --notes "C4 E4 G4 C5" "D4 F4 A4 D5"
+celeritas polyphony --notes "4/4: [C4 E4 G4 C5]/1 | [D4 F4 A4 D5]/1"
 
 # Rhythm analysis
 celeritas rhythm --durations 1/4 1/4 1/8 1/8 --style jazz
@@ -409,7 +501,10 @@ celeritas melody --notes E4 E4 F4 G4 G4 F4 E4 D4
 
 # MIDI import/export
 celeritas midi import --in song.mid
-celeritas midi export --notes C4@0:1 E4@1:1 G4@2:1 --out output.mid
+celeritas midi export --out output.mid --notes "4/4: C4/4 E4/4 G4/4"
+
+# MIDI export (chords)
+celeritas midi export --out chords.mid --notes "4/4: [C4 E4 G4]/4 R/4 [D4 F4 A4]/2"
 
 # MIDI processing
 celeritas midi transpose --in song.mid --out transposed.mid --semitones 2
@@ -564,19 +659,49 @@ dotnet publish -c Release -r browser-wasm
 Complete Python wrapper via ctypes:
 
 ```python
-from celeritas import transpose, identify_chord, detect_key, Trill
+from celeritas import (
+    NoteEvent,
+    Trill,
+    detect_key,
+    identify_chord,
+    midi_to_note_name,
+    parse_note,
+    transpose,
+)
+
+
+def pitches(note_names: list[str]) -> list[int]:
+    """Convert human-readable note names (e.g., 'C4', 'F#5', 'Bb3') to MIDI pitches."""
+    out: list[int] = []
+    for name in note_names:
+        note = parse_note(name)
+        if note is None:
+            raise ValueError(f"Could not parse note: {name}")
+        out.append(note.pitch)
+    return out
 
 # SIMD-accelerated transpose
-pitches = [60, 64, 67]
-transposed = transpose(pitches, 2)  # [62, 66, 69]
+triad = pitches(["C4", "E4", "G4"])
+transposed = transpose(triad, 2)
+print([midi_to_note_name(p) for p in transposed])  # ['D4', 'F#4', 'A4']
 
 # Chord identification
-chord = identify_chord([60, 64, 67])  # "Cmaj"
+chord = identify_chord(pitches(["C4", "E4", "G4"]))  # "Cmaj"
 
 # Key detection
-key = detect_key([60, 62, 64, 65, 67, 69, 71])  # "C major"
+key_name, is_major = detect_key(pitches(["C4", "D4", "E4", "F4", "G4", "A4", "B4"]))
+print(key_name, "major" if is_major else "minor")
 
 # Ornaments
+base_pitch = pitches(["C4"])[0]
+base_note = NoteEvent(
+    pitch=base_pitch,
+    time_numerator=0,
+    time_denominator=1,
+    duration_numerator=1,
+    duration_denominator=2,
+    velocity=80,
+)
 trill = Trill(base_note, interval=2, speed=8)
 notes = trill.expand()
 ```
@@ -683,4 +808,4 @@ This triggers:
 
 ---
 
-*Made with ⚡ and 🎵*
+Made with ⚡ and 🎵

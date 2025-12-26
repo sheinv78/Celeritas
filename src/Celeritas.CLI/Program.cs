@@ -547,7 +547,7 @@ rootCommand.Subcommands.Add(modeCommand);
 // ═══════════════════════════════════════════════════════════════
 Option<string[]> polyNotesOption = new("--notes", "-n")
 {
-    Description = "Notes in format 'pitch@offset:duration' (e.g., C4@0:1 E4@0:1 G4@0.5:0.5)",
+    Description = "Celeritas music notation string (durations like /4, /8, dotted, chords, bars). Example: \"4/4: [C4 E4 G4]/4 R/4 C5/2\"",
     Required = true,
     AllowMultipleArgumentsPerToken = true
 };
@@ -570,42 +570,33 @@ polyphonyCommand.SetAction(parseResult =>
     if (notesInput.Length == 0)
     {
         Console.WriteLine("No notes provided.");
-        Console.WriteLine("Format: pitch@offset:duration (offset/duration in beats)");
-        Console.WriteLine("Example: celeritas polyphony --notes C4@0:1 E4@0:1 G4@0:1 C5@0:1");
+        Console.WriteLine("Format: Celeritas music notation");
+        Console.WriteLine("Example: celeritas polyphony --notes \"4/4: [C4 E4 G4 C5]/1\"");
         return;
     }
 
-    // Parse notes into NoteBuffer
-    using var buffer = new NoteBuffer(notesInput.Length);
-
-    foreach (var noteStr in notesInput)
+    // Parse music notation into NoteBuffer.
+    // MusicNotation.Parse uses whole-note units (whole=1), while analysis expects beats in quarter-note units (quarter=1). Scale by 4.
+    var notation = string.Join(' ', notesInput);
+    NoteEvent[] parsed;
+    try
     {
-        try
-        {
-            // Parse format: C4@0:1 or C4@0.5:0.5
-            var atIdx = noteStr.IndexOf('@');
-            var colonIdx = noteStr.IndexOf(':');
+        parsed = MusicNotation.Parse(notation, validateMeasures: false);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Could not parse music notation: {ex.Message}");
+        return;
+    }
 
-            if (atIdx == -1 || colonIdx == -1)
-            {
-                Console.WriteLine($"  Warning: Invalid format '{noteStr}' - use 'C4@0:1'");
-                continue;
-            }
+    using var buffer = new NoteBuffer(Math.Max(parsed.Length, 1));
+    var quarterScale = new Rational(4, 1);
+    foreach (var e in parsed)
+    {
+        if (e.Pitch == MusicNotation.REST_PITCH)
+            continue;
 
-            var pitchStr = noteStr[..atIdx];
-            var offsetStr = noteStr[(atIdx + 1)..colonIdx];
-            var durationStr = noteStr[(colonIdx + 1)..];
-
-            var pitch = MusicNotation.ParseNote(pitchStr);
-            var offset = ParseRational(offsetStr);
-            var duration = ParseRational(durationStr);
-
-            buffer.Add(new NoteEvent(pitch, offset, duration, 0.8f));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"  Warning: Could not parse '{noteStr}': {ex.Message}");
-        }
+        buffer.Add(new NoteEvent(e.Pitch, e.Offset * quarterScale, e.Duration * quarterScale, e.Velocity));
     }
 
     if (buffer.Count == 0)
@@ -1065,7 +1056,7 @@ Option<int> midiBpmOption = new("--bpm")
 
 Option<string[]> midiNotesOption = new("--notes", "-n")
 {
-    Description = "Notes as pitch@offset:duration (offset/duration in beats). Example: C4@0:1 E4@1:1",
+    Description = "Celeritas music notation string (durations like /4, /8, dotted, chords, bars). Example: \"4/4: C4/4 E4/4 G4/4\"",
     Required = true,
     AllowMultipleArgumentsPerToken = true
 };
@@ -1126,7 +1117,7 @@ midiImportCommand.SetAction(parseResult =>
         Console.WriteLine($"  ... ({buffer.Count - countToPrint} more)");
 });
 
-Command midiExportCommand = new("export", "Export notes (pitch@offset:duration) to a MIDI file");
+Command midiExportCommand = new("export", "Export notes to a MIDI file");
 midiExportCommand.Options.Add(midiOutOption);
 midiExportCommand.Options.Add(midiNotesOption);
 midiExportCommand.Options.Add(midiChannelOption);
@@ -1150,40 +1141,34 @@ midiExportCommand.SetAction(parseResult =>
     if (notesInput.Length == 0)
     {
         Console.WriteLine("No notes provided.");
-        Console.WriteLine("Format: pitch@offset:duration (offset/duration in beats)");
-        Console.WriteLine("Example: celeritas midi export --out out.mid --notes C4@0:1 E4@1:1 G4@2:2");
+        Console.WriteLine("Format: Celeritas music notation");
+        Console.WriteLine("Example: celeritas midi export --out out.mid --notes \"4/4: C4/4 E4/4 G4/4\"");
         return;
     }
 
-    using var buffer = new NoteBuffer(notesInput.Length);
+    using var buffer = new NoteBuffer(Math.Max(notesInput.Length, 1));
 
-    foreach (var noteStr in notesInput)
+    // Interpret as Celeritas music notation. MusicNotation.Parse uses whole-note units (whole=1),
+    // while MIDI export expects beats in quarter-note units (quarter=1). Scale by 4.
+    var notation = string.Join(' ', notesInput);
+    NoteEvent[] parsed;
+    try
     {
-        try
-        {
-            var atIdx = noteStr.IndexOf('@');
-            var colonIdx = noteStr.IndexOf(':');
+        parsed = MusicNotation.Parse(notation, validateMeasures: false);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Could not parse music notation: {ex.Message}");
+        return;
+    }
 
-            if (atIdx == -1 || colonIdx == -1)
-            {
-                Console.WriteLine($"  Warning: Invalid format '{noteStr}' - use 'C4@0:1'");
-                continue;
-            }
+    var quarterScale = new Rational(4, 1);
+    foreach (var e in parsed)
+    {
+        if (e.Pitch == MusicNotation.REST_PITCH)
+            continue;
 
-            var pitchStr = noteStr[..atIdx];
-            var offsetStr = noteStr[(atIdx + 1)..colonIdx];
-            var durationStr = noteStr[(colonIdx + 1)..];
-
-            var pitch = MusicNotation.ParseNote(pitchStr);
-            var offset = ParseRational(offsetStr);
-            var duration = ParseRational(durationStr);
-
-            buffer.Add(new NoteEvent(pitch, offset, duration, 0.8f));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"  Warning: Could not parse '{noteStr}': {ex.Message}");
-        }
+        buffer.Add(new NoteEvent(e.Pitch, e.Offset * quarterScale, e.Duration * quarterScale, e.Velocity));
     }
 
     if (buffer.Count == 0)
@@ -1203,7 +1188,7 @@ midiExportCommand.SetAction(parseResult =>
 midiCommand.Subcommands.Add(midiImportCommand);
 midiCommand.Subcommands.Add(midiExportCommand);
 
-// midi transpose - Transpose MIDI file  
+// midi transpose - Transpose MIDI file
 Command midiTransposeCommand = new("transpose", "Transpose a MIDI file");
 var transposeOption = new Option<int>("--semitones", "-s") { Description = "Semitones to transpose", Required = true };
 midiTransposeCommand.Options.Add(midiInOption);
@@ -1248,7 +1233,6 @@ midiAnalyzeCommand.SetAction(parseResult =>
     var inFile = parseResult.GetValue(midiInOption);
     var formatRaw = parseResult.GetValue(midiAnalyzeFormatOption) ?? "sections";
     var format = formatRaw.Trim().ToLowerInvariant();
-    var formatSpecified = parseResult.HasOption(midiAnalyzeFormatOption);
 
     if (format is not ("sections" or "summary" or "timeline"))
     {
@@ -1311,7 +1295,7 @@ midiAnalyzeCommand.SetAction(parseResult =>
 
     var color = HarmonicColorAnalyzer.Analyze(melody, chordAssignments, key);
 
-    if (format == "sections" && !formatSpecified)
+    if (format == "sections")
     {
         Console.WriteLine("Tip: use --format summary for a compact view, or --format timeline for diagnostics.");
         Console.WriteLine();
