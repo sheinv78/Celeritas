@@ -14,18 +14,18 @@ class KeyDetection
 
         // Major key from scale
         var cMajorScale = MusicNotation.Parse("C4 D4 E4 F4 G4 A4 B4 C5");
-        var key1 = KeyAnalyzer.DetectKey(cMajorScale);
-        Console.WriteLine($"Scale: {key1}");  // C major
+        var key1 = KeyProfiler.DetectFromPitches(cMajorScale.Select(n => n.Pitch).ToArray());
+        Console.WriteLine($"Scale: {key1.Key}");  // C major
 
         // Minor key
         var aMinorScale = MusicNotation.Parse("A3 B3 C4 D4 E4 F4 G4 A4");
-        var key2 = KeyAnalyzer.DetectKey(aMinorScale);
-        Console.WriteLine($"Scale: {key2}");  // A minor
+        var key2 = KeyProfiler.DetectFromPitches(aMinorScale.Select(n => n.Pitch).ToArray());
+        Console.WriteLine($"Scale: {key2.Key}");  // A minor
 
         // From melody
         var melody = MusicNotation.Parse("E4/4 D4/4 C4/4 D4/4 E4/4 E4/4 E4/2");
-        var key3 = KeyAnalyzer.DetectKey(melody);
-        Console.WriteLine($"Melody: {key3}");  // Likely C major
+        var key3 = KeyProfiler.DetectFromPitches(melody.Select(n => n.Pitch).ToArray());
+        Console.WriteLine($"Melody: {key3.Key}");  // Likely C major
 
         // ===== Modal Detection =====
 
@@ -89,17 +89,17 @@ class KeyDetection
         // ===== Key Profiling =====
 
         // Get detailed analysis with confidence scores
-        var profile = KeyProfiler.AnalyzeWithConfidence(melody);
+        var profile = KeyProfiler.DetectFromPitches(melody.Select(n => n.Pitch).ToArray());
         Console.WriteLine($"\nKey profile:");
-        Console.WriteLine($"  Best match: {profile.BestKey}");
+        Console.WriteLine($"  Best match: {profile.Key}");
         Console.WriteLine($"  Confidence: {profile.Confidence:P1}");
-        Console.WriteLine($"  Is major: {profile.IsMajor}");
+        Console.WriteLine($"  Is major: {profile.Key.IsMajor}");
 
         // Top 3 candidates
         Console.WriteLine($"\n  Top candidates:");
-        foreach (var candidate in profile.TopCandidates.Take(3))
+        foreach (var candidate in profile.AllCorrelations.Take(3))
         {
-            Console.WriteLine($"    {candidate.Key}: {candidate.Score:F3}");
+            Console.WriteLine($"    {candidate.Key}: {candidate.Correlation:F3}");
         }
 
         // ===== Roman Numeral Analysis =====
@@ -108,19 +108,21 @@ class KeyDetection
         var keyC = new KeySignature("C", isMajor: true);
 
         var chord1 = MusicNotation.Parse("C4 E4 G4");
-        var roman1 = KeyAnalyzer.Analyze(chord1, keyC);
-        Console.WriteLine($"\n{roman1.ChordSymbol} in C major: {roman1.ToRomanNumeral()} ({roman1.Function})");
+        var roman1 = KeyAnalyzer.Analyze(chord1.Select(n => n.Pitch).ToArray(), keyC);
+        Console.WriteLine($"\nC-E-G in C major: {roman1.ToRomanNumeral()} ({roman1.Function})");
 
         var chord2 = MusicNotation.Parse("D4 F4 A4");
-        var roman2 = KeyAnalyzer.Analyze(chord2, keyC);
-        Console.WriteLine($"{roman2.ChordSymbol} in C major: {roman2.ToRomanNumeral()} ({roman2.Function})");
+        var roman2 = KeyAnalyzer.Analyze(chord2.Select(n => n.Pitch).ToArray(), keyC);
+        Console.WriteLine($"D-F-A in C major: {roman2.ToRomanNumeral()} ({roman2.Function})");
 
         var chord3 = MusicNotation.Parse("G3 B3 D4 F4");
-        var roman3 = KeyAnalyzer.Analyze(chord3, keyC);
-        Console.WriteLine($"{roman3.ChordSymbol} in C major: {roman3.ToRomanNumeral()} ({roman3.Function})");
+        var roman3 = KeyAnalyzer.Analyze(chord3.Select(n => n.Pitch).ToArray(), keyC);
+        Console.WriteLine($"G-B-D-F in C major: {roman3.ToRomanNumeral()} ({roman3.Function})");
 
         // ===== Modulation Detection =====
+        // Note: ModulationDetector API not yet implemented
 
+        /*
         // Detect key changes in a piece
         var modulatingPiece = MusicNotation.Parse(@"
             C4/4 E4/4 G4/4 C5/4 |
@@ -154,9 +156,12 @@ class KeyDetection
             Console.WriteLine($"  Tonicized: {analysis.TonicizedKey}");
             Console.WriteLine($"  Returns to: {analysis.StartKey}");
         }
+        */
 
         // ===== Key Relationships =====
+        // Note: Key relationship methods not yet implemented
 
+        /*
         var keyCMaj = new KeySignature("C", true);
 
         // Parallel minor
@@ -174,6 +179,7 @@ class KeyDetection
         // Subdominant key
         var subdominant = keyCMaj.GetSubdominantKey();
         Console.WriteLine($"C major subdominant: {subdominant}");  // F major
+        */
     }
 }
 

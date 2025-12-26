@@ -2,7 +2,6 @@
 // Tempo, dynamics, sections, BPM ramps, crescendo/diminuendo
 
 using Celeritas.Core;
-using Celeritas.Grammar;
 
 namespace CeleritasExamples;
 
@@ -14,7 +13,7 @@ class Directives
 
         // Static BPM
         var withBpm = MusicNotationAntlrParser.Parse("@bpm 120 C4/4 E4/4 G4/4");
-        Console.WriteLine($"BPM directive at {withBpm.Directives[0].Time}: {withBpm.Directives[0].Value}");
+        Console.WriteLine($"BPM directive at {withBpm.Directives[0].Time}: {((TempoBpmDirective)withBpm.Directives[0]).Bpm}");
 
         // BPM changes
         var bpmChanges = MusicNotationAntlrParser.Parse(
@@ -24,7 +23,7 @@ class Directives
         // BPM ramp (accelerando/ritardando)
         var ramp = MusicNotationAntlrParser.Parse("@bpm 120 -> 140 /2 C4/1 D4/1");
         // Ramps from 120 to 140 over 2 beats (1/2 duration)
-        Console.WriteLine($"BPM ramp: {ramp.Directives[0].Type}");
+        Console.WriteLine($"BPM ramp: {((TempoBpmDirective)ramp.Directives[0]).GetType().Name}");
 
         // Gradual slowdown
         var slowdown = MusicNotationAntlrParser.Parse("@bpm 140 -> 80 /4 C4/1 D4/1 E4/1 F4/1");
@@ -32,7 +31,7 @@ class Directives
         // ===== Tempo Markings =====
 
         var tempo = MusicNotationAntlrParser.Parse("@tempo allegro C4/4 E4/4 G4/4");
-        Console.WriteLine($"Tempo: {tempo.Directives[0].Value}");
+        Console.WriteLine($"Tempo: {((TempoCharacterDirective)tempo.Directives[0]).Character}");
 
         // Common tempo markings:
         // Slow: grave, largo, lento, adagio
@@ -76,12 +75,14 @@ class Directives
         // Crescendo without target
         var cresc = MusicNotationAntlrParser.Parse(
             "@dynamics p @cresc C4/4 D4/4 E4/4 F4/4");
-        Console.WriteLine($"Crescendo: {cresc.Directives[1].Type}");
+        if (cresc.Directives[1] is DynamicsDirective dynDir)
+            Console.WriteLine($"Crescendo: {dynDir.Type}");
 
         // Crescendo to specific level
         var crescTarget = MusicNotationAntlrParser.Parse(
             "@dynamics mp @cresc to ff C4/2 D4/2");
-        Console.WriteLine($"Crescendo to: {crescTarget.Directives[1].TargetValue}");
+        if (crescTarget.Directives[1] is DynamicsDirective crescDyn)
+            Console.WriteLine($"Crescendo to: {crescDyn.TargetLevel}");
 
         // ===== Diminuendo (Gradual Volume Decrease) =====
 
@@ -103,7 +104,10 @@ class Directives
             @section outro C5/1");
 
         foreach (var dir in sections.Directives)
-            Console.WriteLine($"Section at {dir.Time}: {dir.Value}");
+        {
+            if (dir is SectionDirective sectionDir)
+                Console.WriteLine($"Section at {dir.Time}: {sectionDir.Label}");
+        }
 
         // Section labels can be anything
         var customSections = MusicNotationAntlrParser.Parse(@"

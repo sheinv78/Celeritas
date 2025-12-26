@@ -2,7 +2,6 @@
 // Parse notation → internal representation → format back to string
 
 using Celeritas.Core;
-using Celeritas.Grammar;
 
 namespace CeleritasExamples;
 

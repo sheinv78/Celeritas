@@ -1,7 +1,9 @@
 // Form Analysis and Polyphony Examples
 // Phrases, cadences, sections, voice separation
 
+
 using Celeritas.Core;
+using System.Linq;
 using Celeritas.Core.Analysis;
 
 namespace CeleritasExamples;
@@ -19,22 +21,20 @@ class FormAndPolyphony
             C4/2 G4/2 C5/1");
 
         var key = new KeySignature("C", true);
-        var formOptions = new FormAnalysisOptions
-        {
-            MinRestForPhraseBoundary = new Rational(1, 4),
-            Key = key
-        };
+        using var melodyBuffer = new NoteBuffer(melody.Length);
+        melodyBuffer.AddRange(melody);
 
-        var form = FormAnalyzer.Analyze(melody, formOptions);
+        var form = FormAnalyzer.Analyze(melodyBuffer, new FormAnalysisOptions(
+            MinRestForPhraseBoundary: new Rational(1, 4),
+            Key: key));
 
         Console.WriteLine($"=== Form Analysis ===");
         Console.WriteLine($"Phrases detected: {form.Phrases.Count}");
         foreach (var phrase in form.Phrases)
         {
-            Console.WriteLine($"  Phrase {phrase.Number}: {phrase.StartTime} → {phrase.EndTime}");
+            Console.WriteLine($"  Phrase: {phrase.Start} → {phrase.End}");
             Console.WriteLine($"    Length: {phrase.Length}");
-            Console.WriteLine($"    Cadence: {phrase.CadenceType}");
-            Console.WriteLine($"    Character: {phrase.Character}");
+            Console.WriteLine($"    Cadence: {phrase.EndingCadence}");
         }
 
         // ===== Cadence Analysis =====
@@ -42,9 +42,9 @@ class FormAndPolyphony
         Console.WriteLine($"\nCadences:");
         foreach (var cadence in form.Cadences)
         {
-            Console.WriteLine($"  {cadence.Type} at {cadence.Time}");
-            Console.WriteLine($"    Strength: {cadence.Strength:P0}");
-            Console.WriteLine($"    Chords: {cadence.ChordProgression}");
+            Console.WriteLine($"  {cadence.Type} at position {cadence.Position}");
+            Console.WriteLine($"    From {cadence.FromChord} to {cadence.ToChord}");
+            Console.WriteLine($"    {cadence.Description}");
         }
 
         // ===== Section Detection =====
@@ -53,8 +53,11 @@ class FormAndPolyphony
             4/4: C4/4 E4/4 G4/4 C5/4 | G4/4 E4/4 C4/2 |
             D4/4 F4/4 A4/4 D5/4 | A4/4 F4/4 D4/2 |
             C4/4 E4/4 G4/4 C5/4 | G4/4 E4/4 C4/2");
+        using var sonataBuffer = new NoteBuffer(sonata.Length);
+        sonataBuffer.AddRange(sonata);
 
-        var sectionAnalysis = FormAnalyzer.Analyze(sonata, formOptions);
+        var options = new FormAnalysisOptions(new Rational(1, 2));
+        var sectionAnalysis = FormAnalyzer.Analyze(sonataBuffer, options);
 
         Console.WriteLine($"\n=== Section Structure ===");
         Console.WriteLine($"Form label: {sectionAnalysis.FormLabel}");  // A B A
@@ -63,14 +66,15 @@ class FormAndPolyphony
         foreach (var section in sectionAnalysis.Sections)
         {
             Console.WriteLine($"\n  Section {section.Label}:");
-            Console.WriteLine($"    Time: {section.StartTime} → {section.EndTime}");
-            Console.WriteLine($"    Similarity to A: {section.SimilarityToFirst:P1}");
-            Console.WriteLine($"    Key: {section.LocalKey}");
-            Console.WriteLine($"    Density: {section.NoteDensity:F2} notes/beat");
+            Console.WriteLine($"    Time: {section.Start} → {section.End}");
+            Console.WriteLine($"    Length: {section.Length}");
+            Console.WriteLine($"    Phrases: {section.PhraseCount}");
         }
 
         // ===== Period Detection =====
+        // Note: Period properties (Number, Antecedent, Consequent) and HasPeriods don't exist
 
+        /*
         var period = MusicNotation.Parse(@"
             4/4: C4/4 E4/4 G4/4 C5/4 | B4/4 G4/4 D4/2 |
             C4/4 E4/4 G4/4 C5/4 | G4/4 E4/4 C4/2");
@@ -90,6 +94,7 @@ class FormAndPolyphony
                 Console.WriteLine($"  Relationship: {p.Relationship}");
             }
         }
+        */
 
         // ===== Polyphony Analysis =====
 
@@ -98,12 +103,16 @@ class FormAndPolyphony
             << C4/4 D4/4 E4/4 F4/4 | G4/4 F4/4 E4/4 D4/4 >>
             << E3/2 D3/2 | C3/1 >>");
 
-        var polyAnalysis = PolyphonyAnalyzer.Analyze(twoVoice);
+        using var polyBuffer = new NoteBuffer(twoVoice.Length);
+        polyBuffer.AddRange(twoVoice);
+        var polyAnalysis = PolyphonyAnalyzer.Analyze(polyBuffer);
 
         Console.WriteLine($"\n=== Polyphony Analysis ===");
-        Console.WriteLine($"Voices detected: {polyAnalysis.VoiceCount}");
-        Console.WriteLine($"Polyphonic sections: {polyAnalysis.PolyphonicSections.Count}");
+        // Note: VoiceCount and PolyphonicSections properties don't exist
+        // Console.WriteLine($"Voices detected: {polyAnalysis.VoiceCount}");
+        // Console.WriteLine($"Polyphonic sections: {polyAnalysis.PolyphonicSections.Count}");
 
+        /*
         foreach (var section in polyAnalysis.PolyphonicSections)
         {
             Console.WriteLine($"\n  Section at {section.StartTime}:");
@@ -111,13 +120,16 @@ class FormAndPolyphony
             Console.WriteLine($"    Voices: {section.VoiceCount}");
             Console.WriteLine($"    Texture: {section.Texture}");  // Homophonic, Polyphonic, Heterophonic
         }
+        */
 
         // ===== Voice Separation =====
 
         var mixed = MusicNotation.Parse(@"
             C4/4 E4/4 C3/4 G4/4 | E3/4 C5/4 G3/4 E4/4");
 
-        var separated = VoiceSeparator.Separate(mixed);
+        using var mixedBuffer = new NoteBuffer(mixed.Length);
+        mixedBuffer.AddRange(mixed);
+        var separated = VoiceSeparator.Separate(mixedBuffer);
 
         Console.WriteLine($"\n=== Voice Separation ===");
         Console.WriteLine($"Input notes: {mixed.Length}");
@@ -127,17 +139,19 @@ class FormAndPolyphony
         {
             var voice = separated.Voices[i];
             Console.WriteLine($"\n  Voice {i + 1} ({voice.Range}):");
-            Console.WriteLine($"    Notes: {voice.Notes.Length}");
+            Console.WriteLine($"    Notes: {voice.Notes.Count}");
             Console.WriteLine($"    Average pitch: {voice.AveragePitch:F1}");
-            Console.WriteLine($"    Range: {voice.AmbitusStart}-{voice.AmbitusEnd}");
+            // Note: AmbitusStart/AmbitusEnd properties don't exist
+            // Console.WriteLine($"    Range: {voice.AmbitusStart}-{voice.AmbitusEnd}");
 
             var notes = string.Join(" ", voice.Notes.Take(5).Select(n =>
-                MusicNotation.PitchToNoteName(n.Pitch)));
+                MusicMath.MidiToNoteName(n.Pitch)));
             Console.WriteLine($"    First notes: {notes}...");
         }
 
         // ===== SATB Voice Ranges =====
-
+        // Note: VoiceSeparator.SeparateIntoSATB doesn't exist
+        /*
         var satb = MusicNotation.Parse(@"
             << C5/1 | G4/1 | E4/1 | C3/1 >>");
 
@@ -155,9 +169,11 @@ class FormAndPolyphony
 
         Console.WriteLine($"Bass: {satbSeparated.Bass.Notes.Length} notes");
         Console.WriteLine($"  Range: {satbSeparated.Bass.AmbitusStart}-{satbSeparated.Bass.AmbitusEnd}");
+        */
 
         // ===== Counterpoint Rules ===
-
+        // Note: PolyphonyAnalyzer.CheckCounterpointRules doesn't exist
+        /*
         var counterpoint = MusicNotation.Parse(@"
             << C4/4 D4/4 E4/4 F4/4 | E3/4 F3/4 G3/4 A3/4 >>");
 
@@ -181,9 +197,11 @@ class FormAndPolyphony
                 Console.WriteLine($"    Description: {violation.Description}");
             }
         }
+        */
 
         // ===== Imitation Detection =====
-
+        // Note: PolyphonyAnalyzer.DetectImitation doesn't exist
+        /*
         var fugue = MusicNotation.Parse(@"
             << C4/4 D4/4 E4/4 F4/4 | R/1 >>
             << R/1 | C3/4 D3/4 E3/4 F3/4 >>");
@@ -199,6 +217,7 @@ class FormAndPolyphony
             Console.WriteLine($"Time delay: {imitation.TimeDelay}");
             Console.WriteLine($"Voices involved: {string.Join(", ", imitation.VoicesInvolved)}");
         }
+        */
     }
 }
 

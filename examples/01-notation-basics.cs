@@ -110,7 +110,7 @@ class NotationBasics
         foreach (var note in MusicNotation.Parse("C4/4 E4/2. G4/8"))
         {
             Console.WriteLine($"Pitch: {note.Pitch}, " +
-                            $"Time: {note.Time}, " +
+                            $"Offset: {note.Offset}, " +
                             $"Duration: {note.Duration}, " +
                             $"MIDI: {note.Pitch}");
         }
@@ -124,8 +124,8 @@ C major chord has 3 notes
 
 Parsed complete phrase with 16 notes
 
-Pitch: 60, Time: 0, Duration: 1/4, MIDI: 60
-Pitch: 64, Time: 1/4, Duration: 3/4, MIDI: 64
-Pitch: 67, Time: 1, Duration: 1/8, MIDI: 67
+Pitch: 60, Offset: 0, Duration: 1/4, MIDI: 60
+Pitch: 64, Offset: 1/4, Duration: 3/4, MIDI: 64
+Pitch: 67, Offset: 1, Duration: 1/8, MIDI: 67
 
 */

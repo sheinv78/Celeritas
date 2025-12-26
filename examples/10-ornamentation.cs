@@ -1,7 +1,9 @@
 // Ornamentation Examples
 // Trills, mordents, turns, appoggiaturas
 
+
 using Celeritas.Core;
+using System.Linq;
 using Celeritas.Core.Ornamentation;
 
 namespace CeleritasExamples;
@@ -14,7 +16,7 @@ class OrnamentationExamples
 
         var baseNote = new NoteEvent(
             pitch: 60,  // C4
-            time: Rational.Zero,
+            offset: Rational.Zero,
             duration: new Rational(1, 2),  // Half note
             velocity: 0.8f
         );
@@ -33,7 +35,7 @@ class OrnamentationExamples
 
         foreach (var note in expanded.Take(8))
         {
-            Console.WriteLine($"  {MusicNotation.PitchToNoteName(note.Pitch)} at {note.Time}");
+            Console.WriteLine($"  {MusicMath.MidiToNoteName(note.Pitch)} at {note.Offset}");
         }
 
         // ===== Trill Variations =====
@@ -61,7 +63,7 @@ class OrnamentationExamples
 
         var upperExpanded = upperStartTrill.Expand();
         Console.WriteLine($"\n=== Upper-Start Trill ===");
-        Console.WriteLine($"First notes: {string.Join(" ", upperExpanded.Take(4).Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"First notes: {string.Join(" ", upperExpanded.Take(4).Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
         // Output: D4 C4 D4 C4
 
         // Trill with turn ending
@@ -69,14 +71,13 @@ class OrnamentationExamples
         {
             BaseNote = baseNote,
             Interval = 2,
-            Speed = 8,
-            HasTurnEnding = true
+            Speed = 8
+            // HasTurnEnding = true  // Property doesn't exist yet
         };
 
         var turnExpanded = trillWithTurn.Expand();
-        Console.WriteLine($"\n=== Trill with Turn ===");
-        Console.WriteLine($"Last notes: {string.Join(" ", turnExpanded.TakeLast(4).Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
-        // Ends with turn figure
+        Console.WriteLine($"\n=== Trill (will add turn support later) ===");
+        Console.WriteLine($"Last notes: {string.Join(" ", turnExpanded.TakeLast(4).Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
 
         // ===== Mordents =====
 
@@ -91,7 +92,7 @@ class OrnamentationExamples
 
         var mordentExpanded = upperMordent.Expand();
         Console.WriteLine($"\n=== Upper Mordent ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", mordentExpanded.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", mordentExpanded.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
         // Output: C4 D4 C4
 
         // Lower mordent (main-lower-main)
@@ -105,7 +106,7 @@ class OrnamentationExamples
 
         var lowerExpanded = lowerMordent.Expand();
         Console.WriteLine($"\n=== Lower Mordent ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", lowerExpanded.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", lowerExpanded.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
         // Output: C4 Bb3 C4
 
         // Double mordent (more alternations)
@@ -119,7 +120,7 @@ class OrnamentationExamples
 
         var doubleExpanded = doubleMordent.Expand();
         Console.WriteLine($"\n=== Double Mordent ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", doubleExpanded.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", doubleExpanded.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
         // Output: C4 D4 C4 D4 C4
 
         // ===== Turns =====
@@ -135,7 +136,7 @@ class OrnamentationExamples
 
         var turnExpanded2 = turn.Expand();
         Console.WriteLine($"\n=== Normal Turn ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", turnExpanded2.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", turnExpanded2.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
         // Output: D4 C4 Bb3 C4
 
         // Inverted turn (lower-main-upper-main)
@@ -149,7 +150,7 @@ class OrnamentationExamples
 
         var invertedExpanded = invertedTurn.Expand();
         Console.WriteLine($"\n=== Inverted Turn ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", invertedExpanded.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", invertedExpanded.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
         // Output: Bb3 C4 D4 C4
 
         // Turn with different intervals
@@ -163,7 +164,7 @@ class OrnamentationExamples
 
         var chromaticExpanded = chromaticTurn.Expand();
         Console.WriteLine($"\n=== Chromatic Turn ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", chromaticExpanded.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", chromaticExpanded.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
         // Output: Db4 C4 B3 C4
 
         // ===== Appoggiaturas =====
@@ -173,13 +174,13 @@ class OrnamentationExamples
         {
             BaseNote = baseNote,
             Type = AppogiaturaType.Long,
-            Interval = 2,       // Approach from whole step above
-            Direction = 1       // 1 = from above, -1 = from below
+            Interval = 2       // Approach from whole step above
+            // Direction = 1   // Property doesn't exist yet (1 = from above, -1 = from below)
         };
 
         var longExpanded = longAppogg.Expand();
         Console.WriteLine($"\n=== Long Appoggiatura ===");
-        Console.WriteLine($"Notes: {string.Join(" ", longExpanded.Select(n => $"{MusicNotation.PitchToNoteName(n.Pitch)}({n.Duration})"))}");
+        Console.WriteLine($"Notes: {string.Join(" ", longExpanded.Select(n => $"{MusicMath.MidiToNoteName(n.Pitch)}({n.Duration})"))}");
         // D4 takes ~1/4, then C4 takes ~1/4
 
         // Short appoggiatura / acciaccatura (very brief, unaccented)
@@ -187,13 +188,13 @@ class OrnamentationExamples
         {
             BaseNote = baseNote,
             Type = AppogiaturaType.Short,
-            Interval = 2,
-            Direction = -1  // From below
+            Interval = 2
+            // Direction = -1  // Property doesn't exist yet (From below)
         };
 
         var shortExpanded = acciaccatura.Expand();
         Console.WriteLine($"\n=== Acciaccatura ===");
-        Console.WriteLine($"Notes: {string.Join(" ", shortExpanded.Select(n => $"{MusicNotation.PitchToNoteName(n.Pitch)}({n.Duration})"))}");
+        Console.WriteLine($"Notes: {string.Join(" ", shortExpanded.Select(n => $"{MusicMath.MidiToNoteName(n.Pitch)}({n.Duration})"))}");
         // Bb3 very brief, then C4 takes most of duration
 
         // ===== Parsing Ornaments from Notation =====
@@ -212,12 +213,12 @@ class OrnamentationExamples
         // Mordent notation: C4/4{mord}
         var mordentNotation = MusicNotation.Parse("C4/4{mord}");
         Console.WriteLine($"\n=== Parsed Mordent ===");
-        Console.WriteLine($"Notes: {string.Join(" ", mordentNotation.Take(3).Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Notes: {string.Join(" ", mordentNotation.Take(3).Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
 
         // Turn notation: C4/4{turn}
         var turnNotation = MusicNotation.Parse("C4/4{turn}");
         Console.WriteLine($"\n=== Parsed Turn ===");
-        Console.WriteLine($"Notes: {string.Join(" ", turnNotation.Take(4).Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Notes: {string.Join(" ", turnNotation.Take(4).Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
 
         // ===== Applying Ornaments to Melody =====
 
@@ -241,6 +242,8 @@ class OrnamentationExamples
 
         // ===== Ornament Applier (Batch Processing) =====
 
+        // Note: OrnamentApplier.Apply doesn't exist yet, implementing manual approach
+        /*
         var ornamentMap = new Dictionary<int, Ornament>
         {
             { 0, new Trill { BaseNote = melody[0], Interval = 2, Speed = 8 } },
@@ -248,10 +251,13 @@ class OrnamentationExamples
         };
 
         var fullyOrnamented = OrnamentApplier.Apply(melody, ornamentMap);
+        */
 
-        Console.WriteLine($"\n=== Batch Ornamentation ===");
+        var fullyOrnamented = melody;  // Placeholder until batch API exists
+
+        Console.WriteLine($"\n=== Batch Ornamentation (TODO) ===");
         Console.WriteLine($"Original melody: {melody.Length} notes");
-        Console.WriteLine($"Ornaments applied: {ornamentMap.Count}");
+        // Console.WriteLine($"Ornaments applied: {ornamentMap.Count}");
         Console.WriteLine($"Result: {fullyOrnamented.Length} notes");
 
         // ===== Performance Considerations =====
@@ -315,3 +321,4 @@ Ornaments applied: 2
 Result: 21 notes
 
 */
+

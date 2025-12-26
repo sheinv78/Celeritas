@@ -1,7 +1,10 @@
 // Harmonization, Voice Leading, Figured Bass Examples
 // Auto-harmonize melodies, SATB voice leading, figured bass realization
 
+
+using Celeritas.Core.Analysis;
 using Celeritas.Core;
+using System.Linq;
 using Celeritas.Core.Harmonization;
 using Celeritas.Core.VoiceLeading;
 using Celeritas.Core.FiguredBass;
@@ -27,60 +30,36 @@ class HarmonizationAndVoiceLeading
         Console.WriteLine($"\nChord progression:");
         foreach (var chord in result.Chords)
         {
-            Console.WriteLine($"  {chord.Time}: {chord.Symbol} ({chord.RomanNumeral})");
+            Console.WriteLine($"  {chord.Start}: {chord.Chord}");
         }
 
-        Console.WriteLine($"\nHarmonic rhythm: {result.HarmonicRhythm}");
         Console.WriteLine($"Cost (lower is better): {result.TotalCost:F2}");
-
-        // ===== Custom Harmonization Options =====
-
-        var options = new HarmonizationOptions
-        {
-            AllowSeventhChords = true,
-            AllowExtensions = false,
-            PreferStepwiseMotion = true,
-            MinHarmonicRhythm = new Rational(1, 2),  // Change chord at most every half note
-            MaxHarmonicRhythm = new Rational(2, 1)   // Change chord at least every 2 whole notes
-        };
-
-        var customResult = harmonizer.Harmonize(melody, key, options);
-
-        Console.WriteLine($"\n=== Custom Harmonization ===");
-        foreach (var chord in customResult.Chords)
-        {
-            Console.WriteLine($"  {chord.Time}: {chord.Symbol}");
-        }
 
         // ===== Pluggable Strategy Pattern =====
 
-        // Custom chord candidate provider (jazz voicings)
-        var jazzProvider = new JazzChordCandidateProvider();
-        var jazzHarmonizer = new MelodyHarmonizer(
-            chordCandidateProvider: jazzProvider,
-            transitionScorer: new JazzTransitionScorer()
+        // Use default implementations with custom strategy
+        var customProvider = new DefaultChordCandidateProvider();
+        var customScorer = new DefaultTransitionScorer();
+        var customRhythm = new DefaultHarmonicRhythmStrategy();
+
+        var customHarmonizer = new MelodyHarmonizer(
+            candidateProvider: customProvider,
+            transitionScorer: customScorer,
+            fitScorer: customScorer,  // DefaultTransitionScorer implements both interfaces
+            rhythmStrategy: customRhythm
         );
 
-        var jazzMelody = MusicNotation.Parse("C4/4 E4/4 G4/4 B4/4 D5/2");
-        var jazzResult = jazzHarmonizer.Harmonize(jazzMelody, key);
+        var customMelody = MusicNotation.Parse("C4/4 E4/4 G4/4 B4/4 D5/2");
+        var customResult = customHarmonizer.Harmonize(customMelody, key);
 
-        Console.WriteLine($"\n=== Jazz Harmonization ===");
-        foreach (var chord in jazzResult.Chords)
+        Console.WriteLine($"\n=== Custom Strategy Harmonization ===");
+        foreach (var chord in customResult.Chords)
         {
-            Console.WriteLine($"  {chord.Symbol}");  // Cmaj7, Em7, G7, Bm7b5, Dm9...
+            Console.WriteLine($"  {chord.Start}: {chord.Chord}");
         }
 
-        // ===== Voice Leading Solver =====
-
-        var chordSymbols = new[] { "C", "F", "G", "C" };
-        var solver = new VoiceLeadingSolver();
-        var voicingSolution = solver.Solve(chordSymbols);
-
-        Console.WriteLine($"\n=== SATB Voice Leading ===");
-        Console.WriteLine($"Chords: {string.Join(" - ", chordSymbols)}");
-        Console.WriteLine($"Total voice movement: {voicingSolution.TotalMovement:F2} semitones");
-        Console.WriteLine($"Quality score: {voicingSolution.QualityScore:P1}");
-
+        // Note: Voice leading solver API not yet implemented
+        /*
         Console.WriteLine($"\nVoicings:");
         Console.WriteLine($"{"Chord",-8} {"S",-4} {"A",-4} {"T",-4} {"B",-4}");
         Console.WriteLine(new string('-', 28));
@@ -88,10 +67,10 @@ class HarmonizationAndVoiceLeading
         foreach (var voicing in voicingSolution.Voicings)
         {
             Console.WriteLine($"{voicing.Symbol,-8} " +
-                $"{MusicNotation.PitchToNoteName(voicing.Soprano),-4} " +
-                $"{MusicNotation.PitchToNoteName(voicing.Alto),-4} " +
-                $"{MusicNotation.PitchToNoteName(voicing.Tenor),-4} " +
-                $"{MusicNotation.PitchToNoteName(voicing.Bass),-4}");
+                $"{MusicMath.MidiToNoteName(voicing.Soprano),-4} " +
+                $"{MusicMath.MidiToNoteName(voicing.Alto),-4} " +
+                $"{MusicMath.MidiToNoteName(voicing.Tenor),-4} " +
+                $"{MusicMath.MidiToNoteName(voicing.Bass),-4}");
         }
 
         // ===== Voice Leading Rules Check =====
@@ -103,9 +82,12 @@ class HarmonizationAndVoiceLeading
         Console.WriteLine($"Voice crossing: {voicingSolution.VoiceCrossing}");
         Console.WriteLine($"Spacing issues: {voicingSolution.SpacingIssues}");
         Console.WriteLine($"Range violations: {voicingSolution.RangeViolations}");
+        */
 
         // ===== Custom Voice Leading Options =====
+        // Note: VoiceLeadingSolver and VoiceLeadingSolverOptions don't exist
 
+        /*
         var vlOptions = new VoiceLeadingSolverOptions
         {
             AllowParallelFifths = false,
@@ -124,6 +106,7 @@ class HarmonizationAndVoiceLeading
         Console.WriteLine($"\n=== Strict Voice Leading ===");
         Console.WriteLine($"Average movement: {strictSolution.AverageMovement:F2} semitones");
         Console.WriteLine($"Contrary motion: {strictSolution.ContraryMotionPercentage:P0}");
+        */
 
         // ===== Figured Bass Realization =====
 
@@ -141,7 +124,7 @@ class HarmonizationAndVoiceLeading
         var rootVoicing = realizer.RealizeSymbol(rootPosition);
         Console.WriteLine($"\n=== Figured Bass Realization ===");
         Console.WriteLine($"C (root position):");
-        Console.WriteLine($"  {string.Join(", ", rootVoicing.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"  {string.Join(", ", rootVoicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
 
         // First inversion (6)
         var firstInv = new FiguredBassSymbol
@@ -154,7 +137,7 @@ class HarmonizationAndVoiceLeading
 
         var firstInvVoicing = realizer.RealizeSymbol(firstInv);
         Console.WriteLine($"\nC/E (6):");
-        Console.WriteLine($"  {string.Join(", ", firstInvVoicing.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"  {string.Join(", ", firstInvVoicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
 
         // Second inversion (6/4)
         var secondInv = new FiguredBassSymbol
@@ -167,7 +150,7 @@ class HarmonizationAndVoiceLeading
 
         var secondInvVoicing = realizer.RealizeSymbol(secondInv);
         Console.WriteLine($"\nC/G (6/4):");
-        Console.WriteLine($"  {string.Join(", ", secondInvVoicing.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"  {string.Join(", ", secondInvVoicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
 
         // Seventh chord (7)
         var seventh = new FiguredBassSymbol
@@ -180,10 +163,11 @@ class HarmonizationAndVoiceLeading
 
         var seventhVoicing = realizer.RealizeSymbol(seventh);
         Console.WriteLine($"\nG7 (7):");
-        Console.WriteLine($"  {string.Join(", ", seventhVoicing.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"  {string.Join(", ", seventhVoicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
 
         // ===== Figured Bass with Accidentals =====
-
+        // Note: Accidental enum doesn't exist in this context
+        /*
         var withAccidentals = new FiguredBassSymbol
         {
             BassPitch = 62,  // D
@@ -198,7 +182,8 @@ class HarmonizationAndVoiceLeading
 
         var accidentalVoicing = realizer.RealizeSymbol(withAccidentals);
         Console.WriteLine($"\nD (6#):");
-        Console.WriteLine($"  {string.Join(", ", accidentalVoicing.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+        Console.WriteLine($"  {string.Join(", ", accidentalVoicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
+        */
 
         // ===== Figured Bass Sequence =====
 
@@ -228,12 +213,13 @@ class HarmonizationAndVoiceLeading
                 ? $"({string.Join("/", figures)})"
                 : "(root)";
 
-            Console.WriteLine($"{MusicNotation.PitchToNoteName(pitch)} {figuresStr}: " +
-                $"{string.Join(", ", voicing.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
+            Console.WriteLine($"{MusicMath.MidiToNoteName(pitch)} {figuresStr}: " +
+                $"{string.Join(", ", voicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
         }
 
         // ===== Voice Leading Styles =====
-
+        // Note: FiguredBassRealizerOptions doesn't exist
+        /*
         var smoothStyle = new FiguredBassRealizerOptions
         {
             VoiceLeadingStyle = VoiceLeadingStyle.Smooth,
@@ -256,8 +242,7 @@ class HarmonizationAndVoiceLeading
         var smoothVoicing = smoothRealizer.RealizeSymbol(rootPosition);
 
         Console.WriteLine($"\n=== Voice Leading Styles ===");
-        Console.WriteLine($"Smooth: {string.Join(", ", smoothVoicing.Select(n => MusicNotation.PitchToNoteName(n.Pitch)))}");
-    }
+        Console.WriteLine($"Smooth: {string.Join(", ", smoothVoicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");        */    }
 }
 
 /* Expected Output:
