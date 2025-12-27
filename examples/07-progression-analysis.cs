@@ -102,22 +102,7 @@ class ProgressionAnalysis
         }
 
         // ===== Modal Progressions =====
-        // Note: ModalProgressions class doesn't exist
-
-        /*
-        // Dorian progression (bVII - I)
-        var dorianProg = new[] { "Dm", "C", "Dm" };
-        var modalAnalysis = ModalProgressions.Analyze(dorianProg);
-        Console.WriteLine($"\n{string.Join(" - ", dorianProg)}:");
-        Console.WriteLine($"  Mode: {modalAnalysis.DetectedMode}");
-        Console.WriteLine($"  Modal interchange: {modalAnalysis.HasModalInterchange}");
-
-        // Mixolydian progression (bVII - IV - I)
-        var mixolydianProg = new[] { "G", "F", "C", "G" };
-        var mixoAnalysis = ModalProgressions.Analyze(mixolydianProg);
-        Console.WriteLine($"\n{string.Join(" - ", mixolydianProg)}:");
-        Console.WriteLine($"  Mode: {mixoAnalysis.DetectedMode}");
-        */
+        // See ROADMAP.md for planned ModalProgressions API
 
         // ===== Harmonic Color Analysis =====
 

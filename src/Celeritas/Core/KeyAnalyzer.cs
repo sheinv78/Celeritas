@@ -63,6 +63,28 @@ public static class KeyAnalyzer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static RomanNumeralChord Analyze(int[] pitches, KeySignature key) => Analyze(new ReadOnlySpan<int>(pitches), key);
 
+    /// <summary>
+    /// Analyze chord in the context of a key signature (NoteEvent array overload)
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static RomanNumeralChord Analyze(ReadOnlySpan<NoteEvent> notes, KeySignature key)
+    {
+        if (notes.IsEmpty)
+            return RomanNumeralChord.Invalid;
+
+        Span<int> pitches = stackalloc int[notes.Length];
+        for (var i = 0; i < notes.Length; i++)
+            pitches[i] = notes[i].Pitch;
+
+        return Analyze(pitches, key);
+    }
+
+    /// <summary>
+    /// Analyze chord in the context of a key signature (NoteEvent array overload)
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static RomanNumeralChord Analyze(NoteEvent[] notes, KeySignature key) => Analyze(notes.AsSpan(), key);
+
     private static RomanNumeralChord AnalyzeInMajorKey(int interval, ChordQuality quality)
     {
         return interval switch
@@ -149,6 +171,57 @@ public static class KeyAnalyzer
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static KeySignature IdentifyKey(int[] pitches) => IdentifyKey(new ReadOnlySpan<int>(pitches));
+
+    /// <summary>
+    /// Identify key signature from a human-readable notation string.
+    /// Example: "C4 D4 E4 F4 G4 A4 B4" -> C major
+    /// </summary>
+    public static KeySignature IdentifyKey(string notation)
+    {
+        var notes = MusicNotation.Parse(notation);
+        if (notes.Length == 0)
+            return new KeySignature(0, true);
+
+        Span<int> pitches = stackalloc int[notes.Length];
+        for (var i = 0; i < notes.Length; i++)
+            pitches[i] = notes[i].Pitch;
+
+        return IdentifyKey(pitches);
+    }
+
+    /// <summary>
+    /// Identify key signature from note events.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static KeySignature IdentifyKey(ReadOnlySpan<NoteEvent> notes)
+    {
+        if (notes.IsEmpty)
+            return new KeySignature(0, true);
+
+        Span<int> pitches = stackalloc int[notes.Length];
+        for (var i = 0; i < notes.Length; i++)
+            pitches[i] = notes[i].Pitch;
+
+        return IdentifyKey(pitches);
+    }
+
+    /// <summary>
+    /// Alias for IdentifyKey for more intuitive API.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static KeySignature DetectKey(string notation) => IdentifyKey(notation);
+
+    /// <summary>
+    /// Alias for IdentifyKey for more intuitive API.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static KeySignature DetectKey(ReadOnlySpan<NoteEvent> notes) => IdentifyKey(notes);
+
+    /// <summary>
+    /// Alias for IdentifyKey for more intuitive API.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static KeySignature DetectKey(NoteBuffer buffer) => IdentifyKey(buffer.PitchSpan);
 
     /// <summary>
     /// Cyclic right rotation (ROR) for 12-bit mask

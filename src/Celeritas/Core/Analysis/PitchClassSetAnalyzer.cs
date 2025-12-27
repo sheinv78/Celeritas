@@ -182,6 +182,49 @@ public static class PitchClassSetAnalyzer
         return result;
     }
 
+    /// <summary>
+    /// Gets the complement of a pitch class set (all pitch classes NOT in the set).
+    /// </summary>
+    public static int[] Complement(int[] pitchClasses)
+    {
+        if (pitchClasses.Length == 0)
+            return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+        var mask = 0;
+        foreach (var pc in pitchClasses)
+            mask |= 1 << (pc % 12);
+
+        var complementMask = ~mask & 0xFFF;
+        return MaskToPitchClasses((ushort)complementMask);
+    }
+
+    /// <summary>
+    /// Calculates similarity between two pitch class sets using interval vector comparison.
+    /// Returns a value from 0.0 (completely different) to 1.0 (identical interval content).
+    /// </summary>
+    public static double Similarity(int[] set1, int[] set2)
+    {
+        var iv1 = GetIntervalVector(set1);
+        var iv2 = GetIntervalVector(set2);
+
+        // Calculate similarity using cosine similarity of interval vectors
+        var dotProduct = 0;
+        var mag1 = 0;
+        var mag2 = 0;
+
+        for (var i = 0; i < 6; i++)
+        {
+            dotProduct += iv1[i] * iv2[i];
+            mag1 += iv1[i] * iv1[i];
+            mag2 += iv2[i] * iv2[i];
+        }
+
+        if (mag1 == 0 || mag2 == 0)
+            return 0.0;
+
+        return dotProduct / (Math.Sqrt(mag1) * Math.Sqrt(mag2));
+    }
+
     private static int[] ExtendedToPitchClasses(int[] extended)
     {
         var n = extended.Length;

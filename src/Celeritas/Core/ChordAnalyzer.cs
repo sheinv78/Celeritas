@@ -92,4 +92,37 @@ public static unsafe class ChordAnalyzer
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChordInfo Identify(NoteBuffer buffer) => Identify(buffer.PitchSpan);
+
+    /// <summary>
+    /// Identify chord from a human-readable notation string.
+    /// Examples: "C4 E4 G4" -> C major, "D4 F4 A4 C5" -> Dm7
+    /// </summary>
+    public static ChordInfo Identify(string notation)
+    {
+        var notes = MusicNotation.Parse(notation);
+        if (notes.Length == 0)
+            return ChordLibrary.GetChord(0);
+
+        Span<int> pitches = stackalloc int[notes.Length];
+        for (var i = 0; i < notes.Length; i++)
+            pitches[i] = notes[i].Pitch;
+
+        return Identify(pitches);
+    }
+
+    /// <summary>
+    /// Identify chord from note events.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ChordInfo Identify(ReadOnlySpan<NoteEvent> notes)
+    {
+        if (notes.IsEmpty)
+            return ChordLibrary.GetChord(0);
+
+        Span<int> pitches = stackalloc int[notes.Length];
+        for (var i = 0; i < notes.Length; i++)
+            pitches[i] = notes[i].Pitch;
+
+        return Identify(pitches);
+    }
 }

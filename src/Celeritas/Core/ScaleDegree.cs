@@ -122,5 +122,30 @@ public readonly struct KeySignature
         };
     }
 
+    /// <summary>
+    /// Gets the relative key (e.g., C Major → A Minor, A Minor → C Major).
+    /// </summary>
+    public KeySignature GetRelativeKey()
+    {
+        // Relative minor is 3 semitones below major; relative major is 3 above minor
+        var newRoot = IsMajor ? (byte)((Root + 9) % 12) : (byte)((Root + 3) % 12);
+        return new KeySignature(newRoot, !IsMajor);
+    }
+
+    /// <summary>
+    /// Gets the parallel key (e.g., C Major → C Minor, A Minor → A Major).
+    /// </summary>
+    public KeySignature GetParallelKey() => new(Root, !IsMajor);
+
+    /// <summary>
+    /// Gets the dominant key (e.g., C Major → G Major, A Minor → E Minor).
+    /// </summary>
+    public KeySignature GetDominantKey() => new((byte)((Root + 7) % 12), IsMajor);
+
+    /// <summary>
+    /// Gets the subdominant key (e.g., C Major → F Major, A Minor → D Minor).
+    /// </summary>
+    public KeySignature GetSubdominantKey() => new((byte)((Root + 5) % 12), IsMajor);
+
     public override string ToString() => $"{ChordLibrary.NoteNames[Root]} {(IsMajor ? "Major" : "Minor")}";
 }

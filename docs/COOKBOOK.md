@@ -20,7 +20,6 @@ Common patterns and recipes for music analysis and composition tasks.
 
 ```csharp
 using Celeritas.Core;
-using Celeritas.Core.Analysis;
 
 var melody = MusicNotation.Parse("C4/4 E4/4 G4/4 B4/2 C5/2");
 var key = KeyAnalyzer.DetectKey(melody);
@@ -31,16 +30,16 @@ Console.WriteLine($"Key: {key}");  // Output: C major
 
 ```csharp
 var chords = new[] {
-    MusicNotation.Parse("[C4 E4 G4]/1"),
-    MusicNotation.Parse("[D4 F4 A4]/1"),
-    MusicNotation.Parse("[G3 B3 D4 F4]/1"),
-    MusicNotation.Parse("[C4 E4 G4]/1")
+    "C4 E4 G4",
+    "D4 F4 A4",
+    "G3 B3 D4 F4",
+    "C4 E4 G4"
 };
 
 foreach (var chord in chords)
 {
-    var symbol = ChordAnalyzer.Identify(chord);
-    Console.WriteLine(symbol);
+    var info = ChordAnalyzer.Identify(chord);
+    Console.WriteLine(info.Symbol);
 }
 // Output: C, Dm, G7, C
 ```
@@ -93,39 +92,39 @@ var satb = MusicNotation.Parse(@"
 
 ```csharp
 var rootPosition = ChordAnalyzer.Identify("C4 E4 G4");
-// Output: C
+Console.WriteLine(rootPosition.Symbol);  // Output: C
 
 var firstInversion = ChordAnalyzer.Identify("E3 G3 C4");
-// Output: C/E
+Console.WriteLine(firstInversion.Symbol);  // Output: C/E
 
 var secondInversion = ChordAnalyzer.Identify("G3 C4 E4");
-// Output: C/G
+Console.WriteLine(secondInversion.Symbol);  // Output: C/G
 ```
 
 ### Analyze jazz chords
 
 ```csharp
 var dm7 = ChordAnalyzer.Identify("D4 F4 A4 C5");
-// Output: Dm7
+Console.WriteLine(dm7.Symbol);  // Output: Dm7
 
 var g7 = ChordAnalyzer.Identify("G3 B3 D4 F4");
-// Output: G7
+Console.WriteLine(g7.Symbol);  // Output: G7
 
 var cmaj7 = ChordAnalyzer.Identify("C4 E4 G4 B4");
-// Output: Cmaj7
+Console.WriteLine(cmaj7.Symbol);  // Output: Cmaj7
 
 var am7 = ChordAnalyzer.Identify("A3 C4 E4 G4");
-// Output: Am7
+Console.WriteLine(am7.Symbol);  // Output: Am7
 ```
 
 ### Get detailed chord information
 
 ```csharp
-var details = ChordAnalyzer.IdentifyWithDetails("C4 E4 G4 B4 D5");
-Console.WriteLine($"Symbol: {details.Symbol}");      // Cmaj9
-Console.WriteLine($"Root: {details.Root}");          // C
-Console.WriteLine($"Quality: {details.Quality}");    // Major
-Console.WriteLine($"Extensions: {string.Join(", ", details.Extensions)}");  // 7, 9
+var chord = ChordAnalyzer.Identify("C4 E4 G4 B4 D5");
+Console.WriteLine($"Symbol: {chord.Symbol}");      // Cmaj9
+Console.WriteLine($"Root: {chord.Root}");          // C
+Console.WriteLine($"Quality: {chord.Quality}");    // Major7
+Console.WriteLine($"Bass: {chord.Bass}");          // C
 ```
 
 ---
@@ -143,9 +142,11 @@ Console.WriteLine(key);  // C major
 ### Detect mode with hint
 
 ```csharp
+using Celeritas.Core.Analysis;
+
 var dorianScale = MusicNotation.Parse("D4 E4 F4 G4 A4 B4 C5 D5");
-var mode = ModeLibrary.DetectModeWithRoot(dorianScale);
-Console.WriteLine(mode);  // D Dorian
+var (mode, confidence) = ModeLibrary.DetectModeWithRoot(dorianScale, rootHint: 2); // D = 2
+Console.WriteLine($"{mode} (confidence: {confidence:P0})");  // D Dorian (confidence: 95%)
 ```
 
 ### Analyze scale degrees
@@ -160,20 +161,6 @@ foreach (var note in notes)
     Console.WriteLine($"{note.Pitch} = {degree}");
 }
 // C4 = 1, E4 = 3, G4 = 5
-```
-
-### Detect key modulation
-
-```csharp
-var music = MusicNotation.Parse(@"
-    C4/4 E4/4 G4/4 C5/4 |
-    G4/4 B4/4 D5/4 G5/4");
-
-var modulation = ModulationDetector.Analyze(music);
-if (modulation.HasModulation)
-{
-    Console.WriteLine($"Modulated from {modulation.StartKey} to {modulation.EndKey}");
-}
 ```
 
 ---
@@ -222,7 +209,7 @@ using Celeritas.Core.VoiceLeading;
 
 var solver = new VoiceLeadingSolver();
 var chords = new[] { "C", "F", "G", "C" };
-var solution = solver.Solve(chords);
+var solution = solver.SolveFromSymbols(chords);
 
 foreach (var voicing in solution.Voicings)
 {
@@ -240,38 +227,34 @@ foreach (var voicing in solution.Voicings)
 ```csharp
 using Celeritas.Core.Midi;
 
-var midi = MidiFile.Load("song.mid");
-var notes = midi.ToNoteEvents();
-
-var key = KeyAnalyzer.DetectKey(notes);
+using var buffer = MidiIo.Import("song.mid");
+var key = KeyAnalyzer.DetectKey(buffer);
 Console.WriteLine($"Key: {key}");
-
-var chords = ChordAnalyzer.IdentifyProgression(notes);
-foreach (var chord in chords)
-{
-    Console.WriteLine($"{chord.Time}: {chord.Symbol}");
-}
+Console.WriteLine($"Total notes: {buffer.Count}");
 ```
 
 ### Export notes to MIDI
 
 ```csharp
+using Celeritas.Core.Midi;
+
 var notes = MusicNotation.Parse("4/4: C4/4 E4/4 G4/4 C5/4");
-var midi = MidiFile.FromNoteEvents(notes, tempo: 120);
-midi.Save("output.mid");
+using var buffer = new NoteBuffer(notes.Length);
+buffer.AddRange(notes);
+MidiIo.Export(buffer, "output.mid", new MidiExportOptions(Bpm: 120));
 ```
 
 ### Transpose MIDI file
 
 ```csharp
-var midi = MidiFile.Load("song.mid");
-var notes = midi.ToNoteEvents();
+using Celeritas.Core.Midi;
+
+using var buffer = MidiIo.Import("song.mid");
 
 // Transpose up 2 semitones
-MusicMath.Transpose(notes, 2);
+MusicMath.Transpose(buffer, 2);
 
-var transposed = MidiFile.FromNoteEvents(notes);
-transposed.Save("transposed.mid");
+MidiIo.Export(buffer, "transposed.mid");
 ```
 
 ---
@@ -296,12 +279,15 @@ MusicMath.Transpose(buffer, semitones: 5);
 ### Batch chord analysis
 
 ```csharp
+using var buffer = new NoteBuffer(capacity: 16);
 var chords = new List<string>();
-foreach (var measure in measures)
+
+foreach (var measureNotes in measures)
 {
-    var notes = measure.GetNotesAtTime(t);
-    if (notes.Length >= 3)
-        chords.Add(ChordAnalyzer.Identify(notes));
+    buffer.Clear();
+    buffer.AddRange(measureNotes);
+    if (buffer.Count >= 3)
+        chords.Add(ChordAnalyzer.Identify(buffer).Symbol);
 }
 ```
 
@@ -312,7 +298,7 @@ using System.Linq;
 
 var results = chordSequences
     .AsParallel()
-    .Select(notes => ChordAnalyzer.Identify(notes))
+    .Select(pitches => ChordAnalyzer.Identify(pitches).Symbol)
     .ToList();
 ```
 

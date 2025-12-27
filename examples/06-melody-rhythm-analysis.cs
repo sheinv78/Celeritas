@@ -88,58 +88,8 @@ class MelodyRhythmAnalysis
         Console.WriteLine($"  Density: {rhythmAnalysis.Density:F2} notes/beat");
         Console.WriteLine($"  Syncopation level: {rhythmAnalysis.Syncopation:F2}");
 
-        // ===== Meter Detection =====
-        // Note: DetectMeter static method doesn't exist - use Analyze() which includes meter detection
-
-        /*
-        var waltz = MusicNotation.Parse("C4/4 E4/4 G4/4 | C5/4 G4/4 E4/4");
-        var meter1 = RhythmAnalyzer.DetectMeter(waltz);
-        Console.WriteLine($"\nDetected meter: {meter1.Numerator}/{meter1.Denominator}");  // 3/4
-        Console.WriteLine($"  Confidence: {meter1.Confidence:P1}");
-
-        var commonTime = MusicNotation.Parse("C4/4 E4/4 G4/4 C5/4 | B4/4 G4/4 E4/4 D4/4");
-        var meter2 = RhythmAnalyzer.DetectMeter(commonTime);
-        Console.WriteLine($"\nDetected meter: {meter2.Numerator}/{meter2.Denominator}");  // 4/4
-        */
-
-        // ===== Pattern Recognition =====
-        // Note: IdentifyPattern static method doesn't exist - use Analyze().PatternMatches
-
-        /*
-        // Tresillo pattern (Cuban/Latin rhythm)
-        var tresillo = MusicNotation.Parse("C4/4. C4/4. C4/4 | C4/4. C4/4. C4/4");
-        var pattern1 = RhythmAnalyzer.IdentifyPattern(tresillo);
-        Console.WriteLine($"\nPattern: {pattern1.Name}");  // Tresillo
-        Console.WriteLine($"  Origin: {pattern1.Origin}");
-        Console.WriteLine($"  Confidence: {pattern1.Confidence:P1}");
-
-        // Habanera rhythm
-        var habanera = MusicNotation.Parse("C4/4. C4/8 C4/4 C4/4 | C4/4. C4/8 C4/4 C4/4");
-        var pattern2 = RhythmAnalyzer.IdentifyPattern(habanera);
-        Console.WriteLine($"\nPattern: {pattern2.Name}");  // Habanera
-
-        // Swing feel
-        var swing = MusicNotation.Parse("C4/4. C4/8 C4/4. C4/8");
-        var pattern3 = RhythmAnalyzer.IdentifyPattern(swing);
-        Console.WriteLine($"\nPattern: {pattern3.Name}");  // Swing
-        */
-
-        // ===== Rhythm Prediction =====
-        // Note: RhythmPredictor and RhythmStyle don't exist
-
-        /*
-        // Generate next rhythm based on style
-        var jazzRhythm = MusicNotation.Parse("C4/4. C4/8 C4/4 C4/8 C4/8");
-        var predictor = new RhythmPredictor(RhythmStyle.Jazz);
-        predictor.Learn(jazzRhythm);
-
-        var predictedDurations = predictor.Predict(count: 4);
-        Console.WriteLine($"\nPredicted jazz rhythm:");
-        foreach (var duration in predictedDurations)
-        {
-            Console.WriteLine($"  {MusicNotation.FormatDuration(duration)}");
-        }
-        */
+        // ===== Meter Detection & Pattern Recognition =====
+        // See ROADMAP.md for planned DetectMeter, IdentifyPattern, RhythmPredictor APIs
 
         // ===== Syncopation Analysis =====
 
@@ -149,10 +99,6 @@ class MelodyRhythmAnalysis
         var syncopation = RhythmAnalyzer.Analyze(syncopatedBuffer);
         Console.WriteLine($"\nSyncopation:");
         Console.WriteLine($"  Syncopation level: {syncopation.Syncopation:F2}");
-        // Note: SyncopationDegree, OffBeatCount, StrongBeatEmphasis properties don't exist
-        // Console.WriteLine($"  Degree: {syncopation.SyncopationDegree:P1}");
-        // Console.WriteLine($"  Off-beat notes: {syncopation.OffBeatCount}");
-        // Console.WriteLine($"  Strong beat emphasis: {syncopation.StrongBeatEmphasis:P1}");
 
         // ===== Groove Analysis =====
 
@@ -162,10 +108,6 @@ class MelodyRhythmAnalysis
         var grooveAnalysis = RhythmAnalyzer.Analyze(grooveBuffer);
         Console.WriteLine($"\nGroove:");
         Console.WriteLine($"  Density: {grooveAnalysis.Density:F2}");
-        // Note: GrooveFeel, GrooveDrive, InThePocket properties don't exist
-        // Console.WriteLine($"  Feel: {grooveAnalysis.GrooveFeel}");
-        // Console.WriteLine($"  Drive: {grooveAnalysis.GrooveDrive:P1}");
-        // Console.WriteLine($"  Pocket: {grooveAnalysis.InThePocket}");
 
         // ===== Combined Analysis =====
 
@@ -186,9 +128,6 @@ class MelodyRhythmAnalysis
         rhythmBuffer.AddRange(completeMelody);
         var fullRhythm = RhythmAnalyzer.Analyze(rhythmBuffer);
         Console.WriteLine($"Rhythm: {fullRhythm.TextureDescription}");
-        // Note: DetectedMeter and SyncopationDegree properties don't exist
-        // Console.WriteLine($"Meter: {fullRhythm.DetectedMeter}");
-        // Console.WriteLine($"Syncopation: {fullRhythm.SyncopationDegree:P1}");
     }
 }
 

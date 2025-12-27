@@ -201,4 +201,14 @@ public sealed class MelodyHarmonizer
             notes[i] = buffer.Get(i);
         return Harmonize(notes, key);
     }
+
+    /// <summary>
+    /// Harmonize from a NoteEvent array (convenience overload).
+    /// </summary>
+    public HarmonizationResult Harmonize(NoteEvent[] melody) => Harmonize(melody.AsSpan());
+
+    /// <summary>
+    /// Harmonize from a NoteEvent array with a specified key (convenience overload).
+    /// </summary>
+    public HarmonizationResult Harmonize(NoteEvent[] melody, KeySignature key) => Harmonize(melody.AsSpan(), key);
 }

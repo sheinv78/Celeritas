@@ -35,6 +35,37 @@ class HarmonizationAndVoiceLeading
 
         Console.WriteLine($"Cost (lower is better): {result.TotalCost:F2}");
 
+        // ===== SATB Voice Leading =====
+
+        var chordSymbols = new[] { "C", "F", "G", "C" };
+        var solver = new VoiceLeadingSolver();
+        var voicingSolution = solver.SolveFromSymbols(chordSymbols);
+
+        Console.WriteLine("\n=== SATB Voice Leading ===");
+        Console.WriteLine($"Chords: {string.Join(" - ", chordSymbols)}");
+        Console.WriteLine($"Total cost: {voicingSolution.TotalCost:F2}");
+        Console.WriteLine($"Valid solution: {voicingSolution.IsValid}");
+
+        if (voicingSolution.IsValid)
+        {
+            Console.WriteLine("\nVoicings:");
+            Console.WriteLine($"{"#",-3} {"Bass",-6} {"Tenor",-6} {"Alto",-6} {"Soprano",-6}");
+            Console.WriteLine(new string('-', 30));
+
+            for (int i = 0; i < voicingSolution.Voicings.Count; i++)
+            {
+                var v = voicingSolution.Voicings[i];
+                Console.WriteLine($"{i + 1,-3} " +
+                    $"{MusicMath.MidiToNoteName(v.Bass),-6} " +
+                    $"{MusicMath.MidiToNoteName(v.Tenor),-6} " +
+                    $"{MusicMath.MidiToNoteName(v.Alto),-6} " +
+                    $"{MusicMath.MidiToNoteName(v.Soprano),-6}");
+            }
+
+            // Export to score format
+            Console.WriteLine("\n" + voicingSolution.ToScore());
+        }
+
         // ===== Pluggable Strategy Pattern =====
 
         // Use default implementations with custom strategy
@@ -52,61 +83,33 @@ class HarmonizationAndVoiceLeading
         var customMelody = MusicNotation.Parse("C4/4 E4/4 G4/4 B4/4 D5/2");
         var customResult = customHarmonizer.Harmonize(customMelody, key);
 
-        Console.WriteLine($"\n=== Custom Strategy Harmonization ===");
+        Console.WriteLine("\n=== Custom Strategy Harmonization ===");
         foreach (var chord in customResult.Chords)
         {
             Console.WriteLine($"  {chord.Start}: {chord.Chord}");
         }
 
-        // Note: Voice leading solver API not yet implemented
-        /*
-        Console.WriteLine($"\nVoicings:");
-        Console.WriteLine($"{"Chord",-8} {"S",-4} {"A",-4} {"T",-4} {"B",-4}");
-        Console.WriteLine(new string('-', 28));
-
-        foreach (var voicing in voicingSolution.Voicings)
-        {
-            Console.WriteLine($"{voicing.Symbol,-8} " +
-                $"{MusicMath.MidiToNoteName(voicing.Soprano),-4} " +
-                $"{MusicMath.MidiToNoteName(voicing.Alto),-4} " +
-                $"{MusicMath.MidiToNoteName(voicing.Tenor),-4} " +
-                $"{MusicMath.MidiToNoteName(voicing.Bass),-4}");
-        }
-
-        // ===== Voice Leading Rules Check =====
-
-        Console.WriteLine($"\n=== Voice Leading Rules ===");
-        Console.WriteLine($"Parallel fifths: {voicingSolution.ParallelFifths}");
-        Console.WriteLine($"Parallel octaves: {voicingSolution.ParallelOctaves}");
-        Console.WriteLine($"Hidden parallels: {voicingSolution.HiddenParallels}");
-        Console.WriteLine($"Voice crossing: {voicingSolution.VoiceCrossing}");
-        Console.WriteLine($"Spacing issues: {voicingSolution.SpacingIssues}");
-        Console.WriteLine($"Range violations: {voicingSolution.RangeViolations}");
-        */
-
         // ===== Custom Voice Leading Options =====
-        // Note: VoiceLeadingSolver and VoiceLeadingSolverOptions don't exist
 
-        /*
-        var vlOptions = new VoiceLeadingSolverOptions
+        var strictSolver = new VoiceLeadingSolver(VoiceLeadingSolverOptions.Strict);
+        var strictSolution = strictSolver.SolveFromSymbols(new[] { "Am", "Dm", "G7", "C" });
+
+        Console.WriteLine("\n=== Strict Voice Leading ===");
+        Console.WriteLine($"Total cost: {strictSolution.TotalCost:F2}");
+        if (strictSolution.IsValid)
         {
-            AllowParallelFifths = false,
-            AllowVoiceCrossing = false,
-            PreferContraryMotion = true,
-            MaxVoiceMovement = 5,  // Max 5 semitones per voice
-            SopranoRange = (60, 81),  // C4 to A5
-            AltoRange = (55, 74),     // G3 to D5
-            TenorRange = (48, 67),    // C3 to G4
-            BassRange = (40, 60)      // E2 to C4
-        };
-
-        var strictSolver = new VoiceLeadingSolver(vlOptions);
-        var strictSolution = strictSolver.Solve(chordSymbols);
-
-        Console.WriteLine($"\n=== Strict Voice Leading ===");
-        Console.WriteLine($"Average movement: {strictSolution.AverageMovement:F2} semitones");
-        Console.WriteLine($"Contrary motion: {strictSolution.ContraryMotionPercentage:P0}");
-        */
+            foreach (var v in strictSolution.Voicings)
+            {
+                Console.WriteLine($"  {v}");
+            }
+        }
+        
+        if (strictSolution.Warnings.Count > 0)
+        {
+            Console.WriteLine("Warnings:");
+            foreach (var w in strictSolution.Warnings)
+                Console.WriteLine($"  - {w}");
+        }
 
         // ===== Figured Bass Realization =====
 
@@ -218,31 +221,8 @@ class HarmonizationAndVoiceLeading
         }
 
         // ===== Voice Leading Styles =====
-        // Note: FiguredBassRealizerOptions doesn't exist
-        /*
-        var smoothStyle = new FiguredBassRealizerOptions
-        {
-            VoiceLeadingStyle = VoiceLeadingStyle.Smooth,
-            AllowVoiceCrossing = false
-        };
-
-        var strictStyle = new FiguredBassRealizerOptions
-        {
-            VoiceLeadingStyle = VoiceLeadingStyle.Strict,
-            MaxVoiceMovement = 3
-        };
-
-        var freeStyle = new FiguredBassRealizerOptions
-        {
-            VoiceLeadingStyle = VoiceLeadingStyle.Free,
-            AllowVoiceCrossing = true
-        };
-
-        var smoothRealizer = new FiguredBassRealizer(smoothStyle);
-        var smoothVoicing = smoothRealizer.RealizeSymbol(rootPosition);
-
-        Console.WriteLine($"\n=== Voice Leading Styles ===");
-        Console.WriteLine($"Smooth: {string.Join(", ", smoothVoicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");        */    }
+        // See ROADMAP.md for planned FiguredBassRealizerOptions
+    }
 }
 
 /* Expected Output:

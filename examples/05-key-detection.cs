@@ -13,18 +13,16 @@ class KeyDetection
         // ===== Basic Key Detection =====
 
         // Major key from scale
-        var cMajorScale = MusicNotation.Parse("C4 D4 E4 F4 G4 A4 B4 C5");
-        var key1 = KeyProfiler.DetectFromPitches(cMajorScale.Select(n => n.Pitch).ToArray());
+        var key1 = KeyProfiler.DetectFromPitches("C4 D4 E4 F4 G4 A4 B4 C5");
         Console.WriteLine($"Scale: {key1.Key}");  // C major
 
         // Minor key
-        var aMinorScale = MusicNotation.Parse("A3 B3 C4 D4 E4 F4 G4 A4");
-        var key2 = KeyProfiler.DetectFromPitches(aMinorScale.Select(n => n.Pitch).ToArray());
+        var key2 = KeyProfiler.DetectFromPitches("A3 B3 C4 D4 E4 F4 G4 A4");
         Console.WriteLine($"Scale: {key2.Key}");  // A minor
 
         // From melody
         var melody = MusicNotation.Parse("E4/4 D4/4 C4/4 D4/4 E4/4 E4/4 E4/2");
-        var key3 = KeyProfiler.DetectFromPitches(melody.Select(n => n.Pitch).ToArray());
+        var key3 = KeyProfiler.DetectFromPitches(melody);
         Console.WriteLine($"Melody: {key3.Key}");  // Likely C major
 
         // ===== Modal Detection =====
@@ -89,7 +87,7 @@ class KeyDetection
         // ===== Key Profiling =====
 
         // Get detailed analysis with confidence scores
-        var profile = KeyProfiler.DetectFromPitches(melody.Select(n => n.Pitch).ToArray());
+        var profile = KeyProfiler.DetectFromPitches(melody);
         Console.WriteLine($"\nKey profile:");
         Console.WriteLine($"  Best match: {profile.Key}");
         Console.WriteLine($"  Confidence: {profile.Confidence:P1}");
@@ -107,61 +105,20 @@ class KeyDetection
         // Analyze chords in key context
         var keyC = new KeySignature("C", isMajor: true);
 
-        var chord1 = MusicNotation.Parse("C4 E4 G4");
-        var roman1 = KeyAnalyzer.Analyze(chord1.Select(n => n.Pitch).ToArray(), keyC);
+        var roman1 = KeyAnalyzer.Analyze(MusicNotation.Parse("C4 E4 G4"), keyC);
         Console.WriteLine($"\nC-E-G in C major: {roman1.ToRomanNumeral()} ({roman1.Function})");
 
-        var chord2 = MusicNotation.Parse("D4 F4 A4");
-        var roman2 = KeyAnalyzer.Analyze(chord2.Select(n => n.Pitch).ToArray(), keyC);
+        var roman2 = KeyAnalyzer.Analyze(MusicNotation.Parse("D4 F4 A4"), keyC);
         Console.WriteLine($"D-F-A in C major: {roman2.ToRomanNumeral()} ({roman2.Function})");
 
-        var chord3 = MusicNotation.Parse("G3 B3 D4 F4");
-        var roman3 = KeyAnalyzer.Analyze(chord3.Select(n => n.Pitch).ToArray(), keyC);
+        var roman3 = KeyAnalyzer.Analyze(MusicNotation.Parse("G3 B3 D4 F4"), keyC);
         Console.WriteLine($"G-B-D-F in C major: {roman3.ToRomanNumeral()} ({roman3.Function})");
 
         // ===== Modulation Detection =====
-        // Note: ModulationDetector API not yet implemented
-
-        /*
-        // Detect key changes in a piece
-        var modulatingPiece = MusicNotation.Parse(@"
-            C4/4 E4/4 G4/4 C5/4 |
-            D4/4 F4/4 A4/4 D5/4 |
-            G3/4 B3/4 D4/4 G4/4 |
-            C4/1");
-
-        var modulation = ModulationDetector.Analyze(modulatingPiece);
-        if (modulation.HasModulation)
-        {
-            Console.WriteLine($"\nModulation detected:");
-            Console.WriteLine($"  From: {modulation.StartKey}");
-            Console.WriteLine($"  To: {modulation.EndKey}");
-            Console.WriteLine($"  Type: {modulation.Type}");
-            Console.WriteLine($"  At measure: {modulation.ModulationPoint}");
-        }
-
-        // ===== Tonicization =====
-
-        // Distinguish temporary tonicization from true modulation
-        var withTonicization = MusicNotation.Parse(@"
-            C4/4 E4/4 G4/4 C5/4 |
-            D4/4 F#4/4 A4/4 D5/4 |
-            C4/4 E4/4 G4/4 C5/4");
-
-        var analysis = ModulationDetector.Analyze(withTonicization);
-        if (analysis.IsTonicization)
-        {
-            Console.WriteLine($"\nTonicization (not modulation):");
-            Console.WriteLine($"  Main key: {analysis.StartKey}");
-            Console.WriteLine($"  Tonicized: {analysis.TonicizedKey}");
-            Console.WriteLine($"  Returns to: {analysis.StartKey}");
-        }
-        */
+        // See ROADMAP.md for planned ModulationDetector API
 
         // ===== Key Relationships =====
-        // Note: Key relationship methods not yet implemented
 
-        /*
         var keyCMaj = new KeySignature("C", true);
 
         // Parallel minor
@@ -179,7 +136,6 @@ class KeyDetection
         // Subdominant key
         var subdominant = keyCMaj.GetSubdominantKey();
         Console.WriteLine($"C major subdominant: {subdominant}");  // F major
-        */
     }
 }
 

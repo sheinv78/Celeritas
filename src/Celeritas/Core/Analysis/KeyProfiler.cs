@@ -205,6 +205,38 @@ public static class KeyProfiler
     }
 
     /// <summary>
+    /// Detect key from a human-readable notation string.
+    /// Example: "C4 D4 E4 F4 G4 A4 B4"
+    /// </summary>
+    public static KeyDetectionResult DetectFromPitches(string notation)
+    {
+        var notes = MusicNotation.Parse(notation);
+        if (notes.Length == 0)
+            return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0 };
+
+        Span<int> pitches = stackalloc int[notes.Length];
+        for (var i = 0; i < notes.Length; i++)
+            pitches[i] = notes[i].Pitch;
+
+        return DetectFromPitches(pitches);
+    }
+
+    /// <summary>
+    /// Detect key from an array of note events.
+    /// </summary>
+    public static KeyDetectionResult DetectFromPitches(ReadOnlySpan<NoteEvent> notes)
+    {
+        if (notes.IsEmpty)
+            return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0 };
+
+        Span<int> pitches = stackalloc int[notes.Length];
+        for (var i = 0; i < notes.Length; i++)
+            pitches[i] = notes[i].Pitch;
+
+        return DetectFromPitches(pitches);
+    }
+
+    /// <summary>
     /// Extract pitch class distribution from a NoteBuffer.
     /// Weights notes by duration for more accurate key detection.
     /// </summary>

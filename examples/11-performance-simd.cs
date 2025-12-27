@@ -79,18 +79,7 @@ class PerformanceExamples
         Console.WriteLine($"Throughput: ~{noteCount / sw.Elapsed.TotalSeconds / 1_000_000:F1}M notes/sec");
 
         // ===== SIMD Detection =====
-
-        // Note: SimdInfo API doesn't exist yet
-        /*
-        var simdInfo = SimdInfo.Detect();
-        Console.WriteLine($"\n=== SIMD Capabilities ===");
-        Console.WriteLine($"AVX-512: {simdInfo.HasAvx512}");
-        Console.WriteLine($"AVX2: {simdInfo.HasAvx2}");
-        Console.WriteLine($"SSE2: {simdInfo.HasSse2}");
-        Console.WriteLine($"NEON (ARM): {simdInfo.HasNeon}");
-        Console.WriteLine($"Active: {simdInfo.ActiveSimdType}");
-        Console.WriteLine($"Vector size: {simdInfo.VectorSize} elements");
-        */
+        // See ROADMAP.md for planned SimdInfo API
 
         Console.WriteLine($"\n=== SIMD Capabilities ===");
         Console.WriteLine($"Vector<int>.Count: {System.Numerics.Vector<int>.Count}");
@@ -120,8 +109,6 @@ class PerformanceExamples
         var inverted = PitchClassSetAnalyzer.Invert(pitchClasses);
         Console.WriteLine($"I: {string.Join(", ", inverted)}");  // C Ab F
 
-        // Note: Complement and Similarity methods don't exist
-        /*
         // Complement
         var complement = PitchClassSetAnalyzer.Complement(pitchClasses);
         Console.WriteLine($"Complement: {string.Join(", ", complement)}");
@@ -136,35 +123,20 @@ class PerformanceExamples
         Console.WriteLine($"Set 1: {string.Join(", ", set1)}");
         Console.WriteLine($"Set 2: {string.Join(", ", set2)}");
         Console.WriteLine($"Similarity: {similarity:P1}");
-        */
 
-        // ===== PC Set Catalog Lookup =====
-        // Note: PitchClassSetCatalog.Lookup method doesn't exist
+        // See ROADMAP.md for planned PitchClassSetCatalog API (Forte number lookup)
 
-        /*
-        var catalog = PitchClassSetCatalog.Load("catalog.json");  // Load Forte catalog
-        var setInfo = catalog.Lookup(pcSet.PrimeForm);
+        // ===== Batch Chord Analysis =====
 
-        Console.WriteLine($"\n=== Catalog Lookup ===");
-        Console.WriteLine($"Forte: {setInfo.ForteName}");
-        Console.WriteLine($"Carter: {setInfo.CarterName}");
-        Console.WriteLine($"Common name: {setInfo.CommonName}");
-        Console.WriteLine($"Z-relation: {setInfo.HasZRelation}");
-        */
-
-        // ===== Efficient Batch Processing =====
-        // Note: ChordAnalyzer.Identify expects ReadOnlySpan<int>, not NoteEvent[]
-        /*
         var chords = new[]
         {
-            MusicNotation.Parse("[C4 E4 G4]/4"),
-            MusicNotation.Parse("[D4 F4 A4]/4"),
-            MusicNotation.Parse("[E4 G4 B4]/4"),
-            MusicNotation.Parse("[F4 A4 C5]/4")
+            "C4 E4 G4",
+            "D4 F4 A4",
+            "E4 G4 B4",
+            "F4 A4 C5"
         };
 
         Console.WriteLine($"\n=== Batch Chord Analysis ===");
-
         var stopwatch = Stopwatch.StartNew();
         var symbols = chords.Select(c => ChordAnalyzer.Identify(c)).ToList();
         stopwatch.Stop();
@@ -172,10 +144,6 @@ class PerformanceExamples
         Console.WriteLine($"Analyzed {chords.Length} chords: {string.Join(", ", symbols)}");
         Console.WriteLine($"Time: {stopwatch.Elapsed.TotalMicroseconds:F2} μs");
         Console.WriteLine($"Per chord: {stopwatch.Elapsed.TotalMicroseconds / chords.Length:F2} μs");
-        */
-
-        Console.WriteLine($"\n=== Batch Chord Analysis ===");
-        Console.WriteLine("(Batch analysis commented - ChordAnalyzer.Identify expects ReadOnlySpan<int>)");
 
         // ===== Memory-Efficient Operations =====
 
