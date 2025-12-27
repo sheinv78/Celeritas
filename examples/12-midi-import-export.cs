@@ -110,7 +110,7 @@ class MidiExamples
         Console.WriteLine($"Saved to chords.mid");
 
         // ===== Advanced MIDI Features =====
-        // See ROADMAP.md for planned features:
+        // MIDI utilities and timing events are available (see README.md for overview):
         // - Track extraction and merging
         // - MIDI statistics
         // - Tempo/time signature changes

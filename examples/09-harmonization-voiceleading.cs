@@ -221,7 +221,7 @@ class HarmonizationAndVoiceLeading
         }
 
         // ===== Voice Leading Styles =====
-        // See ROADMAP.md for planned FiguredBassRealizerOptions
+        // FiguredBassRealizerOptions is available (see README.md for overview)
     }
 }
 

@@ -46,13 +46,19 @@ public sealed class PitchClassSetCatalog
         foreach (var entry in entries)
         {
             if (entry is null)
+            {
                 continue;
+            }
 
             if (string.IsNullOrWhiteSpace(entry.Forte))
+            {
                 continue;
+            }
 
             if (entry.PrimeForm is not { Length: > 0 })
+            {
                 continue;
+            }
 
             var normalized = NormalizePrimeForm(entry.PrimeForm);
             var key = PrimeFormKey(normalized);
@@ -66,7 +72,9 @@ public sealed class PitchClassSetCatalog
     {
         entry = null;
         if (primeForm.Length == 0)
+        {
             return false;
+        }
 
         var key = PrimeFormKey(NormalizePrimeForm(primeForm));
         if (_byPrimeForm.TryGetValue(key, out var found))
@@ -87,7 +95,11 @@ public sealed class PitchClassSetCatalog
         for (var i = 0; i < primeForm.Length; i++)
         {
             var v = primeForm[i] % 12;
-            if (v < 0) v += 12;
+            if (v < 0)
+            {
+                v += 12;
+            }
+
             result[i] = v;
         }
 

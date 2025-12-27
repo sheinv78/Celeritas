@@ -46,17 +46,25 @@ public static class SimdInfo
 
         // x86/x64 instruction sets
         if (Avx512F.IsSupported)
+        {
             result |= SimdInstructionSet.Avx512F;
+        }
 
         if (Avx2.IsSupported)
+        {
             result |= SimdInstructionSet.Avx2;
+        }
 
         if (Sse2.IsSupported)
+        {
             result |= SimdInstructionSet.Sse2;
+        }
 
         // ARM NEON
         if (AdvSimd.IsSupported)
+        {
             result |= SimdInstructionSet.Neon;
+        }
 
         // WebAssembly SIMD (heuristic check)
         if (Vector128.IsHardwareAccelerated &&
@@ -74,10 +82,25 @@ public static class SimdInfo
     /// </summary>
     public static SimdInstructionSet GetBest()
     {
-        if (Avx512F.IsSupported) return SimdInstructionSet.Avx512F;
-        if (Avx2.IsSupported) return SimdInstructionSet.Avx2;
-        if (Sse2.IsSupported) return SimdInstructionSet.Sse2;
-        if (AdvSimd.IsSupported) return SimdInstructionSet.Neon;
+        if (Avx512F.IsSupported)
+        {
+            return SimdInstructionSet.Avx512F;
+        }
+
+        if (Avx2.IsSupported)
+        {
+            return SimdInstructionSet.Avx2;
+        }
+
+        if (Sse2.IsSupported)
+        {
+            return SimdInstructionSet.Sse2;
+        }
+
+        if (AdvSimd.IsSupported)
+        {
+            return SimdInstructionSet.Neon;
+        }
 
         if (Vector128.IsHardwareAccelerated &&
             !Avx512F.IsSupported && !Avx2.IsSupported &&
@@ -104,20 +127,36 @@ public static class SimdInfo
     {
         var detected = Detect();
         if (detected == SimdInstructionSet.None)
+        {
             return "No SIMD support (scalar only)";
+        }
 
         var parts = new List<string>();
 
         if ((detected & SimdInstructionSet.Avx512F) != 0)
+        {
             parts.Add("AVX-512");
+        }
+
         if ((detected & SimdInstructionSet.Avx2) != 0)
+        {
             parts.Add("AVX2");
+        }
+
         if ((detected & SimdInstructionSet.Sse2) != 0)
+        {
             parts.Add("SSE2");
+        }
+
         if ((detected & SimdInstructionSet.Neon) != 0)
+        {
             parts.Add("NEON");
+        }
+
         if ((detected & SimdInstructionSet.WasmSimd) != 0)
+        {
             parts.Add("WebAssembly SIMD");
+        }
 
         return string.Join(", ", parts);
     }

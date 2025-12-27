@@ -102,7 +102,7 @@ class ProgressionAnalysis
         }
 
         // ===== Modal Progressions =====
-        // See ROADMAP.md for planned ModalProgressions API
+        // ModalProgressions.Analyze is available (see README.md for overview)
 
         // ===== Harmonic Color Analysis =====
 

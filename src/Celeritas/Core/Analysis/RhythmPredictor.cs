@@ -4,11 +4,23 @@
 namespace Celeritas.Core.Analysis;
 
 /// <summary>
+/// Named rhythm styles for pre-trained models.
+/// </summary>
+public enum RhythmStyle
+{
+    Classical,
+    Jazz,
+    Rock,
+    Latin,
+    Waltz
+}
+
+/// <summary>
 /// Rhythm predictor using Markov chains and N-gram models.
 /// </summary>
 public sealed class RhythmPredictor
 {
-    private readonly Dictionary<string, Dictionary<Rational, float>> _transitions = new();
+    private readonly Dictionary<string, Dictionary<Rational, float>> _transitions = [];
     private readonly int _order;
     private readonly Random _random;
 
@@ -29,7 +41,9 @@ public sealed class RhythmPredictor
     public void Train(IReadOnlyList<Rational> durations)
     {
         if (durations.Count <= _order)
+        {
             return;
+        }
 
         for (int i = _order; i < durations.Count; i++)
         {
@@ -38,7 +52,7 @@ public sealed class RhythmPredictor
 
             if (!_transitions.TryGetValue(context, out var dist))
             {
-                dist = new Dictionary<Rational, float>();
+                dist = [];
                 _transitions[context] = dist;
             }
 
@@ -120,7 +134,7 @@ public sealed class RhythmPredictor
             result.Add(next);
         }
 
-        return result.Skip(seed.Count).ToList();
+        return [.. result.Skip(seed.Count)];
     }
 
     /// <summary>
@@ -140,15 +154,21 @@ public sealed class RhythmPredictor
             // Ensure we don't exceed measure
             var remaining = target - current;
             if (next > remaining)
+            {
                 next = remaining;
+            }
 
             if (next <= Rational.Zero)
+            {
                 break;
+            }
 
             result.Add(next);
             context.Add(next);
             if (context.Count > _order)
+            {
                 context.RemoveAt(0);
+            }
 
             current = current + next;
         }
@@ -204,11 +224,15 @@ public sealed class RhythmPredictor
             {
                 key = GetContext(context, context.Count - o, o);
                 if (_transitions.TryGetValue(key, out dist) && dist.Count > 0)
+                {
                     break;
+                }
             }
 
             if (dist == null || dist.Count == 0)
+            {
                 return Rational.Quarter;
+            }
         }
 
         // Sample from distribution
@@ -219,7 +243,9 @@ public sealed class RhythmPredictor
         {
             cumulative += prob;
             if (r <= cumulative)
+            {
                 return duration;
+            }
         }
 
         return dist.First().Key;
@@ -230,7 +256,10 @@ public sealed class RhythmPredictor
         // Try shorter contexts
         for (int o = _order - 1; o >= 1; o--)
         {
-            if (recentDurations.Count < o) continue;
+            if (recentDurations.Count < o)
+            {
+                continue;
+            }
 
             var context = GetContext(recentDurations, recentDurations.Count - o, o);
             if (_transitions.TryGetValue(context, out var dist) && dist.Count > 0)
@@ -307,6 +336,22 @@ public sealed class RhythmModelStats
 /// </summary>
 public static class RhythmModels
 {
+    /// <summary>
+    /// Get a pre-trained model for a style.
+    /// </summary>
+    public static RhythmPredictor GetStyleModel(RhythmStyle style)
+    {
+        return style switch
+        {
+            RhythmStyle.Classical => GetStyleModel("classical"),
+            RhythmStyle.Jazz => GetStyleModel("jazz"),
+            RhythmStyle.Rock => GetStyleModel("rock"),
+            RhythmStyle.Latin => GetStyleModel("latin"),
+            RhythmStyle.Waltz => GetStyleModel("waltz"),
+            _ => GetStyleModel("classical")
+        };
+    }
+
     /// <summary>
     /// Get a pre-trained model for a style.
     /// </summary>

@@ -56,7 +56,9 @@ public static class MidiEvents
         foreach (var chunk in midiFile.Chunks)
         {
             if (chunk is not TrackChunk trackChunk)
+            {
                 continue;
+            }
 
             long currentTime = 0;
             foreach (var evt in trackChunk.Events)
@@ -101,7 +103,9 @@ public static class MidiEvents
         foreach (var chunk in midiFile.Chunks)
         {
             if (chunk is not TrackChunk trackChunk)
+            {
                 continue;
+            }
 
             long currentTime = 0;
             foreach (var evt in trackChunk.Events)
@@ -127,18 +131,27 @@ public static class MidiEvents
     /// </summary>
     public static void AddTempoChange(TrackChunk track, Rational offset, int beatsPerMinute, int ticksPerQuarterNote)
     {
+        ArgumentNullException.ThrowIfNull(track);
+
         if (beatsPerMinute <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(beatsPerMinute), "BPM must be positive.");
+        }
+
+        if (ticksPerQuarterNote <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ticksPerQuarterNote), "Ticks per quarter note must be positive.");
+        }
 
         var microsecondsPerQuarter = (long)(60_000_000.0 / beatsPerMinute);
         var ticks = MidiIo.BeatsToTicks(offset, ticksPerQuarterNote);
-
-        var tempoEvent = new SetTempoEvent(microsecondsPerQuarter)
+        if (ticks < 0)
         {
-            DeltaTime = ticks
-        };
+            throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
+        }
 
-        track.Events.Add(tempoEvent);
+        var tempoEvent = new SetTempoEvent(microsecondsPerQuarter);
+        InsertEventAtAbsoluteTicks(track, tempoEvent, ticks);
     }
 
     /// <summary>
@@ -146,21 +159,95 @@ public static class MidiEvents
     /// </summary>
     public static void AddTimeSignatureChange(TrackChunk track, Rational offset, int numerator, int denominator, int ticksPerQuarterNote)
     {
+        ArgumentNullException.ThrowIfNull(track);
+
         if (numerator <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(numerator), "Numerator must be positive.");
+        }
 
         if (!IsPowerOfTwo(denominator))
+        {
             throw new ArgumentException("Denominator must be a power of 2.", nameof(denominator));
+        }
+
+        if (ticksPerQuarterNote <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ticksPerQuarterNote), "Ticks per quarter note must be positive.");
+        }
 
         var ticks = MidiIo.BeatsToTicks(offset, ticksPerQuarterNote);
+        if (ticks < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
+        }
         var denominatorLog2 = (byte)Math.Log2(denominator);
 
-        var timeSignatureEvent = new TimeSignatureEvent((byte)numerator, denominatorLog2)
-        {
-            DeltaTime = ticks
-        };
+        var timeSignatureEvent = new TimeSignatureEvent((byte)numerator, denominatorLog2);
+        InsertEventAtAbsoluteTicks(track, timeSignatureEvent, ticks);
+    }
 
-        track.Events.Add(timeSignatureEvent);
+    private static void InsertEventAtAbsoluteTicks(TrackChunk track, MidiEvent midiEvent, long absoluteTicks)
+    {
+        if (absoluteTicks < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(absoluteTicks), "Absolute tick position must be non-negative.");
+        }
+
+        var events = track.Events;
+        if (events.Count == 0)
+        {
+            midiEvent.DeltaTime = absoluteTicks;
+            events.Add(midiEvent);
+            return;
+        }
+
+        // Compute absolute times for existing events.
+        var absTimes = new long[events.Count];
+        long current = 0;
+        for (var i = 0; i < events.Count; i++)
+        {
+            current += events[i].DeltaTime;
+            absTimes[i] = current;
+        }
+
+        // Find insertion index (keep existing order for same-time events).
+        var insertIndex = absTimes.Length;
+        for (var i = 0; i < absTimes.Length; i++)
+        {
+            if (absTimes[i] > absoluteTicks)
+            {
+                insertIndex = i;
+                break;
+            }
+        }
+
+        if (insertIndex == 0)
+        {
+            // Before the first event.
+            var firstAbs = absTimes[0];
+            midiEvent.DeltaTime = absoluteTicks;
+            events[0].DeltaTime = firstAbs - absoluteTicks;
+            events.Insert(0, midiEvent);
+            return;
+        }
+
+        if (insertIndex >= events.Count)
+        {
+            // Append at end.
+            var lastAbs = absTimes[^1];
+            midiEvent.DeltaTime = absoluteTicks - lastAbs;
+            events.Add(midiEvent);
+            return;
+        }
+
+        // Insert between insertIndex-1 and insertIndex.
+        var prevAbs = absTimes[insertIndex - 1];
+        var nextAbs2 = absTimes[insertIndex];
+
+        midiEvent.DeltaTime = absoluteTicks - prevAbs;
+        events[insertIndex].DeltaTime = nextAbs2 - absoluteTicks;
+        events.Insert(insertIndex, midiEvent);
     }
 
     private static bool IsPowerOfTwo(int n)

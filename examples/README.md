@@ -38,13 +38,14 @@ Practical examples and code snippets for using Celeritas.
 ## Running Examples
 
 ```bash
-# Compile and run
-dotnet run --project examples/01-notation-basics.cs
+# Examples are single-file snippets (not standalone projects).
+# Recommended: create a small console app and paste an example into Program.cs.
 
-# Or create a console app
 dotnet new console -n MyApp
-# Copy example code to Program.cs
+cd MyApp
 dotnet add package Celeritas
+
+# Copy one of the examples/*.cs into Program.cs
 dotnet run
 ```
 

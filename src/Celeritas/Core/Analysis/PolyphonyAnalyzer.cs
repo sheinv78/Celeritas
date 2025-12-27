@@ -221,7 +221,7 @@ public static class PolyphonyAnalyzer
     /// </summary>
     public static CounterpointRulesCheckResult CheckCounterpointRules(IEnumerable<NoteEvent> notes, int maxVoices = 4)
     {
-        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        var arr = notes as NoteEvent[] ?? [.. notes];
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
         return CheckCounterpointRules(buffer, maxVoices);
@@ -258,7 +258,7 @@ public static class PolyphonyAnalyzer
     /// </summary>
     public static ImitationDetectionResult DetectImitation(IEnumerable<NoteEvent> notes, int maxVoices = 4)
     {
-        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        var arr = notes as NoteEvent[] ?? [.. notes];
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
         return DetectImitation(buffer, maxVoices);
@@ -271,7 +271,9 @@ public static class PolyphonyAnalyzer
     {
         var voices = VoiceSeparator.Separate(buffer, maxVoices);
         if (voices.Voices.Count < 2)
+        {
             return ImitationDetectionResult.None;
+        }
 
         // Build interval sequences for each voice.
         var sequences = voices.Voices
@@ -287,14 +289,18 @@ public static class PolyphonyAnalyzer
         {
             var s1 = sequences[v1];
             if (s1.Length < motifLen)
+            {
                 continue;
+            }
 
             var i1 = PolyphonyAnalyzerHelpers.ToIntervals(s1);
             for (var v2 = v1 + 1; v2 < sequences.Length; v2++)
             {
                 var s2 = sequences[v2];
                 if (s2.Length < motifLen)
+                {
                     continue;
+                }
 
                 var i2 = PolyphonyAnalyzerHelpers.ToIntervals(s2);
                 var match = PolyphonyAnalyzerHelpers.FindIntervalMatch(i1, i2, motifLen - 1);
@@ -401,7 +407,7 @@ public static class PolyphonyAnalyzer
             }
         }
 
-        return times.OrderBy(t => t).ToList();
+        return [.. times.OrderBy(t => t)];
     }
 
     private static List<VoiceInterval> AnalyzeIntervals(
@@ -482,7 +488,9 @@ public static class PolyphonyAnalyzer
                     var pitch2_t2 = notes2.FirstOrDefault(n => n.voiceIdx == j).pitch;
 
                     if (pitch1_t1 == 0 || pitch2_t1 == 0 || pitch1_t2 == 0 || pitch2_t2 == 0)
+                    {
                         continue;
+                    }
 
                     var motion1 = pitch1_t2 - pitch1_t1;
                     var motion2 = pitch2_t2 - pitch2_t1;
@@ -524,16 +532,24 @@ public static class PolyphonyAnalyzer
     private static MotionType ClassifyMotion(int motion1, int motion2)
     {
         if (motion1 == 0 && motion2 == 0)
+        {
             return MotionType.Static;
+        }
 
         if (motion1 == 0 || motion2 == 0)
+        {
             return MotionType.Oblique;
+        }
 
         if (Math.Sign(motion1) != Math.Sign(motion2))
+        {
             return MotionType.Contrary;
+        }
 
         if (motion1 == motion2)
+        {
             return MotionType.Parallel;
+        }
 
         return MotionType.Similar;
     }
@@ -677,7 +693,10 @@ public static class PolyphonyAnalyzer
 
     private static float CalculateTextureDensity(VoiceSeparationResult voices, List<Rational> timePoints)
     {
-        if (timePoints.Count < 2) return voices.Voices.Count;
+        if (timePoints.Count < 2)
+        {
+            return voices.Voices.Count;
+        }
 
         float totalDensity = 0;
 
@@ -689,7 +708,9 @@ public static class PolyphonyAnalyzer
             foreach (var voice in voices.Voices)
             {
                 if (voice.Notes.Any(n => n.Offset <= midpoint && n.End > midpoint))
+                {
                     sounding++;
+                }
             }
 
             totalDensity += sounding;
@@ -700,7 +721,10 @@ public static class PolyphonyAnalyzer
 
     private static float CalculateVoiceIndependence(List<VoiceMotion> motions)
     {
-        if (motions.Count == 0) return 1.0f;
+        if (motions.Count == 0)
+        {
+            return 1.0f;
+        }
 
         // Independence = proportion of contrary + oblique motion
         var independentMotions = motions.Count(m =>
@@ -741,7 +765,9 @@ public static class PolyphonyAnalyzer
         // Bonus for consonance/dissonance balance (aim for 70-80% consonance)
         var consonanceRatio = intervalStats.ConsonanceRatio / 100f;
         if (consonanceRatio is >= 0.6f and <= 0.9f)
+        {
             score += 0.05f;
+        }
 
         // Factor in independence
         score = score * 0.7f + independence * 0.3f;
@@ -786,14 +812,18 @@ file static class PolyphonyAnalyzerHelpers
     public static (int crossings, int spacing) AnalyzeCrossingsAndSpacing(VoiceSeparationResult voices)
     {
         if (voices.Voices.Count < 2)
+        {
             return (0, 0);
+        }
 
         // Collect all distinct time points where any note starts.
         var times = new SortedSet<Rational>();
         foreach (var v in voices.Voices)
         {
             foreach (var n in v.Notes)
+            {
                 times.Add(n.Offset);
+            }
         }
 
         var crossings = 0;
@@ -809,19 +839,25 @@ file static class PolyphonyAnalyzerHelpers
             for (var i = 0; i < sounding.Length - 1; i++)
             {
                 if (sounding[i].HasValue && sounding[i + 1].HasValue && sounding[i]!.Value < sounding[i + 1]!.Value)
+                {
                     crossings++;
+                }
             }
 
             // Spacing: SA and AT within octave, TB within 2 octaves (heuristic).
             for (var i = 0; i < sounding.Length - 1; i++)
             {
                 if (!sounding[i].HasValue || !sounding[i + 1].HasValue)
+                {
                     continue;
+                }
 
                 var dist = Math.Abs(sounding[i]!.Value - sounding[i + 1]!.Value);
                 var limit = i < 2 ? 12 : 24;
                 if (dist > limit)
+                {
                     spacing++;
+                }
             }
         }
 
@@ -835,7 +871,9 @@ file static class PolyphonyAnalyzerHelpers
         {
             var n = voice.Notes[i];
             if (n.Offset <= t && n.End > t)
+            {
                 return n.Pitch;
+            }
         }
 
         return null;
@@ -844,11 +882,15 @@ file static class PolyphonyAnalyzerHelpers
     public static int[] ToIntervals(int[] pitches)
     {
         if (pitches.Length < 2)
+        {
             return [];
+        }
 
         var ints = new int[pitches.Length - 1];
         for (var i = 1; i < pitches.Length; i++)
+        {
             ints[i - 1] = pitches[i] - pitches[i - 1];
+        }
 
         return ints;
     }
@@ -856,7 +898,9 @@ file static class PolyphonyAnalyzerHelpers
     public static (int start1, int start2)? FindIntervalMatch(int[] a, int[] b, int len)
     {
         if (a.Length < len || b.Length < len)
+        {
             return null;
+        }
 
         for (var i = 0; i <= a.Length - len; i++)
         {
@@ -873,7 +917,9 @@ file static class PolyphonyAnalyzerHelpers
                 }
 
                 if (ok)
+                {
                     return (i, j);
+                }
             }
         }
 

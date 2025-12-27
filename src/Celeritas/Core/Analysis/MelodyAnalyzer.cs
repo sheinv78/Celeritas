@@ -147,7 +147,9 @@ public static class MelodyAnalyzer
     public static MelodyAnalysisResult Analyze(NoteBuffer buffer)
     {
         if (buffer.Count == 0)
+        {
             return EmptyResult();
+        }
 
         // Extract pitches in time order
         var notes = new List<(int Pitch, Rational Time)>();
@@ -170,7 +172,9 @@ public static class MelodyAnalyzer
     public static MelodyAnalysisResult Analyze(int[] pitches, Rational[]? times = null)
     {
         if (pitches.Length == 0)
+        {
             return EmptyResult();
+        }
 
         times ??= Enumerable.Range(0, pitches.Length)
             .Select(i => new Rational(i, 1))
@@ -259,7 +263,9 @@ public static class MelodyAnalyzer
         var direction = semitones >= 0 ? "↑" : "↓";
 
         if (abs <= 12)
+        {
             return $"{direction}{IntervalNames[abs]}";
+        }
 
         var octaves = abs / 12;
         var remainder = abs % 12;
@@ -269,7 +275,9 @@ public static class MelodyAnalyzer
     private static MelodicContour DetectContour(int[] pitches)
     {
         if (pitches.Length < 3)
+        {
             return MelodicContour.Static;
+        }
 
         // Find turning points
         var turningPoints = new List<int>();
@@ -281,10 +289,14 @@ public static class MelodyAnalyzer
 
             // Local maximum
             if (curr > prev && curr > next)
+            {
                 turningPoints.Add(i);
+            }
             // Local minimum
             else if (curr < prev && curr < next)
+            {
                 turningPoints.Add(-i);
+            }
         }
 
         // Overall direction
@@ -305,7 +317,10 @@ public static class MelodyAnalyzer
         {
             // Monotonic
             if (Math.Abs(overallChange) <= 2)
+            {
                 return MelodicContour.Static;
+            }
+
             return overallChange > 0 ? MelodicContour.Ascending : MelodicContour.Descending;
         }
 
@@ -313,13 +328,19 @@ public static class MelodyAnalyzer
         {
             // Single turn - arch or bowl
             if (turningPoints[0] > 0)
+            {
                 return MelodicContour.Arch; // peak in middle
+            }
             else
+            {
                 return MelodicContour.Bowl; // trough in middle
+            }
         }
 
         if (turningPoints.Count >= 2 && turningPoints.Count <= 4)
+        {
             return MelodicContour.Wave;
+        }
 
         return MelodicContour.Complex;
     }
@@ -411,7 +432,9 @@ public static class MelodyAnalyzer
     private static List<Motif> DetectMotifs(int[] intervals, int minLength = 2, int maxLength = 6)
     {
         if (intervals.Length < minLength * 2)
+        {
             return [];
+        }
 
         var motifs = new List<Motif>();
         var seenPatterns = new HashSet<string>();
@@ -425,7 +448,9 @@ public static class MelodyAnalyzer
                 var patternKey = string.Join(",", pattern);
 
                 if (seenPatterns.Contains(patternKey))
+                {
                     continue;
+                }
 
                 // Find all occurrences
                 var occurrences = new List<int> { start };
@@ -473,7 +498,9 @@ public static class MelodyAnalyzer
     private static double CalculateComplexity(IReadOnlyDictionary<int, int> histogram)
     {
         if (histogram.Count == 0)
+        {
             return 0;
+        }
 
         // Entropy-based complexity
         var total = histogram.Values.Sum();
@@ -483,7 +510,9 @@ public static class MelodyAnalyzer
         {
             var p = (double)count / total;
             if (p > 0)
+            {
                 entropy -= p * Math.Log2(p);
+            }
         }
 
         // Normalize to 0-1 (max entropy for 12 different intervals)
@@ -502,13 +531,21 @@ public static class MelodyAnalyzer
 
         // Motion character
         if (conjunctness > 0.8)
+        {
             parts.Add("Smooth, stepwise");
+        }
         else if (conjunctness > 0.5)
+        {
             parts.Add("Mixed stepwise and leaping");
+        }
         else if (stats.LeapPercent > 60)
+        {
             parts.Add("Angular, leaping");
+        }
         else
+        {
             parts.Add("Moderately conjunct");
+        }
 
         // Range character
         parts.Add(ambitus switch
@@ -520,15 +557,23 @@ public static class MelodyAnalyzer
 
         // Complexity
         if (complexity > 0.7)
+        {
             parts.Add("complex");
+        }
         else if (complexity < 0.3)
+        {
             parts.Add("simple");
+        }
 
         // Style hints
         if (conjunctness > 0.7 && ambitus <= 12)
+        {
             parts.Add("(vocal-style)");
+        }
         else if (stats.LeapPercent > 50 && ambitus > 15)
+        {
             parts.Add("(instrumental-style)");
+        }
 
         return string.Join(" ", parts) + " melody";
     }

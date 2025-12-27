@@ -46,12 +46,16 @@ public sealed class MelodyHarmonizer
     public HarmonizationResult Harmonize(ReadOnlySpan<NoteEvent> melody)
     {
         if (melody.IsEmpty)
+        {
             return new HarmonizationResult { Key = new KeySignature(0, true), TotalCost = 0 };
+        }
 
         // Detect key from melody pitches
         Span<int> pitches = stackalloc int[melody.Length];
         for (var i = 0; i < melody.Length; i++)
+        {
             pitches[i] = melody[i].Pitch;
+        }
 
         var key = KeyAnalyzer.IdentifyKey(pitches);
         return Harmonize(melody, key);
@@ -63,12 +67,16 @@ public sealed class MelodyHarmonizer
     public HarmonizationResult Harmonize(ReadOnlySpan<NoteEvent> melody, KeySignature key)
     {
         if (melody.IsEmpty)
+        {
             return new HarmonizationResult { Key = key, TotalCost = 0 };
+        }
 
         // 1. Segment melody into time slices
         var slices = _rhythmStrategy.Segment(melody);
         if (slices.Count == 0)
+        {
             return new HarmonizationResult { Key = key, TotalCost = 0 };
+        }
 
         // 2. Generate candidates for each slice
         var candidatesPerSlice = new List<List<ChordCandidate>>(slices.Count);
@@ -187,7 +195,10 @@ public sealed class MelodyHarmonizer
     {
         var notes = new NoteEvent[buffer.Count];
         for (var i = 0; i < buffer.Count; i++)
+        {
             notes[i] = buffer.Get(i);
+        }
+
         return Harmonize(notes);
     }
 
@@ -198,7 +209,10 @@ public sealed class MelodyHarmonizer
     {
         var notes = new NoteEvent[buffer.Count];
         for (var i = 0; i < buffer.Count; i++)
+        {
             notes[i] = buffer.Get(i);
+        }
+
         return Harmonize(notes, key);
     }
 

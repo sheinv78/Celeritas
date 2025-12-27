@@ -348,7 +348,7 @@ var triplet = new Rational(1, 6);  // Eighth note triplet
 
 - [Examples Directory](../examples/) - Complete working code samples
 - [README.md](../README.md) - Project overview and features
-- [Python Guide](PYTHON-GUIDE.md) - Using Celeritas from Python
+- [Python Guide](../bindings/python/README.md) - Using Celeritas from Python
 
 ---
 

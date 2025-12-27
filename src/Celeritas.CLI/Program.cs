@@ -5,6 +5,35 @@ using Celeritas.Core.Harmonization;
 using Celeritas.Core.Midi;
 using Celeritas.Core.VoiceLeading;
 
+static string[] ExpandListArgs(string[] raw)
+{
+    if (raw.Length == 0)
+    {
+        return raw;
+    }
+
+    var result = new List<string>(raw.Length);
+    foreach (var token in raw)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            continue;
+        }
+
+        // Allow both styles:
+        //   --notes C4 E4 G4
+        //   --notes "C4 E4 G4"
+        // and comma/semicolon separated lists.
+        var parts = token.Split(
+            [' ', '\t', '\r', '\n', ',', ';'],
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        result.AddRange(parts);
+    }
+
+    return result.ToArray();
+}
+
 Option<int> semitonesOption = new("--semitones", "-s")
 {
     Description = "Number of semitones for transposition",
@@ -40,25 +69,53 @@ RootCommand rootCommand = new("Celeritas - High-performance music engine");
 Command transposeCommand = new("transpose", "Transpose notes");
 transposeCommand.Options.Add(semitonesOption);
 transposeCommand.Options.Add(delayOption);
+transposeCommand.Options.Add(notesOption);
 
 transposeCommand.SetAction(parseResult =>
 {
     var semitones = parseResult.GetValue(semitonesOption);
     var delay = parseResult.GetValue(delayOption);
+    var noteStrings = ExpandListArgs(parseResult.GetValue(notesOption) ?? []);
+
+    if (noteStrings.Length == 0)
+    {
+        Console.WriteLine("No notes provided. Use: celeritas transpose --semitones 2 --notes C4 E4 G4");
+        return;
+    }
 
     Console.WriteLine($"Transposing by {semitones} semitones...");
 
-    // Example usage of the library
-    using var buffer = new NoteBuffer(1000);
-    buffer.AddNote(60, Rational.Zero, Rational.Quarter); // C4
-    buffer.AddNote(64, Rational.Quarter, Rational.Quarter); // E4
-    buffer.AddNote(67, Rational.Half, Rational.Quarter); // G4
+    var inputMidi = new int[noteStrings.Length];
+    for (var i = 0; i < noteStrings.Length; i++)
+    {
+        var token = noteStrings[i];
+        if (int.TryParse(token, out var midi))
+        {
+            inputMidi[i] = midi;
+        }
+        else
+        {
+            inputMidi[i] = MusicNotation.ParseNote(token);
+        }
+    }
 
-    Console.WriteLine($"Before: {buffer.PitchAt(0)}, {buffer.PitchAt(1)}, {buffer.PitchAt(2)}");
+    var outputMidi = inputMidi.Select(m => m + semitones).ToArray();
+    var outputNames = outputMidi.Select(MusicMath.MidiToNoteName).ToArray();
 
-    MusicMath.Transpose(buffer, semitones);
+    Console.WriteLine($"Input:  {string.Join(' ', noteStrings)}");
+    Console.WriteLine($"MIDI:   {string.Join(' ', inputMidi)}");
+    Console.WriteLine($"Output: {string.Join(' ', outputNames)}");
 
-    Console.WriteLine($"After: {buffer.PitchAt(0)}, {buffer.PitchAt(1)}, {buffer.PitchAt(2)}");
+    if (delay > 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine($"Delay: {delay} ms between notes");
+        foreach (var name in outputNames)
+        {
+            Console.WriteLine($"  {name}");
+            System.Threading.Thread.Sleep(delay);
+        }
+    }
 });
 
 rootCommand.Subcommands.Add(transposeCommand);
@@ -72,7 +129,7 @@ analyzeCommand.Options.Add(keyOption);
 
 analyzeCommand.SetAction(parseResult =>
 {
-    var noteStrings = parseResult.GetValue(notesOption) ?? [];
+    var noteStrings = ExpandListArgs(parseResult.GetValue(notesOption) ?? []);
     var keyStr = parseResult.GetValue(keyOption);
 
     // Parse notes (supports both C4 notation and MIDI numbers)
@@ -129,7 +186,7 @@ progressionCommand.Options.Add(chordsOption);
 
 progressionCommand.SetAction(parseResult =>
 {
-    var chordSymbols = parseResult.GetValue(chordsOption) ?? [];
+    var chordSymbols = ExpandListArgs(parseResult.GetValue(chordsOption) ?? []);
 
     if (chordSymbols.Length == 0)
     {
@@ -332,7 +389,7 @@ keyDetectCommand.Options.Add(keyDetectNotesOption);
 
 keyDetectCommand.SetAction(parseResult =>
 {
-    var notesInput = parseResult.GetValue(keyDetectNotesOption) ?? [];
+    var notesInput = ExpandListArgs(parseResult.GetValue(keyDetectNotesOption) ?? []);
 
     if (notesInput.Length == 0)
     {
@@ -410,7 +467,7 @@ voiceLeadCommand.Options.Add(strictModeOption);
 
 voiceLeadCommand.SetAction(parseResult =>
 {
-    var chords = parseResult.GetValue(voiceLeadChordsOption) ?? [];
+    var chords = ExpandListArgs(parseResult.GetValue(voiceLeadChordsOption) ?? []);
     var strict = parseResult.GetValue(strictModeOption);
 
     if (chords.Length == 0)
@@ -469,7 +526,7 @@ modeCommand.Options.Add(modeNotesOption);
 
 modeCommand.SetAction(parseResult =>
 {
-    var notesInput = parseResult.GetValue(modeNotesOption) ?? [];
+    var notesInput = ExpandListArgs(parseResult.GetValue(modeNotesOption) ?? []);
 
     if (notesInput.Length == 0)
     {
@@ -493,7 +550,15 @@ modeCommand.SetAction(parseResult =>
             // Try parsing as note name (C, D#, etc.) or scientific (C4, D#5)
             try
             {
-                var midi2 = MusicNotation.ParseNote(note);
+                // Accept pitch-class-only tokens like "D" or "Bb" by normalizing
+                // to a default octave. (Mode detection ignores octave anyway.)
+                var token = note;
+                if (System.Text.RegularExpressions.Regex.IsMatch(token, "^[A-Ga-g](?:#{1,2}|b{1,2})?$") )
+                {
+                    token = token + "4";
+                }
+
+                var midi2 = MusicNotation.ParseNote(token);
                 distribution[midi2 % 12] += 1f;
                 rootHint ??= midi2 % 12;
             }
@@ -743,7 +808,7 @@ rhythmCommand.Options.Add(meterOption);
 
 rhythmCommand.SetAction(parseResult =>
 {
-    var durationsInput = parseResult.GetValue(rhythmDurationsOption) ?? [];
+    var durationsInput = ExpandListArgs(parseResult.GetValue(rhythmDurationsOption) ?? []);
     var style = parseResult.GetValue(rhythmStyleOption) ?? "classical";
     var predictCount = parseResult.GetValue(predictCountOption);
     var meterStr = parseResult.GetValue(meterOption) ?? "4/4";
@@ -906,7 +971,7 @@ melodyCommand.Options.Add(melodyNotesOption);
 
 melodyCommand.SetAction(parseResult =>
 {
-    var notesInput = parseResult.GetValue(melodyNotesOption) ?? [];
+    var notesInput = ExpandListArgs(parseResult.GetValue(melodyNotesOption) ?? []);
 
     // Parse notes
     var pitches = new List<int>();
@@ -1146,8 +1211,6 @@ midiExportCommand.SetAction(parseResult =>
         return;
     }
 
-    using var buffer = new NoteBuffer(Math.Max(notesInput.Length, 1));
-
     // Interpret as Celeritas music notation. MusicNotation.Parse uses whole-note units (whole=1),
     // while MIDI export expects beats in quarter-note units (quarter=1). Scale by 4.
     var notation = string.Join(' ', notesInput);
@@ -1161,6 +1224,15 @@ midiExportCommand.SetAction(parseResult =>
         Console.WriteLine($"Could not parse music notation: {ex.Message}");
         return;
     }
+
+    var noteCount = 0;
+    foreach (var e in parsed)
+    {
+        if (e.Pitch != MusicNotation.REST_PITCH)
+            noteCount++;
+    }
+
+    using var buffer = new NoteBuffer(Math.Max(noteCount, 1));
 
     var quarterScale = new Rational(4, 1);
     foreach (var e in parsed)
@@ -1601,7 +1673,7 @@ pcsetCommand.Options.Add(pcsetCatalogOption);
 
 pcsetCommand.SetAction(parseResult =>
 {
-    var noteStrings = parseResult.GetValue(notesOption) ?? [];
+    var noteStrings = ExpandListArgs(parseResult.GetValue(notesOption) ?? []);
     var catalogFile = parseResult.GetValue(pcsetCatalogOption);
     if (noteStrings.Length == 0)
     {

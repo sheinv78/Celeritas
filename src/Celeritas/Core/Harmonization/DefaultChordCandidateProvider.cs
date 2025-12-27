@@ -41,7 +41,9 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
         HarmonizationContext? context = null)
     {
         if (melodyPitches.Length == 0)
+        {
             yield break;
+        }
 
         var melodyMask = GetPitchMask(melodyPitches);
         var scaleDegrees = key.IsMajor ? MajorScaleDegrees : MinorScaleDegrees;
@@ -63,11 +65,15 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
 
             // Check if chord contains any melody note
             if ((chordMask & melodyMask) == 0)
+            {
                 continue;
+            }
 
             var chord = ChordAnalyzer.Identify(pitches);
             if (chord.Quality == ChordQuality.Unknown)
+            {
                 continue;
+            }
 
             // Base cost: favor tonic/dominant, slightly penalize others
             var baseCost = degree switch
@@ -95,7 +101,10 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
     {
         ushort mask = 0;
         foreach (var p in pitches)
+        {
             mask |= (ushort)(1 << (p % 12));
+        }
+
         return mask;
     }
 

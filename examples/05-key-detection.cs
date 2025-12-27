@@ -115,7 +115,7 @@ class KeyDetection
         Console.WriteLine($"G-B-D-F in C major: {roman3.ToRomanNumeral()} ({roman3.Function})");
 
         // ===== Modulation Detection =====
-        // See ROADMAP.md for planned ModulationDetector API
+        // ModulationDetector is available (see README.md for overview)
 
         // ===== Key Relationships =====
 

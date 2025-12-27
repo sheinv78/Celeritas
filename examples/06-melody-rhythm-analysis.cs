@@ -89,7 +89,7 @@ class MelodyRhythmAnalysis
         Console.WriteLine($"  Syncopation level: {rhythmAnalysis.Syncopation:F2}");
 
         // ===== Meter Detection & Pattern Recognition =====
-        // See ROADMAP.md for planned DetectMeter, IdentifyPattern, RhythmPredictor APIs
+        // DetectMeter / IdentifyPattern / RhythmPredictor APIs are available (see README.md for overview)
 
         // ===== Syncopation Analysis =====
 

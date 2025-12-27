@@ -87,6 +87,23 @@ public readonly struct KeySignature
         return mask;
     }
 
+    /// <summary>
+    /// Returns the diatonic scale pitch classes (0-11) for this key.
+    /// Uses major or natural minor.
+    /// </summary>
+    public int[] GetScale()
+    {
+        var steps = IsMajor ? MajorScaleSteps : MinorScaleSteps;
+        var scale = new int[steps.Length];
+
+        for (var i = 0; i < steps.Length; i++)
+        {
+            scale[i] = (Root + steps[i]) % 12;
+        }
+
+        return scale;
+    }
+
     private static int DegreeToIndex(ScaleDegree degree)
     {
         return degree switch

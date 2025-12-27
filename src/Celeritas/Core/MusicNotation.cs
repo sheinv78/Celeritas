@@ -20,11 +20,12 @@ public static partial class MusicNotation
     /// </summary>
     public static int ParseNote(string notation)
     {
-        if (notation is null)
-            throw new ArgumentNullException(nameof(notation));
+        ArgumentNullException.ThrowIfNull(notation);
 
         if (!TryParseNote(notation.AsSpan(), out var midi))
+        {
             throw new ArgumentException($"Invalid note notation: {notation}. Expected formats: 60, C4, D#5, Bb3", nameof(notation));
+        }
 
         return midi;
     }
@@ -39,7 +40,9 @@ public static partial class MusicNotation
 
         notation = notation.Trim();
         if (notation.IsEmpty)
+        {
             return false;
+        }
 
         // MIDI number (0-127)
         if (int.TryParse(notation, out var midiNumber))
@@ -54,19 +57,27 @@ public static partial class MusicNotation
 
         // Root pitch class
         if (!TryParsePitchClass(notation, out var pitchClass, out var consumed))
+        {
             return false;
+        }
 
         var octaveSpan = notation[consumed..];
         if (octaveSpan.IsEmpty)
+        {
             return false;
+        }
 
         if (!int.TryParse(octaveSpan, out var octave))
+        {
             return false;
+        }
 
         // MIDI number: (octave + 1) * 12 + pitchClass, where C-1 = 0
         var value = (octave + 1) * 12 + pitchClass;
         if ((uint)value > 127u)
+        {
             return false;
+        }
 
         midi = value;
         return true;
@@ -109,7 +120,9 @@ public static partial class MusicNotation
 
         // Dotted note: add half of the base duration
         if (isDotted)
+        {
             return baseValue + baseValue / 2;
+        }
 
         return baseValue;
     }
@@ -209,7 +222,9 @@ public static partial class MusicNotation
     public static string FormatNoteSequence(ReadOnlySpan<NoteEvent> sequence, bool useDot = true, bool useLetters = false, bool groupChords = true)
     {
         if (sequence.IsEmpty)
+        {
             return string.Empty;
+        }
 
         var separator = useLetters ? ':' : '/';
         var sb = new System.Text.StringBuilder();
@@ -217,7 +232,10 @@ public static partial class MusicNotation
 
         while (i < sequence.Length)
         {
-            if (sb.Length > 0) sb.Append(' ');
+            if (sb.Length > 0)
+            {
+                sb.Append(' ');
+            }
 
             // Check if next notes form a chord (same offset and duration)
             if (groupChords && i < sequence.Length - 1)
@@ -243,7 +261,11 @@ public static partial class MusicNotation
                     sb.Append('[');
                     for (var k = 0; k < chordNotes.Count; k++)
                     {
-                        if (k > 0) sb.Append(' ');
+                        if (k > 0)
+                        {
+                            sb.Append(' ');
+                        }
+
                         sb.Append(ToNotation(chordNotes[k].Pitch));
                     }
                     sb.Append(']');
@@ -325,7 +347,9 @@ public static partial class MusicNotation
         bool groupChords = true)
     {
         if (notes.IsEmpty && directives.IsEmpty)
+        {
             return string.Empty;
+        }
 
         var sb = new System.Text.StringBuilder();
         var noteIndex = 0;
@@ -337,7 +361,11 @@ public static partial class MusicNotation
             // Insert directives that occur at or before current time
             while (directiveIndex < directives.Length && directives[directiveIndex].Time <= currentTime)
             {
-                if (sb.Length > 0) sb.Append(' ');
+                if (sb.Length > 0)
+                {
+                    sb.Append(' ');
+                }
+
                 sb.Append(FormatDirective(directives[directiveIndex], useLetters));
                 directiveIndex++;
             }
@@ -355,7 +383,10 @@ public static partial class MusicNotation
                 }
 
                 // Format note(s) starting at this time
-                if (sb.Length > 0) sb.Append(' ');
+                if (sb.Length > 0)
+                {
+                    sb.Append(' ');
+                }
 
                 // Check for chord (groupChords logic from FormatNoteSequence)
                 if (groupChords && noteIndex < notes.Length - 1)
@@ -380,7 +411,11 @@ public static partial class MusicNotation
                         sb.Append('[');
                         for (var k = 0; k < chordNotes.Count; k++)
                         {
-                            if (k > 0) sb.Append(' ');
+                            if (k > 0)
+                            {
+                                sb.Append(' ');
+                            }
+
                             sb.Append(ToNotation(chordNotes[k].Pitch));
                         }
                         sb.Append(']');
@@ -420,7 +455,9 @@ public static partial class MusicNotation
     public static string ToNotation(int midiPitch, bool preferSharps = true)
     {
         if (midiPitch < 0 || midiPitch > 127)
+        {
             throw new ArgumentException($"MIDI pitch must be 0-127, got {midiPitch}", nameof(midiPitch));
+        }
 
         var octave = (midiPitch / 12) - 1;
         var pitchClass = midiPitch % 12;
@@ -452,10 +489,14 @@ public static partial class MusicNotation
     public static KeySignature ParseKey(string keyString)
     {
         if (string.IsNullOrWhiteSpace(keyString))
+        {
             throw new ArgumentException("Key signature cannot be empty", nameof(keyString));
+        }
 
         if (!TryParseKey(keyString.AsSpan(), out var key))
+        {
             throw new ArgumentException($"Invalid key signature: {keyString}. Expected formats: C, Cm, C minor, C# major", nameof(keyString));
+        }
 
         return key;
     }
@@ -470,7 +511,9 @@ public static partial class MusicNotation
 
         keyString = keyString.Trim();
         if (keyString.IsEmpty)
+        {
             return false;
+        }
 
         // Detect minor: contains "min"/"minor" or ends with 'm' (but not "maj"/"major")
         var lower = keyString.ToString().ToLowerInvariant();
@@ -488,10 +531,14 @@ public static partial class MusicNotation
 
         // Strip trailing 'm' (e.g., "cm")
         if (lower.Length > 1 && lower[^1] == 'm')
+        {
             lower = lower[..^1];
+        }
 
         if (!TryParsePitchClass(lower.AsSpan(), out var pitchClass, out _))
+        {
             return false;
+        }
 
         key = new KeySignature((byte)pitchClass, !isMinor);
         return true;
@@ -504,7 +551,9 @@ public static partial class MusicNotation
 
         text = text.Trim();
         if (text.IsEmpty)
+        {
             return false;
+        }
 
         var c = text[0];
         pitchClass = c switch
@@ -520,7 +569,9 @@ public static partial class MusicNotation
         };
 
         if (pitchClass < 0)
+        {
             return false;
+        }
 
         consumed = 1;
         if (text.Length >= 2)
@@ -556,20 +607,30 @@ public static partial class MusicNotation
 
         var separatorIdx = -1;
         if (colonIdx >= 0 && barIdx >= 0)
+        {
             separatorIdx = Math.Min(colonIdx, barIdx);
+        }
         else if (colonIdx >= 0)
+        {
             separatorIdx = colonIdx;
+        }
         else if (barIdx >= 0)
+        {
             separatorIdx = barIdx;
+        }
 
         if (separatorIdx <= 0 || separatorIdx > 10) // Reasonable limit
+        {
             return false;
+        }
 
         var prefix = sequence[..separatorIdx].Trim();
         var slashIdx = prefix.IndexOf('/');
 
         if (slashIdx <= 0)
+        {
             return false;
+        }
 
         var beatsStr = prefix[..slashIdx].Trim();
         var unitStr = prefix[(slashIdx + 1)..].Trim();

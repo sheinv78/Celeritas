@@ -62,7 +62,9 @@ public class GraceNote : Ornament
 
         var mainDuration = BaseNote.Duration - totalGraceDuration;
         if (mainDuration.Numerator <= 0)
+        {
             mainDuration = new Rational(1, 16); // Minimum main note duration
+        }
 
         var notes = new NoteEvent[graceCount + 1];
         var currentOffset = BaseNote.Offset;

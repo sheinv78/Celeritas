@@ -44,18 +44,28 @@ public static class PitchClassSetAnalyzer
     public static int[] MaskToPitchClasses(ushort mask)
     {
         if (mask == 0)
+        {
             return [];
+        }
 
         var count = 0;
         for (var pc = 0; pc < 12; pc++)
+        {
             if (((mask >> pc) & 1) != 0)
+            {
                 count++;
+            }
+        }
 
         var result = new int[count];
         var idx = 0;
         for (var pc = 0; pc < 12; pc++)
+        {
             if (((mask >> pc) & 1) != 0)
+            {
                 result[idx++] = pc;
+            }
+        }
 
         return result;
     }
@@ -63,7 +73,9 @@ public static class PitchClassSetAnalyzer
     public static int[] GetNormalOrder(int[] pitchClasses)
     {
         if (pitchClasses.Length <= 1)
-            return pitchClasses.ToArray();
+        {
+            return [.. pitchClasses];
+        }
 
         // Input is already sorted ascending (MaskToPitchClasses ensures this).
         var n = pitchClasses.Length;
@@ -81,7 +93,10 @@ public static class PitchClassSetAnalyzer
             {
                 var pc = pitchClasses[(start + k) % n];
                 if (pc < basePc)
+                {
                     pc += 12;
+                }
+
                 extended[k] = pc;
             }
 
@@ -105,13 +120,15 @@ public static class PitchClassSetAnalyzer
             }
         }
 
-        return best ?? pitchClasses.ToArray();
+        return best ?? [.. pitchClasses];
     }
 
     public static int[] GetPrimeForm(int[] pitchClasses)
     {
         if (pitchClasses.Length <= 1)
-            return pitchClasses.ToArray();
+        {
+            return [.. pitchClasses];
+        }
 
         var normal = GetNormalOrder(pitchClasses);
         var primeA = TransposeToZero(normal);
@@ -135,14 +152,22 @@ public static class PitchClassSetAnalyzer
             for (var j = i + 1; j < n; j++)
             {
                 var interval = pitchClasses[j] - pitchClasses[i];
-                if (interval < 0) interval += 12;
+                if (interval < 0)
+                {
+                    interval += 12;
+                }
 
                 interval %= 12;
-                if (interval == 0) continue;
+                if (interval == 0)
+                {
+                    continue;
+                }
 
                 var ic = Math.Min(interval, 12 - interval);
                 if (ic is >= 1 and <= 6)
+                {
                     iv[ic - 1]++;
+                }
             }
         }
 
@@ -152,14 +177,21 @@ public static class PitchClassSetAnalyzer
     public static int[] Transpose(int[] pitchClasses, int semitones)
     {
         if (pitchClasses.Length == 0)
+        {
             return [];
+        }
 
         semitones %= 12;
-        if (semitones < 0) semitones += 12;
+        if (semitones < 0)
+        {
+            semitones += 12;
+        }
 
         var result = new int[pitchClasses.Length];
         for (var i = 0; i < pitchClasses.Length; i++)
+        {
             result[i] = (pitchClasses[i] + semitones) % 12;
+        }
 
         Array.Sort(result);
         return result;
@@ -168,13 +200,19 @@ public static class PitchClassSetAnalyzer
     public static int[] Invert(int[] pitchClasses)
     {
         if (pitchClasses.Length == 0)
+        {
             return [];
+        }
 
         var result = new int[pitchClasses.Length];
         for (var i = 0; i < pitchClasses.Length; i++)
         {
             var pc = pitchClasses[i] % 12;
-            if (pc < 0) pc += 12;
+            if (pc < 0)
+            {
+                pc += 12;
+            }
+
             result[i] = (12 - pc) % 12;
         }
 
@@ -188,11 +226,15 @@ public static class PitchClassSetAnalyzer
     public static int[] Complement(int[] pitchClasses)
     {
         if (pitchClasses.Length == 0)
+        {
             return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        }
 
         var mask = 0;
         foreach (var pc in pitchClasses)
+        {
             mask |= 1 << (pc % 12);
+        }
 
         var complementMask = ~mask & 0xFFF;
         return MaskToPitchClasses((ushort)complementMask);
@@ -220,7 +262,9 @@ public static class PitchClassSetAnalyzer
         }
 
         if (mag1 == 0 || mag2 == 0)
+        {
             return 0.0;
+        }
 
         return dotProduct / (Math.Sqrt(mag1) * Math.Sqrt(mag2));
     }
@@ -230,7 +274,10 @@ public static class PitchClassSetAnalyzer
         var n = extended.Length;
         var result = new int[n];
         for (var i = 0; i < n; i++)
+        {
             result[i] = extended[i] % 12;
+        }
+
         return result;
     }
 
@@ -244,7 +291,9 @@ public static class PitchClassSetAnalyzer
             var dc = candidate[i] - candidate[0];
             var db = best[i] - best[0];
             if (dc != db)
+            {
                 return dc < db;
+            }
         }
 
         return false;
@@ -253,7 +302,10 @@ public static class PitchClassSetAnalyzer
     private static int[] TransposeToZero(int[] pcsInNormalOrder)
     {
         var n = pcsInNormalOrder.Length;
-        if (n == 0) return [];
+        if (n == 0)
+        {
+            return [];
+        }
 
         var first = pcsInNormalOrder[0];
         var result = new int[n];
@@ -261,7 +313,11 @@ public static class PitchClassSetAnalyzer
         {
             var v = pcsInNormalOrder[i] - first;
             v %= 12;
-            if (v < 0) v += 12;
+            if (v < 0)
+            {
+                v += 12;
+            }
+
             result[i] = v;
         }
 
@@ -274,7 +330,9 @@ public static class PitchClassSetAnalyzer
         for (var i = 0; i < n; i++)
         {
             if (a[i] != b[i])
+            {
                 return a[i].CompareTo(b[i]);
+            }
         }
         return a.Length.CompareTo(b.Length);
     }

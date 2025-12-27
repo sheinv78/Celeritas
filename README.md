@@ -35,7 +35,7 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 ⚠️ **API is not stable yet** — Breaking changes may occur
 
 Current version: **v0.9.0** (December 2025)  
-**286 tests** passing (C#) + **35 tests** (Python)
+**309 tests** passing (C#) + **35 tests** (Python)
 
 ## Intended Use Cases
 
@@ -125,6 +125,7 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 - **🎵 Pattern Recognition** — Tresillo, Habanera, Clave, Shuffle, Bossa Nova
 - **📈 Prediction** — Markov chains for style-based rhythm generation (classical, jazz, rock, latin)
 - **🔀 Syncopation** — Syncopation and swing analysis
+- **🎚️ Groove** — Groove feel (Straight/Swing/Shuffle/Latin/Compound) and drive (0-1)
 
 ### Melodic Analysis
 
@@ -144,6 +145,8 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 
 - **📥 Import** — Load MIDI files into NoteBuffer
 - **📤 Export** — Save NoteBuffer to Standard MIDI files
+- **🧩 Utilities** — Clone, merge, split (track/channel), and statistics
+- **⏱️ Timing Events** — Tempo and time signature events read/write
 
 ### Pitch Class Set Analysis
 
@@ -253,7 +256,10 @@ Console.WriteLine(mode);  // Output: D Dorian
 celeritas analyze --notes C4 E4 G4 B4
 
 # Key detection
-celeritas mode --notes C D Eb F G A Bb --root C
+celeritas keydetect --notes C4 E4 G4 B4 D5
+
+# Mode detection
+celeritas mode --notes C D Eb F G A Bb
 
 # Progression analysis
 celeritas progression --chords Dm7 G7 Cmaj7 Am7
@@ -307,37 +313,11 @@ cd bindings/python
 python test_celeritas.py
 ```
 
-**Current:** 286 C# tests + 35 Python tests, all passing
-
-## 🎯 Roadmap
-
-- [x] SIMD transpose (AVX-512, AVX2, SSE2)
-- [x] Chord analysis and inversions
-- [x] Extended chords (9th, 11th, 13th)
-- [x] Key detection (Krumhansl-Schmuckler)
-- [x] Modulation and tonicization detection
-- [x] Modal system (19 modes)
-- [x] Roman numeral analysis
-- [x] Progression analysis with reports
-- [x] Chord character classification
-- [x] Voice leading solver (parallel A*)
-- [x] Voice separation (SATB)
-- [x] Polyphony/counterpoint analysis
-- [x] Melody harmonization (Viterbi)
-- [x] Rhythm analysis and prediction
-- [x] Melodic analysis (contour, motifs)
-- [x] Form analysis (phrases, cadences, sections)
-- [x] MIDI import/export
-- [x] Pitch Class Set analysis
-- [x] Ornamentation (trills, mordents, turns)
-- [x] Figured bass realization
-- [x] ARM NEON SIMD
-- [x] WebAssembly SIMD
-- [x] Python bindings
+**Current:** 309 C# tests + 35 Python tests, all passing
 
 ## 🎉 Recent Updates (v0.9.0 - December 2025)
 
-All roadmap features completed:
+Highlights:
 
 - ✅ **Ornamentation** - Trills, mordents, turns, appoggiaturas
 - ✅ **Figured Bass** - Baroque chord notation realization
@@ -346,7 +326,13 @@ All roadmap features completed:
 - ✅ **Python Bindings** - Full ctypes wrapper with 35 passing tests
 - ✅ **Round-Trip Formatting** - Export notes with directives back to notation
 
-See [CHANGELOG.md](CHANGELOG.md) for details.
+## 🔭 Next Ideas
+
+- Expand MIDI transformations (track/channel workflows, musical merges, timing edits)
+- Add more CLI commands/examples around rhythm & groove analysis
+- Improve documentation coverage (Cookbook recipes, API notes, performance tips)
+- Add more test-data samples and stress tests for edge cases
+- Continue performance work (benchmarks, allocations, SIMD paths)
 
 ### 📊 SIMD Platform Support
 

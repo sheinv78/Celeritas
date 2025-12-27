@@ -79,6 +79,18 @@ public enum BeatStrength
 }
 
 /// <summary>
+/// High-level groove feel classification.
+/// </summary>
+public enum GrooveFeel
+{
+    Straight,
+    Swing,
+    Shuffle,
+    Latin,
+    Compound
+}
+
+/// <summary>
 /// A rhythmic event (onset) with metrical position.
 /// </summary>
 public readonly struct RhythmEvent
@@ -141,6 +153,8 @@ public sealed class RhythmAnalysisResult
     public required float SwingRatio { get; init; }
     public required float Syncopation { get; init; }
     public required float Density { get; init; }
+    public required GrooveFeel GrooveFeel { get; init; }
+    public required float GrooveDrive { get; init; }
     public required string TextureDescription { get; init; }
     
     /// <summary>Detected time signature (convenience accessor to Meter.TimeSignature).</summary>
@@ -414,6 +428,9 @@ public static class RhythmAnalyzer
         // Generate texture description
         var texture = DescribeTexture(stats, swing, syncopation, density, patterns);
 
+        var grooveFeel = DetermineGrooveFeel(meter.TimeSignature, swing, patterns);
+        var grooveDrive = CalculateGrooveDrive(stats, density, syncopation, swing, grooveFeel);
+
         return new RhythmAnalysisResult
         {
             Meter = meter,
@@ -423,6 +440,8 @@ public static class RhythmAnalyzer
             SwingRatio = swing,
             Syncopation = syncopation,
             Density = density,
+            GrooveFeel = grooveFeel,
+            GrooveDrive = grooveDrive,
             TextureDescription = texture
         };
     }
@@ -443,6 +462,8 @@ public static class RhythmAnalyzer
         SwingRatio = 0.5f,
         Syncopation = 0,
         Density = 0,
+        GrooveFeel = GrooveFeel.Straight,
+        GrooveDrive = 0,
         TextureDescription = "No rhythmic content"
     };
 
@@ -824,5 +845,65 @@ public static class RhythmAnalyzer
         }
 
         return string.Join(", ", parts) + ".";
+    }
+
+    private static GrooveFeel DetermineGrooveFeel(TimeSignature meter, float swing, List<RhythmPatternMatch> patterns)
+    {
+        var mainPattern = patterns.OrderByDescending(p => p.MatchQuality).FirstOrDefault();
+        if (mainPattern?.Pattern.Name is not null)
+        {
+            var name = mainPattern.Pattern.Name;
+            if (name.Contains("Tresillo", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("Habanera", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("Clave", StringComparison.OrdinalIgnoreCase) ||
+                (mainPattern.Pattern.Style?.Contains("Latin", StringComparison.OrdinalIgnoreCase) ?? false))
+            {
+                return GrooveFeel.Latin;
+            }
+        }
+
+        if (meter.IsCompound)
+        {
+            return GrooveFeel.Compound;
+        }
+
+        if (swing >= 0.75f)
+        {
+            return GrooveFeel.Shuffle;
+        }
+
+        if (swing is > 0.55f and < 0.75f)
+        {
+            return GrooveFeel.Swing;
+        }
+
+        return GrooveFeel.Straight;
+    }
+
+    private static float CalculateGrooveDrive(
+        RhythmStatistics stats,
+        float density,
+        float syncopation,
+        float swing,
+        GrooveFeel feel)
+    {
+        var densityNorm = Math.Clamp(density / 2.0f, 0f, 1f);
+        var swingBoost = swing is > 0.55f ? 0.05f : 0f;
+        var latinBoost = feel == GrooveFeel.Latin ? 0.05f : 0f;
+
+        var strongCount = stats.StrengthHistogram.TryGetValue(BeatStrength.Strong, out var strong)
+            ? strong
+            : 0;
+        var strongEmphasis = stats.TotalNotes > 0 ? strongCount / (float)stats.TotalNotes : 0f;
+        var offbeatEmphasis = 1f - strongEmphasis;
+
+        var drive =
+            0.55f * densityNorm +
+            0.35f * Math.Clamp(syncopation, 0f, 1f) +
+            0.10f * Math.Clamp(offbeatEmphasis, 0f, 1f) +
+            swingBoost +
+            latinBoost;
+
+        return Math.Clamp(drive, 0f, 1f);
     }
 }

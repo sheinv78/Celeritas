@@ -79,7 +79,7 @@ class PerformanceExamples
         Console.WriteLine($"Throughput: ~{noteCount / sw.Elapsed.TotalSeconds / 1_000_000:F1}M notes/sec");
 
         // ===== SIMD Detection =====
-        // See ROADMAP.md for planned SimdInfo API
+        // SimdInfo API is available (see README.md for overview)
 
         Console.WriteLine($"\n=== SIMD Capabilities ===");
         Console.WriteLine($"Vector<int>.Count: {System.Numerics.Vector<int>.Count}");
@@ -124,7 +124,7 @@ class PerformanceExamples
         Console.WriteLine($"Set 2: {string.Join(", ", set2)}");
         Console.WriteLine($"Similarity: {similarity:P1}");
 
-        // See ROADMAP.md for planned PitchClassSetCatalog API (Forte number lookup)
+        // PitchClassSetCatalog is available (see README.md for overview)
 
         // ===== Batch Chord Analysis =====
 

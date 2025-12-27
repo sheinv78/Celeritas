@@ -1,6 +1,8 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Runtime.InteropServices;
+
 namespace Celeritas.Core.Analysis;
 
 /// <summary>
@@ -214,6 +216,175 @@ public static class ModalProgressions
         }
 
         return (float)matches / pattern.Count;
+    }
+
+    /// <summary>
+    /// Result of modal progression analysis.
+    /// </summary>
+    public sealed class ModalProgressionAnalysisResult
+    {
+        public required ModalKey DetectedKey { get; init; }
+        public required float ModeConfidence { get; init; }
+        public required ModalProgression? MatchedProgression { get; init; }
+        public required float ProgressionConfidence { get; init; }
+        public required IReadOnlyList<int> Degrees { get; init; }
+        public required IReadOnlyList<ModalMixtureChord> BorrowedChords { get; init; }
+
+        public bool HasModalMixture => BorrowedChords.Count > 0;
+    }
+
+    /// <summary>
+    /// A chord that does not fully belong to the detected mode scale.
+    /// </summary>
+    public sealed record ModalMixtureChord(
+        int Position,
+        string Symbol,
+        int RootPitchClass,
+        IReadOnlyList<int> OutOfScalePitchClasses);
+
+    /// <summary>
+    /// Analyze a chord progression in a modal context.
+    /// Detects the most likely mode (Ionian/Dorian/Phrygian/Mixolydian/etc.),
+    /// matches a characteristic modal progression, and flags modal mixture (borrowed chords).
+    /// </summary>
+    public static ModalProgressionAnalysisResult Analyze(string[] chordSymbols, int? rootHint = null)
+    {
+        if (chordSymbols.Length == 0)
+        {
+            var emptyKey = new ModalKey(0, Mode.Ionian);
+            return new ModalProgressionAnalysisResult
+            {
+                DetectedKey = emptyKey,
+                ModeConfidence = 0,
+                MatchedProgression = null,
+                ProgressionConfidence = 0,
+                Degrees = [],
+                BorrowedChords = []
+            };
+        }
+
+        var chordPitchClasses = new List<int[]>(chordSymbols.Length);
+        var chordRootPitchClasses = new List<int>(chordSymbols.Length);
+
+        var distribution = new float[12];
+
+        for (var i = 0; i < chordSymbols.Length; i++)
+        {
+            var symbol = chordSymbols[i];
+            var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
+
+            if (pitches.Length == 0)
+            {
+                chordPitchClasses.Add([]);
+                chordRootPitchClasses.Add(-1);
+                continue;
+            }
+
+            var mask = ChordAnalyzer.GetMask(pitches);
+            var chord = ChordLibrary.GetChord(mask);
+            var rootPc = chord.Quality != ChordQuality.Unknown
+                ? chord.RootPitchClass
+                : (pitches[0] % 12 + 12) % 12;
+
+            chordRootPitchClasses.Add(rootPc);
+
+            var pcsSet = new HashSet<int>();
+            foreach (var p in pitches)
+            {
+                var pc = (p % 12 + 12) % 12;
+                if (pcsSet.Add(pc))
+                {
+                    distribution[pc] += 1f;
+                }
+            }
+
+            chordPitchClasses.Add([.. pcsSet.OrderBy(x => x)]);
+        }
+
+        var hintedRoot = rootHint ?? chordRootPitchClasses.FirstOrDefault(pc => pc >= 0);
+        if (hintedRoot < 0)
+        {
+            hintedRoot = 0;
+        }
+
+        var (detectedKey, modeConfidence) = ModeLibrary.DetectModeWithRoot(distribution, hintedRoot);
+
+        // Build mapping pitch-class -> scale degree (1..7) for the detected mode.
+        var degreeMap = new Dictionary<int, int>(capacity: 12);
+        var intervals = ModeLibrary.GetIntervals(detectedKey.Mode);
+        for (var degreeIndex = 0; degreeIndex < intervals.Length; degreeIndex++)
+        {
+            degreeMap[(detectedKey.Root + intervals[degreeIndex]) % 12] = degreeIndex + 1;
+        }
+
+        var degrees = new List<int>(chordSymbols.Length);
+        for (var i = 0; i < chordRootPitchClasses.Count; i++)
+        {
+            var rootPc = chordRootPitchClasses[i];
+            if (rootPc < 0 || !degreeMap.TryGetValue(rootPc, out var degree))
+            {
+                degrees.Add(0);
+            }
+            else
+            {
+                degrees.Add(degree);
+            }
+        }
+
+        // Match progressions for the detected mode only.
+        ModalProgression? bestMatch = null;
+        float bestProgressionConfidence = 0;
+        var modeProgressions = GetProgressionsForMode(detectedKey.Mode);
+        foreach (var prog in modeProgressions)
+        {
+            var confidence = MatchProgression(CollectionsMarshal.AsSpan(degrees), prog.Degrees);
+            if (confidence > bestProgressionConfidence)
+            {
+                bestProgressionConfidence = confidence;
+                bestMatch = prog;
+            }
+        }
+
+        // Modal mixture: any chord containing pitch classes outside the detected mode scale.
+        var scaleMask = ModeLibrary.GetScaleMask(detectedKey);
+        var borrowed = new List<ModalMixtureChord>();
+
+        for (var i = 0; i < chordPitchClasses.Count; i++)
+        {
+            var pcs = chordPitchClasses[i];
+            if (pcs.Length == 0)
+            {
+                continue;
+            }
+
+            var outOfScale = new List<int>();
+            foreach (var pc in pcs)
+            {
+                if ((scaleMask & (1 << (pc % 12))) == 0)
+                {
+                    outOfScale.Add(pc);
+                }
+            }
+
+            if (outOfScale.Count > 0)
+            {
+                borrowed.Add(new ModalMixtureChord(
+                    Position: i,
+                    Symbol: chordSymbols[i],
+                    RootPitchClass: chordRootPitchClasses[i],
+                    OutOfScalePitchClasses: outOfScale));
+            }
+        }
+
+        return new ModalProgressionAnalysisResult
+        {
+            DetectedKey = detectedKey,
+            ModeConfidence = modeConfidence,
+            MatchedProgression = bestMatch,
+            ProgressionConfidence = bestProgressionConfidence,
+            Degrees = degrees,
+            BorrowedChords = borrowed
+        };
     }
 }
 

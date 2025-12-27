@@ -26,7 +26,9 @@ public static class ProgressionAdvisor
     public static int[] ParseChordSymbol(string symbol)
     {
         if (string.IsNullOrWhiteSpace(symbol))
+        {
             return [];
+        }
 
         var span = symbol.AsSpan().Trim();
 
@@ -45,7 +47,9 @@ public static class ProgressionAdvisor
         }
 
         if (!MusicNotation.TryParsePitchClass(span, out var pitchClass, out var consumed))
+        {
             return [];
+        }
 
         // Default octave 4 (C4 = 60)
         var rootPitch = 60 + pitchClass;
@@ -71,7 +75,7 @@ public static class ProgressionAdvisor
             }
         }
 
-        return pitches.ToArray();
+        return [.. pitches];
     }
 
     /// <summary>
@@ -79,7 +83,10 @@ public static class ProgressionAdvisor
     /// </summary>
     public static int GetInversion(int[] pitches)
     {
-        if (pitches.Length < 2) return 0;
+        if (pitches.Length < 2)
+        {
+            return 0;
+        }
 
         // Find lowest pitch
         var bass = pitches.Min();
@@ -90,7 +97,10 @@ public static class ProgressionAdvisor
         var mask = ChordAnalyzer.GetMask(pitches);
         var chordInfo = ChordLibrary.GetChord(mask);
 
-        if (chordInfo.Quality == ChordQuality.Unknown) return 0;
+        if (chordInfo.Quality == ChordQuality.Unknown)
+        {
+            return 0;
+        }
 
         var rootPc = chordInfo.RootPitchClass;
         var interval = (bassPc - rootPc + 12) % 12;
@@ -197,14 +207,19 @@ public static class ProgressionAdvisor
     public static CadenceType DetectCadence(string[] chordSymbols, KeySignature? key = null)
     {
         if (chordSymbols.Length < 2)
+        {
             return CadenceType.None;
+        }
 
         // Parse chords
         var parsedChords = new List<(string symbol, int[] pitches, ChordInfo info)>();
         foreach (var symbol in chordSymbols)
         {
             var pitches = ParseChordSymbol(symbol);
-            if (pitches.Length == 0) continue;
+            if (pitches.Length == 0)
+            {
+                continue;
+            }
 
             var mask = ChordAnalyzer.GetMask(pitches);
             var info = ChordLibrary.GetChord(mask);
@@ -212,7 +227,9 @@ public static class ProgressionAdvisor
         }
 
         if (parsedChords.Count < 2)
+        {
             return CadenceType.None;
+        }
 
         // Determine key if not provided
         var detectedKey = key ?? DetectKeyFromProgression(parsedChords).key;
@@ -226,23 +243,33 @@ public static class ProgressionAdvisor
 
         // Detect cadence patterns
         if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.I)
+        {
             return CadenceType.Authentic;
+        }
 
         if (prevRoman.Degree == ScaleDegree.IV && currRoman.Degree == ScaleDegree.I)
+        {
             return CadenceType.Plagal;
+        }
 
         if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.VI)
+        {
             return CadenceType.Deceptive;
+        }
 
         if (currRoman.Degree == ScaleDegree.V)
+        {
             return CadenceType.Half;
+        }
 
         // Check for Phrygian cadence (iv6 -> V in minor)
         if (!detectedKey.IsMajor && prevRoman.Degree == ScaleDegree.IV && currRoman.Degree == ScaleDegree.V)
         {
             var inv = GetInversion(prev.pitches);
             if (inv == 1)
+            {
                 return CadenceType.Phrygian;
+            }
         }
 
         return CadenceType.None;
@@ -272,7 +299,10 @@ public static class ProgressionAdvisor
         foreach (var symbol in chordSymbols)
         {
             var pitches = ParseChordSymbol(symbol);
-            if (pitches.Length == 0) continue;
+            if (pitches.Length == 0)
+            {
+                continue;
+            }
 
             var mask = ChordAnalyzer.GetMask(pitches);
             var info = ChordLibrary.GetChord(mask);
@@ -280,7 +310,9 @@ public static class ProgressionAdvisor
         }
 
         if (parsedChords.Count == 0)
+        {
             return [];
+        }
 
         var (key, _) = DetectKeyFromProgression(parsedChords);
         var lastChord = parsedChords[^1];
@@ -357,10 +389,9 @@ public static class ProgressionAdvisor
         }
 
         // Sort by score and return top suggestions
-        return suggestions
+        return [.. suggestions
             .OrderByDescending(s => s.Score)
-            .Take(maxSuggestions)
-            .ToList();
+            .Take(maxSuggestions)];
     }
 
     private static void AddSuggestion(List<ChordSuggestion> suggestions, KeySignature key, ScaleDegree degree, string reason, float score)
@@ -378,7 +409,9 @@ public static class ProgressionAdvisor
         var intervals = key.IsMajor ? new[] { 0, 2, 4, 5, 7, 9, 11 } : new[] { 0, 2, 3, 5, 7, 8, 10 };
         
         if (scalePos < 0 || scalePos >= intervals.Length)
+        {
             return "C";
+        }
 
         var rootPc = (key.Root + intervals[scalePos]) % 12;
         var rootName = UseFlatsForKey(key) ? NoteNamesFlat[rootPc] : NoteNames[rootPc];
@@ -423,7 +456,9 @@ public static class ProgressionAdvisor
     public static ProgressionReport Analyze(string[] chordSymbols)
     {
         if (chordSymbols.Length == 0)
+        {
             return EmptyReport();
+        }
 
         // Parse chords
         var parsedChords = new List<(string symbol, int[] pitches, ChordInfo info)>();
@@ -438,7 +473,9 @@ public static class ProgressionAdvisor
         }
 
         if (parsedChords.Count == 0)
+        {
             return EmptyReport();
+        }
 
         // Detect key using improved algorithm
         var (key, keyConfidence) = DetectKeyFromProgression(parsedChords);
@@ -527,15 +564,29 @@ public static class ProgressionAdvisor
         // Highlights
         var highlights = new List<string>();
         if (cadences.Count > 0)
+        {
             highlights.Add($"Cadences: {string.Join(", ", cadences.Select(c => c.Type).Distinct())}");
+        }
+
         if (modulations.Count > 0)
+        {
             highlights.Add($"Modulations/tonicizations: {modulations.Count}");
+        }
+
         if (usesHarmonicMinor)
+        {
             highlights.Add("Uses harmonic minor color (raised 7th)");
+        }
+
         if (usesMelodicMinor)
+        {
             highlights.Add("Uses melodic minor color (raised 6th/7th)");
+        }
+
         if (hasModalMixture)
+        {
             highlights.Add("Contains modal mixture / borrowed chords");
+        }
 
         // Secondary dominants from tonicization events.
         var secondaryDominants = modulations
@@ -632,7 +683,9 @@ public static class ProgressionAdvisor
     private static (float avgMovement, int parallel5ths, int parallelOctaves) AnalyzeVoiceLeading(IReadOnlyList<int[]> chords)
     {
         if (chords.Count < 2)
+        {
             return (0, 0, 0);
+        }
 
         var totalMoves = 0f;
         var totalVoices = 0;
@@ -646,7 +699,9 @@ public static class ProgressionAdvisor
 
             var voices = Math.Min(a.Length, b.Length);
             if (voices == 0)
+            {
                 continue;
+            }
 
             for (var v = 0; v < voices; v++)
             {
@@ -667,13 +722,19 @@ public static class ProgressionAdvisor
                     var isParallelMotion = dir1 != 0 && dir1 == dir2;
 
                     if (!isParallelMotion)
+                    {
                         continue;
+                    }
 
                     if (intA == 7 && intB == 7)
+                    {
                         p5++;
+                    }
 
                     if ((intA == 0 || intA == 12) && (intB == 0 || intB == 12))
+                    {
                         p8++;
+                    }
                 }
             }
         }
@@ -700,13 +761,21 @@ public static class ProgressionAdvisor
         // Check for special features
         string? specialNote = null;
         if (info.Quality == ChordQuality.Major7)
+        {
             specialNote = "Major 7th adds a dreamy, sophisticated quality";
+        }
         else if (info.Quality == ChordQuality.Dominant7)
+        {
             specialNote = "Dominant 7th creates strong pull toward resolution";
+        }
         else if (info.Quality == ChordQuality.HalfDim7)
+        {
             specialNote = "Half-diminished creates melancholic tension";
+        }
         else if (info.Quality == ChordQuality.Diminished7)
+        {
             specialNote = "Fully diminished - highly unstable, demands resolution";
+        }
 
         // Check if this chord has altered notes
         var alteredForThis = alteredNotes.Where(a => a.position == position).ToList();
@@ -783,7 +852,9 @@ public static class ProgressionAdvisor
     {
         // Major dominant in minor key = heroic
         if (!key.IsMajor && function == HarmonicFunction.Dominant && quality == ChordQuality.Major)
+        {
             return ChordCharacter.Heroic;
+        }
 
         return quality switch
         {
@@ -884,7 +955,10 @@ public static class ProgressionAdvisor
         KeySignature mainKey)
     {
         var modulations = new List<ModulationInfo>();
-        if (chords.Count < 2) return modulations;
+        if (chords.Count < 2)
+        {
+            return modulations;
+        }
 
         // Track current key context
         var currentKey = mainKey;
@@ -1043,7 +1117,9 @@ public static class ProgressionAdvisor
             {
                 // Allow one non-diatonic chord (could be passing/chromatic)
                 if (i > startIndex && count > 0)
+                {
                     break;
+                }
             }
         }
         return count;
@@ -1072,7 +1148,10 @@ public static class ProgressionAdvisor
         // Score current key
         foreach (var chord in window)
         {
-            if (IsDiatonicChord(chord.pitches, currentKey)) currentScore++;
+            if (IsDiatonicChord(chord.pitches, currentKey))
+            {
+                currentScore++;
+            }
         }
 
         for (int root = 0; root < 12; root++)
@@ -1084,7 +1163,10 @@ public static class ProgressionAdvisor
 
                 foreach (var chord in window)
                 {
-                    if (IsDiatonicChord(chord.pitches, testKey)) score++;
+                    if (IsDiatonicChord(chord.pitches, testKey))
+                    {
+                        score++;
+                    }
                 }
 
                 if (score > bestScore && score > currentScore)
@@ -1222,7 +1304,10 @@ public static class ProgressionAdvisor
     {
         var suggestions = new List<string>();
 
-        if (chords.Count == 0) return suggestions;
+        if (chords.Count == 0)
+        {
+            return suggestions;
+        }
 
         var lastChord = chords[^1];
         var lastParsed = parsedChords[^1];
@@ -1344,7 +1429,9 @@ public static class ProgressionAdvisor
         List<(string symbol, int[] pitches, ChordInfo info)> chords)
     {
         if (chords.Count == 0)
+        {
             return (new KeySignature(0, true), 0);
+        }
 
         // Score each possible key
         var keyScores = new float[24]; // 12 major + 12 minor
@@ -1391,9 +1478,13 @@ public static class ProgressionAdvisor
         var firstIsMajor = firstChord.Quality is ChordQuality.Major or ChordQuality.Major7;
 
         if (firstIsMinor)
+        {
             keyScores[12 + firstRoot] += 3.0f;  // Strong minor key indicator
+        }
         else if (firstIsMajor)
+        {
             keyScores[firstRoot] += 3.0f;  // Strong major key indicator
+        }
 
         // Bonus for last chord (often tonic in cadences)
         var lastChord = chords[^1].info;
@@ -1403,9 +1494,13 @@ public static class ProgressionAdvisor
         var lastIsMajor = lastChord.Quality is ChordQuality.Major or ChordQuality.Major7;
 
         if (lastIsMinor)
+        {
             keyScores[12 + lastRoot] += 2.0f;
+        }
         else if (lastIsMajor)
+        {
             keyScores[lastRoot] += 2.0f;
+        }
 
         // Check for V-I patterns (strong key indicators)
         for (var i = 1; i < chords.Count; i++)
@@ -1421,9 +1516,13 @@ public static class ProgressionAdvisor
                 var currIsMajor = curr.Quality is ChordQuality.Major or ChordQuality.Major7;
 
                 if (currIsMinor)
+                {
                     keyScores[12 + curr.RootPitchClass] += 2.5f;
+                }
                 else if (currIsMajor)
+                {
                     keyScores[curr.RootPitchClass] += 2.5f;
+                }
             }
         }
 

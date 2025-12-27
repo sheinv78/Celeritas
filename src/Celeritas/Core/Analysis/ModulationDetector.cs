@@ -118,14 +118,18 @@ public static class ModulationDetector
             var detectedKey = DetectKeyInWindow(window, currentKey);
 
             if (detectedKey == null || detectedKey.Equals(currentKey))
+            {
                 continue;
+            }
 
             // Check if this is a real modulation or just a passing chromaticism
             var futureWindow = chords.Skip(i).Take(windowSize / 2).ToList();
             var stability = MeasureKeyStability(futureWindow, detectedKey.Value);
 
             if (stability < 0.5f)
+            {
                 continue; // Not stable enough, probably just passing
+            }
 
             // Determine modulation type
             var modulationType = DetermineModulationType(currentKey, detectedKey.Value, currentChord.Offset);
@@ -136,7 +140,9 @@ public static class ModulationDetector
             var isTonicization = duration < minModulationDuration;
 
             if (isTonicization)
+            {
                 modulationType = ModulationType.Tonicization;
+            }
 
             // Look for pivot chord
             var pivotChord = FindPivotChord(chords, i, currentKey, detectedKey.Value);
@@ -157,7 +163,9 @@ public static class ModulationDetector
 
             // Update current key if this is a true modulation
             if (!isTonicization)
+            {
                 currentKey = detectedKey.Value;
+            }
         }
 
         return new ModulationAnalysisResult
@@ -173,7 +181,9 @@ public static class ModulationDetector
     private static List<ChordEvent> ExtractChords(NoteEvent[] notes)
     {
         if (notes.Length == 0)
+        {
             return [];
+        }
 
         var chords = new List<ChordEvent>();
         var quantizationGrid = new Rational(1, 8); // Eighth note grid
@@ -186,7 +196,9 @@ public static class ModulationDetector
             var quantizedOffset = QuantizeOffset(note.Offset, quantizationGrid);
 
             if (!groups.ContainsKey(quantizedOffset))
-                groups[quantizedOffset] = new List<int>();
+            {
+                groups[quantizedOffset] = [];
+            }
 
             groups[quantizedOffset].Add(note.Pitch);
         }
@@ -195,7 +207,9 @@ public static class ModulationDetector
         foreach (var (offset, pitches) in groups.OrderBy(kvp => kvp.Key))
         {
             if (pitches.Count < 2)
+            {
                 continue;
+            }
 
             var mask = ChordAnalyzer.GetMask(pitches.ToArray());
             var pitchClasses = PitchClassSetAnalyzer.MaskToPitchClasses(mask);
@@ -216,7 +230,9 @@ public static class ModulationDetector
     private static KeySignature? DetectKeyInWindow(List<ChordEvent> window, KeySignature currentKey)
     {
         if (window.Count == 0)
+        {
             return null;
+        }
 
         // Collect all pitch classes in the window
         var pitchClassCounts = new int[12];
@@ -237,13 +253,17 @@ public static class ModulationDetector
         }
 
         if (allPitches.Count == 0)
+        {
             return null;
+        }
 
         var detectedKey = KeyAnalyzer.IdentifyKey(allPitches.ToArray());
 
         // Require significant difference from current key
         if (detectedKey.Root == currentKey.Root && detectedKey.IsMajor == currentKey.IsMajor)
+        {
             return null;
+        }
 
         return detectedKey;
     }
@@ -251,7 +271,9 @@ public static class ModulationDetector
     private static float MeasureKeyStability(List<ChordEvent> window, KeySignature key)
     {
         if (window.Count == 0)
+        {
             return 0f;
+        }
 
         var scale = key.GetScale();
         var inKeyCount = 0;
@@ -263,7 +285,9 @@ public static class ModulationDetector
             {
                 totalCount++;
                 if (scale.Contains(pc))
+                {
                     inKeyCount++;
+                }
             }
         }
 
@@ -276,15 +300,21 @@ public static class ModulationDetector
 
         // Parallel key (same tonic)
         if (fromKey.Root == toKey.Root && fromKey.IsMajor != toKey.IsMajor)
+        {
             return ModulationType.ModalInterchange;
+        }
 
         // Relative key (minor third apart, opposite modes)
         if ((interval == 3 || interval == 9) && fromKey.IsMajor != toKey.IsMajor)
+        {
             return ModulationType.Direct; // Use Direct for relative key changes
+        }
 
         // Chromatic mediant (major or minor third, same mode)
         if ((interval == 3 || interval == 4 || interval == 8 || interval == 9) && fromKey.IsMajor == toKey.IsMajor)
+        {
             return ModulationType.Chromatic;
+        }
 
         // Default to direct or pivot chord (requires analysis of actual chords)
         return ModulationType.Direct;
@@ -304,7 +334,9 @@ public static class ModulationDetector
 
             // If more notes are out of key, we've left this key area
             if (outOfKeyCount > inKeyCount)
+            {
                 break;
+            }
 
             endOffset = chord.Offset;
         }
@@ -339,7 +371,9 @@ public static class ModulationDetector
     private static RomanNumeralChord? TryAnalyzeChordInKey(int[] pitchClasses, KeySignature key)
     {
         if (pitchClasses.Length < 2)
+        {
             return null;
+        }
 
         try
         {
@@ -348,11 +382,15 @@ public static class ModulationDetector
 
             // Check if root is in the scale
             if (!scale.Contains(root))
+            {
                 return null;
+            }
 
             var scaleIndex = Array.IndexOf(scale, root);
             if (scaleIndex < 0)
+            {
                 return null;
+            }
 
             // Create simple roman numeral description
             var scaleDegree = (ScaleDegree)(scaleIndex + 1);
@@ -372,9 +410,10 @@ public static class ModulationDetector
         ModulationType type,
         (RomanNumeralChord?, RomanNumeralChord?)? pivotChord)
     {
-        var parts = new List<string>();
-
-        parts.Add($"{type} modulation from {fromKey} to {toKey}");
+        var parts = new List<string>
+        {
+            $"{type} modulation from {fromKey} to {toKey}"
+        };
 
         if (pivotChord.HasValue && pivotChord.Value.Item1 != null && pivotChord.Value.Item2 != null)
         {
@@ -400,7 +439,9 @@ public static class ModulationDetector
         };
 
         if (!string.IsNullOrEmpty(intervalName))
+        {
             parts.Add($"({intervalName} relationship)");
+        }
 
         return string.Join(" ", parts);
     }

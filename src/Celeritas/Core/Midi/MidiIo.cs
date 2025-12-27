@@ -33,11 +33,15 @@ public static class MidiIo
         var midiFile = MidiFile.Read(stream);
 
         if (midiFile.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
+        {
             throw new NotSupportedException("Only ticks-per-quarter-note MIDI files are supported.");
+        }
 
         var ticksPerQuarter = tpq.TicksPerQuarterNote;
         if (ticksPerQuarter <= 0)
+        {
             throw new InvalidOperationException("Invalid ticks-per-quarter-note value.");
+        }
 
         var notes = midiFile.GetNotes();
 
@@ -52,7 +56,9 @@ public static class MidiIo
         foreach (var note in notes)
         {
             if (options.Channel is { } ch && note.Channel != ch)
+            {
                 continue;
+            }
 
             var pitch = (int)note.NoteNumber;
             var offset = TicksToBeats(note.Time, ticksPerQuarter);
@@ -63,11 +69,15 @@ public static class MidiIo
 
             taken++;
             if (options.MaxNotes is { } limit && taken >= limit)
+            {
                 break;
+            }
         }
 
         if (options.SortByOffset)
+        {
             buffer.Sort();
+        }
 
         return buffer;
     }
@@ -83,13 +93,19 @@ public static class MidiIo
         options ??= new MidiExportOptions();
 
         if (options.TicksPerQuarterNote <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(options), options.TicksPerQuarterNote, "TicksPerQuarterNote must be positive.");
+        }
 
         if (options.Channel < 0 || options.Channel > 15)
+        {
             throw new ArgumentOutOfRangeException(nameof(options), options.Channel, "Channel must be in [0..15].");
+        }
 
         if (options.TicksPerQuarterNote > short.MaxValue)
+        {
             throw new ArgumentOutOfRangeException(nameof(options), options.TicksPerQuarterNote, "TicksPerQuarterNote must be <= 32767.");
+        }
 
         var midiFile = new MidiFile
         {
@@ -116,7 +132,9 @@ public static class MidiIo
 
             var velocity = (byte)Math.Clamp((int)Math.Round(e.Velocity * 127.0), 1, 127);
             if (velocity == 0)
+            {
                 velocity = options.DefaultVelocity;
+            }
 
             var note = new Note((SevenBitNumber)noteNumber, lengthTicksInt, timeTicks)
             {
@@ -135,13 +153,13 @@ public static class MidiIo
 
     private static int ClampToMidiNote(int pitch) => Math.Clamp(pitch, 0, 127);
 
-    private static Rational TicksToBeats(long ticks, int ticksPerQuarter)
+    internal static Rational TicksToBeats(long ticks, int ticksPerQuarter)
     {
         // beats = ticks / ticksPerQuarter
         return new Rational(ticks, ticksPerQuarter);
     }
 
-    private static long BeatsToTicks(Rational beats, int ticksPerQuarter)
+    internal static long BeatsToTicks(Rational beats, int ticksPerQuarter)
     {
         // ticks = round(beats * ticksPerQuarter)
         try
@@ -151,7 +169,9 @@ public static class MidiIo
                 var scaled = beats.Numerator * (long)ticksPerQuarter;
                 var den = beats.Denominator;
                 if (den == 0)
+                {
                     return 0;
+                }
 
                 // Round half up.
                 return (scaled + (den / 2)) / den;

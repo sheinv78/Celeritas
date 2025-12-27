@@ -178,4 +178,83 @@ public class FiguredBassTests
             Assert.InRange(note.Pitch, options.MinPitch, options.MaxPitch);
         }
     }
+
+    [Fact]
+    public void FiguredBassRealizerOptions_DisallowVoiceCrossing_OrdersUpperVoices()
+    {
+        var options = new FiguredBassRealizerOptions
+        {
+            MinPitch = 48,
+            MaxPitch = 84,
+            AllowVoiceCrossing = false,
+            Style = VoiceLeadingStyle.Smooth
+        };
+
+        var realizer = new FiguredBassRealizer(options);
+
+        var symbols = new[]
+        {
+            new FiguredBassSymbol
+            {
+                BassPitch = 48, // C3
+                Figures = new[] { 7 },
+                Duration = new Rational(1, 4),
+                Time = Rational.Zero
+            },
+            new FiguredBassSymbol
+            {
+                BassPitch = 43, // G2
+                Figures = new[] { 6, 4 },
+                Duration = new Rational(1, 4),
+                Time = new Rational(1, 4)
+            }
+        };
+
+        var notes = realizer.Realize(symbols);
+
+        foreach (var t in symbols.Select(s => s.Time))
+        {
+            var chord = notes.Where(n => n.Offset == t).OrderBy(n => n.Pitch).ToArray();
+            Assert.True(chord.Length >= 3);
+
+            var upper = chord.Skip(1).Select(n => n.Pitch).ToArray();
+            var sorted = upper.OrderBy(x => x).ToArray();
+            Assert.Equal(sorted, upper);
+        }
+    }
+
+    [Fact]
+    public void FiguredBassRealizerOptions_MaxVoiceMovement_ThrowsWhenImpossible()
+    {
+        var options = new FiguredBassRealizerOptions
+        {
+            MinPitch = 60,
+            MaxPitch = 72,
+            AllowVoiceCrossing = false,
+            MaxVoiceMovement = 0,
+            Style = VoiceLeadingStyle.Strict
+        };
+
+        var realizer = new FiguredBassRealizer(options);
+
+        var symbols = new[]
+        {
+            new FiguredBassSymbol
+            {
+                BassPitch = 48, // C3
+                Figures = [],
+                Duration = new Rational(1, 4),
+                Time = Rational.Zero
+            },
+            new FiguredBassSymbol
+            {
+                BassPitch = 50, // D3 (forces upper voices to change pitch class)
+                Figures = [],
+                Duration = new Rational(1, 4),
+                Time = new Rational(1, 4)
+            }
+        };
+
+        Assert.Throws<InvalidOperationException>(() => realizer.Realize(symbols));
+    }
 }
