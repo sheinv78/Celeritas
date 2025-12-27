@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="src\Celeritas\Celeritas.csproj" />
-  <Project Path="src\Celeritas.Benchmarks\Celeritas.Benchmarks.csproj" />
-  <Project Path="src\Celeritas.CLI\Celeritas.CLI.csproj" />
-  <Project Path="tests\Celeritas.Tests\Celeritas.Tests.csproj" />
-</Solution>
