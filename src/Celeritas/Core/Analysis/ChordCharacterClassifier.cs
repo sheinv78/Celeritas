@@ -17,7 +17,7 @@ public static class ChordCharacterClassifier
             return ChordCharacterClassification.Unknown;
 
         try
-        {
+            {
             var pitches = ProgressionAdvisor.ParseChordSymbol(chordSymbol.Trim());
             var mask = ChordAnalyzer.GetMask(pitches);
             var info = ChordLibrary.GetChord(mask);

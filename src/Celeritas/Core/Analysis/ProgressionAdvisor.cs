@@ -26,56 +26,11 @@ public static class ProgressionAdvisor
     public static int[] ParseChordSymbol(string symbol)
     {
         if (string.IsNullOrWhiteSpace(symbol))
-        {
             return [];
-        }
 
-        var span = symbol.AsSpan().Trim();
-
-        // Check for slash chord (e.g., C/E, Am/G)
-        var slashIdx = symbol.IndexOf('/');
-        int? bassOverride = null;
-
-        if (slashIdx > 0 && slashIdx < symbol.Length - 1)
-        {
-            var bassNote = symbol[(slashIdx + 1)..];
-            if (MusicNotation.TryParsePitchClass(bassNote.AsSpan(), out var bassPc, out _))
-            {
-                bassOverride = 48 + bassPc; // Bass octave 3
-            }
-            span = symbol.AsSpan(0, slashIdx).Trim();
-        }
-
-        if (!MusicNotation.TryParsePitchClass(span, out var pitchClass, out var consumed))
-        {
-            return [];
-        }
-
-        // Default octave 4 (C4 = 60)
-        var rootPitch = 60 + pitchClass;
-        var quality = span[consumed..].ToString().ToLowerInvariant();
-
-        // Build chord from quality
-        var intervals = ParseQualityToIntervals(quality);
-        var pitches = new List<int>(intervals.Length + 1);
-
-        // Add bass note first if slash chord
-        if (bassOverride.HasValue)
-        {
-            pitches.Add(bassOverride.Value);
-        }
-
-        for (var i = 0; i < intervals.Length; i++)
-        {
-            var pitch = rootPitch + intervals[i];
-            // Skip if same pitch class as bass (avoid doubling)
-            if (!bassOverride.HasValue || (pitch % 12) != (bassOverride.Value % 12))
-            {
-                pitches.Add(pitch);
-            }
-        }
-
-        return [.. pitches];
+        return ChordSymbolAntlrParser.TryParsePitches(symbol, out var pitches)
+            ? pitches
+            : [];
     }
 
     /// <summary>
@@ -127,78 +82,6 @@ public static class ProgressionAdvisor
         _ => "unknown"
     };
 
-    private static int[] ParseQualityToIntervals(string quality)
-    {
-        quality = quality.Replace(" ", "").ToLowerInvariant();
-
-        return quality switch
-        {
-            // Power chords
-            "5" => [0, 7],
-
-            // Major chords
-            "" or "maj" or "major" => [0, 4, 7],
-            "6" or "maj6" => [0, 4, 7, 9],
-            "maj7" or "major7" or "Δ" or "Δ7" => [0, 4, 7, 11],
-            "maj9" => [0, 4, 7, 11, 14],
-            "maj11" => [0, 4, 7, 11, 14, 17],
-            "maj13" => [0, 4, 7, 11, 14, 17, 21],
-            "add9" or "add2" => [0, 4, 7, 14],
-            "add11" or "add4" => [0, 4, 7, 17],
-            "6/9" or "69" => [0, 4, 7, 9, 14],
-
-            // Dominant chords
-            "7" or "dom7" => [0, 4, 7, 10],
-            "9" or "dom9" => [0, 4, 7, 10, 14],
-            "11" or "dom11" => [0, 4, 7, 10, 14, 17],
-            "13" or "dom13" => [0, 4, 7, 10, 14, 17, 21],
-            "7b9" => [0, 4, 7, 10, 13],
-            "7#9" => [0, 4, 7, 10, 15],
-            "7b5" or "7-5" => [0, 4, 6, 10],
-            "7#5" or "7+5" => [0, 4, 8, 10],
-            "7#11" => [0, 4, 7, 10, 18],
-            "7b13" or "7-13" => [0, 4, 7, 10, 20],
-            "7alt" => [0, 4, 8, 10, 13], // Altered dominant
-            "9#11" => [0, 4, 7, 10, 14, 18],
-            "13b9" => [0, 4, 7, 10, 13, 21],
-            "13#11" => [0, 4, 7, 10, 14, 18, 21],
-
-            // Minor chords
-            "m" or "min" or "minor" or "-" => [0, 3, 7],
-            "m6" or "min6" or "-6" => [0, 3, 7, 9],
-            "m7" or "min7" or "-7" => [0, 3, 7, 10],
-            "m9" or "min9" or "-9" => [0, 3, 7, 10, 14],
-            "m11" or "min11" or "-11" => [0, 3, 7, 10, 14, 17],
-            "m13" or "min13" or "-13" => [0, 3, 7, 10, 14, 17, 21],
-            "m(maj7)" or "mmaj7" or "m/maj7" or "mΔ7" => [0, 3, 7, 11],
-            "m(maj9)" or "mmaj9" => [0, 3, 7, 11, 14],
-            "madd9" or "madd2" => [0, 3, 7, 14],
-            "m6/9" or "m69" => [0, 3, 7, 9, 14],
-            "m7b5" or "ø" or "ø7" => [0, 3, 6, 10],
-            "m9b5" => [0, 3, 6, 10, 14],
-
-            // Suspended chords
-            "sus2" => [0, 2, 7],
-            "sus4" or "sus" => [0, 5, 7],
-            "7sus4" or "7sus" => [0, 5, 7, 10],
-            "9sus4" or "9sus" => [0, 5, 7, 10, 14],
-            "sus2sus4" or "quartal" => [0, 5, 10], // Quartal voicing
-
-            // Diminished
-            "dim" or "°" or "o" => [0, 3, 6],
-            "dim7" or "°7" or "o7" => [0, 3, 6, 9],
-            "dim9" => [0, 3, 6, 9, 14],
-            "dimb13" => [0, 3, 6, 9, 20],
-
-            // Augmented
-            "aug" or "+" or "#5" => [0, 4, 8],
-            "aug7" or "+7" or "7#5" => [0, 4, 8, 10],
-            "augmaj7" or "+maj7" => [0, 4, 8, 11],
-            "aug9" or "+9" => [0, 4, 8, 10, 14],
-
-            _ => [0, 4, 7]
-        };
-    }
 
     /// <summary>
     /// Detect the type of cadence formed by the last two chords in a progression.

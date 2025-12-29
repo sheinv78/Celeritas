@@ -12,7 +12,7 @@ Practical examples and code snippets for using Celeritas.
 
 ### Analysis
 
-- [**04-chord-analysis.cs**](04-chord-analysis.cs) - Chord identification, inversions, extended chords, slash chords
+- [**04-chord-analysis.cs**](04-chord-analysis.cs) - Chord identification, inversions, add chords, slash chords
 - [**05-key-detection.cs**](05-key-detection.cs) - Key and mode detection, modulation, roman numerals
 - [**06-melody-rhythm-analysis.cs**](06-melody-rhythm-analysis.cs) - Contour, intervals, motifs, meter, patterns, syncopation
 - [**07-progression-analysis.cs**](07-progression-analysis.cs) - Harmonic analysis, cadences, tension curves, chord character
@@ -55,7 +55,7 @@ These examples demonstrate:
 
 - ✅ **Notation parsing** - Notes, chords, rests, ties, polyphony, measures
 - ✅ **Round-trip formatting** - Export back to notation with directives
-- ✅ **Chord analysis** - 30+ chord types, inversions, extensions
+- ✅ **Chord analysis** - Triads, sevenths, sus, power/quartal, add9/add11, inversions
 - ✅ **Key detection** - Major/minor keys, 19 modes, modulation
 - ✅ **Melody analysis** - Contour, range, intervals, motifs
 - ✅ **Rhythm analysis** - Meter detection, patterns (Tresillo, Habanera), syncopation

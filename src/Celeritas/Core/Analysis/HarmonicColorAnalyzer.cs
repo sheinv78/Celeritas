@@ -83,7 +83,7 @@ public static class HarmonicColorAnalyzer
             if (end <= start)
                 end = start + Rational.Whole;
 
-            var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
+                var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
             var mask = ChordAnalyzer.GetMask(pitches);
             var info = ChordLibrary.GetChord(mask);
 

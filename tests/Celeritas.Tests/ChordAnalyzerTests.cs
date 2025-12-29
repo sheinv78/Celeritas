@@ -62,6 +62,18 @@ public class ChordAnalyzerTests
     }
 
     [Fact]
+    public void Identify_C7b5_ShouldReturnDominant7Flat5()
+    {
+        // C7♭5: C E Gb Bb
+        int[] pitches = [60, 64, 66, 70];
+
+        var chord = ChordAnalyzer.Identify(pitches);
+
+        Assert.Equal(ChordQuality.Dominant7Flat5, chord.Quality);
+        Assert.Equal("C", chord.Root);
+    }
+
+    [Fact]
     public void Identify_UnknownChord_ShouldReturnUnknown()
     {
         // Arrange

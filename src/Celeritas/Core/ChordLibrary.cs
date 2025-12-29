@@ -24,7 +24,8 @@ public enum ChordQuality : byte
     Add9,
     Add11,
     MinorMajor7,
-    Augmented7
+    Augmented7,
+    Dominant7Flat5
 }
 
 /// <summary>
@@ -68,6 +69,7 @@ public static class ChordLibrary
             (ChordQuality.Major7,     [0, 4, 7, 11]),
             (ChordQuality.Minor7,     [0, 3, 7, 10]),
             (ChordQuality.Dominant7,  [0, 4, 7, 10]),
+            (ChordQuality.Dominant7Flat5, [0, 4, 6, 10]),
             (ChordQuality.Diminished7,[0, 3, 6, 9]),
             (ChordQuality.HalfDim7,   [0, 3, 6, 10]),
             (ChordQuality.MinorMajor7,[0, 3, 7, 11]),

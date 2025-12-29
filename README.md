@@ -35,7 +35,7 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 ⚠️ **API is not stable yet** — Breaking changes may occur
 
 Current version: **v0.9.0** (December 2025)  
-**309 tests** passing (C#) + **35 tests** (Python)
+**350 tests** passing (C#) + **35 tests** (Python)
 
 ## Intended Use Cases
 
@@ -58,7 +58,9 @@ Current version: **v0.9.0** (December 2025)
 
 ## 🎯 Performance
 
-Celeritas is designed for extreme performance (AMD Ryzen 9 7900X, .NET 10, AVX-512):
+Celeritas is designed for extreme performance.
+
+Benchmark numbers below are example measurements on AMD Ryzen 9 7900X (.NET 10, AVX-512). Results vary by CPU, OS, .NET version, and workload:
 
 ```text
 Transpose_1M_Notes        : 29.5 µs   (~34 ns/note,  ~34 million notes/sec)
@@ -85,24 +87,27 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 - **📐 Rational Arithmetic** — Precise fractional time without floating-point errors (auto-normalized)
 - **🎼 Music Notation** — Human-friendly parsing: `"C4/4 [E4 G4]/4 G4/2."` supports notes, chords, rests
 - **🎹 Chord Notation** — Multiple simultaneous notes: `[C4 E4 G4]/4` or `(C4 E4 G4):q`
+- **🧮 Note Arithmetic** — `PitchClass`, `ChromaticInterval`, `SpnNote` for mod-12 pitch classes, intervals, and SPN notes
 - **⏸️ Rest Support** — Explicit rest notation with `R/4`, `R:q`, etc.
 - **🔗 Tie Support** — Merge notes across beats/measures with `C4/4~ C4/4` → single note
-- **� Polyphony** — Independent voices: `<< bass | melody >>` for piano, SATB, counterpoint
+- **🎶 Polyphony** — Independent voices: `<< bass | melody >>` for piano, SATB, counterpoint
 - **🎯 Time Signatures** — Support for 4/4, 3/4, 6/8, and any custom meter
 - **📏 Measure Validation** — Parse measures with `|` bars and validate durations match time signature
 - **🎵 Directives** — BPM, tempo character (Presto, Vivace), sections, parts, dynamics
 - **⚡ Tempo Control** — BPM with ramps: `@bpm 120 -> 140 /2` (accelerando/ritardardo)
 - **🔊 Dynamics** — Volume levels (pp, mf, ff), crescendo/diminuendo with `@dynamics`, `@cresc`, `@dim`
-- **� Round-Trip Formatting** — Export to notation: `FormatNoteSequence`, `FormatWithDirectives` with chord grouping
-- **�🚀 AOT-Ready** — Native AOT compilation support for minimal overhead
+- **🔄 Round-Trip Formatting** — Export to notation: `FormatNoteSequence`, `FormatWithDirectives` with chord grouping
+- **🚀 AOT-Ready** — Native AOT compilation support for minimal overhead
 
 ### Harmonic Analysis
 
-- **🎹 Chord Recognition** — 30+ chord types, inversions, extended chords (9th, 11th, 13th)
+- **🎹 Chord Recognition** — Common chord qualities (triads, sevenths, sus, power/quartal, add9/add11, 7♭5), plus inversions
+- **🧾 Chord Symbols (ANTLR)** — Parse chord symbols into pitches: `Dm7`, `C7(b9,#11)`, `C7+5`, `C|G`, `C/E`
 - **🎼 Key Detection** — Krumhansl-Schmuckler profiling, parallel keys, relative keys
 - **🔄 Modulation Analysis** — Distinguish tonicization vs modulation (direct, via dominant, enharmonic)
 - **🎭 Modal System** — 19 modes (Ionian→Locrian, melodic/harmonic minor, blues scales)
 - **📊 Progression Analysis** — Roman numerals, tension curves, chord recommendations
+- **🧭 Harmony Utilities** — Circle of fifths + functional progressions (ii–V–I, turnaround, full circle, secondary dominants)
 - **🎨 Chord Character** — Emotional classification (Stable, Warm, Dreamy, Tense, Dark, Heroic...)
 - **📝 Progression Reports** — Detailed human-readable analysis with cadence detection
 
@@ -115,7 +120,7 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 ### Counterpoint & Voice Leading
 
 - **🎤 Voice Separation** — Automatic polyphonic voice separation (SATB)
-- **🔗 Voice Leading Solver** — Parallel A* search for optimal SATB voicings
+- **🔗 Voice Leading Solver** — Parallel SATB voicing solver (dynamic programming + smoothness heuristic)
 - **🎯 Roman Numeral Analysis** — Chord function in key context (I, ii, V7, etc.)
 - **⚠️ Rule Checking** — Parallel 5th/octave detection, hidden perfects, spacing rules
 
@@ -231,6 +236,44 @@ var mode = ModeLibrary.DetectModeWithRoot(scale);
 Console.WriteLine(mode);  // Output: D Dorian
 ```
 
+**Parse chord symbols (ANTLR):**
+
+```csharp
+using Celeritas.Core.Analysis;
+
+var pitches1 = ProgressionAdvisor.ParseChordSymbol("C7(b9,#11)");
+var pitches2 = ProgressionAdvisor.ParseChordSymbol("C7+5");
+var pitches3 = ProgressionAdvisor.ParseChordSymbol("C|G");   // polychord layering
+var pitches4 = ProgressionAdvisor.ParseChordSymbol("C/E");   // slash bass
+
+Console.WriteLine(string.Join(" ", pitches1));
+```
+
+**Note arithmetic (pitch classes, intervals, scientific pitch notation):**
+
+```csharp
+using Celeritas.Core;
+
+// Pitch-class arithmetic wraps modulo 12
+var pc = PitchClass.C;
+var d = pc + 2;
+Console.WriteLine(d);              // D
+
+// Differences return intervals
+var asc = PitchClass.C - PitchClass.B;                    // +1 (ascending wrap)
+var shortest = PitchClass.C.SignedIntervalTo(PitchClass.B); // -1 (shortest signed)
+Console.WriteLine(asc.SimpleName);        // m2
+Console.WriteLine(shortest.Semitones);    // -1
+
+// Notes with octave (SPN) + transposition
+var c4 = SpnNote.C(4);
+var e4 = c4 + ChromaticInterval.MajorThird;
+Console.WriteLine(e4); // E4
+
+// Control enharmonic spelling when formatting
+Console.WriteLine(SpnNote.CSharp(4).ToNotation(preferSharps: false)); // Db4
+```
+
 ### 📚 Complete Documentation
 
 - **[Examples](examples/)** - Working code samples organized by topic
@@ -313,7 +356,7 @@ cd bindings/python
 python test_celeritas.py
 ```
 
-**Current:** 309 C# tests + 35 Python tests, all passing
+**Current:** 350 C# tests + 35 Python tests, all passing
 
 ## 🎉 Recent Updates (v0.9.0 - December 2025)
 

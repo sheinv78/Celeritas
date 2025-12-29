@@ -25,6 +25,7 @@ public readonly struct RomanNumeralChord
     private static readonly byte[] Major7Intervals = [0, 4, 7, 11];
     private static readonly byte[] Minor7Intervals = [0, 3, 7, 10];
     private static readonly byte[] Dominant7Intervals = [0, 4, 7, 10];
+    private static readonly byte[] Dominant7Flat5Intervals = [0, 4, 6, 10];
     private static readonly byte[] Diminished7Intervals = [0, 3, 6, 9];
     private static readonly byte[] HalfDim7Intervals = [0, 3, 6, 10];
     private static readonly byte[] MinorMajor7Intervals = [0, 3, 7, 11];
@@ -131,6 +132,7 @@ public readonly struct RomanNumeralChord
             ChordQuality.Major7 => Major7Intervals,
             ChordQuality.Minor7 => Minor7Intervals,
             ChordQuality.Dominant7 => Dominant7Intervals,
+            ChordQuality.Dominant7Flat5 => Dominant7Flat5Intervals,
             ChordQuality.Diminished7 => Diminished7Intervals,
             ChordQuality.HalfDim7 => HalfDim7Intervals,
             ChordQuality.MinorMajor7 => MinorMajor7Intervals,
@@ -159,8 +161,8 @@ public readonly struct RomanNumeralChord
             _ => "?"
         };
 
-        // Lowercase for minor/diminished in traditional notation
-        if (Quality == ChordQuality.Minor || Quality == ChordQuality.Diminished)
+        // Lowercase for minor/diminished qualities in traditional notation
+        if (Quality is ChordQuality.Minor or ChordQuality.Diminished or ChordQuality.Minor7 or ChordQuality.HalfDim7 or ChordQuality.Diminished7 or ChordQuality.MinorMajor7)
         {
             numeral = numeral.ToLowerInvariant();
         }
@@ -169,9 +171,13 @@ public readonly struct RomanNumeralChord
         var suffix = Quality switch
         {
             ChordQuality.Dominant7 => "7",
+            ChordQuality.Dominant7Flat5 => "7b5",
             ChordQuality.Major7 => "maj7",
             ChordQuality.Minor7 => "7",
+            ChordQuality.HalfDim7 => "ø7",
             ChordQuality.Diminished => "°",
+            ChordQuality.Diminished7 => "°7",
+            ChordQuality.MinorMajor7 => "maj7",
             _ => ""
         };
 

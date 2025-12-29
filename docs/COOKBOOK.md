@@ -48,6 +48,84 @@ foreach (var chord in chords)
 
 ## Parsing & Notation
 
+### Note arithmetic (pitch classes and transposition)
+
+```csharp
+using Celeritas.Core;
+
+// Pitch-class arithmetic (mod 12)
+var pc = PitchClass.B;
+Console.WriteLine((pc + 1).ToName()); // C
+
+// Intervals between pitch classes
+var up = PitchClass.C - PitchClass.B;                    // +1 (ascending wrap)
+var down = PitchClass.C.SignedIntervalTo(PitchClass.B);  // -1 (shortest signed)
+Console.WriteLine(up.SimpleName);   // m2
+Console.WriteLine(down.Semitones); // -1
+
+// Notes (SPN) with octave + transposition
+var note = SpnNote.Db(4);
+var transposed = note + ChromaticInterval.PerfectFifth;
+Console.WriteLine(transposed.ToNotation(preferSharps: false)); // Ab4
+```
+
+### Circle of fifths / fourths (keys and chord roots)
+
+```csharp
+using Celeritas.Core;
+
+// Pitch-class circle (C → G → D → ...)
+var circle = CircleOfFifths.PitchClasses(PitchClass.C, CircleDirection.Clockwise);
+Console.WriteLine(string.Join(" ", circle.Select(pc => pc.ToName())));
+
+// Major chords along the circle
+var majorChords = CircleOfFifths.MajorChordSymbols(PitchClass.C);
+Console.WriteLine(string.Join(" ", majorChords));
+
+// Major + relative minor pairs
+var pairs = CircleOfFifths.MajorWithRelativeMinors(PitchClass.C, preferSharps: false);
+Console.WriteLine(string.Join(" | ", pairs.Select(p => $"{p.Major}/{p.RelativeMinor}")));
+
+// You can also use KeySignature helpers:
+var cMajor = new KeySignature(0, isMajor: true);
+Console.WriteLine(cMajor.GetDominantKey());    // G Major
+Console.WriteLine(cMajor.GetSubdominantKey()); // F Major
+Console.WriteLine(cMajor.GetRelativeKey());    // A Minor
+```
+
+### Functional progressions (ii–V–I, turnaround, full circle)
+
+```csharp
+using Celeritas.Core;
+
+var cMajor = new KeySignature(PitchClass.C.Value, isMajor: true);
+
+var twoFiveOne = FunctionalProgressions.TwoFiveOne(cMajor, DiatonicChordType.Seventh);
+Console.WriteLine(string.Join(" ", twoFiveOne.Select(c => c.Symbol())));
+// Dm7 G7 Cmaj7
+
+var turnaround = FunctionalProgressions.Turnaround(cMajor, DiatonicChordType.Seventh);
+Console.WriteLine(string.Join(" ", turnaround.Select(c => c.Symbol())));
+// Cmaj7 Am7 Dm7 G7 Cmaj7
+
+var circle = FunctionalProgressions.Circle(cMajor, DiatonicChordType.Triad);
+Console.WriteLine(string.Join(" ", circle.Select(c => c.Symbol(preferSharps: false))));
+// C F Bb Eb Ab Db Gb B
+
+var aMinor = new KeySignature(PitchClass.A.Value, isMajor: false);
+var minorCadence = FunctionalProgressions.TwoFiveOne(aMinor, DiatonicChordType.Seventh, minorDominant: MinorDominantStyle.Harmonic);
+Console.WriteLine(string.Join(" ", minorCadence.Select(c => c.Symbol())));
+// Bm7b5 E7 Am7
+
+var chain = FunctionalProgressions.ThreeSixTwoFiveOne(cMajor, DiatonicChordType.Seventh);
+Console.WriteLine(string.Join(" ", chain.Select(c => c.Symbol())));
+// Em7 Am7 Dm7 G7 Cmaj7
+
+var vOfIi = FunctionalProgressions.SecondaryDominantTo(cMajor, ScaleDegree.II, DiatonicChordType.Seventh);
+Console.WriteLine($"{vOfIi.RomanNumeral} = {vOfIi.Symbol()}");
+// V7/ii = A7
+```
+
 ### Parse complex notation with time signatures
 
 ```csharp

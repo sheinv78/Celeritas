@@ -54,6 +54,12 @@
         <Listener>false</Listener>
         <Visitor>true</Visitor>
       </Antlr4>
+
+      <Antlr4 Include="Grammar\ChordSymbol.g4">
+        <Package>Celeritas.Core.Grammar</Package>
+        <Listener>false</Listener>
+        <Visitor>true</Visitor>
+      </Antlr4>
     </ItemGroup>
 
     <ItemGroup>
