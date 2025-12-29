@@ -45,15 +45,28 @@ jobs:
 
     - name: Build Celeritas native library (Windows)
       if: runner.os == 'Windows'
-      run: dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64
+      run: dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64 --self-contained
 
     - name: Build Celeritas native library (Linux)
       if: runner.os == 'Linux'
-      run: dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r linux-x64
+      run: dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r linux-x64 --self-contained
 
     - name: Build Celeritas native library (macOS)
       if: runner.os == 'macOS'
-      run: dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r osx-x64
+      run: dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r osx-x64 --self-contained
+
+    - name: List build output (debug)
+      run: |
+        echo "Listing build output directory:"
+        ls -la src/Celeritas.Native/bin/Release/net10.0/ || true
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          ls -la src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/ || true
+        elif [ "${{ runner.os }}" == "Linux" ]; then
+          ls -la src/Celeritas.Native/bin/Release/net10.0/linux-x64/publish/ || true
+        elif [ "${{ runner.os }}" == "macOS" ]; then
+          ls -la src/Celeritas.Native/bin/Release/net10.0/osx-x64/publish/ || true
+        fi
+      shell: bash
 
     - name: Copy native library (Windows)
       if: runner.os == 'Windows'
