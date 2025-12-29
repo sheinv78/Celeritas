@@ -7,6 +7,8 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-BSL--1.1-blue.svg)](LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]()
+[![CI/CD](https://github.com/sheinv78/Celeritas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sheinv78/Celeritas/actions/workflows/ci.yml)
+[![Python Bindings CI](https://github.com/sheinv78/Celeritas/actions/workflows/python-ci.yml/badge.svg?branch=main)](https://github.com/sheinv78/Celeritas/actions/workflows/python-ci.yml)
 
 <p align="center">
   <img src="assets/banner.jpg" alt="Celeritas Banner" width="800"/>
