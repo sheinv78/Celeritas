@@ -43,6 +43,134 @@ jobs:
         cd src/Celeritas.Benchmarks
         dotnet run -c Release --filter '*' --exporters json
 
+  python-wheels:
+    needs: build-and-test
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Python build tooling
+      shell: bash
+      run: |
+        set -euo pipefail
+        python -m pip install --upgrade pip
+        python -m pip install build
+
+    - name: Build NativeAOT library
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        case "${RUNNER_OS}" in
+          Windows)
+            RID="win-x64"
+            ;;
+          Linux)
+            RID="linux-x64"
+            ;;
+          macOS)
+            if [ "$(uname -m)" = "arm64" ]; then
+              RID="osx-arm64"
+            else
+              RID="osx-x64"
+            fi
+            ;;
+          *)
+            echo "Unsupported OS: ${RUNNER_OS}"
+            exit 1
+            ;;
+        esac
+
+        echo "Using RID=${RID}"
+        echo "RID=${RID}" >> "$GITHUB_ENV"
+
+        dotnet publish src/Celeritas.Native/Celeritas.Native.csproj \
+          -c Release \
+          -r "${RID}" \
+          --self-contained \
+          -v minimal
+
+    - name: Prepare Python package with native library
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        native_dir="bindings/python/celeritas/native"
+        rm -rf "${native_dir}"
+        mkdir -p "${native_dir}"
+
+        publish_dir="src/Celeritas.Native/bin/Release/net10.0/${RID}/publish"
+        echo "Listing publish directory: ${publish_dir}"
+        ls -la "${publish_dir}"
+
+        case "${RUNNER_OS}" in
+          Windows)
+            src="${publish_dir}/Celeritas.Native.dll"
+            dst="${native_dir}/Celeritas.Native.dll"
+            ;;
+          Linux)
+            src="$(ls "${publish_dir}"/*.so 2>/dev/null | head -n 1 || true)"
+            dst="${native_dir}/libCeleritas.Native.so"
+            ;;
+          macOS)
+            src="$(ls "${publish_dir}"/*.dylib 2>/dev/null | head -n 1 || true)"
+            dst="${native_dir}/libCeleritas.Native.dylib"
+            ;;
+          *)
+            echo "Unsupported OS: ${RUNNER_OS}"
+            exit 1
+            ;;
+        esac
+
+        if [ -z "${src}" ] || [ ! -f "${src}" ]; then
+          echo "Native library not found in ${publish_dir}"
+          exit 1
+        fi
+
+        cp "${src}" "${dst}"
+        echo "Copied native library: ${src} -> ${dst}"
+
+    - name: Set Python package version from tag
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION="${GITHUB_REF#refs/tags/v}"
+        export VERSION
+        echo "Setting Python package version to ${VERSION}"
+        python -c "import os,re; from pathlib import Path; version=os.environ['VERSION']; path=Path('bindings/python/pyproject.toml'); text=path.read_text(encoding='utf-8'); new_text,n=re.subn(r'(?m)^version\\s*=\\s*\"[^\"]+\"\\s*$', 'version = \"{}\"'.format(version), text); (n==1) or (_ for _ in ()).throw(SystemExit(f'Could not update version in {path} (matches={n})')); path.write_text(new_text, encoding='utf-8'); print('Updated', path)"
+
+    - name: Build wheel (+ sdist on Linux)
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "${RUNNER_OS}" = "Linux" ]; then
+          python -m build bindings/python
+        else
+          python -m build bindings/python -w
+        fi
+
+    - name: Upload Python dist artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-dist-${{ matrix.os }}
+        path: bindings/python/dist/*
+
   pack:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -82,12 +210,54 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
         dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-    
+
+  release:
+    needs: [pack, python-wheels]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download NuGet packages
+      uses: actions/download-artifact@v4
+      with:
+        name: nupkgs
+        path: release-assets/nupkgs
+
+    - name: Download Python wheels
+      uses: actions/download-artifact@v4
+      with:
+        path: release-assets/python
+        pattern: python-dist-*
+        merge-multiple: true
+
     - name: Create GitHub Release
-      if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v1
       with:
-        files: nupkgs/*.nupkg
+        files: |
+          release-assets/nupkgs/*.nupkg
+          release-assets/python/*
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-python:
+    needs: python-wheels
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && vars.PYPI_PUBLISH == 'true'
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download Python dists
+      uses: actions/download-artifact@v4
+      with:
+        path: dist
+        pattern: python-dist-*
+        merge-multiple: true
+
+    - name: Publish to PyPI (Trusted Publishing)
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        packages-dir: dist

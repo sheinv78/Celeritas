@@ -1,7 +1,47 @@
 """Celeritas Python Package Setup."""
 
+from __future__ import annotations
+
 from setuptools import setup, find_packages
 import os
+
+
+def _read_version() -> str:
+    # CI can override the version for tagged releases without committing file changes.
+    env_version = os.environ.get("CELERITAS_PY_VERSION")
+    if env_version:
+        return env_version
+
+    try:
+        import tomllib  # py3.11+
+    except Exception:  # pragma: no cover
+        tomllib = None
+
+    if tomllib is None:
+        return "0.1.0"
+
+    try:
+        here = os.path.dirname(os.path.abspath(__file__))
+        pyproject_path = os.path.join(here, "pyproject.toml")
+        with open(pyproject_path, "rb") as f:
+            data = tomllib.load(f)
+        return str(data.get("project", {}).get("version", "0.1.0"))
+    except Exception:
+        return "0.1.0"
+
+
+# Ensure wheels are tagged per-platform when they include native shared libraries.
+try:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+
+    class bdist_wheel(_bdist_wheel):
+        def finalize_options(self):
+            super().finalize_options()
+            self.root_is_pure = False
+
+    _cmdclass = {"bdist_wheel": bdist_wheel}
+except Exception:  # pragma: no cover
+    _cmdclass = {}
 
 # Read the long description from README
 long_description = """
@@ -57,7 +97,7 @@ BSL-1.1 (Business Source License 1.1)
 
 setup(
     name="celeritas",
-    version="0.1.0",
+    version=_read_version(),
     author="Vladimir V. Shein",
     author_email="sheinv78@gmail.com",
     description="High-Performance Music Engine for Python with SIMD acceleration",
@@ -70,6 +110,7 @@ setup(
         "Source Code": "https://github.com/sheinv78/Celeritas",
     },
     packages=find_packages(),
+    cmdclass=_cmdclass,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
