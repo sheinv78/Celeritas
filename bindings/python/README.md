@@ -52,9 +52,53 @@ print(f"Trill expanded to {len(expanded_notes)} notes")
 - **Basic Note Notation** - Parse single notes like `C4`, `F#5`, `Bb3`
 - **Chord Identification** - Identify a chord from MIDI pitches
 - **Key Detection** - Detect a key from a pitch sequence
+- **Pitch Name Conversion** - Convert MIDI pitches to note names (e.g. `60 -> C4`)
 - **Ornaments** - Trills and mordents (expand to note sequences)
 
 Chord-symbol parsing is implemented in the native library and exposed in Python via `parse_chord_symbol`.
+
+## API Reference
+
+The Python bindings currently expose a focused subset of the Celeritas engine.
+This section lists the complete public API available from:
+
+```python
+import celeritas
+```
+
+### Types
+
+- `NoteEvent(pitch, time_numerator, time_denominator, duration_numerator, duration_denominator, velocity=80)`
+    - Convenience properties: `note.time` and `note.duration` (floats)
+- `ChordQuality` (enum)
+- `MordentType` (enum): `UPPER`, `LOWER`
+- `TurnType` (enum): `NORMAL`, `INVERTED`
+
+### Functions
+
+- `parse_note(notation: str) -> Optional[NoteEvent]`
+    - Parses a single note like `C4`, `F#5`, `Bb3`
+- `transpose(pitches: List[int], semitones: int) -> List[int]`
+    - SIMD-accelerated transposition
+- `midi_to_note_name(pitch: int, prefer_flats: bool = False) -> str`
+    - Converts MIDI pitch (0..127) to scientific pitch notation
+- `identify_chord(pitches: List[int]) -> str`
+    - Returns chord symbol like `Cmaj`, `Dm7`, `G7`
+- `detect_key(pitches: List[int]) -> Tuple[str, bool]`
+    - Returns `(key_name, is_major)`
+- `parse_chord_symbol(symbol: str, max_pitches: int = 32) -> Optional[List[int]]`
+    - Parses chord symbols like `C7(b9,#11)`, `C/E`, `C|G`
+
+### Ornaments
+
+- `Trill(base_note: NoteEvent, interval: int = 2, speed: int = 8, start_with_upper: bool = False, end_with_turn: bool = False)`
+    - `expand() -> List[NoteEvent]`
+- `Mordent(base_note: NoteEvent, mordent_type: MordentType = MordentType.UPPER, interval: int = 2, alternations: int = 1)`
+    - `expand() -> List[NoteEvent]`
+
+If you want the Python bindings to cover more of the C# API, the usual path is:
+1) add new NativeAOT exports in `src/Celeritas.Native`, then
+2) expose them via `ctypes` in `bindings/python/celeritas/celeritas.py`.
 
 ## Requirements
 
