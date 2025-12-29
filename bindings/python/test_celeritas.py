@@ -242,7 +242,7 @@ class TestTrill(unittest.TestCase):
             time_denominator=1,
             duration_numerator=1,
             duration_denominator=2,
-            velocity=80
+            velocity=80,
         )
         trill = Trill(base_note, interval=2, speed=8)
         self.assertEqual(trill.base_note.pitch, 64)
@@ -255,7 +255,7 @@ class TestTrill(unittest.TestCase):
             time_denominator=1,
             duration_numerator=1,
             duration_denominator=2,
-            velocity=80
+            velocity=80,
         )
         trill = Trill(base_note, interval=2, speed=8)
         expanded = trill.expand()
@@ -272,7 +272,7 @@ class TestTrill(unittest.TestCase):
             time_denominator=1,
             duration_numerator=1,
             duration_denominator=4,
-            velocity=80
+            velocity=80,
         )
         trill = Trill(base_note, interval=2, speed=8, start_with_upper=True)
         expanded = trill.expand()
@@ -291,7 +291,7 @@ class TestMordent(unittest.TestCase):
             time_denominator=1,
             duration_numerator=1,
             duration_denominator=4,
-            velocity=80
+            velocity=80,
         )
         mordent = Mordent(base_note, mordent_type=MordentType.UPPER, alternations=1)
         expanded = mordent.expand()
@@ -308,7 +308,7 @@ class TestMordent(unittest.TestCase):
             time_denominator=1,
             duration_numerator=1,
             duration_denominator=4,
-            velocity=80
+            velocity=80,
         )
         mordent = Mordent(base_note, mordent_type=MordentType.LOWER, alternations=1)
         expanded = mordent.expand()
@@ -370,7 +370,7 @@ class TestIntegration(unittest.TestCase):
             time_denominator=1,
             duration_numerator=1,
             duration_denominator=2,
-            velocity=80
+            velocity=80,
         )
 
         trill = Trill(base_note, interval=2, speed=8)
