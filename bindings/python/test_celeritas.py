@@ -56,7 +56,7 @@ class TestNoteEvent(unittest.TestCase):
             time_denominator=1,
             duration_numerator=1,
             duration_denominator=4,
-            velocity=80
+            velocity=80,
         )
         self.assertEqual(note.pitch, 60)
         self.assertEqual(note.velocity, 80)
@@ -68,7 +68,7 @@ class TestNoteEvent(unittest.TestCase):
             time_denominator=2,
             duration_numerator=1,
             duration_denominator=4,
-            velocity=80
+            velocity=80,
         )
         self.assertAlmostEqual(note.time, 0.5)
 
@@ -79,7 +79,7 @@ class TestNoteEvent(unittest.TestCase):
             time_denominator=1,
             duration_numerator=3,
             duration_denominator=8,
-            velocity=80
+            velocity=80,
         )
         self.assertAlmostEqual(note.duration, 0.375)
 
@@ -325,7 +325,7 @@ class TestMordent(unittest.TestCase):
             time_denominator=1,
             duration_numerator=1,
             duration_denominator=2,
-            velocity=80
+            velocity=80,
         )
         mordent = Mordent(base_note, mordent_type=MordentType.UPPER, alternations=2)
         expanded = mordent.expand()
@@ -392,5 +392,6 @@ def run_tests():
 
 if __name__ == "__main__":
     import sys
+
     success = run_tests()
     sys.exit(0 if success else 1)

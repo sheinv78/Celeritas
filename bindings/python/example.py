@@ -11,7 +11,7 @@ from celeritas import (
     Trill,
     Mordent,
     MordentType,
-    NoteEvent
+    NoteEvent,
 )
 
 
@@ -23,7 +23,7 @@ def main():
     note = parse_note("C4")
     if note:
         print(f"   C4 -> Pitch: {note.pitch}, Duration: {note.duration}")
-    
+
     # Example 2: Transpose
     print("\n2. Transposing pitches:")
     pitches = [60, 64, 67]  # C major chord
@@ -36,7 +36,7 @@ def main():
     c_major = [60, 64, 67]
     d_minor = [62, 65, 69]
     g7 = [67, 71, 74, 77]
-    
+
     print(f"   {c_major} -> {identify_chord(c_major)}")
     print(f"   {d_minor} -> {identify_chord(d_minor)}")
     print(f"   {g7} -> {identify_chord(g7)}")
@@ -56,7 +56,7 @@ def main():
         time_denominator=1,
         duration_numerator=1,
         duration_denominator=2,  # Half note
-        velocity=80
+        velocity=80,
     )
     trill = Trill(base_note, interval=2, speed=8)
     expanded = trill.expand()
@@ -74,6 +74,7 @@ def main():
     # Example 7: Performance test
     print("\n7. Performance test (SIMD acceleration):")
     import time
+
     large_list = list(range(60, 72)) * 10000  # 120,000 pitches
     start = time.time()
     transposed_large = transpose(large_list, 5)

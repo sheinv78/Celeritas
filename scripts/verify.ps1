@@ -23,8 +23,11 @@ function Invoke-Step([string] $Title, [scriptblock] $Action) {
 }
 
 function Resolve-PythonExe {
-    $venvPy = Join-Path $repoRoot '.venv\Scripts\python.exe'
-    if (Test-Path $venvPy) { return $venvPy }
+    $venvPyWin = Join-Path $repoRoot '.venv\Scripts\python.exe'
+    if (Test-Path $venvPyWin) { return $venvPyWin }
+
+    $venvPyUnix = Join-Path $repoRoot '.venv/bin/python'
+    if (Test-Path $venvPyUnix) { return $venvPyUnix }
 
     $cmd = Get-Command python -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
@@ -100,7 +103,7 @@ try {
         Invoke-Step "Python bindings (native + tests)" {
             $pythonExe = Resolve-PythonExe
             if (-not $pythonExe) {
-                throw "Python not found. Create a venv at .venv or ensure python is on PATH."
+                throw "Python not found. Create a venv at .venv (Windows: .venv/Scripts/python.exe, Linux/macOS: .venv/bin/python) or ensure python is on PATH."
             }
 
             # Build/copy the NativeAOT library into bindings/python/celeritas/native
@@ -112,7 +115,8 @@ try {
             & pwsh -NoProfile -ExecutionPolicy Bypass -File $buildPyNative -Configuration $Configuration
 
             # Ensure bindings are installed (editable) so tests can import celeritas
-            & $pythonExe -m pip install -e (Join-Path $repoRoot 'bindings/python') | Out-Null
+            & $pythonExe -m pip --version
+            & $pythonExe -m pip install -e (Join-Path $repoRoot 'bindings/python')
 
             # Run the test suite
             & $pythonExe (Join-Path $repoRoot 'bindings/python/test_celeritas.py')

@@ -13,9 +13,25 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-DefaultRid {
-    if ($IsWindows) { return 'win-x64' }
-    if ($IsMacOS) { return 'osx-x64' }
-    return 'linux-x64'
+    $arch = ''
+    try {
+        if ($IsWindows) {
+            $arch = $env:PROCESSOR_ARCHITECTURE
+        } else {
+            $arch = (& uname -m 2>$null)
+        }
+    } catch {
+        $arch = ''
+    }
+
+    $isArm64 = $false
+    if ($arch) {
+        $isArm64 = ($arch -match '^(arm64|aarch64)$')
+    }
+
+    if ($IsWindows) { return ($isArm64 ? 'win-arm64' : 'win-x64') }
+    if ($IsMacOS) { return ($isArm64 ? 'osx-arm64' : 'osx-x64') }
+    return ($isArm64 ? 'linux-arm64' : 'linux-x64')
 }
 
 if ([string]::IsNullOrWhiteSpace($Runtime)) {
