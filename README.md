@@ -39,6 +39,25 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 Current version: **v0.9.0** (December 2025)  
 **350 tests** passing (C#) + **35 tests** (Python)
 
+## Python API Coverage
+
+- **Fast native bindings (default)**: a small, dependency-free `ctypes` layer backed by a NativeAOT library for core operations.
+- **Full .NET API (complete coverage)**: an **opt-in** bridge via `pythonnet` so you can call the entire managed Celeritas API from Python.
+
+Quick start (full .NET API):
+
+```bash
+pip install -e ./bindings/python
+pip install pythonnet
+dotnet build src/Celeritas/Celeritas.csproj -c Release
+```
+
+```python
+from celeritas import load_celeritas
+
+Celeritas = load_celeritas().namespace
+```
+
 ## Intended Use Cases
 
 ### ✅ Primary Use Cases
