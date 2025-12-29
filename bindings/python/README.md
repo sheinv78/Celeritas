@@ -100,6 +100,47 @@ If you want the Python bindings to cover more of the C# API, the usual path is:
 1) add new NativeAOT exports in `src/Celeritas.Native`, then
 2) expose them via `ctypes` in `bindings/python/celeritas/celeritas.py`.
 
+## Full .NET API (Complete Coverage)
+
+If you need **the entire Celeritas .NET API surface** in Python, the bindings include an **opt-in** bridge
+powered by `pythonnet`.
+
+This keeps the current NativeAOT bindings (fast + no extra deps) and additionally enables calling any public
+.NET type/method directly.
+
+### Install
+
+```bash
+pip install pythonnet
+```
+
+### Build the managed assembly
+
+From the repo root:
+
+```bash
+dotnet build src/Celeritas/Celeritas.csproj -c Release
+```
+
+### Use
+
+```python
+from celeritas import load_celeritas
+
+result = load_celeritas()  # loads Celeritas.dll via pythonnet
+Celeritas = result.namespace
+
+print("Loaded:", result.assembly_path)
+
+# From here you can use the full .NET API under the Celeritas namespace.
+```
+
+You can also override the assembly location:
+
+```bash
+export CELERITAS_DOTNET_ASSEMBLY=/abs/path/to/Celeritas.dll
+```
+
 ## Requirements
 
 - Python 3.8+

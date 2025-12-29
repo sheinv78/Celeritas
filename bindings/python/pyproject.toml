@@ -27,6 +27,9 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 
+[project.optional-dependencies]
+dotnet = ["pythonnet>=3.0"]
+
 [project.urls]
 Homepage = "https://github.com/sheinv78/Celeritas"
 Repository = "https://github.com/sheinv78/Celeritas"

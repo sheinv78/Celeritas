@@ -381,6 +381,15 @@ class TestIntegration(unittest.TestCase):
         self.assertAlmostEqual(total_duration, base_note.duration, places=1)
 
 
+class TestDotNetBridge(unittest.TestCase):
+    def test_dotnet_bridge_is_optional(self):
+        # This must not require pythonnet just to import.
+        from celeritas import is_pythonnet_available
+
+        available = is_pythonnet_available()
+        self.assertIsInstance(available, bool)
+
+
 def run_tests():
     """Run all tests with verbose output"""
     loader = unittest.TestLoader()

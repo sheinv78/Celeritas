@@ -19,6 +19,8 @@ from .celeritas import (
     __version__,
 )
 
+from .dotnet import DotNetLoadResult, is_pythonnet_available, load_celeritas
+
 __all__ = [
     "NoteEvent",
     "ChordQuality",
@@ -33,4 +35,7 @@ __all__ = [
     "Trill",
     "Mordent",
     "__version__",
+    "DotNetLoadResult",
+    "is_pythonnet_available",
+    "load_celeritas",
 ]
