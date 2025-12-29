@@ -43,27 +43,36 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest pytest-cov
 
-    - name: Build Celeritas native library
-      run: dotnet build src/Celeritas/Celeritas.csproj -c Release
+    - name: Build Celeritas native library (Windows)
+      if: runner.os == 'Windows'
+      run: dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64
+
+    - name: Build Celeritas native library (Linux)
+      if: runner.os == 'Linux'
+      run: dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r linux-x64
+
+    - name: Build Celeritas native library (macOS)
+      if: runner.os == 'macOS'
+      run: dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r osx-x64
 
     - name: Copy native library (Windows)
       if: runner.os == 'Windows'
       run: |
-        mkdir -p bindings/python/native
-        cp src/Celeritas/bin/Release/net10.0/Celeritas.dll bindings/python/native/Celeritas.Native.dll
+        mkdir -p bindings/python/celeritas/native
+        cp src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/Celeritas.Native.dll bindings/python/celeritas/native/
       shell: bash
 
     - name: Copy native library (Linux)
       if: runner.os == 'Linux'
       run: |
-        mkdir -p bindings/python/native
-        cp src/Celeritas/bin/Release/net10.0/Celeritas.so bindings/python/native/libCeleritas.Native.so
+        mkdir -p bindings/python/celeritas/native
+        cp src/Celeritas.Native/bin/Release/net10.0/linux-x64/publish/libCeleritas.Native.so bindings/python/celeritas/native/
 
     - name: Copy native library (macOS)
       if: runner.os == 'macOS'
       run: |
-        mkdir -p bindings/python/native
-        cp src/Celeritas/bin/Release/net10.0/Celeritas.dylib bindings/python/native/libCeleritas.Native.dylib
+        mkdir -p bindings/python/celeritas/native
+        cp src/Celeritas.Native/bin/Release/net10.0/osx-x64/publish/libCeleritas.Native.dylib bindings/python/celeritas/native/
 
     - name: Run tests
       working-directory: bindings/python
