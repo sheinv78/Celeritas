@@ -64,8 +64,18 @@ def _candidate_assembly_paths() -> list[Path]:
     # Dev scenario: repo checkout, running bindings from source.
     # bindings/python/celeritas/dotnet.py -> repo root
     repo_root = package_dir.parent.parent.parent
-    candidates.append(repo_root / "src" / "Celeritas" / "bin" / "Release" / "net10.0" / "Celeritas.dll")
-    candidates.append(repo_root / "src" / "Celeritas" / "bin" / "Debug" / "net10.0" / "Celeritas.dll")
+    candidates.append(
+        repo_root
+        / "src"
+        / "Celeritas"
+        / "bin"
+        / "Release"
+        / "net10.0"
+        / "Celeritas.dll"
+    )
+    candidates.append(
+        repo_root / "src" / "Celeritas" / "bin" / "Debug" / "net10.0" / "Celeritas.dll"
+    )
 
     return candidates
 
