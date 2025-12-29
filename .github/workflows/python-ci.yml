@@ -49,56 +49,77 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest pytest-cov
 
-    - name: Build Celeritas native library (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64 --self-contained -v detailed
-        echo "Build exit code: $?"
+    - name: Build Celeritas native library (NativeAOT)
       shell: bash
-
-    - name: Build Celeritas native library (Linux)
-      if: runner.os == 'Linux'
       run: |
-        dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r linux-x64 --self-contained -v detailed
-        echo "Build exit code: $?"
+        set -euo pipefail
 
-    - name: Build Celeritas native library (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        dotnet publish src/Celeritas.Native/Celeritas.Native.csproj -c Release -r osx-x64 --self-contained -v detailed
-        echo "Build exit code: $?"
+        case "${RUNNER_OS}" in
+          Windows)
+            RID="win-x64"
+            ;;
+          Linux)
+            RID="linux-x64"
+            ;;
+          macOS)
+            if [ "$(uname -m)" = "arm64" ]; then
+              RID="osx-arm64"
+            else
+              RID="osx-x64"
+            fi
+            ;;
+          *)
+            echo "Unsupported OS: ${RUNNER_OS}"
+            exit 1
+            ;;
+        esac
 
-    - name: List build output (debug)
+        echo "Using RID=${RID}"
+        echo "CELERITAS_RID=${RID}" >> "$GITHUB_ENV"
+
+        dotnet publish src/Celeritas.Native/Celeritas.Native.csproj \
+          -c Release \
+          -r "${RID}" \
+          --self-contained \
+          -v minimal
+
+    - name: Copy native library into Python package
+      shell: bash
       run: |
-        echo "Listing build output directory:"
-        ls -la src/Celeritas.Native/bin/Release/net10.0/ || true
-        if [ "${{ runner.os }}" == "Windows" ]; then
-          ls -la src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/ || true
-        elif [ "${{ runner.os }}" == "Linux" ]; then
-          ls -la src/Celeritas.Native/bin/Release/net10.0/linux-x64/publish/ || true
-        elif [ "${{ runner.os }}" == "macOS" ]; then
-          ls -la src/Celeritas.Native/bin/Release/net10.0/osx-x64/publish/ || true
+        set -euo pipefail
+
+        mkdir -p bindings/python/celeritas/native
+
+        publish_dir="src/Celeritas.Native/bin/Release/net10.0/${CELERITAS_RID}/publish"
+        echo "Listing publish directory: ${publish_dir}"
+        ls -la "${publish_dir}" || true
+
+        case "${RUNNER_OS}" in
+          Windows)
+            src="${publish_dir}/Celeritas.Native.dll"
+            dst="bindings/python/celeritas/native/Celeritas.Native.dll"
+            ;;
+          Linux)
+            src="$(ls "${publish_dir}"/*.so 2>/dev/null | head -n 1 || true)"
+            dst="bindings/python/celeritas/native/libCeleritas.Native.so"
+            ;;
+          macOS)
+            src="$(ls "${publish_dir}"/*.dylib 2>/dev/null | head -n 1 || true)"
+            dst="bindings/python/celeritas/native/libCeleritas.Native.dylib"
+            ;;
+          *)
+            echo "Unsupported OS: ${RUNNER_OS}"
+            exit 1
+            ;;
+        esac
+
+        if [ -z "${src}" ] || [ ! -f "${src}" ]; then
+          echo "Native library not found. publish_dir=${publish_dir}"
+          exit 1
         fi
-      shell: bash
 
-    - name: Copy native library (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        mkdir -p bindings/python/celeritas/native
-        cp src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/Celeritas.Native.dll bindings/python/celeritas/native/
-      shell: bash
-
-    - name: Copy native library (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        mkdir -p bindings/python/celeritas/native
-        cp src/Celeritas.Native/bin/Release/net10.0/linux-x64/publish/libCeleritas.Native.so bindings/python/celeritas/native/
-
-    - name: Copy native library (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        mkdir -p bindings/python/celeritas/native
-        cp src/Celeritas.Native/bin/Release/net10.0/osx-x64/publish/libCeleritas.Native.dylib bindings/python/celeritas/native/
+        cp "${src}" "${dst}"
+        echo "Copied native library: ${src} -> ${dst}"
 
     - name: Run tests
       working-directory: bindings/python
