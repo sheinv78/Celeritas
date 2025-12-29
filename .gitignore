@@ -18,3 +18,24 @@ BenchmarkDotNet.Artifacts/
 *.tokens
 # Test scripts
 *.csx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Python packaging / test caches
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.eggs/
+
+# Python native binaries (built locally)
+bindings/python/celeritas/native/*.dll
+bindings/python/celeritas/native/*.so
+bindings/python/celeritas/native/*.dylib

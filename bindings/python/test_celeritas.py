@@ -15,10 +15,35 @@ from celeritas import (
     identify_chord,
     detect_key,
     midi_to_note_name,
+    parse_chord_symbol,
     Trill,
     Mordent,
     MordentType,
 )
+
+
+class TestParseChordSymbol(unittest.TestCase):
+    """Tests for parse_chord_symbol (native chord-symbol parser)"""
+
+    def test_parse_chord_symbol_c_major(self):
+        pitches = parse_chord_symbol("C")
+        self.assertIsNotNone(pitches)
+        self.assertEqual(sorted(pitches), sorted([60, 64, 67]))
+
+    def test_parse_chord_symbol_inversion_slash(self):
+        pitches = parse_chord_symbol("C/E")
+        self.assertIsNotNone(pitches)
+        self.assertEqual(sorted(pitches), sorted([52, 60, 67]))
+
+    def test_parse_chord_symbol_group_alterations(self):
+        pitches = parse_chord_symbol("C7(b9,#11)")
+        self.assertIsNotNone(pitches)
+        self.assertEqual(sorted(pitches), sorted([60, 64, 67, 70, 73, 78]))
+
+    def test_parse_chord_symbol_polychord(self):
+        pitches = parse_chord_symbol("C|G")
+        self.assertIsNotNone(pitches)
+        self.assertEqual(sorted(pitches), sorted([60, 64, 67, 79, 83, 86]))
 
 
 class TestNoteEvent(unittest.TestCase):

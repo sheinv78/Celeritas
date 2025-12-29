@@ -142,4 +142,35 @@ public static class NativeExports
             return 0;
         }
     }
+
+    /// <summary>
+    /// Parse a chord symbol (e.g. "C7(b9,#11)", "C/E", "C|G") to MIDI pitches.
+    /// </summary>
+    [UnmanagedCallersOnly(EntryPoint = "celeritas_parse_chord_symbol", CallConvs = [typeof(CallConvCdecl)])]
+    public static byte ParseChordSymbol(IntPtr symbolPtr, IntPtr pitchesOutPtr, int maxCount, IntPtr countOutPtr)
+    {
+        try
+        {
+            var symbol = Marshal.PtrToStringUTF8(symbolPtr);
+            if (string.IsNullOrWhiteSpace(symbol))
+                return 0;
+
+            var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
+            if (pitches.Length == 0)
+                return 0;
+
+            var count = Math.Min(pitches.Length, Math.Max(0, maxCount));
+            if (count > 0)
+            {
+                Marshal.Copy(pitches, 0, pitchesOutPtr, count);
+            }
+
+            Marshal.WriteInt32(countOutPtr, count);
+            return 1;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
 }

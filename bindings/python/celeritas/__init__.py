@@ -1,5 +1,6 @@
-"""
-Celeritas Python Package
+"""Celeritas Python Package
+
+Public API surface for the Celeritas native bindings.
 """
 
 from .celeritas import (
@@ -12,6 +13,7 @@ from .celeritas import (
     transpose,
     identify_chord,
     detect_key,
+    parse_chord_symbol,
     Trill,
     Mordent,
     __version__,
@@ -27,6 +29,7 @@ __all__ = [
     "transpose",
     "identify_chord",
     "detect_key",
+    "parse_chord_symbol",
     "Trill",
     "Mordent",
     "__version__",

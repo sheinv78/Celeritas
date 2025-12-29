@@ -5,13 +5,17 @@ Python bindings for the Celeritas high-performance music engine.
 ## Installation
 
 ```bash
+# From this repo (recommended for now)
+pip install -e ./bindings/python
+
+# Or, if/when published to PyPI
 pip install celeritas
 ```
 
 ## Quick Start
 
 ```python
-from celeritas import parse_note, transpose, identify_chord, detect_key, Trill
+from celeritas import parse_note, transpose, identify_chord, detect_key, parse_chord_symbol, Trill
 
 # Parse a note
 note = parse_note("C4")
@@ -26,6 +30,11 @@ print(f"Transposed: {transposed}")  # [62, 66, 69] = D, F#, A
 chord = identify_chord([60, 64, 67])
 print(f"Chord: {chord}")  # "Cmaj"
 
+# Parse chord symbols (ANTLR-backed)
+print(parse_chord_symbol("C7(b9,#11)"))
+print(parse_chord_symbol("C/E"))
+print(parse_chord_symbol("C|G"))
+
 # Detect key
 key_name, is_major = detect_key([60, 62, 64, 65, 67, 69, 71])
 print(f"Key: {key_name} {'Major' if is_major else 'Minor'}")
@@ -39,12 +48,13 @@ print(f"Trill expanded to {len(expanded_notes)} notes")
 
 ## Features
 
-- **SIMD-Accelerated Operations** - Automatic hardware acceleration detection (AVX-512, AVX2, SSE2, ARM NEON, WebAssembly SIMD)
-- **Music Notation** - Parse and format music notation
-- **Chord Analysis** - Identify chords and chord progressions
-- **Key Detection** - Detect musical keys using Krumhansl-Schmuckler algorithm
-- **Ornaments** - Trills, mordents, turns, appoggiaturas
-- **MIDI Support** - Import/export MIDI files (coming soon)
+- **SIMD-Accelerated Operations** - Fast pitch transposition via native SIMD
+- **Basic Note Notation** - Parse single notes like `C4`, `F#5`, `Bb3`
+- **Chord Identification** - Identify a chord from MIDI pitches
+- **Key Detection** - Detect a key from a pitch sequence
+- **Ornaments** - Trills and mordents (expand to note sequences)
+
+Chord-symbol parsing is implemented in the native library and exposed in Python via `parse_chord_symbol`.
 
 ## Requirements
 
@@ -65,7 +75,7 @@ start = time.time()
 transposed = transpose(pitches, 5)
 elapsed = time.time() - start
 print(f"Transposed {len(pitches)} pitches in {elapsed*1000:.2f}ms")
-# ~30-50ms on modern hardware (SIMD accelerated)
+# Note: timings vary widely by CPU, build flags, and Python overhead.
 ```
 
 ## License
@@ -101,6 +111,13 @@ pytest test_celeritas.py --cov=celeritas --cov-report=html
 
 The Python bindings require a native library built with NativeAOT:
 
+Quick path (recommended):
+
+```bash
+# From repo root
+pwsh ./scripts/build-python-native.ps1 -Configuration Release -Runtime win-x64
+```
+
 ```bash
 # Build for Windows
 dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64
@@ -111,8 +128,8 @@ dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r 
 # Build for macOS
 dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r osx-x64
 
-# Copy to bindings folder (Windows example)
-cp ../../src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/Celeritas.Native.dll native/
+# Copy to package folder (Windows example)
+cp ../../src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/Celeritas.Native.dll celeritas/native/
 ```
 
 ## Documentation

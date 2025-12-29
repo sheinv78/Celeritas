@@ -5,7 +5,10 @@ param(
 
     [switch] $SkipExamples,
     [switch] $SkipTests,
-    [switch] $SkipBuild
+    [switch] $SkipBuild,
+
+    # Also verify Python bindings end-to-end (build native lib + run Python tests).
+    [switch] $Python
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,6 +20,22 @@ function Invoke-Step([string] $Title, [scriptblock] $Action) {
     Write-Host ""
     Write-Host "=== $Title ==="
     & $Action
+}
+
+function Resolve-PythonExe {
+    $venvPy = Join-Path $repoRoot '.venv\Scripts\python.exe'
+    if (Test-Path $venvPy) { return $venvPy }
+
+    $cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+
+    $cmd3 = Get-Command python3 -ErrorAction SilentlyContinue
+    if ($cmd3) { return $cmd3.Source }
+
+    $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+    if ($pyLauncher) { return $pyLauncher.Source }
+
+    return $null
 }
 
 Push-Location $repoRoot
@@ -74,6 +93,29 @@ try {
             }
 
             Write-Host "All examples build OK ($($examples.Count))."
+        }
+    }
+
+    if ($Python) {
+        Invoke-Step "Python bindings (native + tests)" {
+            $pythonExe = Resolve-PythonExe
+            if (-not $pythonExe) {
+                throw "Python not found. Create a venv at .venv or ensure python is on PATH."
+            }
+
+            # Build/copy the NativeAOT library into bindings/python/celeritas/native
+            $buildPyNative = Join-Path $repoRoot 'scripts/build-python-native.ps1'
+            if (-not (Test-Path $buildPyNative)) {
+                throw "Missing script: $buildPyNative"
+            }
+
+            & pwsh -NoProfile -ExecutionPolicy Bypass -File $buildPyNative -Configuration $Configuration
+
+            # Ensure bindings are installed (editable) so tests can import celeritas
+            & $pythonExe -m pip install -e (Join-Path $repoRoot 'bindings/python') | Out-Null
+
+            # Run the test suite
+            & $pythonExe (Join-Path $repoRoot 'bindings/python/test_celeritas.py')
         }
     }
 

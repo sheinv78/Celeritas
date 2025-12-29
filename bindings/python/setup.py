@@ -1,7 +1,4 @@
-"""
-Celeritas Python Package Setup
-High-Performance Music Engine for Python
-"""
+"""Celeritas Python Package Setup."""
 
 from setuptools import setup, find_packages
 import os
@@ -16,8 +13,8 @@ leveraging SIMD instructions (AVX-512, AVX2, SSE2, ARM NEON, WebAssembly SIMD) f
 ## Features
 
 - **SIMD-Accelerated Operations** - Auto-detection of AVX-512, AVX2, SSE2, ARM NEON
-- **Music Notation Parsing** - Parse musical notation strings
-- **Chord Identification** - Identify 30+ chord types
+- **Music Notation Parsing** - Parse single-note notation strings
+- **Chord Identification** - Identify chords from MIDI pitches
 - **Key Detection** - Krumhansl-Schmuckler algorithm
 - **Ornament Support** - Trills, mordents, turns, appoggiaturas
 - **Cross-Platform** - Windows, Linux, macOS (x64, ARM64)
@@ -25,7 +22,7 @@ leveraging SIMD instructions (AVX-512, AVX2, SSE2, ARM NEON, WebAssembly SIMD) f
 ## Installation
 
 ```bash
-pip install celeritas-music
+pip install celeritas
 ```
 
 ## Quick Start
@@ -59,8 +56,8 @@ BSL-1.1 (Business Source License 1.1)
 """
 
 setup(
-    name="celeritas-music",
-    version="0.9.0",
+    name="celeritas",
+    version="0.1.0",
     author="Vladimir V. Shein",
     author_email="sheinv78@gmail.com",
     description="High-Performance Music Engine for Python with SIMD acceleration",
@@ -73,7 +70,6 @@ setup(
         "Source Code": "https://github.com/sheinv78/Celeritas",
     },
     packages=find_packages(),
-    py_modules=["celeritas"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -102,7 +98,7 @@ setup(
         ],
     },
     package_data={
-        "": ["native/*.dll", "native/*.so", "native/*.dylib"],
+        "celeritas": ["native/*.dll", "native/*.so", "native/*.dylib"],
     },
     include_package_data=True,
     zip_safe=False,

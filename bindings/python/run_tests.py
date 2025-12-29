@@ -4,7 +4,7 @@ Run Celeritas Python tests
 Simple test runner that doesn't require pytest
 
 Note: Requires native Celeritas library. Build with:
-    dotnet build ../../src/Celeritas/Celeritas.csproj -c Release
+    dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64
 """
 
 import sys
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         print(f"❌ Error running tests: {e}")
         print()
         print("Make sure native library is built and copied:")
-        print("  dotnet build ../../src/Celeritas/Celeritas.csproj -c Release")
-        print("  mkdir native")
-        print("  cp ../../src/Celeritas/bin/Release/net10.0/Celeritas.dll native/Celeritas.Native.dll")
+        print("  dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64")
+        print("  mkdir -p celeritas/native")
+        print("  cp ../../src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/Celeritas.Native.dll celeritas/native/")
         sys.exit(1)

@@ -36,6 +36,9 @@ Issues = "https://github.com/sheinv78/Celeritas/issues"
 packages = ["celeritas"]
 package-dir = {"" = "."}
 
+[tool.setuptools.package-data]
+celeritas = ["native/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["test_celeritas.py"]
 python_files = ["test_*.py"]
