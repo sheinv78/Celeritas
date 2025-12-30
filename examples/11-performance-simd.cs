@@ -95,9 +95,47 @@ class PerformanceExamples
         Console.WriteLine($"Normal order: {string.Join(", ", pcSet.NormalOrder)}");
         Console.WriteLine($"Prime form: {string.Join(", ", pcSet.PrimeForm)}");
         Console.WriteLine($"Interval vector: {pcSet.IntervalVector}");
-        // Note: ForteNumber and CarterNumber properties don't exist
-        // Console.WriteLine($"Forte number: {pcSet.ForteNumber}");
-        // Console.WriteLine($"Carter number: {pcSet.CarterNumber}");
+        // Forte/Carter labeling is intentionally pluggable (no built-in Forte table).
+        // For examples, we use a tiny inline catalog.
+        var pcSetCatalogJson = """
+        [
+          { "forte": "3-11", "primeForm": [0,3,7], "name": "Major/Minor Triad", "notes": "Carter=37" }
+        ]
+        """;
+
+        var pcSetCatalog = PitchClassSetCatalog.LoadJson(pcSetCatalogJson);
+        if (pcSetCatalog.TryGetByPrimeForm(pcSet.PrimeForm, out var pcSetEntry) && pcSetEntry != null)
+        {
+            Console.WriteLine($"Forte number: {pcSetEntry.Forte}");
+
+            static int? TryParseCarterNumber(string? notes)
+            {
+                if (string.IsNullOrWhiteSpace(notes))
+                    return null;
+
+                // Expected format in this example: "Carter=37"
+                const string prefix = "Carter=";
+                var idx = notes.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+                if (idx < 0)
+                    return null;
+
+                var start = idx + prefix.Length;
+                var end = start;
+                while (end < notes.Length && char.IsDigit(notes[end]))
+                    end++;
+
+                return int.TryParse(notes[start..end], out var n) ? n : null;
+            }
+
+            var carter = TryParseCarterNumber(pcSetEntry.Notes);
+            if (carter != null)
+                Console.WriteLine($"Carter number: {carter}");
+        }
+        else
+        {
+            Console.WriteLine("Forte number: (not found)");
+            Console.WriteLine("Carter number: (not found)");
+        }
 
         // ===== PC Set Operations =====
 
@@ -170,10 +208,14 @@ class PerformanceExamples
         Console.WriteLine($"  Same buffer, zero allocations");
 
         // ===== Parallel Processing =====
-        // Note: ChordAnalyzer.Identify expects ReadOnlySpan<int>, not NoteEvent[]
-        /*
-        var manyChordsToAnalyze = Enumerable.Range(0, 10000)
-            .Select(_ => MusicNotation.Parse($"C{3 + (_ % 3)}/4 E{3 + (_ % 3)}/4 G{3 + (_ % 3)}/4"))
+
+        // Pre-generate chord pitch arrays (ChordAnalyzer.Identify expects pitches).
+        var manyChordsToAnalyze = Enumerable.Range(0, 10_000)
+            .Select(i =>
+            {
+                var root = 48 + (i % 12); // C3..B3
+                return new[] { root, root + 4, root + 7 }; // major triad
+            })
             .ToList();
 
         Console.WriteLine($"\n=== Parallel Processing ===");
@@ -181,23 +223,20 @@ class PerformanceExamples
 
         // Sequential
         sw = Stopwatch.StartNew();
-        var sequential = manyChordsToAnalyze.Select(c => ChordAnalyzer.Identify(c)).ToList();
+        var sequential = manyChordsToAnalyze.Select(p => ChordAnalyzer.Identify(p)).ToList();
         sw.Stop();
         var seqTime = sw.Elapsed.TotalMilliseconds;
 
         // Parallel
         sw = Stopwatch.StartNew();
-        var parallel = manyChordsToAnalyze.AsParallel().Select(c => ChordAnalyzer.Identify(c)).ToList();
+        var parallelSymbols = manyChordsToAnalyze.AsParallel().Select(p => ChordAnalyzer.Identify(p)).ToList();
         sw.Stop();
         var parTime = sw.Elapsed.TotalMilliseconds;
 
         Console.WriteLine($"Sequential: {seqTime:F2} ms");
         Console.WriteLine($"Parallel: {parTime:F2} ms");
         Console.WriteLine($"Speedup: {seqTime / parTime:F2}x");
-        */
 
-        Console.WriteLine($"\n=== Parallel Processing ===");
-        Console.WriteLine("(Parallel processing demo commented - ChordAnalyzer.Identify type mismatch)");
 
         // ===== Tips for Best Performance =====
 

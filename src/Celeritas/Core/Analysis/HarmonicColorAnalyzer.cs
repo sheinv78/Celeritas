@@ -483,7 +483,71 @@ public sealed record HarmonicColorAnalysisResult(
     KeySignature Key,
     IReadOnlyList<ChromaticPitchEvent> ChromaticNotes,
     IReadOnlyList<ModalTurnEvent> ModalTurns,
-    IReadOnlyList<MelodicHarmonyEvent> MelodicHarmony);
+    IReadOnlyList<MelodicHarmonyEvent> MelodicHarmony)
+{
+    /// <summary>
+    /// A heuristic 0..10 score describing how "colorful" the harmony feels,
+    /// based on chromatic notes, non-chord tones, and modal turns.
+    /// </summary>
+    public double ColorfulnessRating
+    {
+        get
+        {
+            var total = MelodicHarmony?.Count ?? 0;
+            if (total <= 0)
+                return 0;
+
+            var chromatic = ChromaticNotes?.Count ?? 0;
+
+            var nonChord = 0;
+            if (MelodicHarmony != null)
+            {
+                for (var i = 0; i < MelodicHarmony.Count; i++)
+                {
+                    if (!MelodicHarmony[i].IsChordTone)
+                        nonChord++;
+                }
+            }
+
+            var maxModalConfidence = 0.0;
+            if (ModalTurns != null)
+            {
+                for (var i = 0; i < ModalTurns.Count; i++)
+                {
+                    var c = ModalTurns[i].Confidence;
+                    if (c > maxModalConfidence)
+                        maxModalConfidence = c;
+                }
+            }
+
+            var chromaticRatio = (double)chromatic / total;
+            var nonChordRatio = (double)nonChord / total;
+            var modalFactor = Math.Clamp(maxModalConfidence, 0.0, 1.0);
+
+            var score01 = (0.55 * chromaticRatio) + (0.30 * nonChordRatio) + (0.15 * modalFactor);
+            var score10 = 10.0 * Math.Clamp(score01, 0.0, 1.0);
+            return Math.Round(score10, 1);
+        }
+    }
+
+    /// <summary>
+    /// A short human-readable summary derived from <see cref="ColorfulnessRating"/>.
+    /// </summary>
+    public string Description
+    {
+        get
+        {
+            var r = ColorfulnessRating;
+            if (r < 2.0)
+                return "Mostly diatonic and stable.";
+            if (r < 5.0)
+                return "Moderately colorful (some non-chord tones / chromaticism).";
+            if (r < 8.0)
+                return "Colorful (noticeable chromaticism or modal mixture).";
+            return "Highly colorful / chromatic (strong modal mixture or altered tones).";
+        }
+    }
+}
 
 /// <summary>
 /// A pitch outside the diatonic scale of the analyzed key.

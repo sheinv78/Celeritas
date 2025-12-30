@@ -141,9 +141,8 @@ class ProgressionAnalysis
             Console.WriteLine($"  {nct.Type} - {MusicMath.MidiToNoteName(nct.Pitch)} at {nct.Offset}");
         }
 
-        // Note: colorAnalysis properties not available
-        // Console.WriteLine($"\nColor assessment: {colorAnalysis.ColorfulnessRating}/10");
-        // Console.WriteLine($"Description: {colorAnalysis.Description}");
+        Console.WriteLine($"\nColor assessment: {colorAnalysis.ColorfulnessRating}/10");
+        Console.WriteLine($"Description: {colorAnalysis.Description}");
 
         // ===== Secondary Dominants =====
 

@@ -4,6 +4,7 @@
 using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
+using Celeritas.Core;
 
 namespace Celeritas.Core.Midi;
 
@@ -39,6 +40,95 @@ public sealed record MidiFileStatistics(
 
 public static class MidiFileExtensions
 {
+    public static void Save(this MidiFile file, string path)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+
+        using var stream = File.Create(path);
+        file.Write(stream);
+    }
+
+    public static TrackChunk AddTrack(this MidiFile file, NoteEvent[] notes, string? name = null, MidiExportOptions? options = null)
+        => AddTrack(file, notes.AsSpan(), name, options);
+
+    public static TrackChunk AddTrack(this MidiFile file, ReadOnlySpan<NoteEvent> notes, string? name = null, MidiExportOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+
+        options ??= new MidiExportOptions();
+
+        if (file.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
+        {
+            file.TimeDivision = new TicksPerQuarterNoteTimeDivision((short)options.TicksPerQuarterNote);
+            tpq = (TicksPerQuarterNoteTimeDivision)file.TimeDivision;
+        }
+
+        var ticksPerQuarter = tpq.TicksPerQuarterNote;
+        if (ticksPerQuarter <= 0)
+        {
+            throw new InvalidOperationException("Invalid ticks-per-quarter-note value.");
+        }
+
+        var track = new TrackChunk();
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            track.Events.Add(new SequenceTrackNameEvent(name));
+        }
+
+        using var notesManager = track.ManageNotes();
+        var channel = (FourBitNumber)options.Channel;
+
+        foreach (var e in notes)
+        {
+            var noteNumber = Math.Clamp(e.Pitch, 0, 127);
+
+            var timeTicks = MidiIo.BeatsToTicks(e.Offset, ticksPerQuarter);
+            var lengthTicks = Math.Max(1, MidiIo.BeatsToTicks(e.Duration, ticksPerQuarter));
+            var lengthTicksInt = lengthTicks > int.MaxValue ? int.MaxValue : (int)lengthTicks;
+
+            var velocity = (byte)Math.Clamp((int)Math.Round(e.Velocity * 127.0), 1, 127);
+            if (velocity == 0)
+            {
+                velocity = options.DefaultVelocity;
+            }
+
+            var note = new Note((SevenBitNumber)noteNumber, lengthTicksInt, timeTicks)
+            {
+                Channel = channel,
+                Velocity = (SevenBitNumber)velocity
+            };
+
+            notesManager.Objects.Add(note);
+        }
+
+        notesManager.SaveChanges();
+        file.Chunks.Add(track);
+        return track;
+    }
+
+    public static void SetTempo(this MidiFile file, int bpm)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+
+        if (bpm <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(bpm), bpm, "BPM must be positive.");
+        }
+
+        var tempo = Tempo.FromBeatsPerMinute(bpm);
+
+        // Use the first track as a conductor track if present.
+        var track = file.Chunks.OfType<TrackChunk>().FirstOrDefault();
+        if (track == null)
+        {
+            track = new TrackChunk();
+            file.Chunks.Add(track);
+        }
+
+        // Insert tempo at time=0 without shifting existing events.
+        track.Events.Insert(0, new SetTempoEvent(tempo.MicrosecondsPerQuarterNote) { DeltaTime = 0 });
+    }
+
     public static MidiFile Clone(this MidiFile file)
     {
         ArgumentNullException.ThrowIfNull(file);

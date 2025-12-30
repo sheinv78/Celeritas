@@ -4,6 +4,7 @@
 
 using Celeritas.Core.Analysis;
 using Celeritas.Core;
+using System.Collections.Generic;
 using System.Linq;
 using Celeritas.Core.Harmonization;
 using Celeritas.Core.VoiceLeading;
@@ -169,16 +170,11 @@ class HarmonizationAndVoiceLeading
         Console.WriteLine($"  {string.Join(", ", seventhVoicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
 
         // ===== Figured Bass with Accidentals =====
-        // Note: Accidental enum doesn't exist in this context
-        /*
         var withAccidentals = new FiguredBassSymbol
         {
             BassPitch = 62,  // D
             Figures = new[] { 6 },
-            Accidentals = new Dictionary<int, Accidental>
-            {
-                { 6, Accidental.Sharp }  // Raised sixth
-            },
+            Accidentals = new Dictionary<int, char> { { 6, '#' } }, // Raised sixth
             Time = new Rational(4, 1),
             Duration = new Rational(1, 1)
         };
@@ -186,7 +182,6 @@ class HarmonizationAndVoiceLeading
         var accidentalVoicing = realizer.RealizeSymbol(withAccidentals);
         Console.WriteLine($"\nD (6#):");
         Console.WriteLine($"  {string.Join(", ", accidentalVoicing.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
-        */
 
         // ===== Figured Bass Sequence =====
 

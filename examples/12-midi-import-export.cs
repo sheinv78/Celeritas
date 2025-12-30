@@ -6,6 +6,7 @@ using Celeritas.Core;
 using System.Linq;
 using Celeritas.Core.Midi;
 using Celeritas.Core.Analysis;
+using Melanchall.DryWetMidi.Core;
 
 namespace CeleritasExamples;
 
@@ -72,27 +73,20 @@ class MidiExamples
         Console.WriteLine($"Saved to transposed.mid");
 
         // ===== Multi-Track MIDI =====
-        // Note: Multi-track MIDI not yet implemented in MidiIo
-
-        /*
         var track1 = MusicNotation.Parse("C4/4 E4/4 G4/4 C5/4");
         var track2 = MusicNotation.Parse("C3/2 G3/2");
 
         var multiTrack = new MidiFile();
-        multiTrack.AddTrack(track1, "Melody");
-        multiTrack.AddTrack(track2, "Bass");
+        multiTrack.AddTrack(track1, "Melody", new MidiExportOptions(Channel: 0));
+        multiTrack.AddTrack(track2, "Bass", new MidiExportOptions(Channel: 1));
         multiTrack.SetTempo(120);
         multiTrack.Save("multitrack.mid");
 
         Console.WriteLine($"\n=== Multi-Track MIDI ===");
-        Console.WriteLine($"Tracks: {multiTrack.TrackCount}");
+        Console.WriteLine($"Tracks: {multiTrack.Chunks.OfType<TrackChunk>().Count()}");
         Console.WriteLine($"  Track 1: Melody ({track1.Length} notes)");
         Console.WriteLine($"  Track 2: Bass ({track2.Length} notes)");
         Console.WriteLine($"Saved to multitrack.mid");
-        */
-
-        Console.WriteLine($"\n=== Multi-Track MIDI ===");
-        Console.WriteLine($"Multi-track MIDI support: Coming soon");
 
         // ===== MIDI with Chords =====
 

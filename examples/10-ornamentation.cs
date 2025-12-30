@@ -3,6 +3,7 @@
 
 
 using Celeritas.Core;
+using System.Collections.Generic;
 using System.Linq;
 using Celeritas.Core.Ornamentation;
 
@@ -71,12 +72,12 @@ class OrnamentationExamples
         {
             BaseNote = baseNote,
             Interval = 2,
-            Speed = 8
-            // HasTurnEnding = true  // Property doesn't exist yet
+            Speed = 8,
+            EndWithTurn = true
         };
 
         var turnExpanded = trillWithTurn.Expand();
-        Console.WriteLine($"\n=== Trill (will add turn support later) ===");
+        Console.WriteLine($"\n=== Trill with Turn Ending ===");
         Console.WriteLine($"Last notes: {string.Join(" ", turnExpanded.TakeLast(4).Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
 
         // ===== Mordents =====
@@ -174,8 +175,8 @@ class OrnamentationExamples
         {
             BaseNote = baseNote,
             Type = AppogiaturaType.Long,
-            Interval = 2       // Approach from whole step above
-            // Direction = 1   // Property doesn't exist yet (1 = from above, -1 = from below)
+            Interval = 2,      // Approach by whole step
+            Direction = 1      // From above
         };
 
         var longExpanded = longAppogg.Expand();
@@ -188,8 +189,8 @@ class OrnamentationExamples
         {
             BaseNote = baseNote,
             Type = AppogiaturaType.Short,
-            Interval = 2
-            // Direction = -1  // Property doesn't exist yet (From below)
+            Interval = 2,
+            Direction = -1  // From below
         };
 
         var shortExpanded = acciaccatura.Expand();
@@ -242,8 +243,6 @@ class OrnamentationExamples
 
         // ===== Ornament Applier (Batch Processing) =====
 
-        // Note: OrnamentApplier.Apply doesn't exist yet, implementing manual approach
-        /*
         var ornamentMap = new Dictionary<int, Ornament>
         {
             { 0, new Trill { BaseNote = melody[0], Interval = 2, Speed = 8 } },
@@ -251,13 +250,10 @@ class OrnamentationExamples
         };
 
         var fullyOrnamented = OrnamentApplier.Apply(melody, ornamentMap);
-        */
 
-        var fullyOrnamented = melody;  // Placeholder until batch API exists
-
-        Console.WriteLine($"\n=== Batch Ornamentation (TODO) ===");
+        Console.WriteLine($"\n=== Batch Ornamentation ===");
         Console.WriteLine($"Original melody: {melody.Length} notes");
-        // Console.WriteLine($"Ornaments applied: {ornamentMap.Count}");
+        Console.WriteLine($"Ornaments applied: {ornamentMap.Count}");
         Console.WriteLine($"Result: {fullyOrnamented.Length} notes");
 
         // ===== Performance Considerations =====
