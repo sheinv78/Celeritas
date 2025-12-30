@@ -371,4 +371,15 @@ class Mordent:
         return notes
 
 
-__version__ = "0.1.0"
+try:
+    from importlib.metadata import version as _pkg_version
+except Exception:  # pragma: no cover
+    _pkg_version = None
+
+if _pkg_version is None:  # pragma: no cover
+    __version__ = "0.0.0"
+else:
+    try:
+        __version__ = _pkg_version("celeritas")
+    except Exception:  # pragma: no cover
+        __version__ = "0.0.0"
