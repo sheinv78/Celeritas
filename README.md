@@ -36,6 +36,9 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 🚧 **Active Development** — Experimental / Research Project  
 ⚠️ **API is not stable yet** — Breaking changes may occur
 
+**Maintainer status (2025-12-30):** v0.9.0 released. Maintainer is away until **2026-01-12**.  
+Issues and PRs are welcome; responses will resume after return.
+
 Current version: **v0.9.0** (December 2025)  
 **350 tests** passing (C#) + **35 tests** (Python)
 
