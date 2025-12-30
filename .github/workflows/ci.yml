@@ -165,18 +165,17 @@ jobs:
           python -m build bindings/python -w
         fi
 
-    - name: Repair Linux wheel for manylinux compatibility
+    - name: Retag Linux wheel for manylinux compatibility
       if: runner.os == 'Linux'
       shell: bash
       run: |
         set -euo pipefail
-        pip install auditwheel patchelf
+        pip install wheel
         cd bindings/python/dist
         for whl in *.whl; do
           if [[ "$whl" == *linux_x86_64* ]]; then
-            echo "Repairing $whl..."
-            auditwheel repair "$whl" --plat manylinux_2_17_x86_64 -w .
-            rm "$whl"
+            echo "Retagging $whl to manylinux_2_17_x86_64..."
+            python -m wheel tags --platform-tag manylinux_2_17_x86_64 "$whl" --remove
           fi
         done
         ls -la
