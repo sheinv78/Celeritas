@@ -47,16 +47,18 @@ public static class AccompanimentGenerator
                 events.Add(new NoteEvent(bassPitch, start, duration, opt.BassVelocity));
 
                 var chordVoicing = VoicePitchClasses(chordPitchClasses, opt.ChordOctave);
-                for (var i = 0; i < chordVoicing.Length; i++)
-                    events.Add(new NoteEvent(chordVoicing[i], start, duration, opt.ChordVelocity));
+                events.AddRange(chordVoicing.Select(t1 => new NoteEvent(t1, start, duration, opt.ChordVelocity)));
 
                 continue;
             }
 
             // Arpeggio
             var step = opt.Subdivision;
-            if (step.Numerator <= 0)
-                step = Rational.Eighth;
+            step = step.Numerator switch
+            {
+                <= 0 => Rational.Eighth,
+                _ => step
+            };
 
             var chordVoicingArp = VoicePitchClasses(chordPitchClasses, opt.ChordOctave);
             if (chordVoicingArp.Length == 0)
@@ -142,8 +144,7 @@ public static class AccompanimentGenerator
                 events.Add(new NoteEvent(bassPitch, offset, duration, opt.BassVelocity));
 
                 var chordVoicing = VoicePitchClasses(chordPitchClasses, opt.ChordOctave);
-                for (var i = 0; i < chordVoicing.Length; i++)
-                    events.Add(new NoteEvent(chordVoicing[i], offset, duration, opt.ChordVelocity));
+                events.AddRange(chordVoicing.Select(t1 => new NoteEvent(t1, offset, duration, opt.ChordVelocity)));
 
                 offset += duration;
                 continue;
@@ -151,8 +152,11 @@ public static class AccompanimentGenerator
 
             // Arpeggio
             var step = opt.Subdivision;
-            if (step.Numerator <= 0)
-                step = Rational.Eighth;
+            step = step.Numerator switch
+            {
+                <= 0 => Rational.Eighth,
+                _ => step
+            };
 
             var chordVoicingArp = VoicePitchClasses(chordPitchClasses, opt.ChordOctave);
             if (chordVoicingArp.Length == 0)

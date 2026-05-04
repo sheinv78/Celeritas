@@ -71,19 +71,13 @@ public enum Mode
 /// <summary>
 /// Extended key signature with modal information.
 /// </summary>
-public readonly struct ModalKey : IEquatable<ModalKey>
+public readonly struct ModalKey(byte root, Mode mode) : IEquatable<ModalKey>
 {
     /// <summary>Root note (0-11, where 0=C).</summary>
-    public byte Root { get; }
+    public byte Root { get; } = (byte)(root % 12);
 
     /// <summary>The mode/scale type.</summary>
-    public Mode Mode { get; }
-
-    public ModalKey(byte root, Mode mode)
-    {
-        Root = (byte)(root % 12);
-        Mode = mode;
-    }
+    public Mode Mode { get; } = mode;
 
     /// <summary>
     /// Convert from simple KeySignature.
@@ -458,7 +452,7 @@ public static class ModeLibrary
             charBonus += distribution[pc] * 0.2f;
         }
 
-        return (inScale - outScale * 0.5f + charBonus) / total;
+        return (inScale - (outScale * 0.5f) + charBonus) / total;
     }
 
     /// <summary>

@@ -1,6 +1,8 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Numerics;
+
 namespace Celeritas.Core.Harmonization;
 
 /// <summary>
@@ -93,7 +95,7 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
             baseCost -= melodyInChord * 0.1f;
 
             var romanNumeral = ToRomanNumeral(degree, key.IsMajor);
-            yield return new ChordCandidate(chord, pitches, baseCost, romanNumeral);
+            yield return new ChordCandidate(chord, pitches, baseCost);
         }
     }
 
@@ -110,7 +112,7 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
 
     private static int CountMatchingBits(ushort a, ushort b)
     {
-        return System.Numerics.BitOperations.PopCount((uint)(a & b));
+        return BitOperations.PopCount((uint)(a & b));
     }
 
     private static string ToRomanNumeral(int degree, bool isMajor)

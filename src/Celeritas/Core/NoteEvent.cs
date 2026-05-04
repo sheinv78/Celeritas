@@ -6,18 +6,10 @@ namespace Celeritas.Core;
 /// <summary>
 /// A single note event stored in a <see cref="NoteBuffer"/>.
 /// </summary>
-public readonly struct NoteEvent
+public readonly struct NoteEvent(int pitch, Rational offset, Rational duration, float velocity = 0.8f)
 {
-    public readonly int Pitch;
-    public readonly Rational Offset;
-    public readonly Rational Duration;
-    public readonly float Velocity;
-
-    public NoteEvent(int pitch, Rational offset, Rational duration, float velocity = 0.8f)
-    {
-        Pitch = pitch;
-        Offset = offset;
-        Duration = duration;
-        Velocity = velocity;
-    }
+    public readonly int Pitch = pitch;
+    public readonly Rational Offset = offset;
+    public readonly Rational Duration = duration;
+    public readonly float Velocity = velocity;
 }

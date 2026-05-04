@@ -72,7 +72,7 @@ public class MusicNotationAntlrParserTests
 
         Assert.Equal(3, notes.Length);
         Assert.Equal(60, notes[0].Pitch);
-        Assert.Equal(MusicNotation.REST_PITCH, notes[1].Pitch);
+        Assert.Equal(MusicNotation.RestPitch, notes[1].Pitch);
         Assert.Equal(64, notes[2].Pitch);
 
         Assert.Equal(new Rational(1, 2), notes[2].Offset); // After quarter + quarter rest
@@ -266,7 +266,7 @@ public class MusicNotationAntlrParserTests
         var reparsed = MusicNotationAntlrParser.ParseNotes(output);
 
         Assert.Equal(notes.Length, reparsed.Length);
-        Assert.Equal(MusicNotation.REST_PITCH, reparsed[1].Pitch);
+        Assert.Equal(MusicNotation.RestPitch, reparsed[1].Pitch);
     }
 
     [Fact]
@@ -816,10 +816,10 @@ public class MusicNotationAntlrParserTests
 
         // Voice 1: C4, Rest
         Assert.Equal(60, notes[0].Pitch);
-        Assert.Equal(MusicNotation.REST_PITCH, notes[1].Pitch);
+        Assert.Equal(MusicNotation.RestPitch, notes[1].Pitch);
 
         // Voice 2: Rest, E4
-        Assert.Equal(MusicNotation.REST_PITCH, notes[2].Pitch);
+        Assert.Equal(MusicNotation.RestPitch, notes[2].Pitch);
         Assert.Equal(64, notes[3].Pitch);
     }
 

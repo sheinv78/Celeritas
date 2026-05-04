@@ -64,7 +64,7 @@ public class MusicMathTests
         // Arrange
         using var buffer = new NoteBuffer(3);
         buffer.AddNote(60, Rational.Zero, Rational.Quarter, 0.5f);
-        buffer.AddNote(64, Rational.Quarter, Rational.Quarter, 0.8f);
+        buffer.AddNote(64, Rational.Quarter, Rational.Quarter);
         buffer.AddNote(67, Rational.Half, Rational.Quarter, 1.0f);
 
         // Act
@@ -81,7 +81,7 @@ public class MusicMathTests
     {
         // Arrange
         using var buffer = new NoteBuffer(2);
-        buffer.AddNote(60, Rational.Zero, Rational.Quarter, 0.8f);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter);
         buffer.AddNote(64, Rational.Quarter, Rational.Quarter, 0.9f);
 
         // Act
@@ -131,7 +131,7 @@ public class MusicMathTests
 
         // Check that offsets are on the grid (denominator should be 8 or simplify to valid value)
         Assert.True(offset0.Denominator == 8 || offset0.Numerator == 0);
-        Assert.True(offset2.Denominator == 8 || offset2.Denominator == 2);
+        Assert.True(offset2.Denominator is 8 or 2);
     }
 
     [Fact]

@@ -102,9 +102,12 @@ public static class ChordLibrary
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChordInfo GetChord(ushort mask)
     {
-        // Mask is 12 bits (0-4095)
-        if (mask >= 4096) return new ChordInfo(0, ChordQuality.Unknown);
-        return HasChord[mask] ? Lookup[mask] : new ChordInfo(0, ChordQuality.Unknown);
+        return mask switch
+        {
+            // Mask is 12 bits (0-4095)
+            >= 4096 => new ChordInfo(0, ChordQuality.Unknown),
+            _ => HasChord[mask] ? Lookup[mask] : new ChordInfo(0, ChordQuality.Unknown)
+        };
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

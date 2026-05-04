@@ -1,7 +1,6 @@
 using Celeritas.Core;
 using Celeritas.Core.Accompaniment;
 using Celeritas.Core.Harmonization;
-using Xunit;
 
 namespace Celeritas.Tests;
 
@@ -55,9 +54,7 @@ public sealed class AccompanimentGeneratorTests
                 Start: Rational.Zero,
                 End: new Rational(1, 1),
                 Chord: new ChordInfo(0, ChordQuality.Major),
-                Pitches: new[] { 60, 64, 67 },
-                Cost: 0,
-                Rationale: null)
+                Pitches: [60, 64, 67])
         };
 
         var options = AccompanimentOptions.Default with

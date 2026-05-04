@@ -81,26 +81,23 @@ public sealed class DefaultTransitionScorer : ITransitionScorer, IMelodyFitScore
     {
         var interval = (chord.RootPitchClass - key.Root + 12) % 12;
 
-        if (key.IsMajor)
+        return key.IsMajor switch
         {
-            return interval switch
+            true => interval switch
             {
-                0 or 4 or 9 => HarmonicFunction.Tonic,      // I, iii, vi
-                2 or 5 => HarmonicFunction.Subdominant,     // ii, IV
-                7 or 11 => HarmonicFunction.Dominant,       // V, vii°
+                0 or 4 or 9 => HarmonicFunction.Tonic, // I, iii, vi
+                2 or 5 => HarmonicFunction.Subdominant, // ii, IV
+                7 or 11 => HarmonicFunction.Dominant, // V, vii°
                 _ => HarmonicFunction.Tonic
-            };
-        }
-        else
-        {
-            return interval switch
+            },
+            _ => interval switch
             {
-                0 or 3 or 8 => HarmonicFunction.Tonic,      // i, III, VI
-                2 or 5 => HarmonicFunction.Subdominant,     // ii°, iv
-                7 or 10 => HarmonicFunction.Dominant,       // v/V, VII
+                0 or 3 or 8 => HarmonicFunction.Tonic, // i, III, VI
+                2 or 5 => HarmonicFunction.Subdominant, // ii°, iv
+                7 or 10 => HarmonicFunction.Dominant, // v/V, VII
                 _ => HarmonicFunction.Tonic
-            };
-        }
+            }
+        };
     }
 
     private static ushort GetChordMask(int[] pitches)

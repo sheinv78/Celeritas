@@ -1,8 +1,6 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
-using Celeritas.Core;
-
 namespace Celeritas.Core.Analysis;
 
 /// <summary>
@@ -17,7 +15,7 @@ public static class ChordCharacterClassifier
             return ChordCharacterClassification.Unknown;
 
         try
-            {
+        {
             var pitches = ProgressionAdvisor.ParseChordSymbol(chordSymbol.Trim());
             var mask = ChordAnalyzer.GetMask(pitches);
             var info = ChordLibrary.GetChord(mask);

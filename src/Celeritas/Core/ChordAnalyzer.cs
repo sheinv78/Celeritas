@@ -23,16 +23,18 @@ public static unsafe class ChordAnalyzer
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static ushort GetMask(ReadOnlySpan<int> pitches)
     {
-        if (pitches.IsEmpty) return 0;
-
-        // For small chords (typical 3-6 notes), a simple loop is faster.
-        if (pitches.Length <= 8)
+        return pitches.IsEmpty switch
         {
-            return GetMaskScalar(pitches);
-        }
+            true => 0,
+            _ => pitches.Length switch
+            {
+                // For small chords (typical 3-6 notes), a simple loop is faster.
+                <= 8 => GetMaskScalar(pitches),
+                _ => GetMaskLookup(pitches)
+            }
+        };
 
         // For larger arrays, use lookup + unrolling.
-        return GetMaskLookup(pitches);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

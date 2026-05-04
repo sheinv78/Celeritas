@@ -9,12 +9,12 @@ namespace Celeritas.Core;
 public enum ScaleDegree
 {
     I = 0,      // Tonic
-    II = 2,     // Supertonic
-    III = 4,    // Mediant
-    IV = 5,     // Subdominant
+    Ii = 2,     // Supertonic
+    Iii = 4,    // Mediant
+    Iv = 5,     // Subdominant
     V = 7,      // Dominant
-    VI = 9,     // Submediant
-    VII = 11    // Leading tone
+    Vi = 9,     // Submediant
+    Vii = 11    // Leading tone
 }
 
 /// <summary>
@@ -32,7 +32,7 @@ public enum HarmonicFunction
 /// <summary>
 /// Key signature with root and mode
 /// </summary>
-public readonly struct KeySignature
+public readonly record struct KeySignature
 {
     public readonly byte Root;      // 0-11 (C=0, C#=1, etc.)
     public readonly bool IsMajor;   // true for major, false for minor
@@ -56,7 +56,7 @@ public readonly struct KeySignature
     /// Returns the semitone offset (0-11) for a diatonic scale degree in this key.
     /// Uses major or natural minor.
     /// </summary>
-    public byte GetScaleDegreeOffset(ScaleDegree degree)
+    private byte GetScaleDegreeOffset(ScaleDegree degree)
     {
         var index = DegreeToIndex(degree);
         var steps = IsMajor ? MajorScaleSteps : MinorScaleSteps;
@@ -77,14 +77,10 @@ public readonly struct KeySignature
     /// </summary>
     public ushort GetScaleMask()
     {
-        ushort mask = 0;
         var steps = IsMajor ? MajorScaleSteps : MinorScaleSteps;
-        for (var i = 0; i < steps.Length; i++)
-        {
-            mask |= (ushort)(1 << ((Root + steps[i]) % 12));
-        }
 
-        return mask;
+        byte b = Root;
+        return steps.Aggregate<byte, ushort>(0, (current, t) => (ushort)(current | (ushort)(1 << ((b + t) % 12))));
     }
 
     /// <summary>
@@ -109,12 +105,12 @@ public readonly struct KeySignature
         return degree switch
         {
             ScaleDegree.I => 0,
-            ScaleDegree.II => 1,
-            ScaleDegree.III => 2,
-            ScaleDegree.IV => 3,
+            ScaleDegree.Ii => 1,
+            ScaleDegree.Iii => 2,
+            ScaleDegree.Iv => 3,
             ScaleDegree.V => 4,
-            ScaleDegree.VI => 5,
-            ScaleDegree.VII => 6,
+            ScaleDegree.Vi => 5,
+            ScaleDegree.Vii => 6,
             _ => 0
         };
     }

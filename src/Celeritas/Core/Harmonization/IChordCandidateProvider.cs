@@ -29,16 +29,12 @@ public interface IChordCandidateProvider
 public readonly record struct ChordCandidate(
     ChordInfo Chord,
     int[] Pitches,
-    float BaseCost,
-    string? Rationale = null);
+    float BaseCost);
 
 /// <summary>
 /// Context passed between harmonization steps.
 /// </summary>
 public class HarmonizationContext
 {
-    public ChordInfo? PreviousChord { get; set; }
-    public HarmonicFunction? PreviousFunction { get; set; }
     public int StepIndex { get; set; }
-    public KeySignature Key { get; set; }
 }

@@ -53,7 +53,7 @@ public readonly record struct SpnNote(PitchClass PitchClass, int Octave)
         return note;
     }
 
-    public static bool TryParse(ReadOnlySpan<char> notation, out SpnNote note)
+    private static bool TryParse(ReadOnlySpan<char> notation, out SpnNote note)
     {
         if (!MusicNotation.TryParseNote(notation, out var midi))
         {
@@ -65,19 +65,19 @@ public readonly record struct SpnNote(PitchClass PitchClass, int Octave)
         return true;
     }
 
-    public int ToMidiPitch()
+    private int ToMidiPitch()
     {
         // MIDI number: (octave + 1) * 12 + pitchClass, where C-1 = 0
-        var midi = (Octave + 1) * 12 + PitchClass.Value;
-        if ((uint)midi > 127u)
+        var midi = ((Octave + 1) * 12) + PitchClass.Value;
+        return (uint)midi switch
         {
-            throw new ArgumentOutOfRangeException(nameof(Octave), "Resulting MIDI pitch is out of range 0-127");
-        }
-
-        return midi;
+            > 127u => throw new ArgumentOutOfRangeException(nameof(Octave),
+                "Resulting MIDI pitch is out of range 0-127"),
+            _ => midi
+        };
     }
 
-    public SpnNote Transpose(ChromaticInterval interval) => FromMidi(MidiPitch.Transpose(interval));
+    private SpnNote Transpose(ChromaticInterval interval) => FromMidi(MidiPitch.Transpose(interval));
 
     public string ToNotation(bool preferSharps = true) => MusicNotation.ToNotation(MidiPitch, preferSharps);
 

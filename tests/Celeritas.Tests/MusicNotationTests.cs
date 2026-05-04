@@ -408,9 +408,9 @@ public class MusicNotationTests
 
         Assert.Equal(4, sequence.Length);
         Assert.Equal(60, sequence[0].Pitch); // C4
-        Assert.Equal(MusicNotation.REST_PITCH, sequence[1].Pitch); // Rest
+        Assert.Equal(MusicNotation.RestPitch, sequence[1].Pitch); // Rest
         Assert.Equal(64, sequence[2].Pitch); // E4
-        Assert.Equal(MusicNotation.REST_PITCH, sequence[3].Pitch); // Rest
+        Assert.Equal(MusicNotation.RestPitch, sequence[3].Pitch); // Rest
 
         Assert.Equal(new Rational(1, 4), sequence[1].Duration); // Quarter rest
         Assert.Equal(new Rational(1, 2), sequence[3].Duration); // Half rest
@@ -422,8 +422,8 @@ public class MusicNotationTests
         var sequence = MusicNotation.Parse("C4:q R:q E4:e R:h");
 
         Assert.Equal(4, sequence.Length);
-        Assert.Equal(MusicNotation.REST_PITCH, sequence[1].Pitch);
-        Assert.Equal(MusicNotation.REST_PITCH, sequence[3].Pitch);
+        Assert.Equal(MusicNotation.RestPitch, sequence[1].Pitch);
+        Assert.Equal(MusicNotation.RestPitch, sequence[3].Pitch);
     }
 
     [Fact]
@@ -502,7 +502,7 @@ public class MusicNotationTests
         var sequence = MusicNotation.Parse("3/4: C4/4 R/4 E4/4");
 
         Assert.Equal(3, sequence.Length);
-        Assert.Equal(MusicNotation.REST_PITCH, sequence[1].Pitch);
+        Assert.Equal(MusicNotation.RestPitch, sequence[1].Pitch);
     }
 
     [Fact]
@@ -649,6 +649,6 @@ public class MusicNotationTests
         var sequence = MusicNotation.Parse("3/4: C4/4 [E4 G4]:q R/4 | [D4 F4 A4]/2.");
 
         Assert.Equal(7, sequence.Length);
-        Assert.Equal(MusicNotation.REST_PITCH, sequence[3].Pitch); // Rest
+        Assert.Equal(MusicNotation.RestPitch, sequence[3].Pitch); // Rest
     }
 }

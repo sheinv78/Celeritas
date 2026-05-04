@@ -2,7 +2,6 @@
 // Licensed under the Business Source License 1.1
 
 using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.Interaction;
 
 namespace Celeritas.Core.Midi;
 
@@ -44,7 +43,7 @@ public static class MidiEvents
     /// <summary>
     /// Extract all tempo changes from a MIDI file stream.
     /// </summary>
-    public static List<TempoChange> GetTempoChanges(Stream stream)
+    private static List<TempoChange> GetTempoChanges(Stream stream)
     {
         var midiFile = MidiFile.Read(stream);
         var ticksPerQuarter = midiFile.TimeDivision is TicksPerQuarterNoteTimeDivision tpq
@@ -91,7 +90,7 @@ public static class MidiEvents
     /// <summary>
     /// Extract all time signature changes from a MIDI file stream.
     /// </summary>
-    public static List<TimeSignatureChange> GetTimeSignatureChanges(Stream stream)
+    private static List<TimeSignatureChange> GetTimeSignatureChanges(Stream stream)
     {
         var midiFile = MidiFile.Read(stream);
         var ticksPerQuarter = midiFile.TimeDivision is TicksPerQuarterNoteTimeDivision tpq

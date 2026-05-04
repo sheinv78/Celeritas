@@ -57,12 +57,9 @@ public enum MelodicMotionType
 /// A single melodic interval with context.
 /// </summary>
 public readonly record struct MelodicInterval(
-    int FromPitch,
-    int ToPitch,
     int Semitones,
     MelodicDirection Direction,
-    MelodicMotionType Motion,
-    Rational StartTime
+    MelodicMotionType Motion
 );
 
 /// <summary>
@@ -195,7 +192,7 @@ public static class MelodyAnalyzer
 
             var motion = ClassifyMotion(absSemitones);
 
-            intervals.Add(new MelodicInterval(from, to, semitones, direction, motion, times[i - 1]));
+            intervals.Add(new MelodicInterval(semitones, direction, motion));
         }
 
         // Calculate statistics
@@ -312,37 +309,18 @@ public static class MelodyAnalyzer
         var maxPos = (double)maxIdx / totalLen;
         var minPos = (double)minIdx / totalLen;
 
-        // Classify based on shape
-        if (turningPoints.Count == 0)
+        return turningPoints.Count switch
         {
+            // Classify based on shape
             // Monotonic
-            if (Math.Abs(overallChange) <= 2)
-            {
-                return MelodicContour.Static;
-            }
-
-            return overallChange > 0 ? MelodicContour.Ascending : MelodicContour.Descending;
-        }
-
-        if (turningPoints.Count == 1)
-        {
+            0 when Math.Abs(overallChange) <= 2 => MelodicContour.Static,
+            0 => overallChange > 0 ? MelodicContour.Ascending : MelodicContour.Descending,
             // Single turn - arch or bowl
-            if (turningPoints[0] > 0)
-            {
-                return MelodicContour.Arch; // peak in middle
-            }
-            else
-            {
-                return MelodicContour.Bowl; // trough in middle
-            }
-        }
-
-        if (turningPoints.Count >= 2 && turningPoints.Count <= 4)
-        {
-            return MelodicContour.Wave;
-        }
-
-        return MelodicContour.Complex;
+            1 when turningPoints[0] > 0 => MelodicContour.Arch,
+            1 => MelodicContour.Bowl,
+            >= 2 and <= 4 => MelodicContour.Wave,
+            _ => MelodicContour.Complex
+        };
     }
 
     private static string DescribeContour(MelodicContour contour, int[] pitches)

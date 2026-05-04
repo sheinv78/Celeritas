@@ -4,7 +4,7 @@
 namespace Celeritas.Core;
 
 /// <summary>
-/// Pitch class in 12-TET: values 0..11 (C..B) with modulo-12 arithmetic.
+/// Pitch class in 12-TET: values 0..11 (C…B) with modulo-12 arithmetic.
 /// </summary>
 public readonly record struct PitchClass
 {
@@ -54,12 +54,11 @@ public readonly record struct PitchClass
 
     public static PitchClass FromMidi(int midiPitch)
     {
-        if ((uint)midiPitch > 127u)
+        return (uint)midiPitch switch
         {
-            throw new ArgumentOutOfRangeException(nameof(midiPitch), "MIDI pitch must be 0-127");
-        }
-
-        return new PitchClass(midiPitch % 12);
+            > 127u => throw new ArgumentOutOfRangeException(nameof(midiPitch), "MIDI pitch must be 0-127"),
+            _ => new PitchClass(midiPitch % 12)
+        };
     }
 
     public static PitchClass Parse(string text)
@@ -92,24 +91,19 @@ public readonly record struct PitchClass
     /// </summary>
     public ChromaticInterval IntervalTo(PitchClass to) => new((to.Value - Value + 12) % 12);
 
-    /// <summary>
-    /// Alias for <see cref="IntervalTo"/> with a more explicit name.
-    /// </summary>
-    public ChromaticInterval AscendingIntervalTo(PitchClass to) => IntervalTo(to);
 
     /// <summary>
     /// Signed shortest pitch-class interval from this pitch class to <paramref name="to"/>.
-    /// Result is in -6..+6 (tritone is returned as +6).
+    /// Result is in -6…+6 (tritone is returned as +6).
     /// </summary>
     public ChromaticInterval SignedIntervalTo(PitchClass to)
     {
         var asc = (to.Value - Value + 12) % 12; // 0..11
-        if (asc <= 6)
+        return asc switch
         {
-            return new ChromaticInterval(asc);
-        }
-
-        return new ChromaticInterval(asc - 12); // -5..-1
+            <= 6 => new ChromaticInterval(asc),
+            _ => new ChromaticInterval(asc - 12)
+        };
     }
 
     public PitchClass Transpose(int semitones) => new(Value + semitones);

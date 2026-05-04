@@ -4,7 +4,6 @@
 using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
-using Celeritas.Core;
 
 namespace Celeritas.Core.Midi;
 
@@ -34,194 +33,211 @@ public sealed record MidiFileStatistics(
     Rational TotalBeats,
     int? MinNoteNumber,
     int? MaxNoteNumber,
-    IReadOnlyList<int> Channels,
-    int TempoChangeCount,
-    int TimeSignatureChangeCount);
+    IReadOnlyList<int> Channels);
 
 public static class MidiFileExtensions
 {
-    public static void Save(this MidiFile file, string path)
+    extension(MidiFile file)
     {
-        ArgumentNullException.ThrowIfNull(file);
-
-        using var stream = File.Create(path);
-        file.Write(stream);
-    }
-
-    public static TrackChunk AddTrack(this MidiFile file, NoteEvent[] notes, string? name = null, MidiExportOptions? options = null)
-        => AddTrack(file, notes.AsSpan(), name, options);
-
-    public static TrackChunk AddTrack(this MidiFile file, ReadOnlySpan<NoteEvent> notes, string? name = null, MidiExportOptions? options = null)
-    {
-        ArgumentNullException.ThrowIfNull(file);
-
-        options ??= new MidiExportOptions();
-
-        if (file.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
+        public void Save(string path)
         {
-            file.TimeDivision = new TicksPerQuarterNoteTimeDivision((short)options.TicksPerQuarterNote);
-            tpq = (TicksPerQuarterNoteTimeDivision)file.TimeDivision;
+            ArgumentNullException.ThrowIfNull(file);
+
+            using var stream = File.Create(path);
+            file.Write(stream);
         }
 
-        var ticksPerQuarter = tpq.TicksPerQuarterNote;
-        if (ticksPerQuarter <= 0)
+        public TrackChunk AddTrack(NoteEvent[] notes, string? name = null, MidiExportOptions? options = null)
+            =>
+                file.AddTrack(notes.AsSpan(), name, options);
+
+        private TrackChunk AddTrack(ReadOnlySpan<NoteEvent> notes, string? name = null, MidiExportOptions? options = null)
         {
-            throw new InvalidOperationException("Invalid ticks-per-quarter-note value.");
-        }
+            ArgumentNullException.ThrowIfNull(file);
 
-        var track = new TrackChunk();
-        if (!string.IsNullOrWhiteSpace(name))
-        {
-            track.Events.Add(new SequenceTrackNameEvent(name));
-        }
+            options ??= new MidiExportOptions();
 
-        using var notesManager = track.ManageNotes();
-        var channel = (FourBitNumber)options.Channel;
-
-        foreach (var e in notes)
-        {
-            var noteNumber = Math.Clamp(e.Pitch, 0, 127);
-
-            var timeTicks = MidiIo.BeatsToTicks(e.Offset, ticksPerQuarter);
-            var lengthTicks = Math.Max(1, MidiIo.BeatsToTicks(e.Duration, ticksPerQuarter));
-            var lengthTicksInt = lengthTicks > int.MaxValue ? int.MaxValue : (int)lengthTicks;
-
-            var velocity = (byte)Math.Clamp((int)Math.Round(e.Velocity * 127.0), 1, 127);
-            if (velocity == 0)
+            if (file.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
             {
-                velocity = options.DefaultVelocity;
+                file.TimeDivision = new TicksPerQuarterNoteTimeDivision((short)options.TicksPerQuarterNote);
+                tpq = (TicksPerQuarterNoteTimeDivision)file.TimeDivision;
             }
 
-            var note = new Note((SevenBitNumber)noteNumber, lengthTicksInt, timeTicks)
+            var ticksPerQuarter = tpq.TicksPerQuarterNote;
+            if (ticksPerQuarter <= 0)
             {
-                Channel = channel,
-                Velocity = (SevenBitNumber)velocity
-            };
+                throw new InvalidOperationException("Invalid ticks-per-quarter-note value.");
+            }
 
-            notesManager.Objects.Add(note);
-        }
+            var track = new TrackChunk();
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                track.Events.Add(new SequenceTrackNameEvent(name));
+            }
 
-        notesManager.SaveChanges();
-        file.Chunks.Add(track);
-        return track;
-    }
+            using var notesManager = track.ManageNotes();
+            var channel = (FourBitNumber)options.Channel;
 
-    public static void SetTempo(this MidiFile file, int bpm)
-    {
-        ArgumentNullException.ThrowIfNull(file);
+            foreach (var e in notes)
+            {
+                var noteNumber = Math.Clamp(e.Pitch, 0, 127);
 
-        if (bpm <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(bpm), bpm, "BPM must be positive.");
-        }
+                var timeTicks = MidiIo.BeatsToTicks(e.Offset, ticksPerQuarter);
+                var lengthTicks = Math.Max(1, MidiIo.BeatsToTicks(e.Duration, ticksPerQuarter));
+                var lengthTicksInt = lengthTicks > int.MaxValue ? int.MaxValue : (int)lengthTicks;
 
-        var tempo = Tempo.FromBeatsPerMinute(bpm);
+                var velocity = (byte)Math.Clamp((int)Math.Round(e.Velocity * 127.0), 1, 127);
+                velocity = velocity switch
+                {
+                    0 => options.DefaultVelocity,
+                    _ => velocity
+                };
 
-        // Use the first track as a conductor track if present.
-        var track = file.Chunks.OfType<TrackChunk>().FirstOrDefault();
-        if (track == null)
-        {
-            track = new TrackChunk();
+                var note = new Note((SevenBitNumber)noteNumber, lengthTicksInt, timeTicks)
+                {
+                    Channel = channel,
+                    Velocity = (SevenBitNumber)velocity
+                };
+
+                notesManager.Objects.Add(note);
+            }
+
+            notesManager.SaveChanges();
             file.Chunks.Add(track);
+            return track;
         }
 
-        // Insert tempo at time=0 without shifting existing events.
-        track.Events.Insert(0, new SetTempoEvent(tempo.MicrosecondsPerQuarterNote) { DeltaTime = 0 });
-    }
-
-    public static MidiFile Clone(this MidiFile file)
-    {
-        ArgumentNullException.ThrowIfNull(file);
-
-        using var ms = new MemoryStream();
-        file.Write(ms);
-        ms.Position = 0;
-        return MidiFile.Read(ms);
-    }
-
-    public static MidiFile Merge(this MidiFile file, params MidiFile[] others)
-    {
-        ArgumentNullException.ThrowIfNull(file);
-
-        var sources = new List<MidiFile>(1 + (others?.Length ?? 0)) { file };
-        if (others is { Length: > 0 })
+        public void SetTempo(int bpm)
         {
+            ArgumentNullException.ThrowIfNull(file);
+
+            if (bpm <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bpm), bpm, "BPM must be positive.");
+            }
+
+            var tempo = Tempo.FromBeatsPerMinute(bpm);
+
+            // Use the first track as a conductor track if present.
+            var track = file.Chunks.OfType<TrackChunk>().FirstOrDefault();
+            if (track == null)
+            {
+                track = new TrackChunk();
+                file.Chunks.Add(track);
+            }
+
+            // Insert tempo at time=0 without shifting existing events.
+            track.Events.Insert(0, new SetTempoEvent(tempo.MicrosecondsPerQuarterNote) { DeltaTime = 0 });
+        }
+
+        public MidiFile Clone()
+        {
+            ArgumentNullException.ThrowIfNull(file);
+
+            using var ms = new MemoryStream();
+            file.Write(ms);
+            ms.Position = 0;
+            return MidiFile.Read(ms);
+        }
+
+        /// <summary>
+        /// Merges this file with one other MIDI file, keeping tracks separate.
+        /// </summary>
+        public MidiFile Merge(MidiFile other)
+        {
+            ArgumentNullException.ThrowIfNull(file);
+            ArgumentNullException.ThrowIfNull(other);
+            return MergeSources([file, other]);
+        }
+
+        /// <summary>
+        /// Merges this file with multiple other MIDI files, keeping tracks separate.
+        /// </summary>
+        public MidiFile Merge(params MidiFile[] others)
+        {
+            ArgumentNullException.ThrowIfNull(file);
+            var sources = new List<MidiFile>(1 + others.Length) { file };
             foreach (var other in others)
             {
-                if (other == null)
-                {
-                    throw new ArgumentNullException(nameof(others), "Merge sources must not contain null.");
-                }
+                ArgumentNullException.ThrowIfNull(other, nameof(others));
                 sources.Add(other);
             }
+            return MergeSources(sources);
         }
 
-        var timeDivision = file.TimeDivision;
-        foreach (var source in sources)
+        /// <summary>
+        /// Merges this file with one other MIDI file into a single track, sorted by absolute time.
+        /// </summary>
+        public MidiFile MergeToSingleTrack(MidiFile other)
         {
-            if (!Equals(source.TimeDivision, timeDivision))
-            {
-                throw new ArgumentException("All MIDI files must have the same TimeDivision to merge.", nameof(others));
-            }
+            ArgumentNullException.ThrowIfNull(file);
+            ArgumentNullException.ThrowIfNull(other);
+            return MergeToSingleTrackSources([file, other]);
         }
 
-        var merged = new MidiFile
+        /// <summary>
+        /// Merges this file with multiple other MIDI files into a single track, sorted by absolute time.
+        /// </summary>
+        public MidiFile MergeToSingleTrack(params MidiFile[] others)
         {
-            TimeDivision = timeDivision
-        };
-
-        foreach (var source in sources)
-        {
-            var cloned = source.Clone();
-            foreach (var chunk in cloned.Chunks)
-            {
-                merged.Chunks.Add(chunk);
-            }
-        }
-
-        return merged;
-    }
-
-    /// <summary>
-    /// Merge multiple MIDI files into a single-track MIDI file.
-    /// This preserves timing by merging events by absolute tick time and recomputing delta-times.
-    /// </summary>
-    public static MidiFile MergeToSingleTrack(this MidiFile file, params MidiFile[] others)
-    {
-        ArgumentNullException.ThrowIfNull(file);
-
-        var sources = new List<MidiFile>(1 + (others?.Length ?? 0)) { file };
-        if (others is { Length: > 0 })
-        {
+            ArgumentNullException.ThrowIfNull(file);
+            var sources = new List<MidiFile>(1 + others.Length) { file };
             foreach (var other in others)
             {
-                if (other == null)
-                {
-                    throw new ArgumentNullException(nameof(others), "Merge sources must not contain null.");
-                }
+                ArgumentNullException.ThrowIfNull(other, nameof(others));
                 sources.Add(other);
             }
+            return MergeToSingleTrackSources(sources);
         }
 
-        var timeDivision = file.TimeDivision;
-        foreach (var source in sources)
+        public IReadOnlyList<MidiFile> Split(MidiSplitMode mode)
         {
-            if (!Equals(source.TimeDivision, timeDivision))
+            ArgumentNullException.ThrowIfNull(file);
+
+            return mode switch
             {
-                throw new ArgumentException("All MIDI files must have the same TimeDivision to merge.", nameof(others));
-            }
+                MidiSplitMode.Track => SplitByTrack(file),
+                MidiSplitMode.Channel => SplitByChannel(file),
+                _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown split mode.")
+            };
         }
 
-        // Collect all events from all tracks with their absolute times.
-        var collected = new List<(long Time, int Order, MidiEvent Event)>();
-        var order = 0;
-        MidiEvent? endOfTrackPrototype = null;
-
-        foreach (var source in sources)
+        public MidiFileStatistics GetStatistics()
         {
-            var cloned = source.Clone();
+            ArgumentNullException.ThrowIfNull(file);
 
-            foreach (var chunk in cloned.Chunks)
+            var trackCount = file.Chunks.OfType<TrackChunk>().Count();
+
+            var ticksPerQuarter = file.TimeDivision is TicksPerQuarterNoteTimeDivision tpq
+                ? tpq.TicksPerQuarterNote
+                : 480;
+
+            var noteCollection = file.GetNotes();
+            var noteCount = noteCollection.Count;
+
+            int? minNoteNumber = null;
+            int? maxNoteNumber = null;
+            var channels = new HashSet<int>();
+
+            long maxNoteEnd = 0;
+            foreach (var note in noteCollection)
+            {
+                var nn = (int)note.NoteNumber;
+                minNoteNumber = minNoteNumber.HasValue ? Math.Min(minNoteNumber.Value, nn) : nn;
+                maxNoteNumber = maxNoteNumber.HasValue ? Math.Max(maxNoteNumber.Value, nn) : nn;
+
+                channels.Add(note.Channel);
+
+                var end = note.Time + note.Length;
+                if (end > maxNoteEnd)
+                {
+                    maxNoteEnd = end;
+                }
+            }
+
+            long maxEventTime = 0;
+
+            foreach (var chunk in file.Chunks)
             {
                 if (chunk is not TrackChunk track)
                 {
@@ -232,16 +248,89 @@ public static class MidiFileExtensions
                 foreach (var evt in track.Events)
                 {
                     abs += evt.DeltaTime;
+                    if (abs > maxEventTime)
+                    {
+                        maxEventTime = abs;
+                    }
 
-                    // We'll add a single EndOfTrack at the end.
+                    if (evt is SetTempoEvent)
+                    {
+                    }
+                    else if (evt is TimeSignatureEvent)
+                    {
+                    }
+                    else if (evt is ChannelEvent ce)
+                    {
+                        channels.Add(ce.Channel);
+                    }
+                }
+            }
+
+            var totalTicks = Math.Max(maxNoteEnd, maxEventTime);
+            var totalBeats = new Rational(totalTicks, ticksPerQuarter);
+
+            return new MidiFileStatistics(
+                TrackCount: trackCount,
+                NoteCount: noteCount,
+                TotalTicks: totalTicks,
+                TotalBeats: totalBeats,
+                MinNoteNumber: minNoteNumber,
+                MaxNoteNumber: maxNoteNumber,
+                Channels: channels.OrderBy(c => c).ToArray());
+        }
+    }
+
+    private static MidiFile MergeSources(IReadOnlyList<MidiFile> sources)
+    {
+        var timeDivision = sources[0].TimeDivision;
+        foreach (var source in sources)
+        {
+            if (!Equals(source.TimeDivision, timeDivision))
+                throw new ArgumentException("All MIDI files must have the same TimeDivision to merge.");
+        }
+
+        var merged = new MidiFile { TimeDivision = timeDivision };
+        foreach (var source in sources)
+        {
+            var cloned = source.Clone();
+            foreach (var chunk in cloned.Chunks)
+                merged.Chunks.Add(chunk);
+        }
+
+        return merged;
+    }
+
+    private static MidiFile MergeToSingleTrackSources(IReadOnlyList<MidiFile> sources)
+    {
+        var timeDivision = sources[0].TimeDivision;
+        foreach (var source in sources)
+        {
+            if (!Equals(source.TimeDivision, timeDivision))
+                throw new ArgumentException("All MIDI files must have the same TimeDivision to merge.");
+        }
+
+        var collected = new List<(long Time, int Order, MidiEvent Event)>();
+        var order = 0;
+        MidiEvent? endOfTrackPrototype = null;
+
+        foreach (var source in sources)
+        {
+            var cloned = source.Clone();
+            foreach (var chunk in cloned.Chunks)
+            {
+                if (chunk is not TrackChunk track)
+                    continue;
+
+                long abs = 0;
+                foreach (var evt in track.Events)
+                {
+                    abs += evt.DeltaTime;
                     if (evt is EndOfTrackEvent)
                     {
                         endOfTrackPrototype ??= evt;
                         continue;
                     }
-
-                    var clonedEvent = CloneEvent(evt);
-                    collected.Add((abs, order++, clonedEvent));
+                    collected.Add((abs, order++, CloneEvent(evt)));
                 }
             }
         }
@@ -256,19 +345,11 @@ public static class MidiFileExtensions
         long prev = 0;
         foreach (var item in collected)
         {
-            var delta = item.Time - prev;
-            if (delta < 0)
-            {
-                delta = 0;
-            }
-
-            item.Event.DeltaTime = delta;
+            item.Event.DeltaTime = Math.Max(0, item.Time - prev);
             mergedTrack.Events.Add(item.Event);
             prev = item.Time;
         }
 
-        // EndOfTrackEvent has no public constructors in this DryWetMIDI version.
-        // Clone one from sources and append it once.
         if (endOfTrackPrototype is not null)
         {
             var eot = CloneEvent(endOfTrackPrototype);
@@ -276,105 +357,7 @@ public static class MidiFileExtensions
             mergedTrack.Events.Add(eot);
         }
 
-        return new MidiFile(mergedTrack)
-        {
-            TimeDivision = timeDivision
-        };
-    }
-
-    public static IReadOnlyList<MidiFile> Split(this MidiFile file, MidiSplitMode mode)
-    {
-        ArgumentNullException.ThrowIfNull(file);
-
-        return mode switch
-        {
-            MidiSplitMode.Track => SplitByTrack(file),
-            MidiSplitMode.Channel => SplitByChannel(file),
-            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown split mode.")
-        };
-    }
-
-    public static MidiFileStatistics GetStatistics(this MidiFile file)
-    {
-        ArgumentNullException.ThrowIfNull(file);
-
-        var trackCount = file.Chunks.OfType<TrackChunk>().Count();
-
-        var ticksPerQuarter = file.TimeDivision is TicksPerQuarterNoteTimeDivision tpq
-            ? tpq.TicksPerQuarterNote
-            : 480;
-
-        var noteCollection = file.GetNotes();
-        var noteCount = noteCollection.Count;
-
-        int? minNoteNumber = null;
-        int? maxNoteNumber = null;
-        var channels = new HashSet<int>();
-
-        long maxNoteEnd = 0;
-        foreach (var note in noteCollection)
-        {
-            var nn = (int)note.NoteNumber;
-            minNoteNumber = minNoteNumber.HasValue ? Math.Min(minNoteNumber.Value, nn) : nn;
-            maxNoteNumber = maxNoteNumber.HasValue ? Math.Max(maxNoteNumber.Value, nn) : nn;
-
-            channels.Add(note.Channel);
-
-            var end = note.Time + note.Length;
-            if (end > maxNoteEnd)
-            {
-                maxNoteEnd = end;
-            }
-        }
-
-        var tempoCount = 0;
-        var timeSignatureCount = 0;
-        long maxEventTime = 0;
-
-        foreach (var chunk in file.Chunks)
-        {
-            if (chunk is not TrackChunk track)
-            {
-                continue;
-            }
-
-            long abs = 0;
-            foreach (var evt in track.Events)
-            {
-                abs += evt.DeltaTime;
-                if (abs > maxEventTime)
-                {
-                    maxEventTime = abs;
-                }
-
-                if (evt is SetTempoEvent)
-                {
-                    tempoCount++;
-                }
-                else if (evt is TimeSignatureEvent)
-                {
-                    timeSignatureCount++;
-                }
-                else if (evt is ChannelEvent ce)
-                {
-                    channels.Add(ce.Channel);
-                }
-            }
-        }
-
-        var totalTicks = Math.Max(maxNoteEnd, maxEventTime);
-        var totalBeats = new Rational(totalTicks, ticksPerQuarter);
-
-        return new MidiFileStatistics(
-            TrackCount: trackCount,
-            NoteCount: noteCount,
-            TotalTicks: totalTicks,
-            TotalBeats: totalBeats,
-            MinNoteNumber: minNoteNumber,
-            MaxNoteNumber: maxNoteNumber,
-            Channels: channels.OrderBy(c => c).ToArray(),
-            TempoChangeCount: tempoCount,
-            TimeSignatureChangeCount: timeSignatureCount);
+        return new MidiFile(mergedTrack) { TimeDivision = timeDivision };
     }
 
     private static IReadOnlyList<MidiFile> SplitByTrack(MidiFile file)

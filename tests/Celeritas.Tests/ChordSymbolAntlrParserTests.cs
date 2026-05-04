@@ -1,4 +1,4 @@
-using Xunit;
+using Celeritas.Core.Analysis;
 
 namespace Celeritas.Tests;
 
@@ -18,7 +18,7 @@ public class ChordSymbolAntlrParserTests
     [InlineData("C+9", new[] { 60, 64, 68, 70, 74 })]
     public void ParsePitches_ParsesCommonSymbols(string symbol, int[] expected)
     {
-        var actual = Celeritas.Core.Analysis.ProgressionAdvisor.ParseChordSymbol(symbol);
+        var actual = ProgressionAdvisor.ParseChordSymbol(symbol);
 
         Assert.Equal(expected.OrderBy(x => x), actual.OrderBy(x => x));
     }
@@ -27,7 +27,7 @@ public class ChordSymbolAntlrParserTests
     public void ParsePitches_ParsesPolychords_WithOctaveStacking()
     {
         // C major at octave 4 plus G major stacked one octave above (octave 5 root base).
-        var actual = Celeritas.Core.Analysis.ProgressionAdvisor.ParseChordSymbol("C|G");
+        var actual = ProgressionAdvisor.ParseChordSymbol("C|G");
 
         var expected = new[]
         {

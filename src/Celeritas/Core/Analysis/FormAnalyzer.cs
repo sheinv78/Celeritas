@@ -1,6 +1,7 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Celeritas.Core.Analysis;
@@ -135,13 +136,13 @@ public static class FormAnalyzer
         for (var phraseIdx = 0; phraseIdx < rawPhrases.Count; phraseIdx++)
         {
             var (startIdx, endIdx, start, end, noteCount) = rawPhrases[phraseIdx];
-            var cadenceType = CadenceType.None;
 
-            if (options.DetectCadences && options.Key is not null && endIdx - startIdx >= 1)
+            var cadenceType = options switch
             {
-                // Detect cadence at phrase ending (last two chords/notes)
-                cadenceType = DetectCadenceAtPhraseEnd(buffer, startIdx, endIdx, options.Key.Value, cadences, phraseIdx);
-            }
+                { DetectCadences: true, Key: not null } when endIdx - startIdx >= 1 => DetectCadenceAtPhraseEnd(buffer,
+                    startIdx, endIdx, options.Key.Value, cadences, phraseIdx),
+                _ => CadenceType.None
+            };
 
             phrases.Add(new Phrase(startIdx, endIdx, start, end, noteCount, cadenceType));
         }
@@ -154,7 +155,7 @@ public static class FormAnalyzer
         // Detect sections (A/B/A' patterns) based on phrase similarity
         var (sections, formLabel) = options.DetectSections
             ? DetectSections(buffer, phrases, options.SectionSimilarityThreshold)
-            : (Array.Empty<Section>(), "");
+            : ([], "");
 
         return new FormAnalysisResult(phrases, periods, totalLength, cadences, sections, formLabel);
     }
@@ -225,45 +226,44 @@ public static class FormAnalyzer
         // Detect cadence patterns
         var cadenceType = ClassifyCadence(prevChord.Degree, lastChord.Degree, key.IsMajor);
 
-        if (cadenceType != CadenceType.None)
+        if (cadenceType == CadenceType.None)
         {
-            var fromChord = FormatRomanNumeral(prevChord);
-            var toChord = FormatRomanNumeral(lastChord);
-            var description = GetCadenceDescription(cadenceType);
-
-            cadences.Add(new CadenceInfo(cadenceType, phraseIdx, fromChord, toChord, description));
+            return cadenceType;
         }
+
+        var fromChord = FormatRomanNumeral(prevChord);
+        var toChord = FormatRomanNumeral(lastChord);
+        var description = GetCadenceDescription(cadenceType);
+
+        cadences.Add(new CadenceInfo(cadenceType, phraseIdx, fromChord, toChord, description));
 
         return cadenceType;
     }
 
     private static CadenceType ClassifyCadence(ScaleDegree from, ScaleDegree to, bool isMajor)
     {
-        // V → I = Authentic
-        if (from == ScaleDegree.V && to == ScaleDegree.I)
-            return CadenceType.Authentic;
-
-        // vii° → I = Authentic (dominant substitute)
-        if (from == ScaleDegree.VII && to == ScaleDegree.I)
-            return CadenceType.Authentic;
-
-        // IV → I = Plagal
-        if (from == ScaleDegree.IV && to == ScaleDegree.I)
-            return CadenceType.Plagal;
-
-        // V → vi = Deceptive
-        if (from == ScaleDegree.V && to == ScaleDegree.VI)
-            return CadenceType.Deceptive;
-
-        // any → V = Half cadence
-        if (to == ScaleDegree.V)
-            return CadenceType.Half;
-
-        // iv → V in minor = Phrygian half cadence
-        if (!isMajor && from == ScaleDegree.IV && to == ScaleDegree.V)
-            return CadenceType.Phrygian;
-
-        return CadenceType.None;
+        return from switch
+        {
+            // V → I = Authentic
+            ScaleDegree.V when to == ScaleDegree.I => CadenceType.Authentic,
+            // vii° → I = Authentic (dominant substitute)
+            ScaleDegree.Vii when to == ScaleDegree.I => CadenceType.Authentic,
+            // IV → I = Plagal
+            ScaleDegree.Iv when to == ScaleDegree.I => CadenceType.Plagal,
+            // V → vi = Deceptive
+            ScaleDegree.V when to == ScaleDegree.Vi => CadenceType.Deceptive,
+            _ => to switch
+            {
+                // any → V = Half cadence
+                ScaleDegree.V => CadenceType.Half,
+                _ => isMajor switch
+                {
+                    // iv → V in minor = Phrygian half cadence
+                    false when from == ScaleDegree.Iv && to == ScaleDegree.V => CadenceType.Phrygian,
+                    _ => CadenceType.None
+                }
+            }
+        };
     }
 
     private static string FormatRomanNumeral(RomanNumeralChord chord)
@@ -271,20 +271,24 @@ public static class FormAnalyzer
         var numeral = chord.Degree switch
         {
             ScaleDegree.I => "I",
-            ScaleDegree.II => "ii",
-            ScaleDegree.III => "iii",
-            ScaleDegree.IV => "IV",
+            ScaleDegree.Ii => "ii",
+            ScaleDegree.Iii => "iii",
+            ScaleDegree.Iv => "IV",
             ScaleDegree.V => "V",
-            ScaleDegree.VI => "vi",
-            ScaleDegree.VII => "vii°",
+            ScaleDegree.Vi => "vi",
+            ScaleDegree.Vii => "vii°",
             _ => "?"
         };
 
-        // Adjust for quality
-        if (chord.Quality == ChordQuality.Minor && chord.Degree is ScaleDegree.I or ScaleDegree.IV or ScaleDegree.V)
-            numeral = numeral.ToLowerInvariant();
-        else if (chord.Quality == ChordQuality.Major && chord.Degree is ScaleDegree.II or ScaleDegree.III or ScaleDegree.VI)
-            numeral = numeral.ToUpperInvariant();
+        numeral = chord switch
+        {
+            // Adjust for quality
+            { Quality: ChordQuality.Minor, Degree: ScaleDegree.I or ScaleDegree.Iv or ScaleDegree.V } => numeral
+                .ToLowerInvariant(),
+            { Quality: ChordQuality.Major, Degree: ScaleDegree.Ii or ScaleDegree.Iii or ScaleDegree.Vi } => numeral
+                .ToUpperInvariant(),
+            _ => numeral
+        };
 
         return numeral;
     }
@@ -331,7 +335,7 @@ public static class FormAnalyzer
         float similarityThreshold)
     {
         if (phrases.Count == 0)
-            return (Array.Empty<Section>(), "");
+            return ([], "");
 
         if (phrases.Count == 1)
         {
@@ -423,8 +427,8 @@ public static class FormAnalyzer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static float JaccardSimilarity(ushort a, ushort b)
     {
-        var intersection = System.Numerics.BitOperations.PopCount((uint)(a & b));
-        var union = System.Numerics.BitOperations.PopCount((uint)(a | b));
+        var intersection = BitOperations.PopCount((uint)(a & b));
+        var union = BitOperations.PopCount((uint)(a | b));
         return union == 0 ? 0f : (float)intersection / union;
     }
 

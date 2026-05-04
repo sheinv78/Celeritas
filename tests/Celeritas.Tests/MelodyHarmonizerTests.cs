@@ -19,7 +19,7 @@ public class MelodyHarmonizerTests
     public void Harmonize_SingleNote_ReturnsOneChord()
     {
         var harmonizer = new MelodyHarmonizer();
-        var melody = new[] { new NoteEvent(60, Rational.Zero, Rational.Quarter, 0.8f) }; // C4
+        var melody = new[] { new NoteEvent(60, Rational.Zero, Rational.Quarter) }; // C4
 
         var result = harmonizer.Harmonize(melody);
 
@@ -34,14 +34,14 @@ public class MelodyHarmonizerTests
         // C D E F G A B C
         var melody = new[]
         {
-            new NoteEvent(60, new Rational(0, 4), Rational.Quarter, 0.8f),
-            new NoteEvent(62, new Rational(1, 4), Rational.Quarter, 0.8f),
-            new NoteEvent(64, new Rational(2, 4), Rational.Quarter, 0.8f),
-            new NoteEvent(65, new Rational(3, 4), Rational.Quarter, 0.8f),
-            new NoteEvent(67, new Rational(4, 4), Rational.Quarter, 0.8f),
-            new NoteEvent(69, new Rational(5, 4), Rational.Quarter, 0.8f),
-            new NoteEvent(71, new Rational(6, 4), Rational.Quarter, 0.8f),
-            new NoteEvent(72, new Rational(7, 4), Rational.Quarter, 0.8f),
+            new NoteEvent(60, new Rational(0, 4), Rational.Quarter),
+            new NoteEvent(62, new Rational(1, 4), Rational.Quarter),
+            new NoteEvent(64, new Rational(2, 4), Rational.Quarter),
+            new NoteEvent(65, new Rational(3, 4), Rational.Quarter),
+            new NoteEvent(67, new Rational(4, 4), Rational.Quarter),
+            new NoteEvent(69, new Rational(5, 4), Rational.Quarter),
+            new NoteEvent(71, new Rational(6, 4), Rational.Quarter),
+            new NoteEvent(72, new Rational(7, 4), Rational.Quarter),
         };
 
         var result = harmonizer.Harmonize(melody);
@@ -55,7 +55,7 @@ public class MelodyHarmonizerTests
     public void Harmonize_WithSpecifiedKey_UsesProvidedKey()
     {
         var harmonizer = new MelodyHarmonizer();
-        var melody = new[] { new NoteEvent(60, Rational.Zero, Rational.Quarter, 0.8f) };
+        var melody = new[] { new NoteEvent(60, Rational.Zero, Rational.Quarter) };
         var key = new KeySignature(7, true); // G major
 
         var result = harmonizer.Harmonize(melody, key);
@@ -70,9 +70,9 @@ public class MelodyHarmonizerTests
         // Melody emphasizing I-V-I: C - G - C
         var melody = new[]
         {
-            new NoteEvent(60, new Rational(0, 4), Rational.Half, 0.8f),  // C (beat 1-2)
-            new NoteEvent(67, new Rational(2, 4), Rational.Half, 0.8f),  // G (beat 3-4)
-            new NoteEvent(60, new Rational(4, 4), Rational.Half, 0.8f),  // C (beat 5-6)
+            new NoteEvent(60, new Rational(0, 4), Rational.Half),  // C (beat 1-2)
+            new NoteEvent(67, new Rational(2, 4), Rational.Half),  // G (beat 3-4)
+            new NoteEvent(60, new Rational(4, 4), Rational.Half),  // C (beat 5-6)
         };
 
         var result = harmonizer.Harmonize(melody);
@@ -119,13 +119,13 @@ public class MelodyHarmonizerTests
 
         var cMajor = new ChordCandidate(
             new ChordInfo(0, ChordQuality.Major),
-            [60, 64, 67], 0, "I");
+            [60, 64, 67], 0);
         var gMajor = new ChordCandidate(
             new ChordInfo(7, ChordQuality.Major),
-            [67, 71, 74], 0, "V");
+            [67, 71, 74], 0);
         var fMajor = new ChordCandidate(
             new ChordInfo(5, ChordQuality.Major),
-            [65, 69, 72], 0, "IV");
+            [65, 69, 72], 0);
 
         var vToI = scorer.ScoreTransition(gMajor, cMajor, key);
         var ivToI = scorer.ScoreTransition(fMajor, cMajor, key);
@@ -140,8 +140,8 @@ public class MelodyHarmonizerTests
         var harmonizer = new MelodyHarmonizer();
         var melody = new[]
         {
-            new NoteEvent(60, Rational.Zero, Rational.Quarter, 0.8f),
-            new NoteEvent(67, Rational.Quarter, Rational.Quarter, 0.8f),
+            new NoteEvent(60, Rational.Zero, Rational.Quarter),
+            new NoteEvent(67, Rational.Quarter, Rational.Quarter),
         };
 
         var result = harmonizer.Harmonize(melody);

@@ -66,7 +66,7 @@ public static class HarmonicColorAnalyzer
         (string Chord, Rational Start)[] chordProgression,
         KeySignature key,
         HarmonicColorAnalysisOptions? options = null)
-        => Analyze(melody.AsSpan(), (IReadOnlyList<(string Chord, Rational Start)>)chordProgression, key, options);
+        => Analyze(melody.AsSpan(), chordProgression, key, options);
 
     private static ChordAssignment[] BuildChordAssignments(IReadOnlyList<(string Chord, Rational Start)> chordProgression)
     {
@@ -83,11 +83,11 @@ public static class HarmonicColorAnalyzer
             if (end <= start)
                 end = start + Rational.Whole;
 
-                var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
+            var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
             var mask = ChordAnalyzer.GetMask(pitches);
             var info = ChordLibrary.GetChord(mask);
 
-            chords[i] = new ChordAssignment(start, end, info, pitches, 0);
+            chords[i] = new ChordAssignment(start, end, info, pitches);
         }
 
         return chords;
@@ -258,7 +258,6 @@ public static class HarmonicColorAnalyzer
                         Type = MelodicHarmonyEventType.Suspension,
                         Description = "Suspension-like: held tone resolves down"
                     };
-                    continue;
                 }
             }
         }
@@ -292,7 +291,7 @@ public static class HarmonicColorAnalyzer
             for (var j = 0; j < window; j++)
                 usedMask |= chordMasks[start + j];
 
-            var usedCount = BitOperations.PopCount((uint)usedMask);
+            var usedCount = BitOperations.PopCount(usedMask);
             if (usedCount == 0)
                 continue;
 
@@ -366,7 +365,7 @@ public static class HarmonicColorAnalyzer
 
     private static double Coverage(ushort usedMask, ushort scaleMask)
     {
-        var used = BitOperations.PopCount((uint)usedMask);
+        var used = BitOperations.PopCount(usedMask);
         if (used == 0)
             return 0;
         var covered = BitOperations.PopCount((uint)(usedMask & scaleMask));
@@ -538,13 +537,13 @@ public sealed record HarmonicColorAnalysisResult(
         get
         {
             var r = ColorfulnessRating;
-            if (r < 2.0)
-                return "Mostly diatonic and stable.";
-            if (r < 5.0)
-                return "Moderately colorful (some non-chord tones / chromaticism).";
-            if (r < 8.0)
-                return "Colorful (noticeable chromaticism or modal mixture).";
-            return "Highly colorful / chromatic (strong modal mixture or altered tones).";
+            return r switch
+            {
+                < 2.0 => "Mostly diatonic and stable.",
+                < 5.0 => "Moderately colorful (some non-chord tones / chromaticism).",
+                < 8.0 => "Colorful (noticeable chromaticism or modal mixture).",
+                _ => "Highly colorful / chromatic (strong modal mixture or altered tones)."
+            };
         }
     }
 }

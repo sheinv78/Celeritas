@@ -1,8 +1,6 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
-using System.Buffers;
-
 namespace Celeritas.Core.Analysis;
 
 /// <summary>
@@ -105,18 +103,11 @@ public readonly struct VoiceMotion
     public int Voice1 { get; init; }
     public int Voice2 { get; init; }
     public Rational FromTime { get; init; }
-    public Rational ToTime { get; init; }
     public int Voice1Motion { get; init; }  // Semitones moved (+/-)
     public int Voice2Motion { get; init; }
     public MotionType Type { get; init; }
     public VoiceInterval FromInterval { get; init; }
     public VoiceInterval ToInterval { get; init; }
-
-    /// <summary>Check if this is parallel 5ths or octaves (voice leading error).</summary>
-    public bool IsParallelPerfect =>
-        Type == MotionType.Parallel &&
-        (FromInterval.Interval is 0 or 7 or 12) &&
-        (ToInterval.Interval is 0 or 7 or 12);
 
     /// <summary>Check if this is hidden 5ths/octaves (similar motion to perfect interval).</summary>
     public bool IsHiddenPerfect =>
@@ -127,7 +118,7 @@ public readonly struct VoiceMotion
 /// <summary>
 /// Counterpoint violation detected in the analysis.
 /// </summary>
-public sealed class CounterpointViolation
+public sealed record CounterpointViolation
 {
     public required string Type { get; init; }
     public required string Description { get; init; }
@@ -140,7 +131,7 @@ public sealed class CounterpointViolation
 /// <summary>
 /// Complete polyphony analysis result.
 /// </summary>
-public sealed class PolyphonyAnalysisResult
+public sealed record PolyphonyAnalysisResult
 {
     public required VoiceSeparationResult Voices { get; init; }
 
@@ -235,16 +226,16 @@ public static class PolyphonyAnalyzer
         var analysis = Analyze(buffer, maxVoices);
         var violations = analysis.Violations;
 
-        var parallel5ths = violations.Count(v => v.Type == "Parallel Fifths");
-        var parallel8ves = violations.Count(v => v.Type == "Parallel Octaves");
+        var parallel5Ths = violations.Count(v => v.Type == "Parallel Fifths");
+        var parallel8Ves = violations.Count(v => v.Type == "Parallel Octaves");
         var hidden = violations.Count(v => v.Type == "Hidden Perfect Interval");
 
         var (voiceCrossing, spacing) = PolyphonyAnalyzerHelpers.AnalyzeCrossingsAndSpacing(analysis.Voices);
 
         return new CounterpointRulesCheckResult
         {
-            ParallelFifths = parallel5ths,
-            ParallelOctaves = parallel8ves,
+            ParallelFifths = parallel5Ths,
+            ParallelOctaves = parallel8Ves,
             HiddenParallels = hidden,
             VoiceCrossing = voiceCrossing,
             SpacingViolations = spacing,
@@ -482,18 +473,18 @@ public static class PolyphonyAnalyzer
             {
                 for (int j = i + 1; j < voices.Voices.Count; j++)
                 {
-                    var pitch1_t1 = notes1.FirstOrDefault(n => n.voiceIdx == i).pitch;
-                    var pitch2_t1 = notes1.FirstOrDefault(n => n.voiceIdx == j).pitch;
-                    var pitch1_t2 = notes2.FirstOrDefault(n => n.voiceIdx == i).pitch;
-                    var pitch2_t2 = notes2.FirstOrDefault(n => n.voiceIdx == j).pitch;
+                    var pitch1T1 = notes1.FirstOrDefault(n => n.voiceIdx == i).pitch;
+                    var pitch2T1 = notes1.FirstOrDefault(n => n.voiceIdx == j).pitch;
+                    var pitch1T2 = notes2.FirstOrDefault(n => n.voiceIdx == i).pitch;
+                    var pitch2T2 = notes2.FirstOrDefault(n => n.voiceIdx == j).pitch;
 
-                    if (pitch1_t1 == 0 || pitch2_t1 == 0 || pitch1_t2 == 0 || pitch2_t2 == 0)
+                    if (pitch1T1 == 0 || pitch2T1 == 0 || pitch1T2 == 0 || pitch2T2 == 0)
                     {
                         continue;
                     }
 
-                    var motion1 = pitch1_t2 - pitch1_t1;
-                    var motion2 = pitch2_t2 - pitch2_t1;
+                    var motion1 = pitch1T2 - pitch1T1;
+                    var motion2 = pitch2T2 - pitch2T1;
                     var motionType = ClassifyMotion(motion1, motion2);
 
                     motions.Add(new VoiceMotion
@@ -501,7 +492,6 @@ public static class PolyphonyAnalyzer
                         Voice1 = i,
                         Voice2 = j,
                         FromTime = time1,
-                        ToTime = time2,
                         Voice1Motion = motion1,
                         Voice2Motion = motion2,
                         Type = motionType,
@@ -510,16 +500,16 @@ public static class PolyphonyAnalyzer
                             Voice1 = i,
                             Voice2 = j,
                             Time = time1,
-                            Pitch1 = pitch1_t1,
-                            Pitch2 = pitch2_t1
+                            Pitch1 = pitch1T1,
+                            Pitch2 = pitch2T1
                         },
                         ToInterval = new VoiceInterval
                         {
                             Voice1 = i,
                             Voice2 = j,
                             Time = time2,
-                            Pitch1 = pitch1_t2,
-                            Pitch2 = pitch2_t2
+                            Pitch1 = pitch1T2,
+                            Pitch2 = pitch2T2
                         }
                     });
                 }
@@ -728,7 +718,7 @@ public static class PolyphonyAnalyzer
 
         // Independence = proportion of contrary + oblique motion
         var independentMotions = motions.Count(m =>
-            m.Type == MotionType.Contrary || m.Type == MotionType.Oblique);
+            m.Type is MotionType.Contrary or MotionType.Oblique);
 
         return (float)independentMotions / motions.Count;
     }
@@ -770,13 +760,13 @@ public static class PolyphonyAnalyzer
         }
 
         // Factor in independence
-        score = score * 0.7f + independence * 0.3f;
+        score = (score * 0.7f) + (independence * 0.3f);
 
         return Math.Clamp(score, 0f, 1f);
     }
 }
 
-public sealed class CounterpointRulesCheckResult
+public sealed record CounterpointRulesCheckResult
 {
     public required int ParallelFifths { get; init; }
     public required int ParallelOctaves { get; init; }
@@ -787,7 +777,7 @@ public sealed class CounterpointRulesCheckResult
     public required IReadOnlyList<CounterpointViolation> Violations { get; init; }
 }
 
-public sealed class ImitationDetectionResult
+public sealed record ImitationDetectionResult
 {
     public required bool HasImitation { get; init; }
     public string Type { get; init; } = "";

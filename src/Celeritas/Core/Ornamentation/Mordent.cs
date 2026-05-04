@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace Celeritas.Core.Ornamentation;
 
 /// <summary>
@@ -24,7 +22,7 @@ public class Mordent : Ornament
 
     public override NoteEvent[] Expand()
     {
-        var noteCount = 2 * Alternations + 1; // Main + alternations
+        var noteCount = (2 * Alternations) + 1; // Main + alternations
         var noteDuration = BaseNote.Duration / noteCount;
 
         var neighborPitch = Type == MordentType.Upper

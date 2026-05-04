@@ -1,6 +1,7 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Numerics;
 using System.Text;
 
 namespace Celeritas.Core.Analysis;
@@ -14,10 +15,6 @@ public static class ProgressionAdvisor
     private static readonly string[] NoteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     private static readonly string[] NoteNamesFlat = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 
-    // Natural minor scale intervals from root
-    private static readonly int[] NaturalMinorIntervals = [0, 2, 3, 5, 7, 8, 10];
-    // Harmonic minor: raised 7th
-    private static readonly int[] HarmonicMinorIntervals = [0, 2, 3, 5, 7, 8, 11];
 
     /// <summary>
     /// Parse a chord symbol into MIDI pitches (octave 4 = middle C).
@@ -130,12 +127,12 @@ public static class ProgressionAdvisor
             return CadenceType.Authentic;
         }
 
-        if (prevRoman.Degree == ScaleDegree.IV && currRoman.Degree == ScaleDegree.I)
+        if (prevRoman.Degree == ScaleDegree.Iv && currRoman.Degree == ScaleDegree.I)
         {
             return CadenceType.Plagal;
         }
 
-        if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.VI)
+        if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.Vi)
         {
             return CadenceType.Deceptive;
         }
@@ -146,7 +143,7 @@ public static class ProgressionAdvisor
         }
 
         // Check for Phrygian cadence (iv6 -> V in minor)
-        if (!detectedKey.IsMajor && prevRoman.Degree == ScaleDegree.IV && currRoman.Degree == ScaleDegree.V)
+        if (!detectedKey.IsMajor && prevRoman.Degree == ScaleDegree.Iv && currRoman.Degree == ScaleDegree.V)
         {
             var inv = GetInversion(prev.pitches);
             if (inv == 1)
@@ -210,51 +207,51 @@ public static class ProgressionAdvisor
         {
             case ScaleDegree.I:
                 // After tonic: IV, V, vi are common
-                AddSuggestion(suggestions, key, ScaleDegree.IV, "Subdominant progression", 1.0f);
+                AddSuggestion(suggestions, key, ScaleDegree.Iv, "Subdominant progression", 1.0f);
                 AddSuggestion(suggestions, key, ScaleDegree.V, "Move to dominant", 0.95f);
-                AddSuggestion(suggestions, key, ScaleDegree.VI, "Relative minor for contrast", 0.9f);
-                AddSuggestion(suggestions, key, ScaleDegree.III, "Mediant for color", 0.7f);
+                AddSuggestion(suggestions, key, ScaleDegree.Vi, "Relative minor for contrast", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.Iii, "Mediant for color", 0.7f);
                 break;
 
-            case ScaleDegree.II:
+            case ScaleDegree.Ii:
                 // ii typically goes to V or I
                 AddSuggestion(suggestions, key, ScaleDegree.V, "Classic ii-V progression", 1.0f);
                 AddSuggestion(suggestions, key, ScaleDegree.I, "Direct resolution to tonic", 0.8f);
-                AddSuggestion(suggestions, key, ScaleDegree.IV, "Alternative subdominant", 0.7f);
+                AddSuggestion(suggestions, key, ScaleDegree.Iv, "Alternative subdominant", 0.7f);
                 break;
 
-            case ScaleDegree.III:
+            case ScaleDegree.Iii:
                 // iii can go to vi, IV, or ii
-                AddSuggestion(suggestions, key, ScaleDegree.VI, "Descending to relative minor", 0.9f);
-                AddSuggestion(suggestions, key, ScaleDegree.IV, "Move to subdominant", 0.85f);
-                AddSuggestion(suggestions, key, ScaleDegree.II, "Jazz-style descending", 0.8f);
+                AddSuggestion(suggestions, key, ScaleDegree.Vi, "Descending to relative minor", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.Iv, "Move to subdominant", 0.85f);
+                AddSuggestion(suggestions, key, ScaleDegree.Ii, "Jazz-style descending", 0.8f);
                 break;
 
-            case ScaleDegree.IV:
+            case ScaleDegree.Iv:
                 // IV goes to I, V, or ii
                 AddSuggestion(suggestions, key, ScaleDegree.V, "Subdominant to dominant", 1.0f);
                 AddSuggestion(suggestions, key, ScaleDegree.I, "Plagal cadence", 0.95f);
-                AddSuggestion(suggestions, key, ScaleDegree.II, "Retrograde progression", 0.7f);
+                AddSuggestion(suggestions, key, ScaleDegree.Ii, "Retrograde progression", 0.7f);
                 break;
 
             case ScaleDegree.V:
                 // V strongly wants to resolve to I, or deceptively to vi
                 AddSuggestion(suggestions, key, ScaleDegree.I, "Perfect authentic cadence", 1.0f);
-                AddSuggestion(suggestions, key, ScaleDegree.VI, "Deceptive cadence", 0.9f);
-                AddSuggestion(suggestions, key, ScaleDegree.IV, "Avoid resolution, continue tension", 0.6f);
+                AddSuggestion(suggestions, key, ScaleDegree.Vi, "Deceptive cadence", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.Iv, "Avoid resolution, continue tension", 0.6f);
                 break;
 
-            case ScaleDegree.VI:
+            case ScaleDegree.Vi:
                 // vi can go to IV, II, or V
-                AddSuggestion(suggestions, key, ScaleDegree.IV, "Descending progression", 0.95f);
-                AddSuggestion(suggestions, key, ScaleDegree.II, "Circle progression", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.Iv, "Descending progression", 0.95f);
+                AddSuggestion(suggestions, key, ScaleDegree.Ii, "Circle progression", 0.9f);
                 AddSuggestion(suggestions, key, ScaleDegree.V, "Move to dominant", 0.85f);
                 break;
 
-            case ScaleDegree.VII:
+            case ScaleDegree.Vii:
                 // vii° typically resolves to I
                 AddSuggestion(suggestions, key, ScaleDegree.I, "Leading tone resolution", 1.0f);
-                AddSuggestion(suggestions, key, ScaleDegree.III, "Deceptive resolution", 0.7f);
+                AddSuggestion(suggestions, key, ScaleDegree.Iii, "Deceptive resolution", 0.7f);
                 break;
 
             default:
@@ -267,8 +264,8 @@ public static class ProgressionAdvisor
         // Add some color chords for variety
         if (suggestions.Count < maxSuggestions)
         {
-            AddSuggestion(suggestions, key, ScaleDegree.III, "Mediant for color", 0.65f);
-            AddSuggestion(suggestions, key, ScaleDegree.VII, "Leading tone diminished", 0.6f);
+            AddSuggestion(suggestions, key, ScaleDegree.Iii, "Mediant for color", 0.65f);
+            AddSuggestion(suggestions, key, ScaleDegree.Vii, "Leading tone diminished", 0.6f);
         }
 
         // Sort by score and return top suggestions
@@ -290,7 +287,7 @@ public static class ProgressionAdvisor
     {
         var scalePos = (int)degree - 1;
         var intervals = key.IsMajor ? new[] { 0, 2, 4, 5, 7, 9, 11 } : new[] { 0, 2, 3, 5, 7, 8, 10 };
-        
+
         if (scalePos < 0 || scalePos >= intervals.Length)
         {
             return "C";
@@ -299,28 +296,25 @@ public static class ProgressionAdvisor
         var rootPc = (key.Root + intervals[scalePos]) % 12;
         var rootName = UseFlatsForKey(key) ? NoteNamesFlat[rootPc] : NoteNames[rootPc];
 
-        // Determine quality based on degree
-        if (key.IsMajor)
+        return key.IsMajor switch
         {
-            return degree switch
+            // Determine quality based on degree
+            true => degree switch
             {
-                ScaleDegree.I or ScaleDegree.IV or ScaleDegree.V => rootName,
-                ScaleDegree.II or ScaleDegree.III or ScaleDegree.VI => rootName + "m",
-                ScaleDegree.VII => rootName + "dim",
+                ScaleDegree.I or ScaleDegree.Iv or ScaleDegree.V => rootName,
+                ScaleDegree.Ii or ScaleDegree.Iii or ScaleDegree.Vi => rootName + "m",
+                ScaleDegree.Vii => rootName + "dim",
                 _ => rootName
-            };
-        }
-        else // Minor key
-        {
-            return degree switch
+            },
+            _ => degree switch
             {
-                ScaleDegree.I or ScaleDegree.IV => rootName + "m",
-                ScaleDegree.III or ScaleDegree.VI or ScaleDegree.VII => rootName,
-                ScaleDegree.II => rootName + "dim",
+                ScaleDegree.I or ScaleDegree.Iv => rootName + "m",
+                ScaleDegree.Iii or ScaleDegree.Vi or ScaleDegree.Vii => rootName,
+                ScaleDegree.Ii => rootName + "dim",
                 ScaleDegree.V => rootName, // Often major in minor keys
                 _ => rootName
-            };
-        }
+            }
+        };
     }
 
     private static bool UseFlatsForKey(KeySignature key)
@@ -370,16 +364,15 @@ public static class ProgressionAdvisor
 
         if (!key.IsMajor)
         {
-            var raised7th = (key.Root + 11) % 12; // Leading tone (harmonic + melodic)
-            var raised6th = (key.Root + 9) % 12;  // Raised 6th (melodic minor)
-            var natural7th = (key.Root + 10) % 12; // Subtonic
-            var natural6th = (key.Root + 8) % 12;  // Lowered 6th (natural minor)
+            var raised7Th = (key.Root + 11) % 12; // Leading tone (harmonic + melodic)
+            var raised6Th = (key.Root + 9) % 12;  // Raised 6th (melodic minor)
+            var natural7Th = (key.Root + 10) % 12; // Subtonic
 
             for (var i = 0; i < parsedChords.Count; i++)
             {
                 var mask = ChordAnalyzer.GetMask(parsedChords[i].pitches);
-                var has7 = (mask & (1 << raised7th)) != 0;
-                var has6 = (mask & (1 << raised6th)) != 0;
+                var has7 = (mask & (1 << raised7Th)) != 0;
+                var has6 = (mask & (1 << raised6Th)) != 0;
 
                 if (has7)
                 {
@@ -387,13 +380,13 @@ public static class ProgressionAdvisor
                     {
                         // Both raised 6th and 7th = melodic minor
                         usesMelodicMinor = true;
-                        alteredNotes.Add((i, $"Melodic minor: {NoteNames[raised6th]} and {NoteNames[raised7th]}"));
+                        alteredNotes.Add((i, $"Melodic minor: {NoteNames[raised6Th]} and {NoteNames[raised7Th]}"));
                     }
                     else
                     {
                         // Only raised 7th = harmonic minor
                         usesHarmonicMinor = true;
-                        alteredNotes.Add((i, $"{NoteNames[raised7th]} instead of {NoteNames[natural7th]}"));
+                        alteredNotes.Add((i, $"{NoteNames[raised7Th]} instead of {NoteNames[natural7Th]}"));
                     }
                 }
             }
@@ -431,15 +424,15 @@ public static class ProgressionAdvisor
             .Select(c => CharacterToTension(c.Character))
             .ToArray();
 
-        var avgTension = tensionCurve.Length > 0 ? (float)tensionCurve.Average() : 0f;
+        var avgTension = tensionCurve.Length > 0 ? tensionCurve.Average() : 0f;
 
         // Complexity heuristic (0-1)
         var uniqueRoots = parsedChords.Select(c => c.info.RootPitchClass).Distinct().Count();
         var variety = chordDetails.Select(c => c.Character).Distinct().Count();
         var hasAltered = chordDetails.Any(c => c.UsesAlteredScale);
         var complexity = Clamp01(
-            (uniqueRoots / (float)Math.Max(1, parsedChords.Count)) * 0.35f +
-            (variety / 12f) * 0.15f +
+            ((uniqueRoots / (float)Math.Max(1, parsedChords.Count)) * 0.35f) +
+            ((variety / 12f) * 0.15f) +
             (modulations.Count > 0 ? 0.25f : 0f) +
             (hasModalMixture ? 0.15f : 0f) +
             (hasAltered ? 0.10f : 0f));
@@ -614,7 +607,7 @@ public static class ProgressionAdvisor
                         p5++;
                     }
 
-                    if ((intA == 0 || intA == 12) && (intB == 0 || intB == 12))
+                    if (intA is 0 or 12 && intB is 0 or 12)
                     {
                         p8++;
                     }
@@ -639,26 +632,17 @@ public static class ProgressionAdvisor
         var romanStr = FormatRomanNumeral(roman, info.Quality);
         var function = GetFunctionName(roman.Function);
         var character = DetermineCharacter(info.Quality, roman.Function, key);
-        var description = GetCharacterDescription(character, info.Quality, roman.Function, position, totalChords);
+        var description = GetCharacterDescription(character, position, totalChords);
 
         // Check for special features
-        string? specialNote = null;
-        if (info.Quality == ChordQuality.Major7)
+        string? specialNote = info.Quality switch
         {
-            specialNote = "Major 7th adds a dreamy, sophisticated quality";
-        }
-        else if (info.Quality == ChordQuality.Dominant7)
-        {
-            specialNote = "Dominant 7th creates strong pull toward resolution";
-        }
-        else if (info.Quality == ChordQuality.HalfDim7)
-        {
-            specialNote = "Half-diminished creates melancholic tension";
-        }
-        else if (info.Quality == ChordQuality.Diminished7)
-        {
-            specialNote = "Fully diminished - highly unstable, demands resolution";
-        }
+            ChordQuality.Major7 => "Major 7th adds a dreamy, sophisticated quality",
+            ChordQuality.Dominant7 => "Dominant 7th creates strong pull toward resolution",
+            ChordQuality.HalfDim7 => "Half-diminished creates melancholic tension",
+            ChordQuality.Diminished7 => "Fully diminished - highly unstable, demands resolution",
+            _ => null
+        };
 
         // Check if this chord has altered notes
         var alteredForThis = alteredNotes.Where(a => a.position == position).ToList();
@@ -688,21 +672,22 @@ public static class ProgressionAdvisor
         var numeral = roman.Degree switch
         {
             ScaleDegree.I => "I",
-            ScaleDegree.II => "II",
-            ScaleDegree.III => "III",
-            ScaleDegree.IV => "IV",
+            ScaleDegree.Ii => "II",
+            ScaleDegree.Iii => "III",
+            ScaleDegree.Iv => "IV",
             ScaleDegree.V => "V",
-            ScaleDegree.VI => "VI",
-            ScaleDegree.VII => "VII",
+            ScaleDegree.Vi => "VI",
+            ScaleDegree.Vii => "VII",
             _ => "?"
         };
 
-        // Lowercase for minor chords
-        if (quality is ChordQuality.Minor or ChordQuality.Minor7 or ChordQuality.Diminished
-            or ChordQuality.Diminished7 or ChordQuality.HalfDim7 or ChordQuality.MinorMajor7)
+        numeral = quality switch
         {
-            numeral = numeral.ToLowerInvariant();
-        }
+            // Lowercase for minor chords
+            ChordQuality.Minor or ChordQuality.Minor7 or ChordQuality.Diminished or ChordQuality.Diminished7
+                or ChordQuality.HalfDim7 or ChordQuality.MinorMajor7 => numeral.ToLowerInvariant(),
+            _ => numeral
+        };
 
         // Add quality symbols
         var suffix = quality switch
@@ -733,32 +718,31 @@ public static class ProgressionAdvisor
 
     private static ChordCharacter DetermineCharacter(ChordQuality quality, HarmonicFunction function, KeySignature key)
     {
-        // Major dominant in minor key = heroic
-        if (!key.IsMajor && function == HarmonicFunction.Dominant && quality == ChordQuality.Major)
+        return key.IsMajor switch
         {
-            return ChordCharacter.Heroic;
-        }
-
-        return quality switch
-        {
-            ChordQuality.Major when function == HarmonicFunction.Tonic => ChordCharacter.Stable,
-            ChordQuality.Major => ChordCharacter.Bright,
-            ChordQuality.Major7 => ChordCharacter.Dreamy,
-            ChordQuality.Minor when function == HarmonicFunction.Tonic => ChordCharacter.Melancholic,
-            ChordQuality.Minor => ChordCharacter.Warm,
-            ChordQuality.Minor7 => ChordCharacter.Warm,
-            ChordQuality.Dominant7 => ChordCharacter.Tense,
-            ChordQuality.Diminished or ChordQuality.Diminished7 => ChordCharacter.Dark,
-            ChordQuality.HalfDim7 => ChordCharacter.Melancholic,
-            ChordQuality.Augmented or ChordQuality.Augmented7 => ChordCharacter.Mysterious,
-            ChordQuality.Sus2 or ChordQuality.Sus4 => ChordCharacter.Suspended,
-            ChordQuality.Power => ChordCharacter.Powerful,
-            ChordQuality.Quartal => ChordCharacter.Modal,
-            _ => ChordCharacter.Stable
+            // Major dominant in minor key = heroic
+            false when function == HarmonicFunction.Dominant && quality == ChordQuality.Major => ChordCharacter.Heroic,
+            _ => quality switch
+            {
+                ChordQuality.Major when function == HarmonicFunction.Tonic => ChordCharacter.Stable,
+                ChordQuality.Major => ChordCharacter.Bright,
+                ChordQuality.Major7 => ChordCharacter.Dreamy,
+                ChordQuality.Minor when function == HarmonicFunction.Tonic => ChordCharacter.Melancholic,
+                ChordQuality.Minor => ChordCharacter.Warm,
+                ChordQuality.Minor7 => ChordCharacter.Warm,
+                ChordQuality.Dominant7 => ChordCharacter.Tense,
+                ChordQuality.Diminished or ChordQuality.Diminished7 => ChordCharacter.Dark,
+                ChordQuality.HalfDim7 => ChordCharacter.Melancholic,
+                ChordQuality.Augmented or ChordQuality.Augmented7 => ChordCharacter.Mysterious,
+                ChordQuality.Sus2 or ChordQuality.Sus4 => ChordCharacter.Suspended,
+                ChordQuality.Power => ChordCharacter.Powerful,
+                ChordQuality.Quartal => ChordCharacter.Modal,
+                _ => ChordCharacter.Stable
+            }
         };
     }
 
-    private static string GetCharacterDescription(ChordCharacter character, ChordQuality quality, HarmonicFunction function, int position, int total)
+    private static string GetCharacterDescription(ChordCharacter character, int position, int total)
     {
         var positionDesc = position == 0 ? "Opening" : position == total - 1 ? "Closing" : "Continuing";
 
@@ -796,9 +780,6 @@ public static class ProgressionAdvisor
             var prevRoman = KeyAnalyzer.Analyze(prev.pitches, key);
             var currRoman = KeyAnalyzer.Analyze(curr.pitches, key);
 
-            var prevRoot = prev.info.RootPitchClass;
-            var currRoot = curr.info.RootPitchClass;
-            var keyRoot = key.Root;
 
             // V -> I = Authentic
             if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.I)
@@ -808,14 +789,14 @@ public static class ProgressionAdvisor
                     "Authentic cadence (V->I): The strongest resolution, like a full stop. Feels complete."));
             }
             // IV -> I = Plagal
-            else if (prevRoman.Degree == ScaleDegree.IV && currRoman.Degree == ScaleDegree.I)
+            else if (prevRoman.Degree == ScaleDegree.Iv && currRoman.Degree == ScaleDegree.I)
             {
                 cadences.Add(new CadenceInfo(
                     CadenceType.Plagal, i - 1, prev.symbol, curr.symbol,
                     "Plagal cadence (IV->I): The 'Amen' cadence. Softer resolution, often used as a final touch."));
             }
             // V -> vi (or V -> VI in minor) = Deceptive
-            else if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.VI)
+            else if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.Vi)
             {
                 cadences.Add(new CadenceInfo(
                     CadenceType.Deceptive, i - 1, prev.symbol, curr.symbol,
@@ -898,10 +879,11 @@ public static class ProgressionAdvisor
                                 Description = modDesc
                             });
 
-                            if (isModulation)
+                            currentKey = isModulation switch
                             {
-                                currentKey = tonicizedKey;
-                            }
+                                true => tonicizedKey,
+                                _ => currentKey
+                            };
                         }
                     }
                 }
@@ -1084,8 +1066,8 @@ public static class ProgressionAdvisor
             var diatonicMatch = chordMask & diatonicMask;
 
             // If chord fits parallel better than diatonic, it's borrowed
-            if (System.Numerics.BitOperations.PopCount((uint)parallelMatch) >
-                System.Numerics.BitOperations.PopCount((uint)diatonicMatch))
+            if (BitOperations.PopCount((uint)parallelMatch) >
+                BitOperations.PopCount((uint)diatonicMatch))
             {
                 return true;
             }
@@ -1192,7 +1174,6 @@ public static class ProgressionAdvisor
             return suggestions;
         }
 
-        var lastChord = chords[^1];
         var lastParsed = parsedChords[^1];
         var lastRoman = KeyAnalyzer.Analyze(lastParsed.pitches, key);
         var tonicSymbol = key.IsMajor ? ChordLibrary.NoteNames[key.Root] : ChordLibrary.NoteNames[key.Root] + "m";
@@ -1252,7 +1233,7 @@ public static class ProgressionAdvisor
             {
                 suggestions.Add($"The progression ends on the dominant. Add {tonicSymbol} for full closure.");
             }
-            else if (lastRoman.Degree == ScaleDegree.IV)
+            else if (lastRoman.Degree == ScaleDegree.Iv)
             {
                 suggestions.Add($"Ending on IV (subdominant) feels unresolved. Try IV→V→{tonicSymbol} for complete cadence.");
             }
@@ -1297,8 +1278,8 @@ public static class ProgressionAdvisor
             }
             else
             {
-                var IVMajorRoot = (key.Root + 5) % 12;
-                suggestions.Add($"Try {ChordLibrary.NoteNames[IVMajorRoot]} (borrowed IV) to brighten the mood.");
+                var ivMajorRoot = (key.Root + 5) % 12;
+                suggestions.Add($"Try {ChordLibrary.NoteNames[ivMajorRoot]} (borrowed IV) to brighten the mood.");
             }
         }
 
@@ -1319,7 +1300,7 @@ public static class ProgressionAdvisor
         // Score each possible key
         var keyScores = new float[24]; // 12 major + 12 minor
 
-        foreach (var (_, pitches, info) in chords)
+        foreach (var (_, _, info) in chords)
         {
             var root = info.RootPitchClass;
             var isMinor = info.Quality is ChordQuality.Minor or ChordQuality.Minor7
@@ -1335,16 +1316,16 @@ public static class ProgressionAdvisor
                 keyScores[(root + 5) % 12] += 0.5f; // V of major (root is 5th)
                 keyScores[(root + 7) % 12] += 0.5f; // IV of major (root is 4th)
 
-                // Major chord on III, VI, VII of minor keys  
-                keyScores[12 + (root + 9) % 12] += 0.3f;  // III of minor
-                keyScores[12 + (root + 4) % 12] += 0.3f;  // VI of minor
+                // Major chord on III, VI, VII of minor keys
+                keyScores[12 + ((root + 9) % 12)] += 0.3f;  // III of minor
+                keyScores[12 + ((root + 4) % 12)] += 0.3f;  // VI of minor
             }
             else if (isMinor)
             {
                 // Minor chord on i, iv, v of minor keys
                 keyScores[12 + root] += 1.0f;           // i of minor
-                keyScores[12 + (root + 5) % 12] += 0.5f; // v of minor
-                keyScores[12 + (root + 7) % 12] += 0.5f; // iv of minor
+                keyScores[12 + ((root + 5) % 12)] += 0.5f; // v of minor
+                keyScores[12 + ((root + 7) % 12)] += 0.5f; // iv of minor
 
                 // Minor chord on ii, iii, vi of major keys
                 keyScores[(root + 10) % 12] += 0.5f; // ii of major
@@ -1428,7 +1409,7 @@ public static class ProgressionAdvisor
         // Calculate confidence based on score difference
         var sortedScores = keyScores.OrderByDescending(x => x).ToArray();
         var confidence = sortedScores[0] > 0
-            ? Math.Min(1f, (sortedScores[0] - sortedScores[1]) / sortedScores[0] + 0.5f)
+            ? Math.Min(1f, ((sortedScores[0] - sortedScores[1]) / sortedScores[0]) + 0.5f)
             : 0f;
 
         return (key, confidence);

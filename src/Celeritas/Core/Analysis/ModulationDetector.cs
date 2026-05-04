@@ -139,10 +139,11 @@ public static class ModulationDetector
             var duration = CalculateKeyDuration(chords, i, detectedKey.Value);
             var isTonicization = duration < minModulationDuration;
 
-            if (isTonicization)
+            modulationType = isTonicization switch
             {
-                modulationType = ModulationType.Tonicization;
-            }
+                true => ModulationType.Tonicization,
+                _ => modulationType
+            };
 
             // Look for pivot chord
             var pivotChord = FindPivotChord(chords, i, currentKey, detectedKey.Value);
@@ -161,11 +162,12 @@ public static class ModulationDetector
 
             modulations.Add(modulation);
 
-            // Update current key if this is a true modulation
-            if (!isTonicization)
+            currentKey = isTonicization switch
             {
-                currentKey = detectedKey.Value;
-            }
+                // Update current key if this is a true modulation
+                false => detectedKey.Value,
+                _ => currentKey
+            };
         }
 
         return new ModulationAnalysisResult
@@ -195,10 +197,11 @@ public static class ModulationDetector
         {
             var quantizedOffset = QuantizeOffset(note.Offset, quantizationGrid);
 
-            if (!groups.ContainsKey(quantizedOffset))
+            groups[quantizedOffset] = groups.ContainsKey(quantizedOffset) switch
             {
-                groups[quantizedOffset] = [];
-            }
+                false => [],
+                _ => groups[quantizedOffset]
+            };
 
             groups[quantizedOffset].Add(note.Pitch);
         }
@@ -304,20 +307,16 @@ public static class ModulationDetector
             return ModulationType.ModalInterchange;
         }
 
-        // Relative key (minor third apart, opposite modes)
-        if ((interval == 3 || interval == 9) && fromKey.IsMajor != toKey.IsMajor)
+        return interval switch
         {
-            return ModulationType.Direct; // Use Direct for relative key changes
-        }
-
-        // Chromatic mediant (major or minor third, same mode)
-        if ((interval == 3 || interval == 4 || interval == 8 || interval == 9) && fromKey.IsMajor == toKey.IsMajor)
-        {
-            return ModulationType.Chromatic;
-        }
+            // Relative key (minor third apart, opposite modes)
+            3 or 9 when fromKey.IsMajor != toKey.IsMajor => ModulationType.Direct,
+            // Chromatic mediant (major or minor third, same mode)
+            3 or 4 or 8 or 9 when fromKey.IsMajor == toKey.IsMajor => ModulationType.Chromatic,
+            _ => ModulationType.Direct
+        };
 
         // Default to direct or pivot chord (requires analysis of actual chords)
-        return ModulationType.Direct;
     }
 
     private static Rational CalculateKeyDuration(List<ChordEvent> chords, int startIndex, KeySignature key)
@@ -415,7 +414,7 @@ public static class ModulationDetector
             $"{type} modulation from {fromKey} to {toKey}"
         };
 
-        if (pivotChord.HasValue && pivotChord.Value.Item1 != null && pivotChord.Value.Item2 != null)
+        if (pivotChord is { Item1: not null, Item2: not null })
         {
             parts.Add($"via pivot chord {pivotChord.Value.Item1} = {pivotChord.Value.Item2}");
         }

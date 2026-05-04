@@ -70,7 +70,7 @@ public class KeyAnalyzerTests
 
         // Assert
         Assert.True(result.IsValid);
-        Assert.Equal(ScaleDegree.IV, result.Degree);
+        Assert.Equal(ScaleDegree.Iv, result.Degree);
         Assert.Equal(HarmonicFunction.Subdominant, result.Function);
         Assert.Equal("IV", result.ToRomanNumeral());
     }
@@ -87,7 +87,7 @@ public class KeyAnalyzerTests
 
         // Assert
         Assert.True(result.IsValid);
-        Assert.Equal(ScaleDegree.II, result.Degree);
+        Assert.Equal(ScaleDegree.Ii, result.Degree);
         Assert.Equal(ChordQuality.Minor, result.Quality);
         Assert.Equal(HarmonicFunction.Subdominant, result.Function);
         Assert.Equal("ii", result.ToRomanNumeral());
@@ -105,7 +105,7 @@ public class KeyAnalyzerTests
 
         // Assert
         Assert.True(result.IsValid);
-        Assert.Equal(ScaleDegree.VI, result.Degree);
+        Assert.Equal(ScaleDegree.Vi, result.Degree);
         Assert.Equal(ChordQuality.Minor, result.Quality);
         Assert.Equal(HarmonicFunction.Tonic, result.Function);
         Assert.Equal("vi", result.ToRomanNumeral());

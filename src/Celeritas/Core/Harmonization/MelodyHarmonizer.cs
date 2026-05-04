@@ -28,7 +28,7 @@ public sealed class MelodyHarmonizer
     /// <summary>
     /// Create a harmonizer with custom strategies.
     /// </summary>
-    public MelodyHarmonizer(
+    private MelodyHarmonizer(
         IChordCandidateProvider candidateProvider,
         ITransitionScorer transitionScorer,
         IMelodyFitScorer fitScorer,
@@ -64,7 +64,7 @@ public sealed class MelodyHarmonizer
     /// <summary>
     /// Harmonize a melody in a specified key.
     /// </summary>
-    public HarmonizationResult Harmonize(ReadOnlySpan<NoteEvent> melody, KeySignature key)
+    private HarmonizationResult Harmonize(ReadOnlySpan<NoteEvent> melody, KeySignature key)
     {
         if (melody.IsEmpty)
         {
@@ -80,7 +80,7 @@ public sealed class MelodyHarmonizer
 
         // 2. Generate candidates for each slice
         var candidatesPerSlice = new List<List<ChordCandidate>>(slices.Count);
-        var context = new HarmonizationContext { Key = key };
+        var context = new HarmonizationContext();
 
         foreach (var slice in slices)
         {
@@ -91,9 +91,9 @@ public sealed class MelodyHarmonizer
             // Ensure at least one candidate (fallback to tonic)
             if (candidates.Count == 0)
             {
-                var tonicPitches = new[] { 60 + key.Root, 60 + (key.Root + (key.IsMajor ? 4 : 3)) % 12, 60 + (key.Root + 7) % 12 };
+                var tonicPitches = new[] { 60 + key.Root, 60 + ((key.Root + (key.IsMajor ? 4 : 3)) % 12), 60 + ((key.Root + 7) % 12) };
                 var tonicChord = ChordAnalyzer.Identify(tonicPitches);
-                candidates.Add(new ChordCandidate(tonicChord, tonicPitches, 1.0f, "fallback"));
+                candidates.Add(new ChordCandidate(tonicChord, tonicPitches, 1.0f));
             }
 
             candidatesPerSlice.Add(candidates);
@@ -175,9 +175,7 @@ public sealed class MelodyHarmonizer
                 slices[i].Start,
                 slices[i].End,
                 candidate.Chord,
-                candidate.Pitches,
-                costs[i][path[i]],
-                candidate.Rationale);
+                candidate.Pitches);
         }
 
         return new HarmonizationResult

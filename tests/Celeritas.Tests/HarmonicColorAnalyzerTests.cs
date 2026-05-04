@@ -1,7 +1,6 @@
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
 using Celeritas.Core.Harmonization;
-using Xunit;
 
 namespace Celeritas.Tests;
 
@@ -14,14 +13,14 @@ public class HarmonicColorAnalyzerTests
 
         var melody = new[]
         {
-            new NoteEvent(60, Rational.Zero, Rational.Quarter, 0.8f), // C
-            new NoteEvent(66, Rational.Quarter, Rational.Quarter, 0.8f), // F# (#4)
-            new NoteEvent(67, Rational.Half, Rational.Quarter, 0.8f), // G
+            new NoteEvent(60, Rational.Zero, Rational.Quarter), // C
+            new NoteEvent(66, Rational.Quarter, Rational.Quarter), // F# (#4)
+            new NoteEvent(67, Rational.Half, Rational.Quarter), // G
         };
 
         var chords = new[]
         {
-            new ChordAssignment(Rational.Zero, Rational.Whole, new ChordInfo(0, ChordQuality.Major), new[] { 60, 64, 67 }, 0)
+            new ChordAssignment(Rational.Zero, Rational.Whole, new ChordInfo(0, ChordQuality.Major), [60, 64, 67])
         };
 
         var analysis = HarmonicColorAnalyzer.Analyze(melody, chords, key);
@@ -40,14 +39,14 @@ public class HarmonicColorAnalyzerTests
         // Melody: C - D - E over C major triad.
         var melody = new[]
         {
-            new NoteEvent(60, Rational.Zero, Rational.Quarter, 0.8f),
-            new NoteEvent(62, Rational.Quarter, Rational.Quarter, 0.8f),
-            new NoteEvent(64, Rational.Half, Rational.Quarter, 0.8f),
+            new NoteEvent(60, Rational.Zero, Rational.Quarter),
+            new NoteEvent(62, Rational.Quarter, Rational.Quarter),
+            new NoteEvent(64, Rational.Half, Rational.Quarter),
         };
 
         var chords = new[]
         {
-            new ChordAssignment(Rational.Zero, Rational.Whole, new ChordInfo(0, ChordQuality.Major), new[] { 60, 64, 67 }, 0)
+            new ChordAssignment(Rational.Zero, Rational.Whole, new ChordInfo(0, ChordQuality.Major), [60, 64, 67])
         };
 
         var analysis = HarmonicColorAnalyzer.Analyze(melody, chords, key);
@@ -75,7 +74,7 @@ public class HarmonicColorAnalyzerTests
         // Melody doesn't matter much for this test.
         var melody = new[]
         {
-            new NoteEvent(60, Rational.Zero, Rational.Whole, 0.8f)
+            new NoteEvent(60, Rational.Zero, Rational.Whole)
         };
 
         var analysis = HarmonicColorAnalyzer.Analyze(melody, chords, key);
@@ -92,6 +91,6 @@ public class HarmonicColorAnalyzerTests
         var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
         var mask = ChordAnalyzer.GetMask(pitches);
         var info = ChordLibrary.GetChord(mask);
-        return new ChordAssignment(start, end, info, pitches, 0);
+        return new ChordAssignment(start, end, info, pitches);
     }
 }

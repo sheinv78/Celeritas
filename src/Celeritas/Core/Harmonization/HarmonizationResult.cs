@@ -36,6 +36,4 @@ public readonly record struct ChordAssignment(
     Rational Start,
     Rational End,
     ChordInfo Chord,
-    int[] Pitches,
-    float Cost,
-    string? Rationale = null);
+    int[] Pitches);

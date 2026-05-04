@@ -98,4 +98,19 @@ public class PitchClassArithmeticTests
         Assert.Equal(-3, interval.Semitones); // C4 -> A3 is down a minor 3rd
         Assert.Equal("m3", interval.SimpleName);
     }
+
+    [Theory]
+    [InlineData(0, 7, 7)]   // C -> G = P5
+    [InlineData(0, 0, 0)]   // C -> C = unison
+    [InlineData(9, 0, 3)]   // A -> C = m3
+    [InlineData(0, 11, 11)] // C -> B = M7
+    public void PitchClass_IntervalTo_ShouldReturnAscendingInterval(int from, int to, int expected)
+    {
+        var fromPc = new PitchClass(from);
+        var toPc = new PitchClass(to);
+
+        var interval = fromPc.IntervalTo(toPc);
+
+        Assert.Equal(expected, interval.Semitones);
+    }
 }

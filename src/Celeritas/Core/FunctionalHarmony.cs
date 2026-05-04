@@ -68,11 +68,11 @@ public static class FunctionalProgressions
     private static readonly ScaleDegree[] CircleDegrees =
     [
         ScaleDegree.I,
-        ScaleDegree.IV,
-        ScaleDegree.VII,
-        ScaleDegree.III,
-        ScaleDegree.VI,
-        ScaleDegree.II,
+        ScaleDegree.Iv,
+        ScaleDegree.Vii,
+        ScaleDegree.Iii,
+        ScaleDegree.Vi,
+        ScaleDegree.Ii,
         ScaleDegree.V,
         ScaleDegree.I
     ];
@@ -90,7 +90,7 @@ public static class FunctionalProgressions
 
     public static FunctionalChord[] TwoFiveOne(KeySignature key, DiatonicChordType type = DiatonicChordType.Seventh, MinorDominantStyle minorDominant = MinorDominantStyle.Harmonic)
     {
-        var degrees = new[] { ScaleDegree.II, ScaleDegree.V, ScaleDegree.I };
+        var degrees = new[] { ScaleDegree.Ii, ScaleDegree.V, ScaleDegree.I };
         var result = new FunctionalChord[degrees.Length];
         for (var i = 0; i < degrees.Length; i++)
         {
@@ -106,7 +106,7 @@ public static class FunctionalProgressions
     /// </summary>
     public static FunctionalChord[] Turnaround(KeySignature key, DiatonicChordType type = DiatonicChordType.Seventh, MinorDominantStyle minorDominant = MinorDominantStyle.Harmonic)
     {
-        var degrees = new[] { ScaleDegree.I, ScaleDegree.VI, ScaleDegree.II, ScaleDegree.V, ScaleDegree.I };
+        var degrees = new[] { ScaleDegree.I, ScaleDegree.Vi, ScaleDegree.Ii, ScaleDegree.V, ScaleDegree.I };
         var result = new FunctionalChord[degrees.Length];
         for (var i = 0; i < degrees.Length; i++)
         {
@@ -122,7 +122,7 @@ public static class FunctionalProgressions
     /// </summary>
     public static FunctionalChord[] ThreeSixTwoFiveOne(KeySignature key, DiatonicChordType type = DiatonicChordType.Seventh, MinorDominantStyle minorDominant = MinorDominantStyle.Harmonic)
     {
-        var degrees = new[] { ScaleDegree.III, ScaleDegree.VI, ScaleDegree.II, ScaleDegree.V, ScaleDegree.I };
+        var degrees = new[] { ScaleDegree.Iii, ScaleDegree.Vi, ScaleDegree.Ii, ScaleDegree.V, ScaleDegree.I };
         var result = new FunctionalChord[degrees.Length];
         for (var i = 0; i < degrees.Length; i++)
         {
@@ -146,7 +146,7 @@ public static class FunctionalProgressions
     /// </summary>
     public static SecondaryDominant[] SecondaryDominants(KeySignature key, DiatonicChordType type = DiatonicChordType.Seventh)
     {
-        var targets = new[] { ScaleDegree.II, ScaleDegree.III, ScaleDegree.IV, ScaleDegree.V, ScaleDegree.VI };
+        var targets = new[] { ScaleDegree.Ii, ScaleDegree.Iii, ScaleDegree.Iv, ScaleDegree.V, ScaleDegree.Vi };
         var result = new SecondaryDominant[targets.Length];
         for (var i = 0; i < targets.Length; i++)
         {
@@ -163,9 +163,9 @@ public static class FunctionalProgressions
 
         var function = degree switch
         {
-            ScaleDegree.I or ScaleDegree.III or ScaleDegree.VI => HarmonicFunction.Tonic,
-            ScaleDegree.II or ScaleDegree.IV => HarmonicFunction.Subdominant,
-            ScaleDegree.V or ScaleDegree.VII => HarmonicFunction.Dominant,
+            ScaleDegree.I or ScaleDegree.Iii or ScaleDegree.Vi => HarmonicFunction.Tonic,
+            ScaleDegree.Ii or ScaleDegree.Iv => HarmonicFunction.Subdominant,
+            ScaleDegree.V or ScaleDegree.Vii => HarmonicFunction.Dominant,
             _ => HarmonicFunction.Tonic
         };
 
@@ -178,17 +178,17 @@ public static class FunctionalProgressions
         {
             DiatonicChordType.Triad => degree switch
             {
-                ScaleDegree.I or ScaleDegree.IV or ScaleDegree.V => ChordQuality.Major,
-                ScaleDegree.II or ScaleDegree.III or ScaleDegree.VI => ChordQuality.Minor,
-                ScaleDegree.VII => ChordQuality.Diminished,
+                ScaleDegree.I or ScaleDegree.Iv or ScaleDegree.V => ChordQuality.Major,
+                ScaleDegree.Ii or ScaleDegree.Iii or ScaleDegree.Vi => ChordQuality.Minor,
+                ScaleDegree.Vii => ChordQuality.Diminished,
                 _ => ChordQuality.Major
             },
             _ => degree switch
             {
-                ScaleDegree.I or ScaleDegree.IV => ChordQuality.Major7,
-                ScaleDegree.II or ScaleDegree.III or ScaleDegree.VI => ChordQuality.Minor7,
+                ScaleDegree.I or ScaleDegree.Iv => ChordQuality.Major7,
+                ScaleDegree.Ii or ScaleDegree.Iii or ScaleDegree.Vi => ChordQuality.Minor7,
                 ScaleDegree.V => ChordQuality.Dominant7,
-                ScaleDegree.VII => ChordQuality.HalfDim7,
+                ScaleDegree.Vii => ChordQuality.HalfDim7,
                 _ => ChordQuality.Major7
             }
         };
@@ -203,19 +203,19 @@ public static class FunctionalProgressions
         {
             DiatonicChordType.Triad => degree switch
             {
-                ScaleDegree.I or ScaleDegree.IV => ChordQuality.Minor,
+                ScaleDegree.I or ScaleDegree.Iv => ChordQuality.Minor,
                 ScaleDegree.V => dominantTriad,
-                ScaleDegree.II => ChordQuality.Diminished,
-                ScaleDegree.III or ScaleDegree.VI or ScaleDegree.VII => ChordQuality.Major,
+                ScaleDegree.Ii => ChordQuality.Diminished,
+                ScaleDegree.Iii or ScaleDegree.Vi or ScaleDegree.Vii => ChordQuality.Major,
                 _ => ChordQuality.Minor
             },
             _ => degree switch
             {
-                ScaleDegree.I or ScaleDegree.IV => ChordQuality.Minor7,
+                ScaleDegree.I or ScaleDegree.Iv => ChordQuality.Minor7,
                 ScaleDegree.V => dominantSeventh,
-                ScaleDegree.II => ChordQuality.HalfDim7,
-                ScaleDegree.III or ScaleDegree.VI => ChordQuality.Major7,
-                ScaleDegree.VII => ChordQuality.Dominant7,
+                ScaleDegree.Ii => ChordQuality.HalfDim7,
+                ScaleDegree.Iii or ScaleDegree.Vi => ChordQuality.Major7,
+                ScaleDegree.Vii => ChordQuality.Dominant7,
                 _ => ChordQuality.Minor7
             }
         };

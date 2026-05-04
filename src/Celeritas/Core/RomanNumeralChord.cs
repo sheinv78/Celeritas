@@ -6,12 +6,12 @@ namespace Celeritas.Core;
 /// <summary>
 /// Result of roman numeral analysis
 /// </summary>
-public readonly struct RomanNumeralChord
+public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality quality, HarmonicFunction function)
 {
-    public readonly ScaleDegree Degree;
-    public readonly ChordQuality Quality;
-    public readonly HarmonicFunction Function;
-    public readonly bool IsValid;
+    public readonly ScaleDegree Degree = degree;
+    public readonly ChordQuality Quality = quality;
+    public readonly HarmonicFunction Function = function;
+    public readonly bool IsValid = true;
 
     private static readonly byte[] MajorTriadIntervals = [0, 4, 7];
     private static readonly byte[] MinorTriadIntervals = [0, 3, 7];
@@ -33,14 +33,6 @@ public readonly struct RomanNumeralChord
 
     private static readonly byte[] Add9Intervals = [0, 4, 7, 2];
     private static readonly byte[] Add11Intervals = [0, 4, 7, 5];
-
-    public RomanNumeralChord(ScaleDegree degree, ChordQuality quality, HarmonicFunction function)
-    {
-        Degree = degree;
-        Quality = quality;
-        Function = function;
-        IsValid = true;
-    }
 
     public static RomanNumeralChord Invalid => new();
 
@@ -152,20 +144,22 @@ public readonly struct RomanNumeralChord
         var numeral = Degree switch
         {
             ScaleDegree.I => "I",
-            ScaleDegree.II => "II",
-            ScaleDegree.III => "III",
-            ScaleDegree.IV => "IV",
+            ScaleDegree.Ii => "II",
+            ScaleDegree.Iii => "III",
+            ScaleDegree.Iv => "IV",
             ScaleDegree.V => "V",
-            ScaleDegree.VI => "VI",
-            ScaleDegree.VII => "VII",
+            ScaleDegree.Vi => "VI",
+            ScaleDegree.Vii => "VII",
             _ => "?"
         };
 
-        // Lowercase for minor/diminished qualities in traditional notation
-        if (Quality is ChordQuality.Minor or ChordQuality.Diminished or ChordQuality.Minor7 or ChordQuality.HalfDim7 or ChordQuality.Diminished7 or ChordQuality.MinorMajor7)
+        numeral = Quality switch
         {
-            numeral = numeral.ToLowerInvariant();
-        }
+            // Lowercase for minor/diminished qualities in traditional notation
+            ChordQuality.Minor or ChordQuality.Diminished or ChordQuality.Minor7 or ChordQuality.HalfDim7
+                or ChordQuality.Diminished7 or ChordQuality.MinorMajor7 => numeral.ToLowerInvariant(),
+            _ => numeral
+        };
 
         // Add quality suffix
         var suffix = Quality switch

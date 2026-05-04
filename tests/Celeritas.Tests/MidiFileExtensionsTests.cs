@@ -11,14 +11,12 @@ public class MidiFileExtensionsTests
     public void GetStatistics_ReturnsBasicCountsAndRanges()
     {
         var file = CreateMidiFile(
-            new[]
-            {
-                new[]
-                {
-                    (note: 60, channel: 0, time: 0L, length: 240),
+        [
+            [
+                (note: 60, channel: 0, time: 0L, length: 240),
                     (note: 72, channel: 0, time: 240L, length: 240)
-                }
-            });
+            ]
+        ]);
 
         var stats = file.GetStatistics();
 
@@ -35,13 +33,11 @@ public class MidiFileExtensionsTests
     public void Clone_IsIndependentFromOriginal()
     {
         var file = CreateMidiFile(
-            new[]
-            {
-                new[]
-                {
-                    (note: 60, channel: 0, time: 0L, length: 240)
-                }
-            });
+        [
+            [
+                (note: 60, channel: 0, time: 0L, length: 240)
+            ]
+        ]);
 
         var clone = file.Clone();
         clone.Chunks.Add(new TrackChunk());
@@ -55,16 +51,14 @@ public class MidiFileExtensionsTests
     public void Merge_CombinesTracksAndNotes()
     {
         var a = CreateMidiFile(
-            new[]
-            {
-                new[] { (note: 60, channel: 0, time: 0L, length: 240) }
-            });
+        [
+            [(note: 60, channel: 0, time: 0L, length: 240)]
+        ]);
 
         var b = CreateMidiFile(
-            new[]
-            {
-                new[] { (note: 64, channel: 0, time: 0L, length: 240) }
-            });
+        [
+            [(note: 64, channel: 0, time: 0L, length: 240)]
+        ]);
 
         var merged = a.Merge(b);
 
@@ -76,11 +70,10 @@ public class MidiFileExtensionsTests
     public void SplitByTrack_ReturnsOneTrackPerFile()
     {
         var file = CreateMidiFile(
-            new[]
-            {
-                new[] { (note: 60, channel: 0, time: 0L, length: 240) },
-                new[] { (note: 64, channel: 0, time: 0L, length: 240) }
-            });
+        [
+            [(note: 60, channel: 0, time: 0L, length: 240)],
+            [(note: 64, channel: 0, time: 0L, length: 240)]
+        ]);
 
         var split = file.Split(MidiSplitMode.Track);
 
@@ -93,14 +86,12 @@ public class MidiFileExtensionsTests
     public void SplitByChannel_FiltersNotes()
     {
         var file = CreateMidiFile(
-            new[]
-            {
-                new[]
-                {
-                    (note: 60, channel: 0, time: 0L, length: 240),
-                    (note: 64, channel: 1, time: 0L, length: 240),
-                }
-            });
+        [
+            [
+                (note: 60, channel: 0, time: 0L, length: 240),
+                    (note: 64, channel: 1, time: 0L, length: 240)
+            ]
+        ]);
 
         var split = file.Split(MidiSplitMode.Channel);
 
@@ -120,16 +111,14 @@ public class MidiFileExtensionsTests
     public void MergeToSingleTrack_MergesEventsByTime()
     {
         var a = CreateMidiFile(
-            new[]
-            {
-                new[] { (note: 60, channel: 0, time: 0L, length: 240) }
-            });
+        [
+            [(note: 60, channel: 0, time: 0L, length: 240)]
+        ]);
 
         var b = CreateMidiFile(
-            new[]
-            {
-                new[] { (note: 64, channel: 0, time: 480L, length: 240) }
-            });
+        [
+            [(note: 64, channel: 0, time: 480L, length: 240)]
+        ]);
 
         var merged = a.MergeToSingleTrack(b);
 

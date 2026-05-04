@@ -82,34 +82,28 @@ public static class SimdInfo
     /// </summary>
     public static SimdInstructionSet GetBest()
     {
-        if (Avx512F.IsSupported)
+        return Avx512F.IsSupported switch
         {
-            return SimdInstructionSet.Avx512F;
-        }
-
-        if (Avx2.IsSupported)
-        {
-            return SimdInstructionSet.Avx2;
-        }
-
-        if (Sse2.IsSupported)
-        {
-            return SimdInstructionSet.Sse2;
-        }
-
-        if (AdvSimd.IsSupported)
-        {
-            return SimdInstructionSet.Neon;
-        }
-
-        if (Vector128.IsHardwareAccelerated &&
-            !Avx512F.IsSupported && !Avx2.IsSupported &&
-            !Sse2.IsSupported && !AdvSimd.IsSupported)
-        {
-            return SimdInstructionSet.WasmSimd;
-        }
-
-        return SimdInstructionSet.None;
+            true => SimdInstructionSet.Avx512F,
+            _ => Avx2.IsSupported switch
+            {
+                true => SimdInstructionSet.Avx2,
+                _ => Sse2.IsSupported switch
+                {
+                    true => SimdInstructionSet.Sse2,
+                    _ => AdvSimd.IsSupported switch
+                    {
+                        true => SimdInstructionSet.Neon,
+                        _ => Vector128.IsHardwareAccelerated switch
+                        {
+                            true when !Avx512F.IsSupported && !Avx2.IsSupported && !Sse2.IsSupported &&
+                                      !AdvSimd.IsSupported => SimdInstructionSet.WasmSimd,
+                            _ => SimdInstructionSet.None
+                        }
+                    }
+                }
+            }
+        };
     }
 
     /// <summary>

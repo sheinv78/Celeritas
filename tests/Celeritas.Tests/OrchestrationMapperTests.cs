@@ -1,6 +1,5 @@
 using Celeritas.Core;
 using Celeritas.Core.Orchestration;
-using Xunit;
 
 namespace Celeritas.Tests;
 

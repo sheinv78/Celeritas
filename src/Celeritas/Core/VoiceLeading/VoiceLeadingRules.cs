@@ -12,19 +12,10 @@ namespace Celeritas.Core.VoiceLeading;
 /// </summary>
 public static class VoiceLeadingRules
 {
-    // Interval classes (mod 12)
+    // Interval classes (mod 12) — only those actually used
     private const int Unison = 0;
-    private const int MinorSecond = 1;
-    private const int MajorSecond = 2;
-    private const int MinorThird = 3;
-    private const int MajorThird = 4;
-    private const int PerfectFourth = 5;
     private const int Tritone = 6;
     private const int PerfectFifth = 7;
-    private const int MinorSixth = 8;
-    private const int MajorSixth = 9;
-    private const int MinorSeventh = 10;
-    private const int MajorSeventh = 11;
 
     // Penalty weights for different violations
     private static readonly float[] ViolationPenalties = new float[16];
@@ -207,7 +198,7 @@ public static class VoiceLeadingRules
                 violations |= VoiceLeadingViolation.LargeLeap;
             }
 
-            // Augmented intervals (augmented 2nd = 3 semitones in certain contexts, 
+            // Augmented intervals (augmented 2nd = 3 semitones in certain contexts,
             // but we simplify to tritone as melodic interval)
             if (interval == Tritone)
             {
@@ -285,13 +276,12 @@ public static class VoiceLeadingRules
         counts[voicing.Alto % 12]++;
         counts[voicing.Soprano % 12]++;
 
-        // Doubled leading tone is bad
-        if (counts[leadingTone] > 1)
+        return counts[leadingTone] switch
         {
-            return VoiceLeadingViolation.DoubledLeadingTone;
-        }
-
-        return VoiceLeadingViolation.None;
+            // Doubled leading tone is bad
+            > 1 => VoiceLeadingViolation.DoubledLeadingTone,
+            _ => VoiceLeadingViolation.None
+        };
     }
 
     /// <summary>
@@ -300,7 +290,7 @@ public static class VoiceLeadingRules
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int IntervalClass(int pitch1, int pitch2)
     {
-        return ((pitch2 - pitch1) % 12 + 12) % 12;
+        return (((pitch2 - pitch1) % 12) + 12) % 12;
     }
 
     /// <summary>
@@ -353,6 +343,6 @@ public static class VoiceLeadingRules
 
         // Start with high score, subtract penalties
         // Smoothness contributes less than violations
-        return 1000f - check.Penalty - smoothness * 2f;
+        return 1000f - check.Penalty - (smoothness * 2f);
     }
 }

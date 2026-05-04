@@ -1,4 +1,8 @@
 using System.CommandLine;
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.Intrinsics.X86;
+using System.Text.RegularExpressions;
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
 using Celeritas.Core.Harmonization;
@@ -113,7 +117,7 @@ transposeCommand.SetAction(parseResult =>
         foreach (var name in outputNames)
         {
             Console.WriteLine($"  {name}");
-            System.Threading.Thread.Sleep(delay);
+            Thread.Sleep(delay);
         }
     }
 });
@@ -341,7 +345,7 @@ benchmarkCommand.SetAction(parseResult =>
         buffer.AddNote(60, new Rational(i, 4), Rational.Quarter);
     }
 
-    var sw = System.Diagnostics.Stopwatch.StartNew();
+    var sw = Stopwatch.StartNew();
     MusicMath.Transpose(buffer, 2);
     sw.Stop();
 
@@ -362,14 +366,14 @@ infoCommand.SetAction(parseResult =>
 {
     Console.WriteLine("Celeritas Music Engine");
     Console.WriteLine("═══════════════════════════════════════");
-    Console.WriteLine($"Version: 1.0.0");
+    Console.WriteLine("Version: 1.0.0");
     Console.WriteLine($"Runtime: {Environment.Version}");
     Console.WriteLine();
     Console.WriteLine("SIMD support:");
-    Console.WriteLine($"  AVX-512: {(System.Runtime.Intrinsics.X86.Avx512F.IsSupported ? "✓" : "✗")}");
-    Console.WriteLine($"  AVX2:    {(System.Runtime.Intrinsics.X86.Avx2.IsSupported ? "✓" : "✗")}");
-    Console.WriteLine($"  AVX:     {(System.Runtime.Intrinsics.X86.Avx.IsSupported ? "✓" : "✗")}");
-    Console.WriteLine($"  SSE2:    {(System.Runtime.Intrinsics.X86.Sse2.IsSupported ? "✓" : "✗")}");
+    Console.WriteLine($"  AVX-512: {(Avx512F.IsSupported ? "✓" : "✗")}");
+    Console.WriteLine($"  AVX2:    {(Avx2.IsSupported ? "✓" : "✗")}");
+    Console.WriteLine($"  AVX:     {(Avx.IsSupported ? "✓" : "✗")}");
+    Console.WriteLine($"  SSE2:    {(Sse2.IsSupported ? "✓" : "✗")}");
 });
 
 rootCommand.Subcommands.Add(infoCommand);
@@ -418,7 +422,7 @@ keyDetectCommand.SetAction(parseResult =>
         return;
     }
 
-    var sw = System.Diagnostics.Stopwatch.StartNew();
+    var sw = Stopwatch.StartNew();
     var result = KeyProfiler.DetectFromPitches(pitches.ToArray());
     sw.Stop();
 
@@ -439,7 +443,7 @@ keyDetectCommand.SetAction(parseResult =>
     }
 
     Console.WriteLine();
-    Console.WriteLine($"  SIMD: {(System.Runtime.Intrinsics.X86.Avx512F.IsSupported ? "AVX-512" : System.Runtime.Intrinsics.X86.Avx2.IsSupported ? "AVX2" : "Scalar")}");
+    Console.WriteLine($"  SIMD: {(Avx512F.IsSupported ? "AVX-512" : Avx2.IsSupported ? "AVX2" : "Scalar")}");
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
 });
 
@@ -479,7 +483,7 @@ voiceLeadCommand.SetAction(parseResult =>
     var options = strict ? VoiceLeadingSolverOptions.Strict : VoiceLeadingSolverOptions.Default;
     var solver = new VoiceLeadingSolver(options);
 
-    var sw = System.Diagnostics.Stopwatch.StartNew();
+    var sw = Stopwatch.StartNew();
     var solution = solver.SolveFromSymbols(chords);
     sw.Stop();
 
@@ -553,7 +557,7 @@ modeCommand.SetAction(parseResult =>
                 // Accept pitch-class-only tokens like "D" or "Bb" by normalizing
                 // to a default octave. (Mode detection ignores octave anyway.)
                 var token = note;
-                if (System.Text.RegularExpressions.Regex.IsMatch(token, "^[A-Ga-g](?:#{1,2}|b{1,2})?$") )
+                if (Regex.IsMatch(token, "^[A-Ga-g](?:#{1,2}|b{1,2})?$") )
                 {
                     token = token + "4";
                 }
@@ -658,7 +662,7 @@ polyphonyCommand.SetAction(parseResult =>
     var quarterScale = new Rational(4, 1);
     foreach (var e in parsed)
     {
-        if (e.Pitch == MusicNotation.REST_PITCH)
+        if (e.Pitch == MusicNotation.RestPitch)
             continue;
 
         buffer.Add(new NoteEvent(e.Pitch, e.Offset * quarterScale, e.Duration * quarterScale, e.Velocity));
@@ -689,12 +693,16 @@ polyphonyCommand.SetAction(parseResult =>
         var (min, max) = voice.Range;
         Console.WriteLine($"  {voice.Name}:");
         Console.WriteLine($"    Notes: {voice.Notes.Count}");
-        Console.WriteLine($"    Range: {ChordLibrary.NoteNames[min % 12]}{min / 12 - 1} - {ChordLibrary.NoteNames[max % 12]}{max / 12 - 1}");
+        Console.WriteLine($"    Range: {ChordLibrary.NoteNames[min % 12]}{(min / 12) - 1} - {ChordLibrary.NoteNames[max % 12]}{(max / 12) - 1}");
         Console.WriteLine($"    Avg Pitch: {voice.AveragePitch:F1} ({ChordLibrary.NoteNames[(int)voice.AveragePitch % 12]})");
 
         var melodicLine = string.Join(" → ", voice.Notes.Select(n =>
-            $"{ChordLibrary.NoteNames[n.Pitch % 12]}{n.Pitch / 12 - 1}"));
-        if (melodicLine.Length > 60) melodicLine = melodicLine[..57] + "...";
+            $"{ChordLibrary.NoteNames[n.Pitch % 12]}{(n.Pitch / 12) - 1}"));
+        melodicLine = melodicLine.Length switch
+        {
+            > 60 => melodicLine[..57] + "...",
+            _ => melodicLine
+        };
         Console.WriteLine($"    Melody: {melodicLine}");
         Console.WriteLine();
     }
@@ -839,7 +847,7 @@ rhythmCommand.SetAction(parseResult =>
         var offset = Rational.Zero;
         foreach (var dur in durations)
         {
-            buffer.Add(new NoteEvent(60, offset, dur, 0.8f)); // C4 as placeholder pitch
+            buffer.Add(new NoteEvent(60, offset, dur)); // C4 as placeholder pitch
             offset = offset + dur;
         }
 
@@ -1033,7 +1041,7 @@ melodyCommand.SetAction(parseResult =>
     Console.WriteLine($"  Average interval: {stats.AverageInterval:F1} semitones");
     Console.WriteLine($"  Largest leap: {stats.LargestLeap} semitones ({MelodyAnalyzer.GetIntervalName(stats.LargestLeap)})");
     Console.WriteLine();
-    Console.WriteLine($"  Motion breakdown:");
+    Console.WriteLine("  Motion breakdown:");
     Console.WriteLine($"    Steps (1-2 st):    {stats.StepPercent:F0}%");
     Console.WriteLine($"    Leaps (3+ st):     {stats.LeapPercent:F0}%");
     Console.WriteLine($"    Repetitions:       {stats.RepetitionPercent:F0}%");
@@ -1228,7 +1236,7 @@ midiExportCommand.SetAction(parseResult =>
     var noteCount = 0;
     foreach (var e in parsed)
     {
-        if (e.Pitch != MusicNotation.REST_PITCH)
+        if (e.Pitch != MusicNotation.RestPitch)
             noteCount++;
     }
 
@@ -1237,7 +1245,7 @@ midiExportCommand.SetAction(parseResult =>
     var quarterScale = new Rational(4, 1);
     foreach (var e in parsed)
     {
-        if (e.Pitch == MusicNotation.REST_PITCH)
+        if (e.Pitch == MusicNotation.RestPitch)
             continue;
 
         buffer.Add(new NoteEvent(e.Pitch, e.Offset * quarterScale, e.Duration * quarterScale, e.Velocity));
@@ -1274,7 +1282,7 @@ midiTransposeCommand.SetAction(parseResult =>
 
     if (inFile == null || !inFile.Exists)
     {
-        Console.WriteLine($"Error: Input file not found");
+        Console.WriteLine("Error: Input file not found");
         return;
     }
 
@@ -1314,7 +1322,7 @@ midiAnalyzeCommand.SetAction(parseResult =>
 
     if (inFile == null || !inFile.Exists)
     {
-        Console.WriteLine($"Error: Input file not found");
+        Console.WriteLine("Error: Input file not found");
         return;
     }
 
@@ -1341,8 +1349,11 @@ midiAnalyzeCommand.SetAction(parseResult =>
     for (int i = 0; i < buffer.Count; i++)
     {
         var note = buffer.Get(i);
-        if (!chordGroups.ContainsKey(note.Offset))
-            chordGroups[note.Offset] = [];
+        chordGroups[note.Offset] = chordGroups.ContainsKey(note.Offset) switch
+        {
+            false => [],
+            _ => chordGroups[note.Offset]
+        };
         chordGroups[note.Offset].Add(note.Pitch);
     }
 
@@ -1358,7 +1369,7 @@ midiAnalyzeCommand.SetAction(parseResult =>
 
         var chordPitches = orderedChordGroups[i].Value.ToArray();
         var chordInfo = ChordAnalyzer.Identify(chordPitches);
-        chordAssignments.Add(new ChordAssignment(start, end, chordInfo, chordPitches, 0));
+        chordAssignments.Add(new ChordAssignment(start, end, chordInfo, chordPitches));
     }
 
     var melody = new NoteEvent[buffer.Count];
@@ -1536,7 +1547,7 @@ midiAnalyzeCommand.SetAction(parseResult =>
             melodicTypeByNote[(e.Offset, e.Pitch)] = e.Type;
 
         var items = new List<(Rational Offset, string Text)>(
-            color.ChromaticNotes.Count + color.ModalTurns.Count * 2 + color.MelodicHarmony.Count);
+            color.ChromaticNotes.Count + (color.ModalTurns.Count * 2) + color.MelodicHarmony.Count);
 
         // Modal turn boundaries.
         if (chords.Count > 0)
@@ -1621,7 +1632,7 @@ midiInfoCommand.SetAction(parseResult =>
 
     if (inFile == null || !inFile.Exists)
     {
-        Console.WriteLine($"Error: Input file not found");
+        Console.WriteLine("Error: Input file not found");
         return;
     }
 
@@ -1747,7 +1758,7 @@ static Rational ParseRational(string s)
     }
     if (s.Contains('.'))
     {
-        var d = double.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+        var d = double.Parse(s, CultureInfo.InvariantCulture);
         // Convert to rational with denominator 1000
         return new Rational((long)(d * 1000), 1000); // Auto-normalized
     }

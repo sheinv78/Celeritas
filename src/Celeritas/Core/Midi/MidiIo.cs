@@ -97,7 +97,7 @@ public static class MidiIo
             throw new ArgumentOutOfRangeException(nameof(options), options.TicksPerQuarterNote, "TicksPerQuarterNote must be positive.");
         }
 
-        if (options.Channel < 0 || options.Channel > 15)
+        if (options.Channel is < 0 or > 15)
         {
             throw new ArgumentOutOfRangeException(nameof(options), options.Channel, "Channel must be in [0..15].");
         }
@@ -131,10 +131,11 @@ public static class MidiIo
             var lengthTicksInt = lengthTicks > int.MaxValue ? int.MaxValue : (int)lengthTicks;
 
             var velocity = (byte)Math.Clamp((int)Math.Round(e.Velocity * 127.0), 1, 127);
-            if (velocity == 0)
+            velocity = velocity switch
             {
-                velocity = options.DefaultVelocity;
-            }
+                0 => options.DefaultVelocity,
+                _ => velocity
+            };
 
             var note = new Note((SevenBitNumber)noteNumber, lengthTicksInt, timeTicks)
             {
@@ -166,15 +167,15 @@ public static class MidiIo
         {
             checked
             {
-                var scaled = beats.Numerator * (long)ticksPerQuarter;
+                var scaled = beats.Numerator * ticksPerQuarter;
                 var den = beats.Denominator;
-                if (den == 0)
+                return den switch
                 {
-                    return 0;
-                }
+                    0 => 0,
+                    _ => (scaled + (den / 2)) / den
+                };
 
                 // Round half up.
-                return (scaled + (den / 2)) / den;
             }
         }
         catch (OverflowException)

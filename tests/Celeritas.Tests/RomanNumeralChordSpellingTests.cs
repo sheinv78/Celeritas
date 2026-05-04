@@ -1,5 +1,4 @@
 using Celeritas.Core;
-using Xunit;
 
 namespace Celeritas.Tests;
 

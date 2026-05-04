@@ -36,8 +36,11 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 🚧 **Active Development** — Experimental / Research Project  
 ⚠️ **API is not stable yet** — Breaking changes may occur
 
+**Maintainer status (2026-05-05):** v0.9.0 is the current stable release.  
+Issues and PRs are welcome.
+
 Current version: **v0.9.0** (December 2025)  
-**350 tests** passing (C#) + **35 tests** (Python)
+**362 tests** passing (C#) + **35 tests** (Python)
 
 ## Python API Coverage
 
@@ -81,16 +84,21 @@ Celeritas = load_celeritas().namespace
 
 Celeritas is designed for extreme performance.
 
-Benchmark numbers below are example measurements on AMD Ryzen 9 7900X (.NET 10, AVX-512). Results vary by CPU, OS, .NET version, and workload:
+Benchmark numbers below are measured on AMD Ryzen 9 7900X, .NET 10.0.1, AVX-512, BenchmarkDotNet v0.15.8 (December 2025). Results vary by CPU, OS, .NET version, and workload:
 
 ```text
-Transpose_1M_Notes        : 29.5 µs   (~34 ns/note,  ~34 million notes/sec)
-Transpose_10M_Notes       : 742 µs    (~74 ns/note,  ~13 million notes/sec)
-ChordAnalysis_GetMask     : 1.0 ns    (bit mask generation)
-ChordAnalysis_Identify    : 1.7 ns    (chord identification from mask)
-MusicNotation_ParseSingle : 12.2 ns   (parse "C#4" → pitch)
-Progression_Analyze       : 2.3 µs    (full harmonic analysis)
-Quantize_1M_Notes         : 1.29 ms   (rhythmic quantization)
+| Method                    | Mean         | Allocated |
+|---------------------------|-------------:|----------:|
+| Transpose_1M_Notes        |    29.9 µs   |         - |  (~33M notes/sec)
+| Transpose_10M_Notes       |   773.6 µs   |         - |  (~13M notes/sec)
+| ScaleVelocity_1M_Notes    |    30.5 µs   |         - |  (~33M notes/sec)
+| ChordAnalysis_GetMask     |     1.03 ns  |         - |  (bit-mask generation)
+| ChordAnalysis_Identify    |     1.96 ns  |         - |  (chord from mask)
+| MusicNotation_ParseSingle |    12.6 ns   |         - |  (parse "Bb3" → pitch)
+| MusicNotation_Parse       |     3.05 µs  |   9.4 KB  |  (parse 6-note string)
+| MusicNotation_Format      |    19.1 ns   |      32 B |  (pitch → notation)
+| Progression_Analyze       |     2.27 µs  |  10.9 KB  |  (full Dm7–G7–Cmaj7–Am7)
+| Quantize_1M_Notes         |     1.28 ms  |         - |  (rhythmic quantization)
 ```
 
 Run benchmarks:
@@ -377,7 +385,7 @@ cd bindings/python
 python test_celeritas.py
 ```
 
-**Current:** 350 C# tests + 35 Python tests, all passing
+**Current:** 362 C# tests + 35 Python tests, all passing
 
 ## 🎉 Recent Updates (v0.9.0 - December 2025)
 
@@ -400,14 +408,14 @@ Highlights:
 
 ### 📊 SIMD Platform Support
 
-| Platform        | SIMD     | Status | Performance      |
-|-----------------|----------|--------|------------------|
-| x64 Intel/AMD   | AVX-512  | ✅     | ~34M notes/sec   |
-| x64 Intel/AMD   | AVX2     | ✅     | ~13M notes/sec   |
-| x64 Intel/AMD   | SSE2     | ✅     | ~10M notes/sec   |
-| ARM64           | NEON     | ✅     | ~10-15M notes/sec|
-| WebAssembly     | SIMD128  | ✅     | ~5-10M notes/sec |
-| Fallback        | Scalar   | ✅     | ~1M notes/sec    |
+| Platform        | SIMD     | Status | Performance       |
+|-----------------|----------|--------|-------------------|
+| x64 Intel/AMD   | AVX-512  | ✅     | ~33M notes/sec    |
+| x64 Intel/AMD   | AVX2     | ✅     | ~13M notes/sec    |
+| x64 Intel/AMD   | SSE2     | ✅     | ~10M notes/sec    |
+| ARM64           | NEON     | ✅     | ~10-15M notes/sec |
+| WebAssembly     | SIMD128  | ✅     | ~5-10M notes/sec  |
+| Fallback        | Scalar   | ✅     | ~1M notes/sec     |
 
 ## 📄 License
 

@@ -5,27 +5,32 @@ namespace Celeritas.Core;
 
 public static class NoteArithmeticExtensions
 {
-    public static PitchClass PitchClass(this int midiPitch) => Celeritas.Core.PitchClass.FromMidi(midiPitch);
-
-    public static SpnNote ToSpnNote(this int midiPitch) => SpnNote.FromMidi(midiPitch);
+    extension(int midiPitch)
+    {
+        public PitchClass PitchClass() => Core.PitchClass.FromMidi(midiPitch);
+        public SpnNote ToSpnNote() => SpnNote.FromMidi(midiPitch);
+    }
 
     public static SpnNote ToSpnNote(this string notation) => SpnNote.Parse(notation);
 
-    public static ChromaticInterval IntervalTo(this int fromMidiPitch, int toMidiPitch) => new(toMidiPitch - fromMidiPitch);
-
-    public static int Transpose(this int midiPitch, ChromaticInterval interval)
+    extension(int fromMidiPitch)
     {
-        if ((uint)midiPitch > 127u)
-        {
-            throw new ArgumentOutOfRangeException(nameof(midiPitch), "MIDI pitch must be 0-127");
-        }
+        public ChromaticInterval IntervalTo(int toMidiPitch) => new(toMidiPitch - fromMidiPitch);
 
-        var result = midiPitch + interval.Semitones;
-        if ((uint)result > 127u)
+        public int Transpose(ChromaticInterval interval)
         {
-            throw new ArgumentOutOfRangeException(nameof(interval), "Resulting MIDI pitch is out of range 0-127");
-        }
+            if ((uint)fromMidiPitch > 127u)
+            {
+                throw new ArgumentOutOfRangeException(nameof(fromMidiPitch), "MIDI pitch must be 0-127");
+            }
 
-        return result;
+            var result = fromMidiPitch + interval.Semitones;
+            return (uint)result switch
+            {
+                > 127u => throw new ArgumentOutOfRangeException(nameof(interval),
+                    "Resulting MIDI pitch is out of range 0-127"),
+                _ => result
+            };
+        }
     }
 }

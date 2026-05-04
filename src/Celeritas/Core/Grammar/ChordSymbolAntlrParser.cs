@@ -36,7 +36,7 @@ public static class ChordSymbolAntlrParser
 
         if (string.IsNullOrWhiteSpace(input))
         {
-            errors = Array.Empty<string>();
+            errors = [];
             return true;
         }
 
@@ -66,7 +66,7 @@ public static class ChordSymbolAntlrParser
 
         var visitor = new ChordSymbolVisitorImpl();
         pitches = visitor.Visit(tree);
-        errors = Array.Empty<string>();
+        errors = [];
         return true;
     }
 
@@ -221,7 +221,7 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
             var n = int.Parse(extText);
 
             // Special-case: "sus2" / "sus4" is often written as SUS + 2/4.
-            if (builder.SusPending && (n == 2 || n == 4))
+            if (builder.SusPending && n is 2 or 4)
             {
                 builder.ApplySus(n);
                 return;
@@ -262,7 +262,6 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
         if (suffix.modifier() is { } m)
         {
             builder.ApplyModifier(m.GetText());
-            return;
         }
     }
 
@@ -389,7 +388,7 @@ internal sealed class ChordBuildState
     private int? _alteredEleventh;
     private int? _alteredThirteenth;
 
-    private readonly HashSet<int> _adds = new();
+    private readonly HashSet<int> _adds = [];
 
     public void ApplySixNine()
     {
@@ -627,11 +626,12 @@ internal sealed class ChordBuildState
         if (_explicitMinor || _triad == TriadQuality.Minor)
             return 10;
 
-        // Diminished: if explicitly dim7, use diminished 7th (9 semitones); otherwise minor 7th.
-        if (_triad == TriadQuality.Diminished && ext == 7 && !_alteredFifth.HasValue)
-            return 9;
-
-        return 10; // dominant/minor seventh
+        return _triad switch
+        {
+            // Diminished: if explicitly dim7, use diminished 7th (9 semitones); otherwise minor 7th.
+            TriadQuality.Diminished when ext == 7 && !_alteredFifth.HasValue => 9,
+            _ => 10
+        };
     }
 
     private static int MapExtensionDegreeToSemitones(int degree) => degree switch

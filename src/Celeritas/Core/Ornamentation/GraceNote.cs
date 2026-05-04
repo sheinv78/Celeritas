@@ -26,25 +26,25 @@ public class GraceNote : Ornament
     /// <summary>
     /// Type of grace note.
     /// </summary>
-    public GraceNoteType Type { get; init; } = GraceNoteType.Acciaccatura;
+    private GraceNoteType Type { get; init; } = GraceNoteType.Acciaccatura;
 
     /// <summary>
     /// Pitches of the grace note(s) relative to the base note.
     /// For single grace note: array of length 1.
     /// For multiple grace notes: array of 2+ elements.
     /// </summary>
-    public int[] Intervals { get; init; } = [2];
+    private int[] Intervals { get; init; } = [2];
 
     /// <summary>
     /// Duration ratio of grace notes to main note.
     /// For acciaccatura: very small (1/32 or shorter).
     /// For appoggiatura: typically 1/2 or 1/3 of main note.
     /// </summary>
-    public Rational DurationRatio { get; init; } = new(1, 32);
+    private Rational DurationRatio { get; init; } = new(1, 32);
 
     public override NoteEvent[] Expand()
     {
-        var totalGraceDuration = Rational.Zero;
+        Rational totalGraceDuration;
         var graceCount = Intervals.Length;
 
         // Calculate duration for each grace note
@@ -61,10 +61,11 @@ public class GraceNote : Ornament
         }
 
         var mainDuration = BaseNote.Duration - totalGraceDuration;
-        if (mainDuration.Numerator <= 0)
+        mainDuration = mainDuration.Numerator switch
         {
-            mainDuration = new Rational(1, 16); // Minimum main note duration
-        }
+            <= 0 => new Rational(1, 16),
+            _ => mainDuration
+        };
 
         var notes = new NoteEvent[graceCount + 1];
         var currentOffset = BaseNote.Offset;

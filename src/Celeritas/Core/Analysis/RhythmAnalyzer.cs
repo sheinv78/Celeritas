@@ -1,32 +1,24 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
-using System.Buffers;
-
 namespace Celeritas.Core.Analysis;
 
 /// <summary>
 /// Time signature / meter.
 /// </summary>
-public readonly struct TimeSignature : IEquatable<TimeSignature>
+public readonly struct TimeSignature(int beatsPerMeasure, int beatUnit) : IEquatable<TimeSignature>
 {
     /// <summary>Beats per measure (numerator).</summary>
-    public int BeatsPerMeasure { get; }
+    public int BeatsPerMeasure { get; } = beatsPerMeasure;
 
     /// <summary>Beat unit as note value (4 = quarter, 8 = eighth, etc).</summary>
-    public int BeatUnit { get; }
+    public int BeatUnit { get; } = beatUnit;
 
     /// <summary>Duration of one beat as a Rational.</summary>
     public Rational BeatDuration => new(1, BeatUnit);
 
     /// <summary>Duration of one measure.</summary>
     public Rational MeasureDuration => new(BeatsPerMeasure, BeatUnit);
-
-    public TimeSignature(int beatsPerMeasure, int beatUnit)
-    {
-        BeatsPerMeasure = beatsPerMeasure;
-        BeatUnit = beatUnit;
-    }
 
     /// <summary>Common time signatures.</summary>
     public static TimeSignature Common => new(4, 4);
@@ -93,7 +85,7 @@ public enum GrooveFeel
 /// <summary>
 /// A rhythmic event (onset) with metrical position.
 /// </summary>
-public readonly struct RhythmEvent
+public readonly record struct RhythmEvent
 {
     public Rational Offset { get; init; }
     public Rational Duration { get; init; }
@@ -117,8 +109,6 @@ public sealed class RhythmPattern
     /// <summary>Duration pattern as rationals.</summary>
     public required Rational[] Durations { get; init; }
 
-    /// <summary>Total duration of the pattern.</summary>
-    public Rational TotalDuration => Durations.Aggregate(Rational.Zero, (a, b) => a + b);
 
     /// <summary>Style/genre association.</summary>
     public string? Style { get; init; }
@@ -132,7 +122,7 @@ public sealed class RhythmPattern
 /// <summary>
 /// Result of meter detection.
 /// </summary>
-public sealed class MeterDetectionResult
+public sealed record MeterDetectionResult
 {
     public required TimeSignature TimeSignature { get; init; }
     public required float Confidence { get; init; }
@@ -144,7 +134,7 @@ public sealed class MeterDetectionResult
 /// <summary>
 /// Complete rhythm analysis result.
 /// </summary>
-public sealed class RhythmAnalysisResult
+public sealed record RhythmAnalysisResult
 {
     public required MeterDetectionResult Meter { get; init; }
     public required IReadOnlyList<RhythmEvent> Events { get; init; }
@@ -156,28 +146,12 @@ public sealed class RhythmAnalysisResult
     public required GrooveFeel GrooveFeel { get; init; }
     public required float GrooveDrive { get; init; }
     public required string TextureDescription { get; init; }
-    
-    /// <summary>Detected time signature (convenience accessor to Meter.TimeSignature).</summary>
-    public TimeSignature DetectedMeter => Meter.TimeSignature;
-    
-    /// <summary>Syncopation level expressed as a degree (0-1, same as Syncopation).</summary>
-    public float SyncopationDegree => Syncopation;
-    
-    /// <summary>Count of notes that fall on off-beats or weak positions.</summary>
-    public int OffBeatCount => Statistics.StrengthHistogram.TryGetValue(BeatStrength.Weak, out var weak) 
-        ? weak 
-        : 0;
-    
-    /// <summary>Percentage of notes on strong beats.</summary>
-    public float StrongBeatEmphasis => Statistics.TotalNotes > 0 
-        ? (Statistics.StrengthHistogram.TryGetValue(BeatStrength.Strong, out var strong) ? strong : 0) * 100f / Statistics.TotalNotes
-        : 0;
 }
 
 /// <summary>
 /// A matched rhythmic pattern with location.
 /// </summary>
-public sealed class RhythmPatternMatch
+public sealed record RhythmPatternMatch
 {
     public required RhythmPattern Pattern { get; init; }
     public required Rational StartOffset { get; init; }
@@ -189,7 +163,7 @@ public sealed class RhythmPatternMatch
 /// <summary>
 /// Statistics about rhythmic features.
 /// </summary>
-public sealed class RhythmStatistics
+public sealed record RhythmStatistics
 {
     public int TotalNotes { get; init; }
     public int MeasureCount { get; init; }
@@ -414,7 +388,7 @@ public static class RhythmAnalyzer
         var patterns = DetectPatterns(onsets);
 
         // Calculate statistics
-        var stats = CalculateStatistics(events, meter.TimeSignature);
+        var stats = CalculateStatistics(events);
 
         // Detect swing
         var swing = DetectSwing(onsets);
@@ -426,7 +400,7 @@ public static class RhythmAnalyzer
         var density = CalculateDensity(onsets, meter.TimeSignature);
 
         // Generate texture description
-        var texture = DescribeTexture(stats, swing, syncopation, density, patterns);
+        var texture = DescribeTexture(swing, syncopation, density, patterns);
 
         var grooveFeel = DetermineGrooveFeel(meter.TimeSignature, swing, patterns);
         var grooveDrive = CalculateGrooveDrive(stats, density, syncopation, swing, grooveFeel);
@@ -510,10 +484,6 @@ public static class RhythmAnalyzer
             ioiCounts[ioi] = count + 1;
         }
 
-        var mostCommonIoi = ioiCounts.OrderByDescending(kv => kv.Value).First().Key;
-
-        // Determine total duration
-        var totalDuration = onsets[^1].offset + onsets[^1].duration - onsets[0].offset;
 
         // Score different meters
         var meters = new[]
@@ -541,8 +511,8 @@ public static class RhythmAnalyzer
             .ToList();
 
         var reasoning = best.Key.IsCompound
-            ? $"Compound meter detected - notes group in threes"
-            : $"Simple meter - beats divide in two";
+            ? "Compound meter detected - notes group in threes"
+            : "Simple meter - beats divide in two";
 
         if (best.Value < 0.5f)
             reasoning += " (low confidence)";
@@ -562,7 +532,7 @@ public static class RhythmAnalyzer
         float score = 0;
         var measureDur = meter.MeasureDuration;
 
-        foreach (var (offset, duration, _) in onsets)
+        foreach (var (offset, _, _) in onsets)
         {
             // Calculate position within measure
             var measurePos = GetPositionInMeasure(offset, measureDur);
@@ -574,7 +544,6 @@ public static class RhythmAnalyzer
                 BeatStrength.Strong => 1.0f,
                 BeatStrength.Medium => 0.6f,
                 BeatStrength.Weak => 0.3f,
-                BeatStrength.Subdivision => 0.1f,
                 _ => 0.1f
             };
         }
@@ -604,19 +573,22 @@ public static class RhythmAnalyzer
 
         var beat = (int)Math.Round(beatNumber);
 
-        // Beat 0 (downbeat) is always strong
-        if (beat == 0)
-            return BeatStrength.Strong;
-
-        // In 4/4, beat 2 (third beat) is medium
-        if (meter.BeatsPerMeasure == 4 && beat == 2)
-            return BeatStrength.Medium;
-
-        // In compound meters, beats 0, 3, 6, 9 are strong
-        if (meter.IsCompound && beat % 3 == 0)
-            return beat == 0 ? BeatStrength.Strong : BeatStrength.Medium;
-
-        return BeatStrength.Weak;
+        return beat switch
+        {
+            // Beat 0 (downbeat) is always strong
+            0 => BeatStrength.Strong,
+            _ => meter.BeatsPerMeasure switch
+            {
+                // In 4/4, beat 2 (third beat) is medium
+                4 when beat == 2 => BeatStrength.Medium,
+                _ => meter.IsCompound switch
+                {
+                    // In compound meters, beats 0, 3, 6, 9 are strong
+                    true when beat % 3 == 0 => beat == 0 ? BeatStrength.Strong : BeatStrength.Medium,
+                    _ => BeatStrength.Weak
+                }
+            }
+        };
     }
 
     private static List<RhythmEvent> AnalyzeEvents(
@@ -632,15 +604,8 @@ public static class RhythmAnalyzer
             var posInMeasure = GetPositionInMeasure(offset, measureDur);
             var strength = GetBeatStrength(posInMeasure, meter);
 
-            // Detect syncopation: note on weak beat that's longer than surrounding or ties over strong beat
-            var isSyncopated = false;
-            if (strength is BeatStrength.Weak or BeatStrength.Subdivision)
-            {
-                var noteEnd = offset + duration;
-                var nextBeat = GetNextStrongBeat(offset, meter);
-                if (noteEnd > nextBeat)
-                    isSyncopated = true;
-            }
+            // Detect syncopation: note on weak beat that ties over the next strong beat
+            var isSyncopated = IsSyncopated(strength, offset, duration, meter);
 
             events.Add(new RhythmEvent
             {
@@ -662,6 +627,15 @@ public static class RhythmAnalyzer
         var beatDur = meter.BeatDuration;
         var currentBeat = (long)(offset.ToDouble() / beatDur.ToDouble());
         return beatDur * (currentBeat + 1);
+    }
+
+    private static bool IsSyncopated(BeatStrength strength, Rational offset, Rational duration, TimeSignature meter)
+    {
+        if (strength is not (BeatStrength.Weak or BeatStrength.Subdivision))
+            return false;
+        var noteEnd = offset + duration;
+        var nextStrong = GetNextStrongBeat(offset, meter);
+        return noteEnd.CompareTo(nextStrong) > 0;
     }
 
     private static List<RhythmPatternMatch> DetectPatterns(
@@ -718,12 +692,11 @@ public static class RhythmAnalyzer
         }
 
         var avgError = totalError / pattern.Durations.Length;
-        return Math.Max(0, 1.0f - avgError * 4);
+        return Math.Max(0, 1.0f - (avgError * 4));
     }
 
     private static RhythmStatistics CalculateStatistics(
-        List<RhythmEvent> events,
-        TimeSignature meter)
+        List<RhythmEvent> events)
     {
         if (events.Count == 0)
             return new RhythmStatistics();
@@ -789,8 +762,11 @@ public static class RhythmAnalyzer
 
     private static float CalculateSyncopation(List<RhythmEvent> events)
     {
-        if (events.Count == 0) return 0;
-        return events.Count(e => e.IsSyncopated) / (float)events.Count;
+        return events.Count switch
+        {
+            0 => 0,
+            _ => events.Count(e => e.IsSyncopated) / (float)events.Count
+        };
     }
 
     private static float CalculateDensity(
@@ -806,7 +782,6 @@ public static class RhythmAnalyzer
     }
 
     private static string DescribeTexture(
-        RhythmStatistics stats,
         float swing,
         float syncopation,
         float density,
@@ -862,22 +837,16 @@ public static class RhythmAnalyzer
             }
         }
 
-        if (meter.IsCompound)
+        return meter.IsCompound switch
         {
-            return GrooveFeel.Compound;
-        }
-
-        if (swing >= 0.75f)
-        {
-            return GrooveFeel.Shuffle;
-        }
-
-        if (swing is > 0.55f and < 0.75f)
-        {
-            return GrooveFeel.Swing;
-        }
-
-        return GrooveFeel.Straight;
+            true => GrooveFeel.Compound,
+            _ => swing switch
+            {
+                >= 0.75f => GrooveFeel.Shuffle,
+                > 0.55f and < 0.75f => GrooveFeel.Swing,
+                _ => GrooveFeel.Straight
+            }
+        };
     }
 
     private static float CalculateGrooveDrive(
@@ -898,9 +867,9 @@ public static class RhythmAnalyzer
         var offbeatEmphasis = 1f - strongEmphasis;
 
         var drive =
-            0.55f * densityNorm +
-            0.35f * Math.Clamp(syncopation, 0f, 1f) +
-            0.10f * Math.Clamp(offbeatEmphasis, 0f, 1f) +
+            (0.55f * densityNorm) +
+            (0.35f * Math.Clamp(syncopation, 0f, 1f)) +
+            (0.10f * Math.Clamp(offbeatEmphasis, 0f, 1f)) +
             swingBoost +
             latinBoost;
 

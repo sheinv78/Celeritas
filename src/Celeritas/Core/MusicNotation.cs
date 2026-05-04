@@ -1,18 +1,20 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Text;
+
 namespace Celeritas.Core;
 
 /// <summary>
 /// Parser for musical notation (scientific pitch notation)
 /// Supports: C4, D#5, Bb3, etc.
 /// </summary>
-public static partial class MusicNotation
+public static class MusicNotation
 {
     /// <summary>
     /// Special pitch value indicating a rest (silence).
     /// </summary>
-    public const int REST_PITCH = -1;
+    public const int RestPitch = -1;
 
     /// <summary>
     /// Parse scientific pitch notation to MIDI pitch number
@@ -73,7 +75,7 @@ public static partial class MusicNotation
         }
 
         // MIDI number: (octave + 1) * 12 + pitchClass, where C-1 = 0
-        var value = (octave + 1) * 12 + pitchClass;
+        var value = ((octave + 1) * 12) + pitchClass;
         if ((uint)value > 127u)
         {
             return false;
@@ -118,13 +120,12 @@ public static partial class MusicNotation
             _ => throw new ArgumentException($"Invalid duration: {duration}")
         };
 
-        // Dotted note: add half of the base duration
-        if (isDotted)
+        return isDotted switch
         {
-            return baseValue + baseValue / 2;
-        }
-
-        return baseValue;
+            // Dotted note: add half of the base duration
+            true => baseValue + (baseValue / 2),
+            _ => baseValue
+        };
     }
 
     /// <summary>
@@ -145,9 +146,9 @@ public static partial class MusicNotation
             if (duration.Numerator == 3 && IsPowerOfTwo(duration.Denominator))
             {
                 var baseNote = duration.Denominator / 2;
-                if (useLetters)
+                return useLetters switch
                 {
-                    return baseNote switch
+                    true => baseNote switch
                     {
                         1 => "w.",
                         2 => "h.",
@@ -156,11 +157,8 @@ public static partial class MusicNotation
                         16 => "s.",
                         32 => "t.",
                         _ => $"{duration.Numerator}/{duration.Denominator}"
-                    };
-                }
-                else
-                {
-                    return baseNote switch
+                    },
+                    _ => baseNote switch
                     {
                         1 => "1.",
                         2 => "2.",
@@ -169,17 +167,17 @@ public static partial class MusicNotation
                         16 => "16.",
                         32 => "32.",
                         _ => $"{duration.Numerator}/{duration.Denominator}"
-                    };
-                }
+                    }
+                };
             }
         }
 
-        // Standard durations
-        if (duration.Numerator == 1 && IsPowerOfTwo(duration.Denominator))
+        return duration.Numerator switch
         {
-            if (useLetters)
+            // Standard durations
+            1 when IsPowerOfTwo(duration.Denominator) => useLetters switch
             {
-                return duration.Denominator switch
+                true => duration.Denominator switch
                 {
                     1 => "w",
                     2 => "h",
@@ -188,11 +186,8 @@ public static partial class MusicNotation
                     16 => "s",
                     32 => "t",
                     _ => $"{duration.Numerator}/{duration.Denominator}"
-                };
-            }
-            else
-            {
-                return duration.Denominator switch
+                },
+                _ => duration.Denominator switch
                 {
                     1 => "1",
                     2 => "2",
@@ -201,12 +196,12 @@ public static partial class MusicNotation
                     16 => "16",
                     32 => "32",
                     _ => $"{duration.Numerator}/{duration.Denominator}"
-                };
-            }
-        }
+                }
+            },
+            _ => $"{duration.Numerator}/{duration.Denominator}"
+        };
 
         // Fallback: rational format
-        return $"{duration.Numerator}/{duration.Denominator}";
     }
 
     private static bool IsPowerOfTwo(long n) => n > 0 && (n & (n - 1)) == 0;
@@ -227,7 +222,7 @@ public static partial class MusicNotation
         }
 
         var separator = useLetters ? ':' : '/';
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         var i = 0;
 
         while (i < sequence.Length)
@@ -249,14 +244,14 @@ public static partial class MusicNotation
                 while (j < sequence.Length &&
                        sequence[j].Offset == chordOffset &&
                        sequence[j].Duration == chordDuration &&
-                       sequence[j].Pitch != REST_PITCH)
+                       sequence[j].Pitch != RestPitch)
                 {
                     chordNotes.Add(sequence[j]);
                     j++;
                 }
 
                 // If we found a chord (2+ notes), format as chord
-                if (chordNotes.Count > 1 && sequence[i].Pitch != REST_PITCH)
+                if (chordNotes.Count > 1 && sequence[i].Pitch != RestPitch)
                 {
                     sb.Append('[');
                     for (var k = 0; k < chordNotes.Count; k++)
@@ -278,7 +273,7 @@ public static partial class MusicNotation
 
             // Single note or rest
             var note = sequence[i];
-            if (note.Pitch == REST_PITCH)
+            if (note.Pitch == RestPitch)
             {
                 sb.Append('R');
             }
@@ -297,11 +292,11 @@ public static partial class MusicNotation
     /// <summary>
     /// Format a single directive to string notation
     /// </summary>
-    public static string FormatDirective(NotationDirective directive, bool useLetters = false)
+    private static string FormatDirective(NotationDirective directive, bool useLetters = false)
     {
         return directive switch
         {
-            TempoBpmDirective bpm => bpm.TargetBpm.HasValue && bpm.RampDuration.HasValue
+            TempoBpmDirective bpm => bpm is { TargetBpm: not null, RampDuration: not null }
                 ? $"@bpm {bpm.Bpm} -> {bpm.TargetBpm} {(useLetters ? ':' : '/')}{FormatDuration(bpm.RampDuration.Value, useDot: true, useLetters)}"
                 : $"@bpm {bpm.Bpm}",
 
@@ -351,7 +346,7 @@ public static partial class MusicNotation
             return string.Empty;
         }
 
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         var noteIndex = 0;
         var directiveIndex = 0;
         var currentTime = Rational.Zero;
@@ -399,13 +394,13 @@ public static partial class MusicNotation
                     while (j < notes.Length &&
                            notes[j].Offset == chordOffset &&
                            notes[j].Duration == chordDuration &&
-                           notes[j].Pitch != REST_PITCH)
+                           notes[j].Pitch != RestPitch)
                     {
                         chordNotes.Add(notes[j]);
                         j++;
                     }
 
-                    if (chordNotes.Count > 1 && notes[noteIndex].Pitch != REST_PITCH)
+                    if (chordNotes.Count > 1 && notes[noteIndex].Pitch != RestPitch)
                     {
                         var separator = useLetters ? ':' : '/';
                         sb.Append('[');
@@ -430,7 +425,7 @@ public static partial class MusicNotation
                 // Single note
                 var note = notes[noteIndex];
                 var sep = useLetters ? ':' : '/';
-                if (note.Pitch == REST_PITCH)
+                if (note.Pitch == RestPitch)
                 {
                     sb.Append('R');
                 }
@@ -454,7 +449,7 @@ public static partial class MusicNotation
     /// </summary>
     public static string ToNotation(int midiPitch, bool preferSharps = true)
     {
-        if (midiPitch < 0 || midiPitch > 127)
+        if (midiPitch is < 0 or > 127)
         {
             throw new ArgumentException($"MIDI pitch must be 0-127, got {midiPitch}", nameof(midiPitch));
         }
@@ -505,7 +500,7 @@ public static partial class MusicNotation
     /// Try-parse a key signature.
     /// Accepts: C, Cm, C minor, C major, C#, Db minor, etc.
     /// </summary>
-    public static bool TryParseKey(ReadOnlySpan<char> keyString, out KeySignature key)
+    private static bool TryParseKey(ReadOnlySpan<char> keyString, out KeySignature key)
     {
         key = default;
 
@@ -521,19 +516,17 @@ public static partial class MusicNotation
                       lower.Contains("min", StringComparison.Ordinal) ||
                       (lower.EndsWith('m') && !lower.EndsWith("maj", StringComparison.Ordinal) && !lower.EndsWith("major", StringComparison.Ordinal));
 
-        // Strip mode keywords
-        lower = lower
-            .Replace("major", "", StringComparison.Ordinal)
-            .Replace("minor", "", StringComparison.Ordinal)
-            .Replace("maj", "", StringComparison.Ordinal)
-            .Replace("min", "", StringComparison.Ordinal)
-            .Trim();
-
-        // Strip trailing 'm' (e.g., "cm")
-        if (lower.Length > 1 && lower[^1] == 'm')
+        lower = lower.Length switch
         {
-            lower = lower[..^1];
-        }
+            // Strip trailing 'm' (e.g., "cm")
+            > 1 when lower[^1] == 'm' => lower[..^1],
+            // Strip mode keywords
+            _ => lower.Replace("major", "", StringComparison.Ordinal)
+                .Replace("minor", "", StringComparison.Ordinal)
+                .Replace("maj", "", StringComparison.Ordinal)
+                .Replace("min", "", StringComparison.Ordinal)
+                .Trim()
+        };
 
         if (!TryParsePitchClass(lower.AsSpan(), out var pitchClass, out _))
         {
@@ -577,12 +570,12 @@ public static partial class MusicNotation
         if (text.Length >= 2)
         {
             var accidental = text[1];
-            if (accidental == '#' || accidental == '♯')
+            if (accidental is '#' or '♯')
             {
                 pitchClass = (pitchClass + 1) % 12;
                 consumed = 2;
             }
-            else if (accidental == 'b' || accidental == '♭')
+            else if (accidental is 'b' or '♭')
             {
                 pitchClass = (pitchClass + 11) % 12;
                 consumed = 2;
@@ -590,104 +583,5 @@ public static partial class MusicNotation
         }
 
         return true;
-    }
-
-    /// <summary>
-    /// Try to parse time signature prefix from sequence string
-    /// Formats: "3/4: notes...", "4/4| notes...", "6/8 | notes..."
-    /// </summary>
-    private static bool TryParseTimeSignaturePrefix(string sequence, out Analysis.TimeSignature timeSignature, out string remainingSequence)
-    {
-        timeSignature = default;
-        remainingSequence = sequence;
-
-        // Look for pattern: "N/N:" or "N/N|" at the start
-        var colonIdx = sequence.IndexOf(':');
-        var barIdx = sequence.IndexOf('|');
-
-        var separatorIdx = -1;
-        if (colonIdx >= 0 && barIdx >= 0)
-        {
-            separatorIdx = Math.Min(colonIdx, barIdx);
-        }
-        else if (colonIdx >= 0)
-        {
-            separatorIdx = colonIdx;
-        }
-        else if (barIdx >= 0)
-        {
-            separatorIdx = barIdx;
-        }
-
-        if (separatorIdx <= 0 || separatorIdx > 10) // Reasonable limit
-        {
-            return false;
-        }
-
-        var prefix = sequence[..separatorIdx].Trim();
-        var slashIdx = prefix.IndexOf('/');
-
-        if (slashIdx <= 0)
-        {
-            return false;
-        }
-
-        var beatsStr = prefix[..slashIdx].Trim();
-        var unitStr = prefix[(slashIdx + 1)..].Trim();
-
-        if (int.TryParse(beatsStr, out var beats) && int.TryParse(unitStr, out var unit))
-        {
-            timeSignature = new Analysis.TimeSignature(beats, unit);
-            remainingSequence = sequence[(separatorIdx + 1)..].TrimStart();
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Split text by whitespace, but respect brackets for chords
-    /// Example: "C4/4 [C4 E4 G4]/4 D4/4" -> ["C4/4", "[C4 E4 G4]/4", "D4/4"]
-    /// </summary>
-    private static List<string> SplitRespectingBrackets(string text)
-    {
-        var result = new List<string>();
-        var current = new System.Text.StringBuilder();
-        var bracketDepth = 0;
-
-        for (var i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-
-            if (c == '[' || c == '(')
-            {
-                bracketDepth++;
-                current.Append(c);
-            }
-            else if (c == ']' || c == ')')
-            {
-                bracketDepth--;
-                current.Append(c);
-            }
-            else if (char.IsWhiteSpace(c) && bracketDepth == 0)
-            {
-                if (current.Length > 0)
-                {
-                    result.Add(current.ToString());
-                    current.Clear();
-                }
-            }
-            else
-            {
-                current.Append(c);
-            }
-        }
-
-        if (current.Length > 0)
-        {
-            result.Add(current.ToString());
-        }
-
-        return result;
     }
 }

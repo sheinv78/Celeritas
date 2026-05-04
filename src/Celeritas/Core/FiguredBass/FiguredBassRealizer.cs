@@ -34,15 +34,12 @@ public class FiguredBassRealizer
             var voicing = RealizeSymbolWithVoiceLeading(symbol, previousUpperVoices);
             result.AddRange(voicing);
 
-            // Cache upper voices for the next symbol.
-            if (voicing.Length > 1)
+            previousUpperVoices = voicing.Length switch
             {
-                previousUpperVoices = voicing.Skip(1).Select(n => n.Pitch).ToArray();
-            }
-            else
-            {
-                previousUpperVoices = null;
-            }
+                // Cache upper voices for the next symbol.
+                > 1 => voicing.Skip(1).Select(n => n.Pitch).ToArray(),
+                _ => null
+            };
         }
 
         return [.. result];
@@ -54,11 +51,11 @@ public class FiguredBassRealizer
         if (_options.Style == VoiceLeadingStyle.Free)
         {
             var realized = RealizeSymbol(symbol);
-            if (!AllowVoiceCrossing && realized.Length > 2)
+            return AllowVoiceCrossing switch
             {
-                return EnforceUpperVoiceOrdering(symbol, realized);
-            }
-            return realized;
+                false when realized.Length > 2 => EnforceUpperVoiceOrdering(symbol, realized),
+                _ => realized
+            };
         }
 
         var intervals = NormalizeFigures(symbol.Figures);
@@ -66,7 +63,7 @@ public class FiguredBassRealizer
         var notes = new List<NoteEvent>(1 + intervals.Length)
         {
             // Bass note
-            new NoteEvent(symbol.BassPitch, symbol.Time, symbol.Duration, 0.8f)
+            new NoteEvent(symbol.BassPitch, symbol.Time, symbol.Duration)
         };
 
         // Generate target pitch-classes for upper voices.
@@ -74,7 +71,7 @@ public class FiguredBassRealizer
         for (var i = 0; i < intervals.Length; i++)
         {
             var pitch = CalculatePitch(symbol.BassPitch, intervals[i], symbol.Accidentals);
-            targetPitchClasses[i] = (pitch % 12 + 12) % 12;
+            targetPitchClasses[i] = ((pitch % 12) + 12) % 12;
         }
 
         // If voice count changes, reset voice leading.
@@ -82,18 +79,17 @@ public class FiguredBassRealizer
         {
             for (var i = 0; i < targetPitchClasses.Length; i++)
             {
-                var basePitch = targetPitchClasses[i] + 12 * 4; // start around octave 4
+                var basePitch = targetPitchClasses[i] + (12 * 4); // start around octave 4
                 var realized = AdjustToRange(basePitch, _options.MinPitch, _options.MaxPitch);
                 notes.Add(new NoteEvent(realized, symbol.Time, symbol.Duration, 0.7f));
             }
 
             var realizedNotes = notes.ToArray();
-            if (!AllowVoiceCrossing && realizedNotes.Length > 2)
+            return AllowVoiceCrossing switch
             {
-                return EnforceUpperVoiceOrdering(symbol, realizedNotes);
-            }
-
-            return realizedNotes;
+                false when realizedNotes.Length > 2 => EnforceUpperVoiceOrdering(symbol, realizedNotes),
+                _ => realizedNotes
+            };
         }
 
         // Smooth/Strict: pick octave placements closest to previous voices.
@@ -171,12 +167,12 @@ public class FiguredBassRealizer
                 .OrderBy(x => x.diff)
                 .ToList();
 
-            if (within.Count == 0)
+            return within.Count switch
             {
-                throw new InvalidOperationException($"Cannot realize voice within MaxVoiceMovement={limit} semitones.");
-            }
-
-            return within[0].p;
+                0 => throw new InvalidOperationException(
+                    $"Cannot realize voice within MaxVoiceMovement={limit} semitones."),
+                _ => within[0].p
+            };
         }
 
         // Unconstrained: choose closest.
@@ -214,7 +210,7 @@ public class FiguredBassRealizer
         var notes = new List<NoteEvent>
         {
             // Bass note
-            new NoteEvent(symbol.BassPitch, symbol.Time, symbol.Duration, 0.8f)
+            new NoteEvent(symbol.BassPitch, symbol.Time, symbol.Duration)
         };
 
         // Realize upper voices based on intervals
@@ -236,25 +232,24 @@ public class FiguredBassRealizer
     /// </summary>
     private int[] NormalizeFigures(int[] figures)
     {
-        if (figures.Length == 0)
+        return figures.Length switch
         {
-            // Empty = root position triad (5/3)
-            return [3, 5];
-        }
+            0 => [3, 5],
+            _ => figures switch
+            {
+                [6] => [3, 6], // 6 = first inversion (6/3)
+                [6, 4] => [4, 6], // 6/4 = second inversion
+                [7] => [3, 5, 7], // 7 = dominant seventh
+                [6, 5] => [3, 5, 6], // 6/5 = first inversion seventh
+                [4, 3] => [3, 4, 6], // 4/3 = second inversion seventh
+                [4, 2] or [2] => [2, 4, 6], // 4/2 or 2 = third inversion seventh
+                [9] => [3, 5, 9], // 9 = ninth chord
+                [5, 3] => [3, 5], // 5/3 = explicit root position
+                _ => figures // Use as-is
+            }
+        };
 
         // Common figured bass abbreviations
-        return figures switch
-        {
-            [6] => [3, 6],           // 6 = first inversion (6/3)
-            [6, 4] => [4, 6],        // 6/4 = second inversion
-            [7] => [3, 5, 7],        // 7 = dominant seventh
-            [6, 5] => [3, 5, 6],     // 6/5 = first inversion seventh
-            [4, 3] => [3, 4, 6],     // 4/3 = second inversion seventh
-            [4, 2] or [2] => [2, 4, 6], // 4/2 or 2 = third inversion seventh
-            [9] => [3, 5, 9],        // 9 = ninth chord
-            [5, 3] => [3, 5],        // 5/3 = explicit root position
-            _ => figures             // Use as-is
-        };
     }
 
     /// <summary>
@@ -334,7 +329,7 @@ public class FiguredBassRealizer
 
         foreach (var c in figuresStr)
         {
-            if (c == '#' || c == 'b' || c == 'n')
+            if (c is '#' or 'b' or 'n')
             {
                 // Look for following digit
                 var idx = figuresStr.IndexOf(c);

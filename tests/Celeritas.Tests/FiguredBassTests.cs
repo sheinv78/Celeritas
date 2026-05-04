@@ -39,7 +39,7 @@ public class FiguredBassTests
         var symbol = new FiguredBassSymbol
         {
             BassPitch = 52, // E3
-            Figures = new[] { 6 },
+            Figures = [6],
             Duration = new Rational(1, 4),
             Time = Rational.Zero
         };
@@ -60,7 +60,7 @@ public class FiguredBassTests
         var symbol = new FiguredBassSymbol
         {
             BassPitch = 55, // G3
-            Figures = new[] { 6, 4 },
+            Figures = [6, 4],
             Duration = new Rational(1, 4),
             Time = Rational.Zero
         };
@@ -81,7 +81,7 @@ public class FiguredBassTests
         var symbol = new FiguredBassSymbol
         {
             BassPitch = 55, // G3
-            Figures = new[] { 7 },
+            Figures = [7],
             Duration = new Rational(1, 4),
             Time = Rational.Zero
         };
@@ -127,7 +127,7 @@ public class FiguredBassTests
             new FiguredBassSymbol
             {
                 BassPitch = 55, // G3
-                Figures = new[] { 7 },
+                Figures = [7],
                 Duration = new Rational(1, 4),
                 Time = new Rational(1, 4)
             }
@@ -197,14 +197,14 @@ public class FiguredBassTests
             new FiguredBassSymbol
             {
                 BassPitch = 48, // C3
-                Figures = new[] { 7 },
+                Figures = [7],
                 Duration = new Rational(1, 4),
                 Time = Rational.Zero
             },
             new FiguredBassSymbol
             {
                 BassPitch = 43, // G2
-                Figures = new[] { 6, 4 },
+                Figures = [6, 4],
                 Duration = new Rational(1, 4),
                 Time = new Rational(1, 4)
             }

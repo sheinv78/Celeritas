@@ -74,12 +74,8 @@ public record ParseResult(
 /// <summary>
 /// ANTLR lexer error listener.
 /// </summary>
-internal class LexerErrorListener : IAntlrErrorListener<int>
+internal class LexerErrorListener(List<string> errors) : IAntlrErrorListener<int>
 {
-    private readonly List<string> _errors;
-
-    public LexerErrorListener(List<string> errors) => _errors = errors;
-
     public void SyntaxError(
         TextWriter output,
         IRecognizer recognizer,
@@ -89,19 +85,15 @@ internal class LexerErrorListener : IAntlrErrorListener<int>
         string msg,
         RecognitionException e)
     {
-        _errors.Add($"Line {line}:{charPositionInLine} - {msg}");
+        errors.Add($"Line {line}:{charPositionInLine} - {msg}");
     }
 }
 
 /// <summary>
 /// ANTLR parser error listener.
 /// </summary>
-internal class ParserErrorListener : BaseErrorListener
+internal class ParserErrorListener(List<string> errors) : BaseErrorListener
 {
-    private readonly List<string> _errors;
-
-    public ParserErrorListener(List<string> errors) => _errors = errors;
-
     public override void SyntaxError(
         TextWriter output,
         IRecognizer recognizer,
@@ -111,30 +103,24 @@ internal class ParserErrorListener : BaseErrorListener
         string msg,
         RecognitionException e)
     {
-        _errors.Add($"Line {line}:{charPositionInLine} - {msg}");
+        errors.Add($"Line {line}:{charPositionInLine} - {msg}");
     }
 }
 
 /// <summary>
 /// Visitor implementation that converts parse tree to NoteEvent array.
 /// </summary>
-internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
+internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBaseVisitor<NoteEvent[]>
 {
-    private readonly bool _validateMeasures;
-    private readonly List<NoteEvent> _notes = new();
-    private readonly List<NotationDirective> _directives = new();
-    private readonly HashSet<int> _pendingTies = new(); // Pitches that have pending ties
+    private readonly List<NoteEvent> _notes = [];
+    private readonly List<NotationDirective> _directives = [];
+    private readonly HashSet<int> _pendingTies = []; // Pitches that have pending ties
     private Rational _currentTime = Rational.Zero;
     private int _currentMeasure = 1;
     private Rational _measureStart = Rational.Zero;
 
     public TimeSignature? TimeSignature { get; private set; }
     public IReadOnlyList<NotationDirective> Directives => _directives;
-
-    public MusicNotationVisitorImpl(bool validateMeasures)
-    {
-        _validateMeasures = validateMeasures;
-    }
 
     public override NoteEvent[] VisitSequence(MusicNotationParser.SequenceContext context)
     {
@@ -178,7 +164,7 @@ internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
             VisitVoice(voice);
 
             // After each voice (measure), validate if needed
-            if (_validateMeasures && TimeSignature.HasValue)
+            if (validateMeasures && TimeSignature.HasValue)
             {
                 var measureDuration = _currentTime - _measureStart;
                 var expectedDuration = TimeSignature.Value.MeasureDuration;
@@ -329,7 +315,7 @@ internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
     public override NoteEvent[] VisitRest(MusicNotationParser.RestContext context)
     {
         var duration = context.duration() != null ? ParseDuration(context.duration()) : Rational.Quarter; // Default to quarter rest
-        _notes.Add(new NoteEvent(MusicNotation.REST_PITCH, _currentTime, duration));
+        _notes.Add(new NoteEvent(MusicNotation.RestPitch, _currentTime, duration));
         _currentTime += duration;
         return [];
     }
@@ -363,7 +349,7 @@ internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
         var octave = int.Parse(context.octave().INT().GetText());
 
         // Calculate MIDI pitch: C4 = 60
-        return (octave + 1) * 12 + pitchClass;
+        return ((octave + 1) * 12) + pitchClass;
     }
 
     private Rational ParseDuration(MusicNotationParser.DurationContext context)
@@ -397,9 +383,12 @@ internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
             throw new ArgumentException("Invalid duration");
         }
 
-        // Dotted note: add half of the base duration
-        if (isDotted)
-            baseDuration = baseDuration + baseDuration / 2;
+        baseDuration = isDotted switch
+        {
+            // Dotted note: add half of the base duration
+            true => baseDuration + (baseDuration / 2),
+            _ => baseDuration
+        };
 
         return baseDuration;
     }
@@ -659,7 +648,8 @@ internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
             var text = context.STRING().GetText();
             return text.Substring(1, text.Length - 2);
         }
-        else if (context.IDENT() != null)
+
+        if (context.IDENT() != null)
         {
             return context.IDENT().GetText();
         }
@@ -672,7 +662,8 @@ internal class MusicNotationVisitorImpl : MusicNotationBaseVisitor<NoteEvent[]>
         {
             return context.DYNAMICS_LEVEL().GetText().ToLower();
         }
-        else if (context.IDENT() != null)
+
+        if (context.IDENT() != null)
         {
             return context.IDENT().GetText();
         }

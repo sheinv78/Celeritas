@@ -14,18 +14,12 @@ public sealed unsafe class NoteBuffer : IDisposable
     public int Count { get; private set; }
 
     // Data arrays (SoA - Structure of Arrays)
-    private readonly int* _pitches;
-    private readonly long* _offsetsNum;
-    private readonly long* _offsetsDen;
-    private readonly long* _durationsNum;
-    private readonly long* _durationsDen;
-    private readonly float* _velocities;
 
     // Safe windows into the underlying arrays
-    public Span<int> Pitches => new(_pitches, Count);
-    public ReadOnlySpan<int> PitchesReadOnly => new(_pitches, Count);
-    public Span<float> Velocities => new(_velocities, Count);
-    public ReadOnlySpan<float> VelocitiesReadOnly => new(_velocities, Count);
+    public Span<int> Pitches => new(PitchPtr, Count);
+    public ReadOnlySpan<int> PitchesReadOnly => new(PitchPtr, Count);
+    public Span<float> Velocities => new(VelocityPtr, Count);
+    public ReadOnlySpan<float> VelocitiesReadOnly => new(VelocityPtr, Count);
 
     // Back-compat aliases (public surface can change; these are convenience)
     public Span<int> PitchSpan => Pitches;
@@ -34,34 +28,34 @@ public sealed unsafe class NoteBuffer : IDisposable
     public ReadOnlySpan<float> VelocityReadOnlySpan => VelocitiesReadOnly;
 
     // Internal accessors for SIMD/math kernels
-    internal int* PitchPtr => _pitches;
-    internal float* VelocityPtr => _velocities;
-    internal long* OffsetsNumPtr => _offsetsNum;
-    internal long* OffsetsDenPtr => _offsetsDen;
-    internal long* DurationsNumPtr => _durationsNum;
-    internal long* DurationsDenPtr => _durationsDen;
+    internal int* PitchPtr { get; }
+    internal float* VelocityPtr { get; }
+    internal long* OffsetsNumPtr { get; }
+    internal long* OffsetsDenPtr { get; }
+    internal long* DurationsNumPtr { get; }
+    internal long* DurationsDenPtr { get; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int PitchAt(int index) => _pitches[index];
+    public int PitchAt(int index) => PitchPtr[index];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetPitch(int index, int value) => _pitches[index] = value;
+    public void SetPitch(int index, int value) => PitchPtr[index] = value;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Rational GetOffset(int index) => new(_offsetsNum[index], _offsetsDen[index]);
+    public Rational GetOffset(int index) => new(OffsetsNumPtr[index], OffsetsDenPtr[index]);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Rational GetDuration(int index) => new(_durationsNum[index], _durationsDen[index]);
+    public Rational GetDuration(int index) => new(DurationsNumPtr[index], DurationsDenPtr[index]);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public float GetVelocity(int index) => _velocities[index];
+    public float GetVelocity(int index) => VelocityPtr[index];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public NoteEvent Get(int index) => new(
-        _pitches[index],
-        new Rational(_offsetsNum[index], _offsetsDen[index]),
-        new Rational(_durationsNum[index], _durationsDen[index]),
-        _velocities[index]);
+        PitchPtr[index],
+        new Rational(OffsetsNumPtr[index], OffsetsDenPtr[index]),
+        new Rational(DurationsNumPtr[index], DurationsDenPtr[index]),
+        VelocityPtr[index]);
 
     private bool _disposed;
 
@@ -72,14 +66,14 @@ public sealed unsafe class NoteBuffer : IDisposable
 
         Capacity = capacity;
 
-        _pitches = (int*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(int)), 64);
-        _offsetsNum = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
-        _offsetsDen = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
-        _durationsNum = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
-        _durationsDen = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
-        _velocities = (float*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(float)), 64);
+        PitchPtr = (int*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(int)), 64);
+        OffsetsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
+        OffsetsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
+        DurationsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
+        DurationsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
+        VelocityPtr = (float*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(float)), 64);
 
-        if (_pitches == null || _offsetsNum == null || _offsetsDen == null || _durationsNum == null || _durationsDen == null || _velocities == null)
+        if (PitchPtr == null || OffsetsNumPtr == null || OffsetsDenPtr == null || DurationsNumPtr == null || DurationsDenPtr == null || VelocityPtr == null)
             throw new OutOfMemoryException("Failed to allocate NoteBuffer arrays");
     }
 
@@ -97,12 +91,12 @@ public sealed unsafe class NoteBuffer : IDisposable
         if (Count >= Capacity) ThrowBufferFull();
 
         var idx = Count;
-        _pitches[idx] = pitch;
-        _offsetsNum[idx] = offset.Numerator;
-        _offsetsDen[idx] = offset.Denominator;
-        _durationsNum[idx] = duration.Numerator;
-        _durationsDen[idx] = duration.Denominator;
-        _velocities[idx] = velocity;
+        PitchPtr[idx] = pitch;
+        OffsetsNumPtr[idx] = offset.Numerator;
+        OffsetsDenPtr[idx] = offset.Denominator;
+        DurationsNumPtr[idx] = duration.Numerator;
+        DurationsDenPtr[idx] = duration.Denominator;
+        VelocityPtr[idx] = velocity;
         Count = idx + 1;
     }
 
@@ -147,7 +141,7 @@ public sealed unsafe class NoteBuffer : IDisposable
         indices.Sort((a, b) =>
         {
             // a.Num / a.Den vs b.Num / b.Den  =>  a.Num * b.Den vs b.Num * a.Den
-            var cmp = _offsetsNum[a] * _offsetsDen[b] - _offsetsNum[b] * _offsetsDen[a];
+            var cmp = (OffsetsNumPtr[a] * OffsetsDenPtr[b]) - (OffsetsNumPtr[b] * OffsetsDenPtr[a]);
             return cmp switch
             {
                 > 0 => 1,
@@ -157,12 +151,12 @@ public sealed unsafe class NoteBuffer : IDisposable
         });
 
         // In-place permutation using cycle sort (O(n) memory writes, O(1) extra memory per array)
-        ApplyPermutation(indices, _pitches);
-        ApplyPermutationLong(indices, _offsetsNum);
-        ApplyPermutationLong(indices, _offsetsDen);
-        ApplyPermutationLong(indices, _durationsNum);
-        ApplyPermutationLong(indices, _durationsDen);
-        ApplyPermutationFloat(indices, _velocities);
+        ApplyPermutation(indices, PitchPtr);
+        ApplyPermutationLong(indices, OffsetsNumPtr);
+        ApplyPermutationLong(indices, OffsetsDenPtr);
+        ApplyPermutationLong(indices, DurationsNumPtr);
+        ApplyPermutationLong(indices, DurationsDenPtr);
+        ApplyPermutationFloat(indices, VelocityPtr);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -186,7 +180,11 @@ public sealed unsafe class NoteBuffer : IDisposable
         }
         // Restore permutation array
         for (var i = 0; i < perm.Length; i++)
-            if (perm[i] < 0) perm[i] = -1 - perm[i];
+            perm[i] = perm[i] switch
+            {
+                < 0 => -1 - perm[i],
+                _ => perm[i]
+            };
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -209,7 +207,11 @@ public sealed unsafe class NoteBuffer : IDisposable
             perm[j] = -1 - perm[j];
         }
         for (var i = 0; i < perm.Length; i++)
-            if (perm[i] < 0) perm[i] = -1 - perm[i];
+            perm[i] = perm[i] switch
+            {
+                < 0 => -1 - perm[i],
+                _ => perm[i]
+            };
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -232,7 +234,11 @@ public sealed unsafe class NoteBuffer : IDisposable
             perm[j] = -1 - perm[j];
         }
         for (var i = 0; i < perm.Length; i++)
-            if (perm[i] < 0) perm[i] = -1 - perm[i];
+            perm[i] = perm[i] switch
+            {
+                < 0 => -1 - perm[i],
+                _ => perm[i]
+            };
     }
 
     /// <summary>
@@ -246,17 +252,17 @@ public sealed unsafe class NoteBuffer : IDisposable
 
         while (i < Count && resultCount < output.Length)
         {
-            var currentNum = _offsetsNum[i];
-            var currentDen = _offsetsDen[i];
+            var currentNum = OffsetsNumPtr[i];
+            var currentDen = OffsetsDenPtr[i];
             var start = i;
 
             // Find all notes with the same time (integer comparison)
-            while (i < Count && _offsetsNum[i] * currentDen == currentNum * _offsetsDen[i])
+            while (i < Count && OffsetsNumPtr[i] * currentDen == currentNum * OffsetsDenPtr[i])
             {
                 i++;
             }
 
-            var slice = new ReadOnlySpan<int>(_pitches + start, i - start);
+            var slice = new ReadOnlySpan<int>(PitchPtr + start, i - start);
             output[resultCount++] = (new Rational(currentNum, currentDen), ChordAnalyzer.GetMask(slice));
         }
 
@@ -275,16 +281,16 @@ public sealed unsafe class NoteBuffer : IDisposable
 
         while (i < Count)
         {
-            var currentNum = _offsetsNum[i];
-            var currentDen = _offsetsDen[i];
+            var currentNum = OffsetsNumPtr[i];
+            var currentDen = OffsetsDenPtr[i];
             var start = i;
 
-            while (i < Count && _offsetsNum[i] * currentDen == currentNum * _offsetsDen[i])
+            while (i < Count && OffsetsNumPtr[i] * currentDen == currentNum * OffsetsDenPtr[i])
             {
                 i++;
             }
 
-            var slice = new ReadOnlySpan<int>(_pitches + start, i - start);
+            var slice = new ReadOnlySpan<int>(PitchPtr + start, i - start);
             result.Add((new Rational(currentNum, currentDen), ChordAnalyzer.GetMask(slice)));
         }
 
@@ -295,12 +301,12 @@ public sealed unsafe class NoteBuffer : IDisposable
     {
         if (_disposed) return;
 
-        NativeMemory.AlignedFree(_pitches);
-        NativeMemory.AlignedFree(_offsetsNum);
-        NativeMemory.AlignedFree(_offsetsDen);
-        NativeMemory.AlignedFree(_durationsNum);
-        NativeMemory.AlignedFree(_durationsDen);
-        NativeMemory.AlignedFree(_velocities);
+        NativeMemory.AlignedFree(PitchPtr);
+        NativeMemory.AlignedFree(OffsetsNumPtr);
+        NativeMemory.AlignedFree(OffsetsDenPtr);
+        NativeMemory.AlignedFree(DurationsNumPtr);
+        NativeMemory.AlignedFree(DurationsDenPtr);
+        NativeMemory.AlignedFree(VelocityPtr);
 
         _disposed = true;
     }

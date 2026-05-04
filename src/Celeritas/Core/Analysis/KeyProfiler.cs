@@ -10,7 +10,7 @@ namespace Celeritas.Core.Analysis;
 /// <summary>
 /// High-performance key detection using the Krumhansl-Schmuckler algorithm.
 /// Optimized with SIMD (AVX-512/AVX2/SSE2) for real-time analysis.
-/// 
+///
 /// The algorithm correlates pitch-class distributions with psychological key profiles
 /// derived from empirical studies of tonal perception.
 /// </summary>
@@ -24,7 +24,7 @@ public static class KeyProfiler
     [
         6.35f,  // C  - tonic
         2.23f,  // C#
-        3.48f,  // D  - supertonic  
+        3.48f,  // D  - supertonic
         2.33f,  // D#
         4.38f,  // E  - mediant
         4.09f,  // F  - subdominant
@@ -70,7 +70,7 @@ public static class KeyProfiler
         {
             // Major key
             AllKeyProfiles[root] = RotateProfile(MajorProfile, root);
-            // Minor key  
+            // Minor key
             AllKeyProfiles[12 + root] = RotateProfile(MinorProfile, root);
         }
 
@@ -79,12 +79,12 @@ public static class KeyProfiler
         {
             for (var i = 0; i < 12; i++)
             {
-                AlignedProfiles[key * 16 + i] = AllKeyProfiles[key][i];
+                AlignedProfiles[(key * 16) + i] = AllKeyProfiles[key][i];
             }
             // Padding with zeros
             for (var i = 12; i < 16; i++)
             {
-                AlignedProfiles[key * 16 + i] = 0f;
+                AlignedProfiles[(key * 16) + i] = 0f;
             }
         }
     }
@@ -109,7 +109,7 @@ public static class KeyProfiler
     /// <param name="pitchClassCounts">Array of 12 floats representing normalized pitch class frequencies</param>
     /// <returns>Detected key and confidence (0-1)</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static KeyDetectionResult Detect(ReadOnlySpan<float> pitchClassCounts)
+    private static KeyDetectionResult Detect(ReadOnlySpan<float> pitchClassCounts)
     {
         if (pitchClassCounts.Length < 12)
             return new KeyDetectionResult(new KeySignature(0, true), 0f, []);
@@ -274,7 +274,11 @@ public static class KeyProfiler
             variance += diff * diff;
         }
         var stdDev = MathF.Sqrt(variance / 12f);
-        if (stdDev < 0.0001f) stdDev = 1f; // Avoid division by zero
+        stdDev = stdDev switch
+        {
+            < 0.0001f => 1f,
+            _ => stdDev
+        };
 
         // Normalize
         for (var i = 0; i < 12; i++)
@@ -304,7 +308,7 @@ public static class KeyProfiler
             for (var key = 0; key < 24; key++)
             {
                 // Load key profile
-                var vProfile = Avx512F.LoadVector512(pProfiles + key * 16);
+                var vProfile = Avx512F.LoadVector512(pProfiles + (key * 16));
 
                 // Multiply element-wise
                 var vProduct = Avx512F.Multiply(vInput, vProfile);
@@ -359,7 +363,7 @@ public static class KeyProfiler
 
             for (var key = 0; key < 24; key++)
             {
-                var pProfile = pProfiles + key * 16;
+                var pProfile = pProfiles + (key * 16);
                 var vProfile0 = Avx.LoadVector256(pProfile);
                 var vProfile1 = Avx.LoadVector256(pProfile + 8);
 
@@ -538,14 +542,9 @@ public readonly record struct KeyCorrelation(KeySignature Key, float Correlation
 /// <summary>
 /// Key changes over time in a piece.
 /// </summary>
-public sealed class KeyTrajectory
+public sealed class KeyTrajectory(List<(Rational, KeyDetectionResult)> points)
 {
-    public IReadOnlyList<(Rational Position, KeyDetectionResult Result)> Points { get; }
-
-    public KeyTrajectory(List<(Rational, KeyDetectionResult)> points)
-    {
-        Points = points;
-    }
+    private IReadOnlyList<(Rational Position, KeyDetectionResult Result)> Points { get; } = points;
 
     /// <summary>
     /// Detect modulation points (where key changes significantly).
@@ -557,13 +556,15 @@ public sealed class KeyTrajectory
             var prev = Points[i - 1].Result.Key;
             var curr = Points[i].Result.Key;
 
-            if (prev.Root != curr.Root || prev.IsMajor != curr.IsMajor)
+            if (prev.Root == curr.Root && prev.IsMajor == curr.IsMajor)
             {
-                // Check if both have reasonable confidence
-                if (Points[i - 1].Result.Confidence > 0.3f && Points[i].Result.Confidence > 0.3f)
-                {
-                    yield return (Points[i].Position, prev, curr);
-                }
+                continue;
+            }
+
+            // Check if both have reasonable confidence
+            if (Points[i - 1].Result.Confidence > 0.3f && Points[i].Result.Confidence > 0.3f)
+            {
+                yield return (Points[i].Position, prev, curr);
             }
         }
     }

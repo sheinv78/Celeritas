@@ -12,7 +12,7 @@ public class OrnamentsTests
     public void Trill_Expand_CreatesAlternatingNotes()
     {
         // Arrange
-        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 2), 0.8f);
+        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 2));
 
         var trill = new Trill
         {
@@ -34,7 +34,7 @@ public class OrnamentsTests
         {
             var current = expanded[i].Pitch;
             var next = expanded[i + 1].Pitch;
-            Assert.True(current == 60 || current == 62); // C4 or D4
+            Assert.True(current is 60 or 62); // C4 or D4
             Assert.NotEqual(current, next); // Should alternate
         }
     }
@@ -43,7 +43,7 @@ public class OrnamentsTests
     public void Trill_WithTurn_EndsWithTurnPattern()
     {
         // Arrange
-        var baseNote = new NoteEvent(64, Rational.Zero, new Rational(1, 2), 0.8f);
+        var baseNote = new NoteEvent(64, Rational.Zero, new Rational(1, 2));
 
         var trill = new Trill
         {
@@ -68,7 +68,7 @@ public class OrnamentsTests
     public void Mordent_Upper_CreatesThreeNotes()
     {
         // Arrange
-        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 4), 0.8f);
+        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 4));
 
         var mordent = new Mordent
         {
@@ -92,7 +92,7 @@ public class OrnamentsTests
     public void Mordent_Lower_CreatesThreeNotes()
     {
         // Arrange
-        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 4), 0.8f);
+        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 4));
 
         var mordent = new Mordent
         {
@@ -116,7 +116,7 @@ public class OrnamentsTests
     public void Turn_Normal_CreatesFourNotes()
     {
         // Arrange
-        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 4), 0.8f);
+        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 4));
 
         var turn = new Turn
         {
@@ -141,7 +141,7 @@ public class OrnamentsTests
     public void Turn_Inverted_ReversesPattern()
     {
         // Arrange
-        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 4), 0.8f);
+        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 4));
 
         var turn = new Turn
         {
@@ -166,7 +166,7 @@ public class OrnamentsTests
     public void Appoggiatura_Long_TakesHalfDuration()
     {
         // Arrange
-        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 2), 0.8f);
+        var baseNote = new NoteEvent(60, Rational.Zero, new Rational(1, 2));
 
         var appoggiatura = new Appoggiatura
         {
@@ -192,8 +192,8 @@ public class OrnamentsTests
         // Arrange
         var notes = new[]
         {
-            new NoteEvent(60, Rational.Zero, new Rational(1, 4), 0.8f),
-            new NoteEvent(64, new Rational(1, 4), new Rational(1, 4), 0.8f),
+            new NoteEvent(60, Rational.Zero, new Rational(1, 4)),
+            new NoteEvent(64, new Rational(1, 4), new Rational(1, 4)),
         };
 
         var mordent = new Mordent

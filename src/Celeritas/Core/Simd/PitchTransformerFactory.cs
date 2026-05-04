@@ -16,24 +16,33 @@ public static class PitchTransformerFactory
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static IPitchTransformer CreateBest()
     {
-        // x86/x64 SIMD
-        if (Avx512F.IsSupported) return new PitchTransformerAvx512();
-        if (Avx2.IsSupported) return new PitchTransformerAvx2();
-        if (Sse2.IsSupported) return new PitchTransformerSse2();
-
-        // ARM SIMD (NEON)
-        if (AdvSimd.IsSupported) return new PitchTransformerNeon();
-
-        // WebAssembly SIMD (check if hardware accelerated)
-        if (Vector128.IsHardwareAccelerated &&
-            !Avx512F.IsSupported && !Avx2.IsSupported &&
-            !Sse2.IsSupported && !AdvSimd.IsSupported)
+        return Avx512F.IsSupported switch
         {
-            return new PitchTransformerWasm();
-        }
+            // x86/x64 SIMD
+            true => new PitchTransformerAvx512(),
+            _ => Avx2.IsSupported switch
+            {
+                true => new PitchTransformerAvx2(),
+                _ => Sse2.IsSupported switch
+                {
+                    true => new PitchTransformerSse2(),
+                    _ => AdvSimd.IsSupported switch
+                    {
+                        // ARM SIMD (NEON)
+                        true => new PitchTransformerNeon(),
+                        _ => Vector128.IsHardwareAccelerated switch
+                        {
+                            // WebAssembly SIMD (check if hardware accelerated)
+                            true when !Avx512F.IsSupported && !Avx2.IsSupported && !Sse2.IsSupported &&
+                                      !AdvSimd.IsSupported => new PitchTransformerWasm(),
+                            _ => new PitchTransformerScalar()
+                        }
+                    }
+                }
+            }
+        };
 
         // Fallback
-        return new PitchTransformerScalar();
     }
 }
 

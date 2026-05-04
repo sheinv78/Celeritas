@@ -11,7 +11,7 @@ public class NoteBufferTests
         using var buffer = new NoteBuffer(10);
 
         // Act
-        buffer.AddNote(60, Rational.Zero, Rational.Quarter, 0.8f);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter);
 
         // Assert
         Assert.Equal(1, buffer.Count);

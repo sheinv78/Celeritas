@@ -1,6 +1,6 @@
+using Celeritas.Core;
 using Celeritas.Core.Midi;
 using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.Interaction;
 
 namespace Celeritas.Tests;
 
@@ -13,8 +13,8 @@ public class MidiEventsWriteTests
         const int tpq = 480;
 
         // Insert at 1 beat, then at 0 beats (should become first).
-        MidiEvents.AddTempoChange(track, new Celeritas.Core.Rational(1, 1), 120, tpq);
-        MidiEvents.AddTempoChange(track, Celeritas.Core.Rational.Zero, 90, tpq);
+        MidiEvents.AddTempoChange(track, new Rational(1, 1), 120, tpq);
+        MidiEvents.AddTempoChange(track, Rational.Zero, 90, tpq);
 
         var absTimes = GetAbsoluteTimes(track);
         var tempos = track.Events.OfType<SetTempoEvent>().ToArray();
@@ -37,7 +37,7 @@ public class MidiEventsWriteTests
         track.Events.Add(new TextEvent("B") { DeltaTime = 240 });
 
         // Insert time signature at tick 360 (3/4 beat if tpq=480 => 360 ticks = 3/4 beat).
-        MidiEvents.AddTimeSignatureChange(track, new Celeritas.Core.Rational(3, 4), 3, 4, tpq);
+        MidiEvents.AddTimeSignatureChange(track, new Rational(3, 4), 3, 4, tpq);
 
         var abs = GetAbsoluteTimes(track);
 

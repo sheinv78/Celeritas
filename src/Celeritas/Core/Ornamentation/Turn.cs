@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace Celeritas.Core.Ornamentation;
 
 /// <summary>

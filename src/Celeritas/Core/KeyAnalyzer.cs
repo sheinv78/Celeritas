@@ -35,7 +35,7 @@ public static class KeyAnalyzer
     /// Uses cyclic rotation (ROR) to find scale degree
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static RomanNumeralChord Analyze(ReadOnlySpan<int> pitches, KeySignature key)
+    private static RomanNumeralChord Analyze(ReadOnlySpan<int> pitches, KeySignature key)
     {
         if (pitches.IsEmpty)
             return RomanNumeralChord.Invalid;
@@ -67,7 +67,7 @@ public static class KeyAnalyzer
     /// Analyze chord in the context of a key signature (NoteEvent array overload)
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static RomanNumeralChord Analyze(ReadOnlySpan<NoteEvent> notes, KeySignature key)
+    private static RomanNumeralChord Analyze(ReadOnlySpan<NoteEvent> notes, KeySignature key)
     {
         if (notes.IsEmpty)
             return RomanNumeralChord.Invalid;
@@ -90,12 +90,12 @@ public static class KeyAnalyzer
         return interval switch
         {
             0 => new RomanNumeralChord(ScaleDegree.I, quality, HarmonicFunction.Tonic),      // I
-            2 => new RomanNumeralChord(ScaleDegree.II, quality, HarmonicFunction.Subdominant), // ii
-            4 => new RomanNumeralChord(ScaleDegree.III, quality, HarmonicFunction.Tonic),    // iii
-            5 => new RomanNumeralChord(ScaleDegree.IV, quality, HarmonicFunction.Subdominant), // IV
+            2 => new RomanNumeralChord(ScaleDegree.Ii, quality, HarmonicFunction.Subdominant), // ii
+            4 => new RomanNumeralChord(ScaleDegree.Iii, quality, HarmonicFunction.Tonic),    // iii
+            5 => new RomanNumeralChord(ScaleDegree.Iv, quality, HarmonicFunction.Subdominant), // IV
             7 => new RomanNumeralChord(ScaleDegree.V, quality, HarmonicFunction.Dominant),   // V
-            9 => new RomanNumeralChord(ScaleDegree.VI, quality, HarmonicFunction.Tonic),     // vi
-            11 => new RomanNumeralChord(ScaleDegree.VII, quality, HarmonicFunction.Dominant), // vii°
+            9 => new RomanNumeralChord(ScaleDegree.Vi, quality, HarmonicFunction.Tonic),     // vi
+            11 => new RomanNumeralChord(ScaleDegree.Vii, quality, HarmonicFunction.Dominant), // vii°
             _ => RomanNumeralChord.Invalid
         };
     }
@@ -105,12 +105,12 @@ public static class KeyAnalyzer
         return interval switch
         {
             0 => new RomanNumeralChord(ScaleDegree.I, quality, HarmonicFunction.Tonic),      // i
-            2 => new RomanNumeralChord(ScaleDegree.II, quality, HarmonicFunction.Subdominant), // ii°
-            3 => new RomanNumeralChord(ScaleDegree.III, quality, HarmonicFunction.Tonic),    // III
-            5 => new RomanNumeralChord(ScaleDegree.IV, quality, HarmonicFunction.Subdominant), // iv
+            2 => new RomanNumeralChord(ScaleDegree.Ii, quality, HarmonicFunction.Subdominant), // ii°
+            3 => new RomanNumeralChord(ScaleDegree.Iii, quality, HarmonicFunction.Tonic),    // III
+            5 => new RomanNumeralChord(ScaleDegree.Iv, quality, HarmonicFunction.Subdominant), // iv
             7 => new RomanNumeralChord(ScaleDegree.V, quality, HarmonicFunction.Dominant),   // V (or v)
-            8 => new RomanNumeralChord(ScaleDegree.VI, quality, HarmonicFunction.Tonic),     // VI
-            10 => new RomanNumeralChord(ScaleDegree.VII, quality, HarmonicFunction.Dominant), // VII
+            8 => new RomanNumeralChord(ScaleDegree.Vi, quality, HarmonicFunction.Tonic),     // VI
+            10 => new RomanNumeralChord(ScaleDegree.Vii, quality, HarmonicFunction.Dominant), // VII
             _ => RomanNumeralChord.Invalid
         };
     }
@@ -132,7 +132,7 @@ public static class KeyAnalyzer
     /// Identify key signature from a pitch class mask
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static KeySignature IdentifyKey(ushort mask)
+    private static KeySignature IdentifyKey(ushort mask)
     {
         // Try all 12 rotations for major and minor
         var bestMatch = 0;
@@ -176,7 +176,7 @@ public static class KeyAnalyzer
     /// Identify key signature from a human-readable notation string.
     /// Example: "C4 D4 E4 F4 G4 A4 B4" -> C major
     /// </summary>
-    public static KeySignature IdentifyKey(string notation)
+    private static KeySignature IdentifyKey(string notation)
     {
         var notes = MusicNotation.Parse(notation);
         if (notes.Length == 0)
@@ -193,7 +193,7 @@ public static class KeyAnalyzer
     /// Identify key signature from note events.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static KeySignature IdentifyKey(ReadOnlySpan<NoteEvent> notes)
+    private static KeySignature IdentifyKey(ReadOnlySpan<NoteEvent> notes)
     {
         if (notes.IsEmpty)
             return new KeySignature(0, true);
@@ -239,6 +239,6 @@ public static class KeyAnalyzer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int PopCount(ushort value)
     {
-        return BitOperations.PopCount((uint)value);
+        return BitOperations.PopCount(value);
     }
 }

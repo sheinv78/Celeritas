@@ -7,7 +7,7 @@ public class CircleOfFifthsTests
     [Fact]
     public void PitchClasses_ClockwiseFromC_ShouldMatchStandardOrder_WithSharps()
     {
-        var pcs = CircleOfFifths.PitchClasses(PitchClass.C, CircleDirection.Clockwise);
+        var pcs = CircleOfFifths.PitchClasses(PitchClass.C);
         var names = pcs.Select(p => p.ToName(preferSharps: true)).ToArray();
 
         Assert.Equal(

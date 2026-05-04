@@ -1,8 +1,6 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
-using System.Buffers;
-
 namespace Celeritas.Core.Analysis;
 
 /// <summary>
@@ -39,7 +37,7 @@ public sealed class Voice
 /// <summary>
 /// A note assigned to a specific voice.
 /// </summary>
-public readonly struct VoiceNote
+public readonly record struct VoiceNote
 {
     public int Pitch { get; init; }
     public Rational Offset { get; init; }
@@ -52,13 +50,13 @@ public readonly struct VoiceNote
     public Rational End => Offset + Duration;
 
     public override string ToString() =>
-        $"{ChordLibrary.NoteNames[Pitch % 12]}{Pitch / 12 - 1} @ {Offset}";
+        $"{ChordLibrary.NoteNames[Pitch % 12]}{(Pitch / 12) - 1} @ {Offset}";
 }
 
 /// <summary>
 /// Result of voice separation analysis.
 /// </summary>
-public sealed class VoiceSeparationResult
+public sealed record VoiceSeparationResult
 {
     public required IReadOnlyList<Voice> Voices { get; init; }
     public required int TotalNotes { get; init; }
@@ -75,10 +73,7 @@ public sealed class VoiceSeparationResult
 /// </summary>
 public static class VoiceSeparator
 {
-    /// <summary>
-    /// Default options for voice separation.
-    /// </summary>
-    public static readonly VoiceSeparatorOptions DefaultOptions = new();
+    private static readonly VoiceSeparatorOptions DefaultOptions = new();
 
     /// <summary>
     /// Separate notes into voices using pitch-proximity algorithm.
@@ -89,18 +84,18 @@ public static class VoiceSeparator
     /// <summary>
     /// Convenience SATB separation: returns exactly 4 voices named Soprano/Alto/Tenor/Bass.
     /// </summary>
-    public static SatbSeparationResult SeparateIntoSATB(IEnumerable<NoteEvent> notes, VoiceSeparatorOptions? options = null)
+    public static SatbSeparationResult SeparateIntoSatb(IEnumerable<NoteEvent> notes, VoiceSeparatorOptions? options = null)
     {
         var arr = notes as NoteEvent[] ?? notes.ToArray();
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
-        return SeparateIntoSATB(buffer, options);
+        return SeparateIntoSatb(buffer, options);
     }
 
     /// <summary>
     /// Convenience SATB separation: returns exactly 4 voices named Soprano/Alto/Tenor/Bass.
     /// </summary>
-    public static SatbSeparationResult SeparateIntoSATB(NoteBuffer buffer, VoiceSeparatorOptions? options = null)
+    public static SatbSeparationResult SeparateIntoSatb(NoteBuffer buffer, VoiceSeparatorOptions? options = null)
     {
         var res = Separate(buffer, maxVoices: 4, options ?? DefaultOptions);
 
@@ -183,7 +178,6 @@ public static class VoiceSeparator
 
         var noteToVoice = new Dictionary<int, int>();
         var voiceLastPitch = new int[maxVoices];
-        var voiceLastEnd = new Rational[maxVoices];
         var voiceCrossings = 0;
 
         // Initialize voice pitches based on typical ranges
@@ -203,8 +197,8 @@ public static class VoiceSeparator
                 for (int i = 0; i < sliceNotes.Count; i++)
                 {
                     var (note, origIndex) = sliceNotes[i];
-                    var voiceIdx = AssignToNearestVoice(note.Pitch, voiceLastPitch, voiceLastEnd,
-                        note.Offset, i, sliceNotes.Count, maxVoices, options);
+                    var voiceIdx = AssignToNearestVoice(note.Pitch, voiceLastPitch,
+                        i, sliceNotes.Count, maxVoices, options);
 
                     voices[voiceIdx].Notes.Add(note);
                     noteToVoice[origIndex] = voiceIdx;
@@ -216,13 +210,11 @@ public static class VoiceSeparator
                         voiceCrossings++;
 
                     voiceLastPitch[voiceIdx] = note.Pitch;
-                    voiceLastEnd[voiceIdx] = note.End;
                 }
             }
             else
             {
                 // More notes than voices: use pitch-proximity assignment
-                var assigned = new bool[sliceNotes.Count];
                 var usedVoices = new bool[maxVoices];
 
                 // First pass: assign to nearest available voice
@@ -234,23 +226,8 @@ public static class VoiceSeparator
                     noteToVoice[origIndex] = voiceIdx;
                     usedVoices[voiceIdx] = true;
                     voiceLastPitch[voiceIdx] = note.Pitch;
-                    voiceLastEnd[voiceIdx] = note.End;
                 }
             }
-        }
-
-        // Remove empty voices and renumber
-        var nonEmptyVoices = voices.Where(v => v.Notes.Count > 0).ToList();
-        for (int i = 0; i < nonEmptyVoices.Count; i++)
-        {
-            nonEmptyVoices[i] = new Voice
-            {
-                Index = i,
-                Name = GetVoiceName(i, nonEmptyVoices.Count),
-                Notes = { }
-            };
-            foreach (var note in voices.First(v => v.Notes.SequenceEqual(nonEmptyVoices[i].Notes) == false &&
-                v.Notes.Count > 0).Notes.Where(_ => false)) { } // Keep original notes
         }
 
         // Calculate separation quality
@@ -323,8 +300,8 @@ public static class VoiceSeparator
     }
 
     private static int AssignToNearestVoice(
-        int pitch, int[] voiceLastPitch, Rational[] voiceLastEnd,
-        Rational noteOnset, int noteIndex, int totalInSlice, int maxVoices,
+        int pitch, int[] voiceLastPitch,
+        int noteIndex, int totalInSlice, int maxVoices,
         VoiceSeparatorOptions options)
     {
         // Simple heuristic: if fewer notes than voices, assign by position
@@ -368,7 +345,6 @@ public static class VoiceSeparator
     {
         if (voices.All(v => v.Notes.Count == 0)) return 1.0f;
 
-        var totalNotes = voices.Sum(v => v.Notes.Count);
         var crossingPenalty = crossings * 0.05f;
 
         // Check for melodic smoothness
@@ -393,39 +369,33 @@ public static class VoiceSeparator
 
     private static string GetVoiceName(int index, int total)
     {
-        if (total == 4)
+        return total switch
         {
-            return index switch
+            4 => index switch
             {
                 0 => "Soprano",
                 1 => "Alto",
                 2 => "Tenor",
                 3 => "Bass",
                 _ => $"Voice {index + 1}"
-            };
-        }
-        if (total == 3)
-        {
-            return index switch
+            },
+            3 => index switch
             {
                 0 => "Upper",
                 1 => "Middle",
                 2 => "Lower",
                 _ => $"Voice {index + 1}"
-            };
-        }
-        if (total == 2)
-        {
-            return index == 0 ? "Upper" : "Lower";
-        }
-        return $"Voice {index + 1}";
+            },
+            2 => index == 0 ? "Upper" : "Lower",
+            _ => $"Voice {index + 1}"
+        };
     }
 }
 
 /// <summary>
 /// SATB (Soprano/Alto/Tenor/Bass) separation convenience result.
 /// </summary>
-public sealed class SatbSeparationResult
+public sealed record SatbSeparationResult
 {
     public required VoiceSeparationResult Full { get; init; }
     public required Voice Soprano { get; init; }

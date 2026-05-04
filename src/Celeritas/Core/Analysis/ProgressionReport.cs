@@ -1,28 +1,23 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Text;
+
 namespace Celeritas.Core.Analysis;
 
 /// <summary>
 /// A suggested chord that could follow a progression.
 /// </summary>
-public sealed class ChordSuggestion
+public sealed class ChordSuggestion(string chord, string reason, float score)
 {
     /// <summary>Chord symbol (e.g., "Cmaj7", "Dm")</summary>
-    public string Chord { get; init; }
+    public string Chord { get; init; } = chord;
 
     /// <summary>Reason why this chord is suggested</summary>
-    public string Reason { get; init; }
+    public string Reason { get; init; } = reason;
 
     /// <summary>Quality score (0-1) indicating how well it fits</summary>
-    public float Score { get; init; }
-
-    public ChordSuggestion(string chord, string reason, float score)
-    {
-        Chord = chord;
-        Reason = reason;
-        Score = score;
-    }
+    public float Score { get; init; } = score;
 }
 
 /// <summary>
@@ -113,9 +108,9 @@ public sealed class ProgressionReport
     /// <summary>Generate a formatted text report</summary>
     public string ToFormattedReport()
     {
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
 
-        sb.AppendLine($"=== Progression Analysis ===");
+        sb.AppendLine("=== Progression Analysis ===");
         sb.AppendLine($"Key: {Key} (confidence: {KeyConfidence:P0})");
         sb.AppendLine($"Pattern: {Pattern}");
 

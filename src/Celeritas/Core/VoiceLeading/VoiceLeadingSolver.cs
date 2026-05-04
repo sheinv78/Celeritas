@@ -2,6 +2,8 @@
 // Licensed under the Business Source License 1.1
 
 using System.Runtime.CompilerServices;
+using System.Text;
+using Celeritas.Core.Analysis;
 
 namespace Celeritas.Core.VoiceLeading;
 
@@ -14,14 +16,9 @@ namespace Celeritas.Core.VoiceLeading;
 /// 2. Build a graph where edges connect compatible voicings of consecutive chords
 /// 3. Use parallel A* search to find the path with minimum voice leading cost
 /// </summary>
-public sealed class VoiceLeadingSolver
+public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null)
 {
-    private readonly VoiceLeadingSolverOptions _options;
-
-    public VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null)
-    {
-        _options = options ?? VoiceLeadingSolverOptions.Default;
-    }
+    private readonly VoiceLeadingSolverOptions _options = options ?? VoiceLeadingSolverOptions.Default;
 
     /// <summary>
     /// Solve voice leading for a progression of chords.
@@ -61,7 +58,7 @@ public sealed class VoiceLeadingSolver
 
         foreach (var symbol in chordSymbols)
         {
-            var pitches = Analysis.ProgressionAdvisor.ParseChordSymbol(symbol);
+            var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
             if (pitches.Length == 0)
             {
                 return new VoiceLeadingSolution([], float.MaxValue,
@@ -320,7 +317,7 @@ public sealed class VoiceLeadingSolver
 
         // Combine penalty and smoothness
         // Weight smoothness more heavily for natural voice leading
-        return check.Penalty + smoothness * _options.SmoothnessWeight;
+        return check.Penalty + (smoothness * _options.SmoothnessWeight);
     }
 }
 
@@ -336,7 +333,7 @@ public sealed class VoiceLeadingSolverOptions
     public float MaxTransitionCost { get; init; } = 500f;
 
     /// <summary>If true, any voice leading violation makes the transition invalid</summary>
-    public bool StrictMode { get; init; } = false;
+    public bool StrictMode { get; init; }
 
     /// <summary>If true, enforce spacing rules during voicing generation</summary>
     public bool EnforceSpacing { get; init; } = true;
@@ -366,19 +363,12 @@ public sealed class VoiceLeadingSolverOptions
 /// <summary>
 /// Result of voice leading solver.
 /// </summary>
-public sealed class VoiceLeadingSolution
+public sealed class VoiceLeadingSolution(Voicing[] voicings, float totalCost, IReadOnlyList<string> warnings)
 {
-    public IReadOnlyList<Voicing> Voicings { get; }
-    public float TotalCost { get; }
-    public IReadOnlyList<string> Warnings { get; }
+    public IReadOnlyList<Voicing> Voicings { get; } = voicings;
+    public float TotalCost { get; } = totalCost;
+    public IReadOnlyList<string> Warnings { get; } = warnings;
     public bool IsValid => TotalCost < float.MaxValue && Voicings.Count > 0;
-
-    public VoiceLeadingSolution(Voicing[] voicings, float totalCost, IReadOnlyList<string> warnings)
-    {
-        Voicings = voicings;
-        TotalCost = totalCost;
-        Warnings = warnings;
-    }
 
     /// <summary>
     /// Format as readable SATB score.
@@ -388,7 +378,7 @@ public sealed class VoiceLeadingSolution
         if (!IsValid)
             return "No valid solution found.";
 
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         sb.AppendLine("SATB Voice Leading:");
         sb.AppendLine("═══════════════════════════════════════");
         sb.AppendLine();

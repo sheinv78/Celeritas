@@ -7,7 +7,7 @@ namespace Celeritas.Core;
 
 /// <summary>
 /// High-performance rational number for precise musical time representation.
-/// Automatically normalizes to lowest terms.
+/// Automatically normalizes to the lowest terms.
 /// </summary>
 public readonly record struct Rational : IComparable<Rational>
 {
@@ -64,7 +64,7 @@ public readonly record struct Rational : IComparable<Rational>
             return new Rational(a.Numerator + b.Numerator, a.Denominator);
 
         return new Rational(
-            a.Numerator * b.Denominator + b.Numerator * a.Denominator,
+            (a.Numerator * b.Denominator) + (b.Numerator * a.Denominator),
             a.Denominator * b.Denominator);
     }
 
@@ -75,7 +75,7 @@ public readonly record struct Rational : IComparable<Rational>
             return new Rational(a.Numerator - b.Numerator, a.Denominator);
 
         return new Rational(
-            a.Numerator * b.Denominator - b.Numerator * a.Denominator,
+            (a.Numerator * b.Denominator) - (b.Numerator * a.Denominator),
             a.Denominator * b.Denominator);
     }
 
@@ -114,7 +114,7 @@ public readonly record struct Rational : IComparable<Rational>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int CompareTo(Rational other)
     {
-        var diff = Numerator * other.Denominator - other.Numerator * Denominator;
+        var diff = (Numerator * other.Denominator) - (other.Numerator * Denominator);
         return diff < 0 ? -1 : diff > 0 ? 1 : 0;
     }
 

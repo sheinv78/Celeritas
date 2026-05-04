@@ -1,6 +1,8 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Numerics;
+
 namespace Celeritas.Core.Analysis;
 
 /// <summary>
@@ -76,45 +78,37 @@ public static class KeyRelationships
     /// </summary>
     public static string Describe(KeySignature from, KeySignature to)
     {
-        var interval = ((to.Root - from.Root) % 12 + 12) % 12;
+        var interval = (((to.Root - from.Root) % 12) + 12) % 12;
 
-        // Same root, different mode
-        if (interval == 0 && from.IsMajor != to.IsMajor)
+        return interval switch
         {
-            return to.IsMajor ? "parallel major" : "parallel minor";
-        }
-
-        // Relative major/minor (3 semitones apart, opposite modes)
-        if (interval == 3 && !from.IsMajor && to.IsMajor)
-            return "relative major";
-        if (interval == 9 && from.IsMajor && !to.IsMajor)
-            return "relative minor";
-
-        // Dominant key (5th above)
-        if (interval == 7)
-            return "dominant key (V)";
-
-        // Subdominant key (4th above / 5th below)
-        if (interval == 5)
-            return "subdominant key (IV)";
-
-        // Secondary dominants
-        if (interval == 2) return "supertonic key (II)";
-        if (interval == 4) return "mediant key (III)";
-        if (interval == 9) return "submediant key (VI)";
-
-        // Chromatic relationships
-        if (interval == 1) return "chromatic: up half step";
-        if (interval == 11) return "chromatic: down half step";
-        if (interval == 6) return "tritone key";
-
-        // Third relationships (romantic)
-        if (interval == 3) return "chromatic mediant (down m3)";
-        if (interval == 4) return "chromatic mediant (up M3)";
-        if (interval == 8) return "chromatic mediant (down M3)";
-        if (interval == 9) return "chromatic mediant (up m3)";
-
-        return $"distant key ({interval} semitones)";
+            // Same root, different mode
+            0 when from.IsMajor != to.IsMajor => to.IsMajor ? "parallel major" : "parallel minor",
+            // Relative major/minor (3 semitones apart, opposite modes)
+            3 when !from.IsMajor && to.IsMajor => "relative major",
+            9 when from.IsMajor && !to.IsMajor => "relative minor",
+            // Dominant key (5th above)
+            7 => "dominant key (V)",
+            // Subdominant key (4th above / 5th below)
+            5 => "subdominant key (IV)",
+            // Secondary dominants
+            2 => "supertonic key (II)",
+            4 => "mediant key (III)",
+            9 => "submediant key (VI)",
+            _ => interval switch
+            {
+                // Chromatic relationships
+                1 => "chromatic: up half step",
+                11 => "chromatic: down half step",
+                6 => "tritone key",
+                // Third relationships (romantic)
+                3 => "chromatic mediant (down m3)",
+                4 => "chromatic mediant (up M3)",
+                8 => "chromatic mediant (down M3)",
+                9 => "chromatic mediant (up m3)",
+                _ => $"distant key ({interval} semitones)"
+            }
+        };
     }
 
     /// <summary>
@@ -122,21 +116,23 @@ public static class KeyRelationships
     /// </summary>
     public static bool AreCloselyRelated(KeySignature a, KeySignature b)
     {
-        var interval = ((b.Root - a.Root) % 12 + 12) % 12;
+        var interval = (((b.Root - a.Root) % 12) + 12) % 12;
 
-        // Same key
-        if (interval == 0) return true;
-
-        // Parallel major/minor
-        if (interval == 0 && a.IsMajor != b.IsMajor) return true;
-
-        // Relative major/minor
-        if ((interval == 3 || interval == 9) && a.IsMajor != b.IsMajor) return true;
-
-        // Dominant/Subdominant
-        if (interval == 5 || interval == 7) return true;
-
-        return false;
+        return interval switch
+        {
+            // Same key
+            0 => true,
+            _ => interval switch
+            {
+                // Parallel major/minor
+                0 when a.IsMajor != b.IsMajor => true,
+                // Relative major/minor
+                3 or 9 when a.IsMajor != b.IsMajor => true,
+                // Dominant/Subdominant
+                5 or 7 => true,
+                _ => false
+            }
+        };
     }
 
     /// <summary>
@@ -146,7 +142,7 @@ public static class KeyRelationships
     {
         var maskA = GetScaleMask(a);
         var maskB = GetScaleMask(b);
-        return System.Numerics.BitOperations.PopCount((uint)(maskA & maskB));
+        return BitOperations.PopCount((uint)(maskA & maskB));
     }
 
     private static ushort GetScaleMask(KeySignature key)

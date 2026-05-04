@@ -33,31 +33,21 @@ public static class VoiceRanges
         Voice.Soprano => Soprano,
         _ => (0, 127)
     };
-
-    public static bool IsInRange(Voice voice, int pitch)
-    {
-        var range = GetRange(voice);
-        return pitch >= range.Min && pitch <= range.Max;
-    }
 }
 
 /// <summary>
 /// A specific voicing of a chord (4 pitches, one per voice).
 /// Stored as a packed 32-bit integer for efficient comparison.
 /// </summary>
-public readonly struct Voicing : IEquatable<Voicing>
+public readonly struct Voicing(int bass, int tenor, int alto, int soprano)
+    : IEquatable<Voicing>
 {
     // Packed: Bass(8 bits) | Tenor(8 bits) | Alto(8 bits) | Soprano(8 bits)
-    private readonly uint _packed;
-
-    public Voicing(int bass, int tenor, int alto, int soprano)
-    {
-        _packed = (uint)(
-            (bass & 0xFF) |
-            ((tenor & 0xFF) << 8) |
-            ((alto & 0xFF) << 16) |
-            ((soprano & 0xFF) << 24));
-    }
+    private readonly uint _packed = (uint)(
+        (bass & 0xFF) |
+        ((tenor & 0xFF) << 8) |
+        ((alto & 0xFF) << 16) |
+        ((soprano & 0xFF) << 24));
 
     public int Bass => (int)(_packed & 0xFF);
     public int Tenor => (int)((_packed >> 8) & 0xFF);

@@ -284,14 +284,14 @@ public static class ModalProgressions
             var chord = ChordLibrary.GetChord(mask);
             var rootPc = chord.Quality != ChordQuality.Unknown
                 ? chord.RootPitchClass
-                : (pitches[0] % 12 + 12) % 12;
+                : ((pitches[0] % 12) + 12) % 12;
 
             chordRootPitchClasses.Add(rootPc);
 
             var pcsSet = new HashSet<int>();
             foreach (var p in pitches)
             {
-                var pc = (p % 12 + 12) % 12;
+                var pc = ((p % 12) + 12) % 12;
                 if (pcsSet.Add(pc))
                 {
                     distribution[pc] += 1f;
@@ -302,10 +302,11 @@ public static class ModalProgressions
         }
 
         var hintedRoot = rootHint ?? chordRootPitchClasses.FirstOrDefault(pc => pc >= 0);
-        if (hintedRoot < 0)
+        hintedRoot = hintedRoot switch
         {
-            hintedRoot = 0;
-        }
+            < 0 => 0,
+            _ => hintedRoot
+        };
 
         var (detectedKey, modeConfidence) = ModeLibrary.DetectModeWithRoot(distribution, hintedRoot);
 
