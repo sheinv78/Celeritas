@@ -93,19 +93,20 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 **AMD Ryzen 9 9950X3D** 4.30 GHz · 16 cores · AVX-512 · .NET 10.0.1 · May 2026:
 
 ```text
-| Method                    | Mean         | Allocated |
-|---------------------------|-------------:|----------:|
-| Transpose_1M_Notes        |    28.6 µs   |         - |  (~35M notes/sec)
-| Transpose_10M_Notes       |   261.0 µs   |         - |  (~38M notes/sec, 3D V-Cache)
-| ScaleVelocity_1M_Notes    |    29.8 µs   |         - |  (~34M notes/sec)
-| ChordAnalysis_GetMask     |     0.81 ns  |         - |  (bit-mask generation)
-| ChordAnalysis_Identify    |     1.26 ns  |         - |  (chord from mask)
-| MusicNotation_ParseSingle |    11.2 ns   |         - |  (parse "Bb3" → pitch)
-| MusicNotation_Parse       |     2.69 µs  |   9.5 KB  |  (parse 6-note string)
-| MusicNotation_Format      |    18.8 ns   |      32 B |  (pitch → notation)
-| Progression_Analyze       |     6.54 µs  |  32.6 KB  |  (full Dm7–G7–Cmaj7–Am7)
-| Quantize_1M_Notes         |     1.27 ms  |         - |  (rhythmic quantization)
+| Method                    | Mean         | Allocated | Δ vs 7900X  |
+|---------------------------|-------------:|----------:|------------:|
+| Transpose_1M_Notes        |    28.6 µs   |         - |        −4%  |
+| Transpose_10M_Notes       |   261.0 µs   |         - |       −66%  |  ← 3D V-Cache
+| ScaleVelocity_1M_Notes    |    29.8 µs   |         - |        −2%  |
+| ChordAnalysis_GetMask     |     0.81 ns  |         - |       −21%  |
+| ChordAnalysis_Identify    |     1.26 ns  |         - |       −36%  |
+| MusicNotation_ParseSingle |    11.2 ns   |         - |       −11%  |
+| MusicNotation_Parse       |     2.69 µs  |   9.5 KB  |       −12%  |
+| MusicNotation_Format      |    18.8 ns   |      32 B |        −2%  |
+| Progression_Analyze †     |     6.54 µs  |  32.6 KB  |       n/a † |
+| Quantize_1M_Notes         |     1.27 ms  |         - |        −1%  |
 ```
+† `Progression_Analyze` is not comparable: current code computes ~23 report fields vs ~10 in Dec 2025.
 
 **AMD Ryzen 9 7900X** 4.70 GHz · 12 cores · AVX-512 · .NET 10.0.1 · December 2025:
 
@@ -117,19 +118,17 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 ```text
 | Method                    | Mean         | Allocated |
 |---------------------------|-------------:|----------:|
-| Transpose_1M_Notes        |    29.9 µs   |         - |  (~33M notes/sec)
-| Transpose_10M_Notes       |   773.6 µs   |         - |  (~13M notes/sec, no V-Cache)
-| ScaleVelocity_1M_Notes    |    30.5 µs   |         - |  (~33M notes/sec)
-| ChordAnalysis_GetMask     |     1.03 ns  |         - |  (bit-mask generation)
-| ChordAnalysis_Identify    |     1.96 ns  |         - |  (chord from mask)
-| MusicNotation_ParseSingle |    12.6 ns   |         - |  (parse "Bb3" → pitch)
-| MusicNotation_Parse       |     3.05 µs  |   9.4 KB  |  (parse 6-note string)
-| MusicNotation_Format      |    19.1 ns   |      32 B |  (pitch → notation)
-| Progression_Analyze †     |     2.27 µs  |  10.9 KB  |  (old report: ~10 fields)
-| Quantize_1M_Notes         |     1.28 ms  |         - |  (rhythmic quantization)
+| Transpose_1M_Notes        |    29.9 µs   |         - |
+| Transpose_10M_Notes       |   773.6 µs   |         - |
+| ScaleVelocity_1M_Notes    |    30.5 µs   |         - |
+| ChordAnalysis_GetMask     |     1.03 ns  |         - |
+| ChordAnalysis_Identify    |     1.96 ns  |         - |
+| MusicNotation_ParseSingle |    12.6 ns   |         - |
+| MusicNotation_Parse       |     3.05 µs  |   9.4 KB  |
+| MusicNotation_Format      |    19.1 ns   |      32 B |
+| Progression_Analyze †     |     2.27 µs  |  10.9 KB  |
+| Quantize_1M_Notes         |     1.28 ms  |         - |
 ```
-† Measured with an older `ProgressionAdvisor` that didn't compute borrowed chords, tension curves,
-voice-leading stats, secondary dominants, or cadence deduplication — not comparable to current results.
 
 ## ✨ Features
 
