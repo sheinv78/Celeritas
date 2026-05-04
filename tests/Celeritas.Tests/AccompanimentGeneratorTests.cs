@@ -6,43 +6,42 @@ namespace Celeritas.Tests;
 
 public sealed class AccompanimentGeneratorTests
 {
+    // AccompanimentOptions.Default: BassOctave=2 (C2=36), ChordOctave=4 (middle C), MaxChordTones=4
+    private const int PitchClassG  = 7;   // G in mod-12
+    private const int PitchClassC  = 0;   // C in mod-12
+
     [Fact]
     public void Generate_FromRoman_Block_ProducesBassPlusChordTones()
     {
         var key = new KeySignature("C", isMajor: true);
         var progression = new[]
         {
-            new HarmonicRhythmItem(new RomanNumeralChord(ScaleDegree.I, ChordQuality.Major, HarmonicFunction.Tonic), Rational.Whole),
-            new HarmonicRhythmItem(new RomanNumeralChord(ScaleDegree.V, ChordQuality.Dominant7, HarmonicFunction.Dominant), Rational.Whole)
+            new HarmonicRhythmItem(new RomanNumeralChord(ScaleDegree.I,  ChordQuality.Major,     HarmonicFunction.Tonic),    Rational.Whole),
+            new HarmonicRhythmItem(new RomanNumeralChord(ScaleDegree.V,  ChordQuality.Dominant7, HarmonicFunction.Dominant), Rational.Whole)
         };
 
-        var options = AccompanimentOptions.Default with
-        {
-            Pattern = AccompanimentPattern.Block,
-            BassOctave = 2,
-            ChordOctave = 4,
-            MaxChordTones = 4
-        };
+        // All values match AccompanimentOptions.Default — no override needed.
+        var options = AccompanimentOptions.Default;
 
         var events = AccompanimentGenerator.Generate(progression, key, options);
 
-        // Segment 1: 1 bass + 3 tones; Segment 2: 1 bass + 4 tones
-        Assert.Equal(9, events.Length);
+        // Segment 1 (I):  1 bass + 3 chord tones = 4
+        // Segment 2 (V7): 1 bass + 4 chord tones = 5  →  total = 9
+        const int expectedEventCount = 4 + 5;
+        Assert.Equal(expectedEventCount, events.Length);
 
         // First segment starts at 0 and lasts 1/1.
         Assert.Equal(Rational.Zero, events[0].Offset);
         Assert.Equal(Rational.Whole, events[0].Duration);
 
         // Second segment starts at 1/1.
-        Assert.Equal(Rational.Whole, events[4].Offset);
-        Assert.Equal(Rational.Whole, events[4].Duration);
+        const int secondSegmentStart = 4; // index after first segment's 4 events
+        Assert.Equal(Rational.Whole, events[secondSegmentStart].Offset);
+        Assert.Equal(Rational.Whole, events[secondSegmentStart].Duration);
 
-        // Pitch-class sanity checks.
-        // C major: bass C2 (36) and chord includes C/E/G (60/64/67-ish)
-        Assert.Equal(0, events[0].Pitch % 12);
-
-        // V7 in C: bass G2 (43) and chord includes G/B/D/F
-        Assert.Equal(7, events[4].Pitch % 12);
+        // Pitch-class sanity: C major bass = C (0), V7 bass = G (7)
+        Assert.Equal(PitchClassC, events[0].Pitch % 12);
+        Assert.Equal(PitchClassG, events[secondSegmentStart].Pitch % 12);
     }
 
     [Fact]
@@ -57,25 +56,25 @@ public sealed class AccompanimentGeneratorTests
                 Pitches: [60, 64, 67])
         };
 
+        // Override only non-default values; BassOctave/ChordOctave remain at defaults (2 and 4).
         var options = AccompanimentOptions.Default with
         {
-            Pattern = AccompanimentPattern.Arpeggio,
-            Subdivision = Rational.Quarter,
-            BassOctave = 2,
-            ChordOctave = 4
+            Pattern     = AccompanimentPattern.Arpeggio,
+            Subdivision = Rational.Quarter
         };
 
         var events = AccompanimentGenerator.Generate(chords, options);
 
-        // For 1/1 duration with 1/4 step -> 4 events (bass + 3 tones).
-        Assert.Equal(4, events.Length);
-        Assert.Equal(Rational.Zero, events[0].Offset);
-        Assert.Equal(new Rational(1, 4), events[0].Duration);
-        Assert.Equal(new Rational(1, 4), events[1].Offset);
-        Assert.Equal(new Rational(1, 2), events[2].Offset);
-        Assert.Equal(new Rational(3, 4), events[3].Offset);
+        // 1/1 duration ÷ 1/4 step = 4 steps (bass on step 0, then 3 chord tones)
+        const int stepsPerWholeNote = 4;
+        Assert.Equal(stepsPerWholeNote, events.Length);
+        Assert.Equal(Rational.Zero,         events[0].Offset);
+        Assert.Equal(new Rational(1, 4),    events[0].Duration);
+        Assert.Equal(new Rational(1, 4),    events[1].Offset);
+        Assert.Equal(new Rational(1, 2),    events[2].Offset);
+        Assert.Equal(new Rational(3, 4),    events[3].Offset);
 
-        // First event is bass.
-        Assert.Equal(0, events[0].Pitch % 12);
+        // First event is bass — pitch class C (0).
+        Assert.Equal(PitchClassC, events[0].Pitch % 12);
     }
 }
