@@ -53,7 +53,7 @@ public sealed class AccompanimentGeneratorTests
                 Start: Rational.Zero,
                 End: new Rational(1, 1),
                 Chord: new ChordInfo(0, ChordQuality.Major),
-                Pitches: [60, 64, 67])
+                Pitches: [MidiPitch.C4, MidiPitch.E4, MidiPitch.G4])
         };
 
         // Override only non-default values; BassOctave/ChordOctave remain at defaults (2 and 4).

@@ -238,6 +238,7 @@ public class MusicNotationAntlrParserTests
             "4/4: C4/4 C4/4 G4/4 G4/4 | A4/4 A4/4 G4/2 | " +
             "F4/4 F4/4 E4/4 E4/4 | D4/4 D4/4 C4/2");
 
+        // Twinkle Twinkle: 4+4+2 + 4+4+2 + 4+4+4+4 = 14 note events (G4/2 and C4/2 count as 1 each)
         Assert.Equal(14, notes.Length);
     }
 
@@ -372,8 +373,8 @@ public class MusicNotationAntlrParserTests
         Assert.Single(reparsed.Directives);
         var bpm = reparsed.Directives[0] as TempoBpmDirective;
         Assert.NotNull(bpm);
-        Assert.Equal(120, bpm.Bpm);
-        Assert.Equal(140, bpm.TargetBpm);
+        Assert.Equal(120, bpm.Bpm);        // start tempo from "@bpm 120 -> 140"
+        Assert.Equal(140, bpm.TargetBpm);  // target tempo from "@bpm 120 -> 140"
         Assert.Equal(new Rational(1, 2), bpm.RampDuration);
     }
 
@@ -473,7 +474,7 @@ public class MusicNotationAntlrParserTests
         Assert.Single(result.Directives);
         var directive = result.Directives[0] as TempoBpmDirective;
         Assert.NotNull(directive);
-        Assert.Equal(120, directive.Bpm);
+        Assert.Equal(120, directive.Bpm); // from "@bpm 120"
         Assert.Null(directive.TargetBpm);
         Assert.Equal(Rational.Zero, directive.Time);
     }
@@ -485,7 +486,7 @@ public class MusicNotationAntlrParserTests
 
         var directive = result.Directives[0] as TempoBpmDirective;
         Assert.NotNull(directive);
-        Assert.Equal(140, directive.Bpm);
+        Assert.Equal(140, directive.Bpm); // from "@bpm = 140"
     }
 
     [Fact]
@@ -495,8 +496,8 @@ public class MusicNotationAntlrParserTests
 
         var directive = result.Directives[0] as TempoBpmDirective;
         Assert.NotNull(directive);
-        Assert.Equal(120, directive.Bpm);
-        Assert.Equal(140, directive.TargetBpm);
+        Assert.Equal(120, directive.Bpm);        // start from "@bpm 120 -> 140"
+        Assert.Equal(140, directive.TargetBpm);  // target from "@bpm 120 -> 140"
         Assert.Equal(new Rational(1, 2), directive.RampDuration);
     }
 
@@ -507,8 +508,8 @@ public class MusicNotationAntlrParserTests
 
         var directive = result.Directives[0] as TempoBpmDirective;
         Assert.NotNull(directive);
-        Assert.Equal(100, directive.Bpm);
-        Assert.Equal(120, directive.TargetBpm);
+        Assert.Equal(100, directive.Bpm);        // start from "@bpm 100 -> 120"
+        Assert.Equal(120, directive.TargetBpm);  // target from "@bpm 100 -> 120"
         Assert.Null(directive.RampDuration);
     }
 

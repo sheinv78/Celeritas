@@ -9,7 +9,7 @@ public class NoteArithmeticTests
     {
         var note = SpnNote.Parse("C#4");
         Assert.Equal("C#4", note.ToString());
-        Assert.Equal(61, note.MidiPitch);
+        Assert.Equal(MidiPitch.CSharp4, note.MidiPitch);
     }
 
     [Fact]
