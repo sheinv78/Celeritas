@@ -109,20 +109,27 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 
 **AMD Ryzen 9 7900X** 4.70 GHz · 12 cores · AVX-512 · .NET 10.0.1 · December 2025:
 
+> ⚠️ **Note:** These results were measured with an earlier version of the codebase (v0.9.0, December 2025).
+> `Progression_Analyze` used a lighter `ProgressionReport` (~10 fields). The current version computes ~23 fields
+> (tension curves, borrowed chords, secondary dominants, voice leading, cadences, etc.) — results are not
+> directly comparable for that benchmark. All other rows are comparable.
+
 ```text
 | Method                    | Mean         | Allocated |
 |---------------------------|-------------:|----------:|
 | Transpose_1M_Notes        |    29.9 µs   |         - |  (~33M notes/sec)
-| Transpose_10M_Notes       |   773.6 µs   |         - |  (~13M notes/sec)
+| Transpose_10M_Notes       |   773.6 µs   |         - |  (~13M notes/sec, no V-Cache)
 | ScaleVelocity_1M_Notes    |    30.5 µs   |         - |  (~33M notes/sec)
 | ChordAnalysis_GetMask     |     1.03 ns  |         - |  (bit-mask generation)
 | ChordAnalysis_Identify    |     1.96 ns  |         - |  (chord from mask)
 | MusicNotation_ParseSingle |    12.6 ns   |         - |  (parse "Bb3" → pitch)
 | MusicNotation_Parse       |     3.05 µs  |   9.4 KB  |  (parse 6-note string)
 | MusicNotation_Format      |    19.1 ns   |      32 B |  (pitch → notation)
-| Progression_Analyze       |     2.27 µs  |  10.9 KB  |  (full Dm7–G7–Cmaj7–Am7)
+| Progression_Analyze †     |     2.27 µs  |  10.9 KB  |  (old report: ~10 fields)
 | Quantize_1M_Notes         |     1.28 ms  |         - |  (rhythmic quantization)
 ```
+† Measured with an older `ProgressionAdvisor` that didn't compute borrowed chords, tension curves,
+voice-leading stats, secondary dominants, or cadence deduplication — not comparable to current results.
 
 ## ✨ Features
 
