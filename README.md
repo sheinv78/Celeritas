@@ -36,7 +36,7 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 🚧 **Active Development** — Experimental / Research Project  
 ⚠️ **API is not stable yet** — Breaking changes may occur
 
-**Maintainer status (2026-05-05):** v0.9.0 is the current stable release.  
+**Maintainer status (2026-05-05):** v0.9.0 is the current stable release. Benchmarks refreshed May 2026.  
 Issues and PRs are welcome.
 
 Current version: **v0.9.0** (December 2025)  
@@ -84,7 +84,30 @@ Celeritas = load_celeritas().namespace
 
 Celeritas is designed for extreme performance.
 
-Benchmark numbers below are measured on AMD Ryzen 9 7900X, .NET 10.0.1, AVX-512, BenchmarkDotNet v0.15.8 (December 2025). Results vary by CPU, OS, .NET version, and workload:
+Results vary by CPU, OS, .NET version, and workload. Run benchmarks yourself:
+
+```bash
+dotnet run --project src/Celeritas.Benchmarks -c Release
+```
+
+**AMD Ryzen 9 9950X3D** 4.30 GHz · 16 cores · AVX-512 · .NET 10.0.1 · May 2026:
+
+```text
+| Method                    | Mean         | Allocated |
+|---------------------------|-------------:|----------:|
+| Transpose_1M_Notes        |    24.5 µs   |         - |  (~41M notes/sec)
+| Transpose_10M_Notes       |   710.6 µs   |         - |  (~14M notes/sec)
+| ScaleVelocity_1M_Notes    |    28.7 µs   |         - |  (~35M notes/sec)
+| ChordAnalysis_GetMask     |     0.80 ns  |         - |  (bit-mask generation)
+| ChordAnalysis_Identify    |     1.24 ns  |         - |  (chord from mask)
+| MusicNotation_ParseSingle |    11.2 ns   |         - |  (parse "Bb3" → pitch)
+| MusicNotation_Parse       |     2.74 µs  |   9.5 KB  |  (parse 6-note string)
+| MusicNotation_Format      |    17.6 ns   |      32 B |  (pitch → notation)
+| Progression_Analyze       |     7.40 µs  |  36.4 KB  |  (full Dm7–G7–Cmaj7–Am7)
+| Quantize_1M_Notes         |     1.27 ms  |         - |  (rhythmic quantization)
+```
+
+**AMD Ryzen 9 7900X** 4.70 GHz · 12 cores · AVX-512 · .NET 10.0.1 · December 2025:
 
 ```text
 | Method                    | Mean         | Allocated |
@@ -99,12 +122,6 @@ Benchmark numbers below are measured on AMD Ryzen 9 7900X, .NET 10.0.1, AVX-512,
 | MusicNotation_Format      |    19.1 ns   |      32 B |  (pitch → notation)
 | Progression_Analyze       |     2.27 µs  |  10.9 KB  |  (full Dm7–G7–Cmaj7–Am7)
 | Quantize_1M_Notes         |     1.28 ms  |         - |  (rhythmic quantization)
-```
-
-Run benchmarks:
-
-```bash
-dotnet run --project src/Celeritas.Benchmarks -c Release
 ```
 
 ## ✨ Features
@@ -410,8 +427,8 @@ Highlights:
 
 | Platform        | SIMD     | Status | Performance       |
 |-----------------|----------|--------|-------------------|
-| x64 Intel/AMD   | AVX-512  | ✅     | ~33M notes/sec    |
-| x64 Intel/AMD   | AVX2     | ✅     | ~13M notes/sec    |
+| x64 Intel/AMD   | AVX-512  | ✅     | ~41M notes/sec    |
+| x64 Intel/AMD   | AVX2     | ✅     | ~14M notes/sec    |
 | x64 Intel/AMD   | SSE2     | ✅     | ~10M notes/sec    |
 | ARM64           | NEON     | ✅     | ~10-15M notes/sec |
 | WebAssembly     | SIMD128  | ✅     | ~5-10M notes/sec  |
