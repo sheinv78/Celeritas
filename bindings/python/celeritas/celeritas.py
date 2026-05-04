@@ -1,4 +1,4 @@
-"""
+﻿"""
 Celeritas - High-Performance Music Engine for Python
 Python bindings for Celeritas .NET library
 
@@ -12,7 +12,6 @@ import platform
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
-
 
 _NOTE_NAMES_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
