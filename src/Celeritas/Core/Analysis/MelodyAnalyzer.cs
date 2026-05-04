@@ -301,13 +301,6 @@ public static class MelodyAnalyzer
         var last = pitches[^1];
         var overallChange = last - first;
 
-        // Find the peak/trough positions
-        var maxIdx = Array.IndexOf(pitches, pitches.Max());
-        var minIdx = Array.IndexOf(pitches, pitches.Min());
-
-        var totalLen = pitches.Length;
-        var maxPos = (double)maxIdx / totalLen;
-        var minPos = (double)minIdx / totalLen;
 
         return turningPoints.Count switch
         {
