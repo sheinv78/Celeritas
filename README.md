@@ -95,15 +95,15 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 ```text
 | Method                    | Mean         | Allocated |
 |---------------------------|-------------:|----------:|
-| Transpose_1M_Notes        |    24.5 µs   |         - |  (~41M notes/sec)
-| Transpose_10M_Notes       |   710.6 µs   |         - |  (~14M notes/sec)
-| ScaleVelocity_1M_Notes    |    28.7 µs   |         - |  (~35M notes/sec)
-| ChordAnalysis_GetMask     |     0.80 ns  |         - |  (bit-mask generation)
-| ChordAnalysis_Identify    |     1.24 ns  |         - |  (chord from mask)
+| Transpose_1M_Notes        |    28.6 µs   |         - |  (~35M notes/sec)
+| Transpose_10M_Notes       |   261.0 µs   |         - |  (~38M notes/sec, 3D V-Cache)
+| ScaleVelocity_1M_Notes    |    29.8 µs   |         - |  (~34M notes/sec)
+| ChordAnalysis_GetMask     |     0.81 ns  |         - |  (bit-mask generation)
+| ChordAnalysis_Identify    |     1.26 ns  |         - |  (chord from mask)
 | MusicNotation_ParseSingle |    11.2 ns   |         - |  (parse "Bb3" → pitch)
-| MusicNotation_Parse       |     2.74 µs  |   9.5 KB  |  (parse 6-note string)
-| MusicNotation_Format      |    17.6 ns   |      32 B |  (pitch → notation)
-| Progression_Analyze       |     7.40 µs  |  36.4 KB  |  (full Dm7–G7–Cmaj7–Am7)
+| MusicNotation_Parse       |     2.69 µs  |   9.5 KB  |  (parse 6-note string)
+| MusicNotation_Format      |    18.8 ns   |      32 B |  (pitch → notation)
+| Progression_Analyze       |     6.54 µs  |  32.6 KB  |  (full Dm7–G7–Cmaj7–Am7)
 | Quantize_1M_Notes         |     1.27 ms  |         - |  (rhythmic quantization)
 ```
 
@@ -425,14 +425,14 @@ Highlights:
 
 ### 📊 SIMD Platform Support
 
-| Platform        | SIMD     | Status | Performance       |
-|-----------------|----------|--------|-------------------|
-| x64 Intel/AMD   | AVX-512  | ✅     | ~41M notes/sec    |
-| x64 Intel/AMD   | AVX2     | ✅     | ~14M notes/sec    |
-| x64 Intel/AMD   | SSE2     | ✅     | ~10M notes/sec    |
-| ARM64           | NEON     | ✅     | ~10-15M notes/sec |
-| WebAssembly     | SIMD128  | ✅     | ~5-10M notes/sec  |
-| Fallback        | Scalar   | ✅     | ~1M notes/sec     |
+| Platform        | SIMD     | Status | Performance                       |
+|-----------------|----------|--------|-----------------------------------|
+| x64 Intel/AMD   | AVX-512  | ✅     | ~35–38M notes/sec (3D V-Cache)    |
+| x64 Intel/AMD   | AVX2     | ✅     | ~14M notes/sec                    |
+| x64 Intel/AMD   | SSE2     | ✅     | ~10M notes/sec                    |
+| ARM64           | NEON     | ✅     | ~10-15M notes/sec                 |
+| WebAssembly     | SIMD128  | ✅     | ~5-10M notes/sec                  |
+| Fallback        | Scalar   | ✅     | ~1M notes/sec                     |
 
 ## 📄 License
 
