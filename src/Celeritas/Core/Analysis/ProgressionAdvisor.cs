@@ -392,14 +392,36 @@ public static class ProgressionAdvisor
             }
         }
 
-        // Analyze each chord
-        var chordDetails = new List<ChordAnalysisDetail>();
+        // Single pass: build chordDetails, pattern, tensionCurve, uniqueRoots/variety bitmasks
+        var chordDetails = new List<ChordAnalysisDetail>(parsedChords.Count);
+        var tensionCurve = new float[parsedChords.Count];
+        var tensionSum = 0f;
+        var patternSb = new StringBuilder();
+        int rootBits = 0, charBits = 0;
+        var hasAltered = false;
+
         for (var i = 0; i < parsedChords.Count; i++)
         {
             var (symbol, pitches, info) = parsedChords[i];
             var detail = AnalyzeChord(symbol, pitches, info, key, i, parsedChords.Count, alteredNotes);
             chordDetails.Add(detail);
+
+            if (i > 0) patternSb.Append(" - ");
+            patternSb.Append(detail.RomanNumeral);
+
+            var t = CharacterToTension(detail.Character);
+            tensionCurve[i] = t;
+            tensionSum += t;
+
+            rootBits |= 1 << info.RootPitchClass;
+            charBits |= 1 << (int)detail.Character;
+            hasAltered |= detail.UsesAlteredScale;
         }
+
+        var pattern = patternSb.ToString();
+        var avgTension = parsedChords.Count > 0 ? tensionSum / parsedChords.Count : 0f;
+        var uniqueRoots = BitOperations.PopCount((uint)rootBits);
+        var variety = BitOperations.PopCount((uint)charBits);
 
         // Detect cadences
         var cadences = DetectCadences(parsedChords, key);
@@ -410,26 +432,7 @@ public static class ProgressionAdvisor
         // Check for modal mixture
         var hasModalMixture = DetectModalMixture(parsedChords, key);
 
-        // Build pattern string
-        var pattern = string.Join(" - ", chordDetails.Select(c => c.RomanNumeral));
-
-        // Generate narrative
-        var narrative = GenerateNarrative(chordDetails, cadences, key, usesHarmonicMinor, modulations);
-
-        // Generate suggestions (including modulation advice)
-        var suggestions = GenerateSuggestions(chordDetails, cadences, key, parsedChords, modulations);
-
-        // Tension curve (0-1) based on chord character + function.
-        var tensionCurve = chordDetails
-            .Select(c => CharacterToTension(c.Character))
-            .ToArray();
-
-        var avgTension = tensionCurve.Length > 0 ? tensionCurve.Average() : 0f;
-
         // Complexity heuristic (0-1)
-        var uniqueRoots = parsedChords.Select(c => c.info.RootPitchClass).Distinct().Count();
-        var variety = chordDetails.Select(c => c.Character).Distinct().Count();
-        var hasAltered = chordDetails.Any(c => c.UsesAlteredScale);
         var complexity = Clamp01(
             ((uniqueRoots / (float)Math.Max(1, parsedChords.Count)) * 0.35f) +
             ((variety / 12f) * 0.15f) +
@@ -437,11 +440,29 @@ public static class ProgressionAdvisor
             (hasModalMixture ? 0.15f : 0f) +
             (hasAltered ? 0.10f : 0f));
 
-        // Highlights
+        // Generate narrative
+        var narrative = GenerateNarrative(chordDetails, cadences, key, usesHarmonicMinor, modulations);
+
+        // Generate suggestions (including modulation advice)
+        var suggestions = GenerateSuggestions(chordDetails, cadences, key, parsedChords, modulations);
+
+        // Highlights — bitmask dedup for cadence types instead of LINQ Distinct
         var highlights = new List<string>();
         if (cadences.Count > 0)
         {
-            highlights.Add($"Cadences: {string.Join(", ", cadences.Select(c => c.Type).Distinct())}");
+            int seenCadenceTypes = 0;
+            var cadSb = new StringBuilder("Cadences: ");
+            var firstCad = true;
+            foreach (var c in cadences)
+            {
+                var bit = 1 << (int)c.Type;
+                if ((seenCadenceTypes & bit) != 0) continue;
+                seenCadenceTypes |= bit;
+                if (!firstCad) cadSb.Append(", ");
+                cadSb.Append(c.Type);
+                firstCad = false;
+            }
+            highlights.Add(cadSb.ToString());
         }
 
         if (modulations.Count > 0)
@@ -464,35 +485,42 @@ public static class ProgressionAdvisor
             highlights.Add("Contains modal mixture / borrowed chords");
         }
 
-        // Secondary dominants from tonicization events.
-        var secondaryDominants = modulations
-            .Where(m => m.Type == ModulationType.Tonicization)
-            .Select(m => new SecondaryDominantInfo
+        // Secondary dominants — loop instead of Where+Select+Where+ToList
+        var secondaryDominants = new List<SecondaryDominantInfo>();
+        foreach (var m in modulations)
+        {
+            if (m.Type != ModulationType.Tonicization) continue;
+            var sdChord  = m.Position < chordDetails.Count     ? chordDetails[m.Position].Symbol     : "";
+            var sdTarget = m.Position + 1 < chordDetails.Count ? chordDetails[m.Position + 1].Symbol : "";
+            if (string.IsNullOrEmpty(sdChord) || string.IsNullOrEmpty(sdTarget)) continue;
+            secondaryDominants.Add(new SecondaryDominantInfo
             {
                 Position = m.Position,
-                Chord = chordDetails.Count > m.Position ? chordDetails[m.Position].Symbol : "",
-                Target = m.Position + 1 < chordDetails.Count ? chordDetails[m.Position + 1].Symbol : "",
+                Chord = sdChord,
+                Target = sdTarget,
                 TargetDegree = m.Position + 1 < parsedChords.Count
-                    ? FormatRomanNumeral(KeyAnalyzer.Analyze(parsedChords[m.Position + 1].pitches, key), parsedChords[m.Position + 1].info.Quality)
+                    ? FormatRomanNumeral(KeyAnalyzer.Analyze(parsedChords[m.Position + 1].pitches, key),
+                                         parsedChords[m.Position + 1].info.Quality)
                     : null
-            })
-            .Where(s => !string.IsNullOrWhiteSpace(s.Chord) && !string.IsNullOrWhiteSpace(s.Target))
-            .ToList();
+            });
+        }
 
-        // Borrowed chords: chord marked as chromatic in roman analysis.
-        var borrowedChords = chordDetails
-            .Select((c, i) => (c, i))
-            .Where(x => x.c.IsBorrowed)
-            .Select(x => new BorrowedChordInfo
+        // Borrowed chords — loop, sourceKey computed once
+        var borrowedChords = new List<BorrowedChordInfo>();
+        var borrowedSourceKey = key.IsMajor ? $"{key} minor" : $"{key} major";
+        for (var i = 0; i < chordDetails.Count; i++)
+        {
+            if (!chordDetails[i].IsBorrowed) continue;
+            borrowedChords.Add(new BorrowedChordInfo
             {
-                Position = x.i,
-                Chord = x.c.Symbol,
-                SourceKey = key.IsMajor ? $"{key} minor" : $"{key} major"
-            })
-            .ToList();
+                Position = i,
+                Chord = chordDetails[i].Symbol,
+                SourceKey = borrowedSourceKey
+            });
+        }
 
-        // Basic voice-leading metrics (approximate).
-        var (avgMove, p5, p8) = AnalyzeVoiceLeading(parsedChords.Select(p => p.pitches).ToList());
+        // Basic voice-leading metrics — pass parsedChords directly (no intermediate ToList)
+        var (avgMove, p5, p8) = AnalyzeVoiceLeading(parsedChords);
         var smoothness = Clamp01(1f - (avgMove / 12f));
         var qualityRating = (smoothness, p5 + p8) switch
         {
@@ -556,7 +584,8 @@ public static class ProgressionAdvisor
         _ => 0.50f
     };
 
-    private static (float avgMovement, int parallel5ths, int parallelOctaves) AnalyzeVoiceLeading(IReadOnlyList<int[]> chords)
+    private static (float avgMovement, int parallel5ths, int parallelOctaves) AnalyzeVoiceLeading(
+        List<(string symbol, int[] pitches, ChordInfo info)> chords)
     {
         if (chords.Count < 2)
         {
@@ -568,20 +597,31 @@ public static class ProgressionAdvisor
         var p5 = 0;
         var p8 = 0;
 
+        // Pre-allocate one buffer: first 12 slots = chord A, next 12 = chord B.
+        // 12 is the chromatic ceiling — no chord can have more unique pitch classes.
+        Span<int> sortBuf = stackalloc int[24];
+
         for (var i = 0; i < chords.Count - 1; i++)
         {
-            var a = chords[i].OrderBy(x => x).ToArray();
-            var b = chords[i + 1].OrderBy(x => x).ToArray();
-
-            var voices = Math.Min(a.Length, b.Length);
+            var rawA = chords[i].pitches;
+            var rawB = chords[i + 1].pitches;
+            var aLen = Math.Min(rawA.Length, 12);
+            var bLen = Math.Min(rawB.Length, 12);
+            var voices = Math.Min(aLen, bLen);
             if (voices == 0)
             {
                 continue;
             }
 
+            // Copy and sort both into the fixed-split pre-allocated buffer.
+            rawA.AsSpan(0, aLen).CopyTo(sortBuf);
+            rawB.AsSpan(0, bLen).CopyTo(sortBuf[12..]);
+            sortBuf[..aLen].Sort();
+            sortBuf[12..(12 + bLen)].Sort();
+
             for (var v = 0; v < voices; v++)
             {
-                totalMoves += Math.Abs(b[v] - a[v]);
+                totalMoves += Math.Abs(sortBuf[12 + v] - sortBuf[v]);
                 totalVoices++;
             }
 
@@ -590,11 +630,11 @@ public static class ProgressionAdvisor
             {
                 for (var v2 = v1 + 1; v2 < voices; v2++)
                 {
-                    var intA = Math.Abs(a[v2] - a[v1]) % 12;
-                    var intB = Math.Abs(b[v2] - b[v1]) % 12;
+                    var intA = Math.Abs(sortBuf[v2]      - sortBuf[v1])      % 12;
+                    var intB = Math.Abs(sortBuf[12 + v2] - sortBuf[12 + v1]) % 12;
 
-                    var dir1 = Math.Sign(b[v1] - a[v1]);
-                    var dir2 = Math.Sign(b[v2] - a[v2]);
+                    var dir1 = Math.Sign(sortBuf[12 + v1] - sortBuf[v1]);
+                    var dir2 = Math.Sign(sortBuf[12 + v2] - sortBuf[v2]);
                     var isParallelMotion = dir1 != 0 && dir1 == dir2;
 
                     if (!isParallelMotion)
