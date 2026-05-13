@@ -275,7 +275,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
     {
         // Chord duration is optional - use it as default if no individual durations
         Rational? chordDuration = context.duration() != null
-            ? ParseDuration(context.duration())
+            ? global::Celeritas.Core.MusicNotationVisitorImpl.ParseDuration(context.duration())
             : null;
 
         var notesInChord = context.noteInChord();
@@ -320,7 +320,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         return [];
     }
 
-    private int ParsePitch(MusicNotationParser.PitchContext context)
+    private static int ParsePitch(MusicNotationParser.PitchContext context)
     {
         var pitchName = context.PITCH_NAME().GetText().ToUpperInvariant();
         var pitchClass = pitchName[0] switch
@@ -352,7 +352,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         return ((octave + 1) * 12) + pitchClass;
     }
 
-    private Rational ParseDuration(MusicNotationParser.DurationContext context)
+    private static Rational ParseDuration(MusicNotationParser.DurationContext context)
     {
         var valueCtx = context.durationValue();
         var isDotted = context.DOT() != null;
@@ -392,7 +392,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
 
         return baseDuration;
     }
-    private NoteEvent[] ParseOrnament(MusicNotationParser.OrnamentContext context, NoteEvent baseNote)
+    private static NoteEvent[] ParseOrnament(MusicNotationParser.OrnamentContext context, NoteEvent baseNote)
     {
         var ornamentType = context.ornamentType();
         var paramsCtx = context.ornamentParams();
@@ -640,7 +640,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         return [];
     }
 
-    private string ParseDirectiveValue(MusicNotationParser.DirectiveValueContext context)
+    private static string ParseDirectiveValue(MusicNotationParser.DirectiveValueContext context)
     {
         if (context.STRING() != null)
         {
@@ -656,7 +656,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         throw new ArgumentException("Invalid directive value");
     }
 
-    private string ParseDynamicsValue(MusicNotationParser.DynamicsValueContext context)
+    private static string ParseDynamicsValue(MusicNotationParser.DynamicsValueContext context)
     {
         if (context.DYNAMICS_LEVEL() != null)
         {

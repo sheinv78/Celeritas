@@ -84,7 +84,7 @@ public class CeleritasBenchmarks
     }
 
     [Benchmark]
-    public int MusicNotation_ParseSingle()
+    public static int MusicNotation_ParseSingle()
     {
         return MusicNotation.ParseNote("Bb3");
     }
@@ -96,7 +96,7 @@ public class CeleritasBenchmarks
     }
 
     [Benchmark]
-    public string MusicNotation_Format()
+    public static string MusicNotation_Format()
     {
         return MusicNotation.ToNotation(78);
     }

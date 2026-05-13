@@ -197,7 +197,7 @@ public sealed class RhythmPredictor
         };
     }
 
-    private string GetContext(IReadOnlyList<Rational> durations, int start, int length)
+    private static string GetContext(IReadOnlyList<Rational> durations, int start, int length)
     {
         var parts = new List<string>();
         for (int i = 0; i < length && start + i < durations.Count; i++)

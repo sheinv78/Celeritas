@@ -181,7 +181,7 @@ public class FiguredBassRealizer
             .First();
     }
 
-    private NoteEvent[] EnforceUpperVoiceOrdering(FiguredBassSymbol symbol, NoteEvent[] notes)
+    private static NoteEvent[] EnforceUpperVoiceOrdering(FiguredBassSymbol symbol, NoteEvent[] notes)
     {
         if (notes.Length <= 2)
         {
@@ -230,7 +230,7 @@ public class FiguredBassRealizer
     /// <summary>
     /// Normalize figured bass figures to standard intervals
     /// </summary>
-    private int[] NormalizeFigures(int[] figures)
+    private static int[] NormalizeFigures(int[] figures)
     {
         return figures.Length switch
         {
@@ -255,7 +255,7 @@ public class FiguredBassRealizer
     /// <summary>
     /// Calculate pitch from bass note and interval
     /// </summary>
-    private int CalculatePitch(int bassPitch, int interval, Dictionary<int, char>? accidentals)
+    private static int CalculatePitch(int bassPitch, int interval, Dictionary<int, char>? accidentals)
     {
         // Convert figured bass interval to semitones
         var semitones = interval switch
@@ -291,7 +291,7 @@ public class FiguredBassRealizer
     /// <summary>
     /// Adjust pitch to be within specified range
     /// </summary>
-    private int AdjustToRange(int pitch, int minPitch, int maxPitch)
+    private static int AdjustToRange(int pitch, int minPitch, int maxPitch)
     {
         while (pitch < minPitch)
         {

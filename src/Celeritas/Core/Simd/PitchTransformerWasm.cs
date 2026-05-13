@@ -44,7 +44,7 @@ public sealed class PitchTransformerWasm : IPitchTransformer
         }
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void TransposeSpan(Span<int> pitches, int semitones)
+    public static void TransposeSpan(Span<int> pitches, int semitones)
     {
         int i = 0;
         var vSemitones = Vector128.Create(semitones);
@@ -81,7 +81,7 @@ public sealed class PitchTransformerWasm : IPitchTransformer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Scale(Span<int> values, int factor)
+    public static void Scale(Span<int> values, int factor)
     {
         int i = 0;
         var vFactor = Vector128.Create(factor);

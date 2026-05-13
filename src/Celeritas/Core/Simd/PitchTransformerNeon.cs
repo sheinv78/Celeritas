@@ -34,7 +34,7 @@ public sealed class PitchTransformerNeon : IPitchTransformer
         }
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void TransposeSpan(Span<int> pitches, int semitones)
+    public static void TransposeSpan(Span<int> pitches, int semitones)
     {
         int idx = 0;
         var vSemitones = Vector128.Create(semitones);
