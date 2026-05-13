@@ -37,44 +37,25 @@ public enum SimdInstructionSet
 /// </summary>
 public static class SimdInfo
 {
+    private static readonly (SimdInstructionSet InstructionSet, bool IsSupported, string Description)[] InstructionSetDescriptions =
+    [
+        (SimdInstructionSet.Avx512F, Avx512F.IsSupported, "AVX-512"),
+        (SimdInstructionSet.Avx2, Avx2.IsSupported, "AVX2"),
+        (SimdInstructionSet.Sse2, Sse2.IsSupported, "SSE2"),
+        (SimdInstructionSet.Neon, AdvSimd.IsSupported, "NEON"),
+        (SimdInstructionSet.WasmSimd,
+            Vector128.IsHardwareAccelerated && !Avx512F.IsSupported && !Avx2.IsSupported && !Sse2.IsSupported && !AdvSimd.IsSupported,
+            "WebAssembly SIMD")
+    ];
+
     /// <summary>
     /// Detect all available SIMD instruction sets on the current hardware.
     /// </summary>
     public static SimdInstructionSet Detect()
     {
-        var result = SimdInstructionSet.None;
-
-        // x86/x64 instruction sets
-        if (Avx512F.IsSupported)
-        {
-            result |= SimdInstructionSet.Avx512F;
-        }
-
-        if (Avx2.IsSupported)
-        {
-            result |= SimdInstructionSet.Avx2;
-        }
-
-        if (Sse2.IsSupported)
-        {
-            result |= SimdInstructionSet.Sse2;
-        }
-
-        // ARM NEON
-        if (AdvSimd.IsSupported)
-        {
-            result |= SimdInstructionSet.Neon;
-        }
-
-        // WebAssembly SIMD (heuristic check)
-        if (Vector128.IsHardwareAccelerated &&
-            !Avx512F.IsSupported && !Avx2.IsSupported &&
-            !Sse2.IsSupported && !AdvSimd.IsSupported)
-        {
-            result |= SimdInstructionSet.WasmSimd;
-        }
-
-        return result;
+        return InstructionSetDescriptions
+            .Where(entry => entry.IsSupported)
+            .Aggregate(SimdInstructionSet.None, (acc, entry) => acc | entry.InstructionSet);
     }
 
     /// <summary>
@@ -82,27 +63,14 @@ public static class SimdInfo
     /// </summary>
     public static SimdInstructionSet GetBest()
     {
-        return Avx512F.IsSupported switch
+        return Detect() switch
         {
-            true => SimdInstructionSet.Avx512F,
-            _ => Avx2.IsSupported switch
-            {
-                true => SimdInstructionSet.Avx2,
-                _ => Sse2.IsSupported switch
-                {
-                    true => SimdInstructionSet.Sse2,
-                    _ => AdvSimd.IsSupported switch
-                    {
-                        true => SimdInstructionSet.Neon,
-                        _ => Vector128.IsHardwareAccelerated switch
-                        {
-                            true when !Avx512F.IsSupported && !Avx2.IsSupported && !Sse2.IsSupported &&
-                                      !AdvSimd.IsSupported => SimdInstructionSet.WasmSimd,
-                            _ => SimdInstructionSet.None
-                        }
-                    }
-                }
-            }
+            var detected when (detected & SimdInstructionSet.Avx512F) != 0 => SimdInstructionSet.Avx512F,
+            var detected when (detected & SimdInstructionSet.Avx2) != 0 => SimdInstructionSet.Avx2,
+            var detected when (detected & SimdInstructionSet.Sse2) != 0 => SimdInstructionSet.Sse2,
+            var detected when (detected & SimdInstructionSet.Neon) != 0 => SimdInstructionSet.Neon,
+            var detected when (detected & SimdInstructionSet.WasmSimd) != 0 => SimdInstructionSet.WasmSimd,
+            _ => SimdInstructionSet.None
         };
     }
 
@@ -119,39 +87,15 @@ public static class SimdInfo
     /// </summary>
     public static string GetDescription()
     {
-        var detected = Detect();
-        if (detected == SimdInstructionSet.None)
+        return Detect() switch
         {
-            return "No SIMD support (scalar only)";
-        }
-
-        var parts = new List<string>();
-
-        if ((detected & SimdInstructionSet.Avx512F) != 0)
-        {
-            parts.Add("AVX-512");
-        }
-
-        if ((detected & SimdInstructionSet.Avx2) != 0)
-        {
-            parts.Add("AVX2");
-        }
-
-        if ((detected & SimdInstructionSet.Sse2) != 0)
-        {
-            parts.Add("SSE2");
-        }
-
-        if ((detected & SimdInstructionSet.Neon) != 0)
-        {
-            parts.Add("NEON");
-        }
-
-        if ((detected & SimdInstructionSet.WasmSimd) != 0)
-        {
-            parts.Add("WebAssembly SIMD");
-        }
-
-        return string.Join(", ", parts);
+            SimdInstructionSet.None => "No SIMD support (scalar only)",
+            var detected => string.Join(", ", GetDescriptions(detected))
+        };
     }
+
+    private static IEnumerable<string> GetDescriptions(SimdInstructionSet detected) =>
+        InstructionSetDescriptions
+            .Where(entry => (detected & entry.InstructionSet) != 0)
+            .Select(entry => entry.Description);
 }

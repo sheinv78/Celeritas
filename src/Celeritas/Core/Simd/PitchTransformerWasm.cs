@@ -16,14 +16,6 @@ public sealed class PitchTransformerWasm : IPitchTransformer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe void Transpose(int* pitches, int count, int semitones)
     {
-        if (!Vector128.IsHardwareAccelerated)
-        {
-            // Fallback to scalar
-            for (int i = 0; i < count; i++)
-                pitches[i] += semitones;
-            return;
-        }
-
         int idx = 0;
         var vSemitones = Vector128.Create(semitones);
 
@@ -54,15 +46,6 @@ public sealed class PitchTransformerWasm : IPitchTransformer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void TransposeSpan(Span<int> pitches, int semitones)
     {
-        // Check if Vector128 operations are hardware-accelerated (WASM SIMD)
-        if (!Vector128.IsHardwareAccelerated)
-        {
-            // Fallback to scalar
-            for (int j = 0; j < pitches.Length; j++)
-                pitches[j] += semitones;
-            return;
-        }
-
         int i = 0;
         var vSemitones = Vector128.Create(semitones);
 
@@ -100,13 +83,6 @@ public sealed class PitchTransformerWasm : IPitchTransformer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Scale(Span<int> values, int factor)
     {
-        if (!Vector128.IsHardwareAccelerated)
-        {
-            for (int j = 0; j < values.Length; j++)
-                values[j] *= factor;
-            return;
-        }
-
         int i = 0;
         var vFactor = Vector128.Create(factor);
 

@@ -16,14 +16,6 @@ public sealed class PitchTransformerNeon : IPitchTransformer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe void Transpose(int* pitches, int count, int semitones)
     {
-        if (!AdvSimd.IsSupported)
-        {
-            // Fallback to scalar
-            for (int i = 0; i < count; i++)
-                pitches[i] += semitones;
-            return;
-        }
-
         int idx = 0;
         var vSemitones = Vector128.Create(semitones);
 
@@ -44,14 +36,6 @@ public sealed class PitchTransformerNeon : IPitchTransformer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void TransposeSpan(Span<int> pitches, int semitones)
     {
-        if (!AdvSimd.IsSupported)
-        {
-            // Fallback to scalar
-            for (int i = 0; i < pitches.Length; i++)
-                pitches[i] += semitones;
-            return;
-        }
-
         int idx = 0;
         var vSemitones = Vector128.Create(semitones);
 

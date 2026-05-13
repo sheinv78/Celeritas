@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Celeritas.Core.Simd;
 
 namespace Celeritas.Core.Analysis;
 
@@ -16,6 +17,10 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 public static class KeyProfiler
 {
+    private static readonly CorrelationComputer ComputeCorrelations = CreateCorrelationComputer();
+
+    private delegate void CorrelationComputer(ReadOnlySpan<float> input, Span<float> correlations);
+
     // Krumhansl-Kessler key profiles (from cognitive musicology research)
     // These represent the psychological "weight" of each pitch class in a key
 
@@ -89,6 +94,16 @@ public static class KeyProfiler
         }
     }
 
+    private static CorrelationComputer CreateCorrelationComputer()
+    {
+        return SimdInfo.GetBest() switch
+        {
+            SimdInstructionSet.Avx512F => ComputeCorrelationsAvx512,
+            SimdInstructionSet.Avx2 => ComputeCorrelationsAvx2,
+            _ => ComputeCorrelationsScalar
+        };
+    }
+
     /// <summary>
     /// Rotate a profile to a different root note.
     /// </summary>
@@ -121,18 +136,7 @@ public static class KeyProfiler
         // Compute correlations with all 24 key profiles
         Span<float> correlations = stackalloc float[24];
 
-        if (Avx512F.IsSupported)
-        {
-            ComputeCorrelationsAvx512(normalized, correlations);
-        }
-        else if (Avx2.IsSupported)
-        {
-            ComputeCorrelationsAvx2(normalized, correlations);
-        }
-        else
-        {
-            ComputeCorrelationsScalar(normalized, correlations);
-        }
+        ComputeCorrelations(normalized, correlations);
 
         // Find best match
         var bestKey = 0;
@@ -336,15 +340,7 @@ public static class KeyProfiler
         var hi128 = sum256.GetUpper();
         var sum128 = Sse.Add(lo128, hi128);
 
-        // Reduce 128-bit to scalar
-        sum128 = Sse3.IsSupported
-            ? Sse3.HorizontalAdd(sum128, sum128)
-            : Sse.Add(sum128, Sse.Shuffle(sum128, sum128, 0b10_11_00_01));
-        sum128 = Sse3.IsSupported
-            ? Sse3.HorizontalAdd(sum128, sum128)
-            : Sse.Add(sum128, Sse.Shuffle(sum128, sum128, 0b00_01_10_11));
-
-        return sum128.ToScalar();
+        return HorizontalSumSse(sum128);
     }
 
     /// <summary>
@@ -388,19 +384,15 @@ public static class KeyProfiler
         var hi = v.GetUpper();
         var sum = Sse.Add(lo, hi);
 
-        // Horizontal add twice
-        if (Sse3.IsSupported)
-        {
-            sum = Sse3.HorizontalAdd(sum, sum);
-            sum = Sse3.HorizontalAdd(sum, sum);
-        }
-        else
-        {
-            sum = Sse.Add(sum, Sse.Shuffle(sum, sum, 0b10_11_00_01));
-            sum = Sse.Add(sum, Sse.Shuffle(sum, sum, 0b00_01_10_11));
-        }
+        return HorizontalSumSse(sum);
+    }
 
-        return sum.ToScalar();
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static float HorizontalSumSse(Vector128<float> v)
+    {
+        v = Sse.Add(v, Sse.Shuffle(v, v, 0b10_11_00_01));
+        v = Sse.Add(v, Sse.Shuffle(v, v, 0b00_01_10_11));
+        return v.ToScalar();
     }
 
     /// <summary>

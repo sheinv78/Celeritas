@@ -11,6 +11,19 @@ namespace Celeritas.Core;
 public static unsafe class MusicMath
 {
     private static readonly IPitchTransformer PitchTransposeImpl = PitchTransformerFactory.Best;
+    private static readonly ScaleVelocityDelegate ScaleVelocityImpl = CreateScaleVelocityImpl();
+
+    private delegate void ScaleVelocityDelegate(float* velocities, int count, float factor);
+
+    private static ScaleVelocityDelegate CreateScaleVelocityImpl()
+    {
+        return (Avx512F.IsSupported, Avx.IsSupported) switch
+        {
+            (true, _) => ScaleVelocityAvx512,
+            (_, true) => ScaleVelocityAvx,
+            _ => ScaleVelocityScalar
+        };
+    }
 
     /// <summary>
     /// Convert MIDI pitch to note name (e.g., 60 -> "C4").
@@ -38,39 +51,42 @@ public static unsafe class MusicMath
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void ScaleVelocity(NoteBuffer buffer, float factor)
     {
-        var velocities = buffer.VelocityPtr;
-        var count = buffer.Count;
+        ScaleVelocityImpl(buffer.VelocityPtr, buffer.Count, factor);
+    }
 
-        if (Avx512F.IsSupported && count >= 16)
+    private static void ScaleVelocityAvx512(float* velocities, int count, float factor)
+    {
+        var vFactor = Vector512.Create(factor);
+        var i = 0;
+        for (; i <= count - 16; i += 16)
         {
-            var vFactor = Vector512.Create(factor);
-            var i = 0;
-            for (; i <= count - 16; i += 16)
-            {
-                var v = Avx512F.LoadVector512(velocities + i);
-                v = Avx512F.Multiply(v, vFactor);
-                Avx512F.Store(velocities + i, v);
-            }
-            for (; i < count; i++)
-                velocities[i] *= factor;
+            var v = Avx512F.LoadVector512(velocities + i);
+            v = Avx512F.Multiply(v, vFactor);
+            Avx512F.Store(velocities + i, v);
         }
-        else if (Avx.IsSupported && count >= 8)
+
+        ScaleVelocityScalar(velocities + i, count - i, factor);
+    }
+
+    private static void ScaleVelocityAvx(float* velocities, int count, float factor)
+    {
+        var vFactor = Vector256.Create(factor);
+        var i = 0;
+        for (; i <= count - 8; i += 8)
         {
-            var vFactor = Vector256.Create(factor);
-            var i = 0;
-            for (; i <= count - 8; i += 8)
-            {
-                var v = Avx.LoadVector256(velocities + i);
-                v = Avx.Multiply(v, vFactor);
-                Avx.Store(velocities + i, v);
-            }
-            for (; i < count; i++)
-                velocities[i] *= factor;
+            var v = Avx.LoadVector256(velocities + i);
+            v = Avx.Multiply(v, vFactor);
+            Avx.Store(velocities + i, v);
         }
-        else
+
+        ScaleVelocityScalar(velocities + i, count - i, factor);
+    }
+
+    private static void ScaleVelocityScalar(float* velocities, int count, float factor)
+    {
+        for (var i = 0; i < count; i++)
         {
-            for (var i = 0; i < count; i++)
-                velocities[i] *= factor;
+            velocities[i] *= factor;
         }
     }
 
