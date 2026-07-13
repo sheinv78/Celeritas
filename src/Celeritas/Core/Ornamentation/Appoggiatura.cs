@@ -43,8 +43,13 @@ public class Appoggiatura : Ornament
         }
         else
         {
-            // Short appoggiatura (acciaccatura) - very brief
+            // Short appoggiatura (acciaccatura) - very brief, but never longer than half
+            // the base note (a base note <= 1/32 would otherwise get a zero/negative main note)
             var appogiaturaDuration = new Rational(1, 32); // 32nd note
+            var halfBase = BaseNote.Duration / 2;
+            if (appogiaturaDuration > halfBase)
+                appogiaturaDuration = halfBase;
+
             var mainDuration = BaseNote.Duration - appogiaturaDuration;
 
             notes[0] = new NoteEvent(appogiaturaPitch, BaseNote.Offset, appogiaturaDuration, BaseNote.Velocity);

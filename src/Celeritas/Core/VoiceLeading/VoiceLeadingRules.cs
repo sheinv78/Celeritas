@@ -96,23 +96,22 @@ public static class VoiceLeadingRules
 
             if (voice1Moved && voice2Moved)
             {
-                // Check for similar motion (both ascending or both descending)
-                var motion1 = Math.Sign(to[v1] - from[v1]);
-                var motion2 = Math.Sign(to[v2] - from[v2]);
+                // Consecutive perfect intervals between the same voice pair are forbidden
+                // whether the voices move in similar OR contrary motion ("antiparallel"
+                // fifths/octaves, e.g. P5 -> P5 with the voices moving apart, are equally
+                // banned in common-practice voice leading). Oblique motion (one voice
+                // stationary) is excluded by the voiceMoved guards above.
 
-                if (motion1 == motion2) // Similar motion
+                // Consecutive perfect 5ths
+                if (interval1 == PerfectFifth && interval2 == PerfectFifth)
                 {
-                    // Parallel perfect 5ths
-                    if (interval1 == PerfectFifth && interval2 == PerfectFifth)
-                    {
-                        violations |= VoiceLeadingViolation.ParallelFifths;
-                    }
+                    violations |= VoiceLeadingViolation.ParallelFifths;
+                }
 
-                    // Parallel octaves/unisons
-                    if (interval1 == Unison && interval2 == Unison)
-                    {
-                        violations |= VoiceLeadingViolation.ParallelOctaves;
-                    }
+                // Consecutive octaves/unisons
+                if (interval1 == Unison && interval2 == Unison)
+                {
+                    violations |= VoiceLeadingViolation.ParallelOctaves;
                 }
             }
         }
@@ -235,6 +234,10 @@ public static class VoiceLeadingRules
         var violations = VoiceLeadingViolation.None;
         var leadingTone = (keyRoot + 11) % 12; // 7th scale degree
 
+        // Identify the chordal seventh of the 'from' chord (if it is a seventh chord),
+        // so we can require it to resolve down by step.
+        var seventhPc = GetChordalSeventhPitchClass(from);
+
         for (var v = 0; v < 4; v++)
         {
             var voice = (Voice)v;
@@ -256,9 +259,42 @@ public static class VoiceLeadingRules
                     }
                 }
             }
+
+            // Chordal seventh should resolve down by step (or be held as a suspension)
+            if (seventhPc >= 0 && fromPitchClass == seventhPc)
+            {
+                var resolution = toPitch - fromPitch;
+                var resolvesDownByStep = resolution is -1 or -2;
+                var held = resolution == 0;
+                if (!resolvesDownByStep && !held)
+                {
+                    violations |= VoiceLeadingViolation.UnresolvedSeventh;
+                }
+            }
         }
 
         return violations;
+    }
+
+    /// <summary>
+    /// Returns the pitch class of the chordal seventh of the voicing's chord,
+    /// or -1 if the voicing is not recognized as a seventh chord.
+    /// </summary>
+    private static int GetChordalSeventhPitchClass(Voicing voicing)
+    {
+        Span<int> pitches = [voicing.Bass, voicing.Tenor, voicing.Alto, voicing.Soprano];
+        var info = ChordAnalyzer.Identify(pitches);
+
+        var seventhInterval = info.Quality switch
+        {
+            ChordQuality.Major7 or ChordQuality.MinorMajor7 => 11,
+            ChordQuality.Dominant7 or ChordQuality.Minor7 or ChordQuality.HalfDim7
+                or ChordQuality.Augmented7 or ChordQuality.Dominant7Flat5 => 10,
+            ChordQuality.Diminished7 => 9,
+            _ => -1
+        };
+
+        return seventhInterval < 0 ? -1 : (info.RootPitchClass + seventhInterval) % 12;
     }
 
     /// <summary>

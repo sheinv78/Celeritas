@@ -22,6 +22,9 @@ public class Mordent : Ornament
 
     public override NoteEvent[] Expand()
     {
+        if (Alternations < 1)
+            throw new ArgumentOutOfRangeException(nameof(Alternations), Alternations, "Alternations must be at least 1");
+
         var noteCount = (2 * Alternations) + 1; // Main + alternations
         var noteDuration = BaseNote.Duration / noteCount;
 
@@ -32,7 +35,7 @@ public class Mordent : Ornament
         var currentTime = BaseNote.Offset;
 
         // Use stack allocation for small counts
-        Span<NoteEvent> notes = noteCount <= 16 
+        Span<NoteEvent> notes = noteCount <= 16
             ? stackalloc NoteEvent[noteCount]
             : new NoteEvent[noteCount];
 
