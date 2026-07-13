@@ -58,6 +58,7 @@ quality
     | SUS
     | HALF_DIM
     | DELTA
+    | MINUS      // jazz minor: C-7 = Cm7
     ;
 
 extension
@@ -86,10 +87,11 @@ note
     : PITCH_NAME accidental?
     ;
 
+// Note: MINUS is intentionally NOT an accidental — in chord symbols a flat root is
+// written with 'b' (Cb), while '-' after the root means minor (C-7 = Cm7).
 accidental
     : SHARP
     | FLAT
-    | MINUS
     ;
 
 // Lexer rules
