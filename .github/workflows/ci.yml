@@ -13,35 +13,96 @@ env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
+# Cancel superseded runs of the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-    
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+        restore-keys: |
+          nuget-${{ runner.os }}-
+
     - name: Restore dependencies
       run: dotnet restore
-    
+
     - name: Build
       run: dotnet build --no-restore -c Release
-    
-    - name: Test
-      run: dotnet test --no-build -c Release --verbosity normal
-    
-    - name: Benchmark (Ubuntu only)
+
+    - name: Verify formatting (whitespace)
       if: matrix.os == 'ubuntu-latest'
+      # NOTE: style/analyzer rules are already enforced during Build via
+      # EnforceCodeStyleInBuild + TreatWarningsAsErrors; this step only checks whitespace.
+      run: dotnet format whitespace Celeritas.sln --verify-no-changes
+
+    - name: Test (with coverage)
+      run: dotnet test --no-build -c Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory TestResults
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        directory: TestResults
+        fail_ci_if_error: false
+        flags: ${{ matrix.os }}
+
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-${{ matrix.os }}
+        path: TestResults/**/coverage.cobertura.xml
+        if-no-files-found: warn
+
+  benchmark:
+    # Full BenchmarkDotNet suite is expensive: run only on main pushes or manual dispatch, never on PRs.
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+        restore-keys: |
+          nuget-${{ runner.os }}-
+
+    - name: Run benchmarks
       run: |
         cd src/Celeritas.Benchmarks
         dotnet run -c Release --filter '*' --exporters json
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results
+        path: src/Celeritas.Benchmarks/BenchmarkDotNet.Artifacts/
+        if-no-files-found: warn
 
   python-wheels:
     needs: build-and-test

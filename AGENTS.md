@@ -8,7 +8,7 @@
 src/Celeritas/          # Core library (NuGet: Celeritas)
 src/Celeritas.CLI/      # CLI tool (dotnet tool: celeritas)
 src/Celeritas.Native/   # NativeAOT shared library for Python ctypes bindings
-tests/Celeritas.Tests/  # xUnit tests (~350 tests)
+tests/Celeritas.Tests/  # xUnit tests (extensive suite, 360+ tests)
 bindings/python/        # Python package (ctypes fast path + pythonnet full API)
 ```
 
@@ -19,7 +19,7 @@ bindings/python/        # Python package (ctypes fast path + pythonnet full API)
 | Type | Role |
 |------|------|
 | `NoteBuffer` | Unsafe, fixed-capacity SoA (Structure of Arrays) buffer; holds `int* pitches, float* velocities, Rational offsets/durations` — must be `Dispose()`d |
-| `Rational` | `readonly record struct` for exact fractional time (auto-normalizes via GCD); quarter note = `new Rational(1,4)` |
+| `Rational` | `readonly record struct` for exact fractional time (auto-normalizes via GCD); quarter note = `new Rational(1,4)`. **Time-unit convention: whole-note units are used everywhere** — offsets/durations in `NoteBuffer`, `NoteEvent`, and `MidiIo` import/export all measure time in fractions of a whole note (1 = whole note, 1/4 = quarter) |
 | `PitchClass` | Mod-12 pitch class (0=C…11=B); supports `+`, `-`, `SignedIntervalTo` |
 | `SpnNote` | Scientific Pitch Notation note with octave; `SpnNote.C(4)` = middle C |
 | `ChromaticInterval` | Interval in semitones; combine with `SpnNote` via `+` |

@@ -1,0 +1,31 @@
+<Project>
+
+  <!-- Shared build properties for all projects in the Celeritas solution.
+       Per-project files (src/*/*.csproj, tests/*/*.csproj) should only contain
+       project-specific settings (TFM, packaging metadata, unsafe blocks, etc.). -->
+
+  <PropertyGroup>
+    <!-- Single source of truth for the version. CI overrides with -p:Version=X on tagged releases. -->
+    <Version>0.9.0</Version>
+
+    <!-- Language / nullability -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Analyzers & code style -->
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- Reproducible builds -->
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <!-- CI-only: normalize embedded paths for deterministic, source-linkable builds -->
+  <PropertyGroup Condition="'$(CI)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>
