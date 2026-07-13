@@ -46,9 +46,12 @@ public static class MidiEvents
     private static List<TempoChange> GetTempoChanges(Stream stream)
     {
         var midiFile = MidiFile.Read(stream);
-        var ticksPerQuarter = midiFile.TimeDivision is TicksPerQuarterNoteTimeDivision tpq
-            ? tpq.TicksPerQuarterNote
-            : 480;
+        if (midiFile.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
+        {
+            throw new NotSupportedException("Only ticks-per-quarter-note MIDI files are supported.");
+        }
+
+        var ticksPerQuarter = tpq.TicksPerQuarterNote;
 
         var tempoChanges = new List<TempoChange>();
 
@@ -66,7 +69,7 @@ public static class MidiEvents
 
                 if (evt is SetTempoEvent tempoEvent)
                 {
-                    var offset = MidiIo.TicksToBeats(currentTime, ticksPerQuarter);
+                    var offset = MidiIo.TicksToWholeNotes(currentTime, ticksPerQuarter);
                     var microsecondsPerQuarter = tempoEvent.MicrosecondsPerQuarterNote;
                     var bpm = (int)Math.Round(60_000_000.0 / microsecondsPerQuarter);
 
@@ -93,9 +96,12 @@ public static class MidiEvents
     private static List<TimeSignatureChange> GetTimeSignatureChanges(Stream stream)
     {
         var midiFile = MidiFile.Read(stream);
-        var ticksPerQuarter = midiFile.TimeDivision is TicksPerQuarterNoteTimeDivision tpq
-            ? tpq.TicksPerQuarterNote
-            : 480;
+        if (midiFile.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
+        {
+            throw new NotSupportedException("Only ticks-per-quarter-note MIDI files are supported.");
+        }
+
+        var ticksPerQuarter = tpq.TicksPerQuarterNote;
 
         var timeSignatureChanges = new List<TimeSignatureChange>();
 
@@ -113,7 +119,7 @@ public static class MidiEvents
 
                 if (evt is TimeSignatureEvent timeSignatureEvent)
                 {
-                    var offset = MidiIo.TicksToBeats(currentTime, ticksPerQuarter);
+                    var offset = MidiIo.TicksToWholeNotes(currentTime, ticksPerQuarter);
                     var numerator = timeSignatureEvent.Numerator;
                     var denominator = (int)Math.Pow(2, timeSignatureEvent.Denominator);
 
@@ -142,8 +148,14 @@ public static class MidiEvents
             throw new ArgumentOutOfRangeException(nameof(ticksPerQuarterNote), "Ticks per quarter note must be positive.");
         }
 
-        var microsecondsPerQuarter = (long)(60_000_000.0 / beatsPerMinute);
-        var ticks = MidiIo.BeatsToTicks(offset, ticksPerQuarterNote);
+        var microsecondsPerQuarter = (long)Math.Round(60_000_000.0 / beatsPerMinute);
+        if (microsecondsPerQuarter > 0xFFFFFF)
+        {
+            // SetTempo stores a 24-bit value; BPM below ~3.6 cannot be represented.
+            throw new ArgumentOutOfRangeException(nameof(beatsPerMinute), beatsPerMinute, "BPM is too low to represent in a MIDI SetTempo event (minimum ~4).");
+        }
+
+        var ticks = MidiIo.WholeNotesToTicks(offset, ticksPerQuarterNote);
         if (ticks < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
@@ -175,7 +187,7 @@ public static class MidiEvents
             throw new ArgumentOutOfRangeException(nameof(ticksPerQuarterNote), "Ticks per quarter note must be positive.");
         }
 
-        var ticks = MidiIo.BeatsToTicks(offset, ticksPerQuarterNote);
+        var ticks = MidiIo.WholeNotesToTicks(offset, ticksPerQuarterNote);
         if (ticks < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");

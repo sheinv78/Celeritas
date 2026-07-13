@@ -5,6 +5,8 @@ using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 
+using MidiException = Melanchall.DryWetMidi.Common.MidiException;
+
 namespace Celeritas.Core.Midi;
 
 public sealed record MidiImportOptions(
@@ -26,11 +28,44 @@ public static class MidiIo
         return Import(stream, options);
     }
 
+    // Hardened reading settings: fail fast on corruption instead of best-effort reading,
+    // and avoid unbounded pre-allocation from crafted chunk lengths (DoS-adjacent).
+    private static readonly ReadingSettings HardenedReadingSettings = new()
+    {
+        // Truncated data / declared-vs-actual size mismatches abort the read
+        // rather than silently absorbing bytes (or, in the worst case, over-reading).
+        NotEnoughBytesPolicy = NotEnoughBytesPolicy.Abort,
+        InvalidChunkSizePolicy = InvalidChunkSizePolicy.Abort,
+
+        // A missing/invalid header chunk means this is not a MIDI file we can trust.
+        NoHeaderChunkPolicy = NoHeaderChunkPolicy.Abort,
+        UnknownFileFormatPolicy = UnknownFileFormatPolicy.Abort,
+
+        // Out-of-range parameter values are clamped (bounded, safe) instead of aborting
+        // the entire read — tolerant of minor spec violations without leaking bad data.
+        InvalidMetaEventParameterValuePolicy = InvalidMetaEventParameterValuePolicy.SnapToLimits,
+        InvalidChannelEventParameterValuePolicy = InvalidChannelEventParameterValuePolicy.SnapToLimits,
+        InvalidSystemCommonEventParameterValuePolicy = InvalidSystemCommonEventParameterValuePolicy.SnapToLimits,
+
+        // Skip unrecognized chunks rather than reading their (attacker-declared) length
+        // into a byte[] — this is the primary defense against unbounded pre-allocation.
+        UnknownChunkIdPolicy = UnknownChunkIdPolicy.Skip,
+    };
+
     public static NoteBuffer Import(Stream stream, MidiImportOptions? options = null)
     {
         options ??= new MidiImportOptions();
 
-        var midiFile = MidiFile.Read(stream);
+        MidiFile midiFile;
+        try
+        {
+            midiFile = MidiFile.Read(stream, HardenedReadingSettings);
+        }
+        catch (MidiException ex)
+        {
+            // Surface library-internal exception types as a clean, documented contract.
+            throw new InvalidDataException("The MIDI stream is malformed or corrupt.", ex);
+        }
 
         if (midiFile.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
         {
@@ -47,39 +82,46 @@ public static class MidiIo
 
         // Pre-size where possible.
         var capacity = options.MaxNotes is { } maxNotes
-            ? Math.Min(notes.Count, maxNotes)
+            ? Math.Min(notes.Count, Math.Max(maxNotes, 0))
             : notes.Count;
 
         var buffer = new NoteBuffer(Math.Max(capacity, 1));
-
-        var taken = 0;
-        foreach (var note in notes)
+        try
         {
-            if (options.Channel is { } ch && note.Channel != ch)
+            var taken = 0;
+            foreach (var note in notes)
             {
-                continue;
+                if (options.MaxNotes is { } limit && taken >= limit)
+                {
+                    break;
+                }
+
+                if (options.Channel is { } ch && note.Channel != ch)
+                {
+                    continue;
+                }
+
+                var pitch = (int)note.NoteNumber;
+                var offset = TicksToWholeNotes(note.Time, ticksPerQuarter);
+                var duration = TicksToWholeNotes(note.Length, ticksPerQuarter);
+                var velocity = note.Velocity / 127f;
+
+                buffer.AddNote(pitch, offset, duration, velocity);
+                taken++;
             }
 
-            var pitch = (int)note.NoteNumber;
-            var offset = TicksToBeats(note.Time, ticksPerQuarter);
-            var duration = TicksToBeats(note.Length, ticksPerQuarter);
-            var velocity = note.Velocity / 127f;
-
-            buffer.AddNote(pitch, offset, duration, velocity);
-
-            taken++;
-            if (options.MaxNotes is { } limit && taken >= limit)
+            if (options.SortByOffset)
             {
-                break;
+                buffer.Sort();
             }
-        }
 
-        if (options.SortByOffset)
+            return buffer;
+        }
+        catch
         {
-            buffer.Sort();
+            buffer.Dispose();
+            throw;
         }
-
-        return buffer;
     }
 
     public static void Export(NoteBuffer buffer, string path, MidiExportOptions? options = null)
@@ -107,6 +149,11 @@ public static class MidiIo
             throw new ArgumentOutOfRangeException(nameof(options), options.TicksPerQuarterNote, "TicksPerQuarterNote must be <= 32767.");
         }
 
+        if (options.Bpm <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options.Bpm, "Bpm must be positive.");
+        }
+
         var midiFile = new MidiFile
         {
             TimeDivision = new TicksPerQuarterNoteTimeDivision((short)options.TicksPerQuarterNote)
@@ -126,16 +173,19 @@ public static class MidiIo
             var e = buffer.Get(i);
             var noteNumber = ClampToMidiNote(e.Pitch);
 
-            var timeTicks = BeatsToTicks(e.Offset, options.TicksPerQuarterNote);
-            var lengthTicks = Math.Max(1, BeatsToTicks(e.Duration, options.TicksPerQuarterNote));
+            if (e.Offset < Rational.Zero)
+            {
+                throw new ArgumentException($"Note {i} has a negative offset ({e.Offset}); MIDI cannot represent events before time zero.", nameof(buffer));
+            }
+
+            var timeTicks = WholeNotesToTicks(e.Offset, options.TicksPerQuarterNote);
+            var lengthTicks = Math.Max(1, WholeNotesToTicks(e.Duration, options.TicksPerQuarterNote));
             var lengthTicksInt = lengthTicks > int.MaxValue ? int.MaxValue : (int)lengthTicks;
 
-            var velocity = (byte)Math.Clamp((int)Math.Round(e.Velocity * 127.0), 1, 127);
-            velocity = velocity switch
-            {
-                0 => options.DefaultVelocity,
-                _ => velocity
-            };
+            var rawVelocity = (int)Math.Round(e.Velocity * 127.0);
+            var velocity = rawVelocity <= 0
+                ? Math.Clamp(options.DefaultVelocity, (byte)1, (byte)127)
+                : (byte)Math.Clamp(rawVelocity, 1, 127);
 
             var note = new Note((SevenBitNumber)noteNumber, lengthTicksInt, timeTicks)
             {
@@ -154,34 +204,24 @@ public static class MidiIo
 
     private static int ClampToMidiNote(int pitch) => Math.Clamp(pitch, 0, 127);
 
-    internal static Rational TicksToBeats(long ticks, int ticksPerQuarter)
+    // Celeritas time convention: Rational offsets/durations are fractions of a WHOLE note
+    // (quarter note = 1/4), matching MusicNotation.Parse and Rational.Quarter.
+    // One whole note = 4 quarter notes = 4 * ticksPerQuarter ticks.
+
+    internal static Rational TicksToWholeNotes(long ticks, int ticksPerQuarter)
     {
-        // beats = ticks / ticksPerQuarter
-        return new Rational(ticks, ticksPerQuarter);
+        return new Rational(ticks, 4L * ticksPerQuarter);
     }
 
-    internal static long BeatsToTicks(Rational beats, int ticksPerQuarter)
+    internal static long WholeNotesToTicks(Rational wholeNotes, int ticksPerQuarter)
     {
-        // ticks = round(beats * ticksPerQuarter)
-        try
-        {
-            checked
-            {
-                var scaled = beats.Numerator * ticksPerQuarter;
-                var den = beats.Denominator;
-                return den switch
-                {
-                    0 => 0,
-                    _ => (scaled + (den / 2)) / den
-                };
-
-                // Round half up.
-            }
-        }
-        catch (OverflowException)
-        {
-            return (long)Math.Round(beats.ToDouble() * ticksPerQuarter);
-        }
+        // ticks = round(wholeNotes * 4 * ticksPerQuarter), computed exactly in 128-bit
+        var num = (Int128)wholeNotes.Numerator * 4 * ticksPerQuarter;
+        var den = (Int128)wholeNotes.Denominator;
+        var shifted = num + (den >> 1);
+        var rounded = shifted >= 0
+            ? shifted / den
+            : -((-shifted + den - 1) / den);
+        return checked((long)rounded);
     }
-
 }
