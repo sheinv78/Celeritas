@@ -1,27 +1,18 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
-using System.Runtime.CompilerServices;
+using System.Numerics;
 
 namespace Celeritas.Core.Simd;
 
 public static class PitchTransformerFactory
 {
-    // Choose the optimal implementation once for the current machine.
-    public static readonly IPitchTransformer Best = CreateBest();
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static IPitchTransformer CreateBest()
-    {
-        return SimdInfo.GetBest() switch
-        {
-            SimdInstructionSet.Avx512F => new PitchTransformerAvx512(),
-            SimdInstructionSet.Avx2 => new PitchTransformerAvx2(),
-            SimdInstructionSet.Sse2 => new PitchTransformerSse2(),
-            SimdInstructionSet.Neon => new PitchTransformerNeon(),
-            SimdInstructionSet.WasmSimd => new PitchTransformerWasm(),
-            _ => new PitchTransformerScalar()
-        };
-    }
+    /// <summary>
+    /// The pitch transformer for the current machine, chosen once at startup:
+    /// a portable <see cref="Vector{T}"/> kernel when SIMD is hardware-accelerated
+    /// (the JIT targets the widest available unit), otherwise a scalar fallback.
+    /// Use <see cref="SimdInfo"/> to report which instruction sets are present.
+    /// </summary>
+    public static readonly IPitchTransformer Best =
+        Vector.IsHardwareAccelerated ? new PitchTransformerVector() : new PitchTransformerScalar();
 }
-

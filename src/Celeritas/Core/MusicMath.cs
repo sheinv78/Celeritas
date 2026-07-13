@@ -1,9 +1,8 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using Celeritas.Core.Simd;
 
 namespace Celeritas.Core;
@@ -11,19 +10,6 @@ namespace Celeritas.Core;
 public static unsafe class MusicMath
 {
     private static readonly IPitchTransformer PitchTransposeImpl = PitchTransformerFactory.Best;
-    private static readonly ScaleVelocityDelegate ScaleVelocityImpl = CreateScaleVelocityImpl();
-
-    private delegate void ScaleVelocityDelegate(float* velocities, int count, float factor);
-
-    private static ScaleVelocityDelegate CreateScaleVelocityImpl()
-    {
-        return (Avx512F.IsSupported, Avx.IsSupported) switch
-        {
-            (true, _) => ScaleVelocityAvx512,
-            (_, true) => ScaleVelocityAvx,
-            _ => ScaleVelocityScalar
-        };
-    }
 
     /// <summary>
     /// Convert MIDI pitch to note name (e.g., 60 -> "C4").
@@ -37,66 +23,58 @@ public static unsafe class MusicMath
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int NoteNameToMidi(string noteName) => MusicNotation.ParseNote(noteName);
 
+    /// <summary>
+    /// Adds <paramref name="semitones"/> to every pitch. Results are NOT clamped to the MIDI
+    /// 0-127 range; callers that need valid MIDI pitches must clamp afterwards.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void Transpose(NoteBuffer buffer, int semitones)
     {
+        buffer.ThrowIfDisposed();
         // Single virtual call per operation (not per iteration);
         // inside - fully vectorized loop.
         PitchTransposeImpl.Transpose(buffer.PitchPtr, buffer.Count, semitones);
+        GC.KeepAlive(buffer); // the raw-pointer loop must not outlive the buffer's finalizer
     }
 
     /// <summary>
-    /// SIMD scaling of velocity.
+    /// SIMD scaling of velocity, using a portable <see cref="Vector{T}"/> loop that the JIT
+    /// widens to the platform's widest vector unit.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void ScaleVelocity(NoteBuffer buffer, float factor)
     {
-        ScaleVelocityImpl(buffer.VelocityPtr, buffer.Count, factor);
-    }
+        buffer.ThrowIfDisposed();
 
-    private static void ScaleVelocityAvx512(float* velocities, int count, float factor)
-    {
-        var vFactor = Vector512.Create(factor);
+        var velocities = buffer.VelocityPtr;
+        var count = buffer.Count;
         var i = 0;
-        for (; i <= count - 16; i += 16)
+
+        if (Vector.IsHardwareAccelerated && count >= Vector<float>.Count)
         {
-            var v = Avx512F.LoadVector512(velocities + i);
-            v = Avx512F.Multiply(v, vFactor);
-            Avx512F.Store(velocities + i, v);
+            var vFactor = new Vector<float>(factor);
+            var width = Vector<float>.Count;
+            ref var start = ref Unsafe.AsRef<float>(velocities);
+            for (; i <= count - width; i += width)
+            {
+                (Vector.LoadUnsafe(ref start, (nuint)i) * vFactor).StoreUnsafe(ref start, (nuint)i);
+            }
         }
 
-        ScaleVelocityScalar(velocities + i, count - i, factor);
-    }
-
-    private static void ScaleVelocityAvx(float* velocities, int count, float factor)
-    {
-        var vFactor = Vector256.Create(factor);
-        var i = 0;
-        for (; i <= count - 8; i += 8)
-        {
-            var v = Avx.LoadVector256(velocities + i);
-            v = Avx.Multiply(v, vFactor);
-            Avx.Store(velocities + i, v);
-        }
-
-        ScaleVelocityScalar(velocities + i, count - i, factor);
-    }
-
-    private static void ScaleVelocityScalar(float* velocities, int count, float factor)
-    {
-        for (var i = 0; i < count; i++)
-        {
+        for (; i < count; i++)
             velocities[i] *= factor;
-        }
+
+        GC.KeepAlive(buffer);
     }
 
     /// <summary>
-    /// Quantize note start times to a grid.
-    /// Optimized: loop unrolling + precomputed constants.
+    /// Quantize note start times to a grid (round to nearest grid step, half-way cases round up).
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static void Quantize(NoteBuffer buffer, Rational grid)
     {
+        buffer.ThrowIfDisposed();
+        if (grid.Numerator <= 0)
+            throw new ArgumentOutOfRangeException(nameof(grid), grid, "Quantization grid must be positive");
+
         var count = buffer.Count;
         if (count == 0) return;
 
@@ -106,68 +84,21 @@ public static unsafe class MusicMath
         var gNum = grid.Numerator;
         var gDen = grid.Denominator;
 
-        var i = 0;
-
-        // Loop unrolling: process 4 notes per iteration.
-        // Helps the compiler optimize (fewer branch prediction misses).
-        var limit = count - 3;
-        for (; i < limit; i += 4)
+        for (var i = 0; i < count; i++)
         {
-            // Note 1
-            {
-                var num = offsetsNum[i];
-                var den = offsetsDen[i];
-                var valNum = num * gDen;
-                var valDen = den * gNum;
-                var rounded = (valNum + (valDen >> 1)) / valDen;
-                offsetsNum[i] = rounded * gNum;
-                offsetsDen[i] = gDen;
-            }
-
-            // Note 2
-            {
-                var num = offsetsNum[i + 1];
-                var den = offsetsDen[i + 1];
-                var valNum = num * gDen;
-                var valDen = den * gNum;
-                var rounded = (valNum + (valDen >> 1)) / valDen;
-                offsetsNum[i + 1] = rounded * gNum;
-                offsetsDen[i + 1] = gDen;
-            }
-
-            // Note 3
-            {
-                var num = offsetsNum[i + 2];
-                var den = offsetsDen[i + 2];
-                var valNum = num * gDen;
-                var valDen = den * gNum;
-                var rounded = (valNum + (valDen >> 1)) / valDen;
-                offsetsNum[i + 2] = rounded * gNum;
-                offsetsDen[i + 2] = gDen;
-            }
-
-            // Note 4
-            {
-                var num = offsetsNum[i + 3];
-                var den = offsetsDen[i + 3];
-                var valNum = num * gDen;
-                var valDen = den * gNum;
-                var rounded = (valNum + (valDen >> 1)) / valDen;
-                offsetsNum[i + 3] = rounded * gNum;
-                offsetsDen[i + 3] = gDen;
-            }
-        }
-
-        // Remainder
-        for (; i < count; i++)
-        {
-            var num = offsetsNum[i];
-            var den = offsetsDen[i];
-            var valNum = num * gDen;
-            var valDen = den * gNum;
-            var rounded = (valNum + (valDen >> 1)) / valDen;
-            offsetsNum[i] = rounded * gNum;
+            // offset / grid = (num * gDen) / (den * gNum); Int128 makes the cross-products exact.
+            // Both den and gNum are positive, so valDen > 0 and floor division rounds half-up correctly
+            // for negative offsets too.
+            var valNum = (Int128)offsetsNum[i] * gDen;
+            var valDen = (Int128)offsetsDen[i] * gNum;
+            var shifted = valNum + (valDen >> 1);
+            var rounded = shifted >= 0
+                ? shifted / valDen
+                : -((-shifted + valDen - 1) / valDen);
+            offsetsNum[i] = checked((long)(rounded * gNum));
             offsetsDen[i] = gDen;
         }
+
+        GC.KeepAlive(buffer);
     }
 }
