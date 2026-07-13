@@ -7,6 +7,7 @@ License: BSL-1.1
 """
 
 import unittest
+from fractions import Fraction
 from typing import List
 from celeritas import (
     NoteEvent,
@@ -16,10 +17,44 @@ from celeritas import (
     detect_key,
     midi_to_note_name,
     parse_chord_symbol,
+    native_version,
     Trill,
     Mordent,
     MordentType,
+    __version__,
 )
+
+
+def _offsets(notes: List[NoteEvent]) -> List[Fraction]:
+    return [Fraction(n.time_numerator, n.time_denominator) for n in notes]
+
+
+def _durations(notes: List[NoteEvent]) -> List[Fraction]:
+    return [Fraction(n.duration_numerator, n.duration_denominator) for n in notes]
+
+
+def _assert_exact_timing(
+    test: unittest.TestCase, base: NoteEvent, notes: List[NoteEvent]
+):
+    """Offsets strictly increasing, durations > 0, durations sum to base duration."""
+
+    offsets = _offsets(notes)
+    durations = _durations(notes)
+
+    test.assertEqual(offsets[0], Fraction(base.time_numerator, base.time_denominator))
+    for earlier, later in zip(offsets, offsets[1:]):
+        test.assertLess(earlier, later)
+
+    for duration in durations:
+        test.assertGreater(duration, 0)
+
+    base_duration = Fraction(base.duration_numerator, base.duration_denominator)
+    test.assertEqual(sum(durations), base_duration)
+
+    # Notes must tile the base note contiguously: each starts where the
+    # previous one ends.
+    for i in range(1, len(notes)):
+        test.assertEqual(offsets[i], offsets[i - 1] + durations[i - 1])
 
 
 class TestParseChordSymbol(unittest.TestCase):
@@ -280,6 +315,56 @@ class TestTrill(unittest.TestCase):
         # First note should be upper note
         self.assertEqual(expanded[0].pitch, 62)
 
+    def test_trill_exact_timing(self):
+        base_note = NoteEvent(
+            pitch=64,
+            time_numerator=0,
+            time_denominator=1,
+            duration_numerator=1,
+            duration_denominator=2,
+            velocity=80,
+        )
+        trill = Trill(base_note, interval=2, speed=8)
+        expanded = trill.expand()
+
+        # speed=8 -> 1/32 whole note per trill note; 1/2 whole note = 16 notes
+        self.assertEqual(len(expanded), 16)
+        _assert_exact_timing(self, base_note, expanded)
+
+    def test_trill_sub_quarter_offset_not_truncated(self):
+        # A base note starting at 1/8 (sub-quarter offset) must not have its
+        # trill notes collapse to offset 0 (regression: int(time * 4) truncation).
+        base_note = NoteEvent(
+            pitch=60,
+            time_numerator=1,
+            time_denominator=8,
+            duration_numerator=1,
+            duration_denominator=4,
+            velocity=80,
+        )
+        trill = Trill(base_note, interval=2, speed=8)
+        expanded = trill.expand()
+
+        _assert_exact_timing(self, base_note, expanded)
+        self.assertEqual(_offsets(expanded)[0], Fraction(1, 8))
+
+    def test_trill_duration_not_multiple_of_step(self):
+        # 3/8 whole note with 1/32 steps -> 12 notes, exact fit; but 1/12
+        # duration with 1/32 steps does not divide evenly: the final note
+        # must be shortened so durations still sum exactly.
+        base_note = NoteEvent(
+            pitch=60,
+            time_numerator=0,
+            time_denominator=1,
+            duration_numerator=1,
+            duration_denominator=12,
+            velocity=80,
+        )
+        trill = Trill(base_note, interval=2, speed=8)
+        expanded = trill.expand()
+
+        _assert_exact_timing(self, base_note, expanded)
+
 
 class TestMordent(unittest.TestCase):
     """Tests for Mordent ornament"""
@@ -335,6 +420,41 @@ class TestMordent(unittest.TestCase):
         pitches = [n.pitch for n in expanded]
         self.assertEqual(pitches, [60, 62, 60, 62, 60])
 
+    def test_mordent_exact_timing_no_zero_durations(self):
+        # A quarter-note mordent (3 notes of 1/12 each) used to produce
+        # zero-duration notes via int(duration * 4) truncation.
+        base_note = NoteEvent(
+            pitch=64,
+            time_numerator=0,
+            time_denominator=1,
+            duration_numerator=1,
+            duration_denominator=4,
+            velocity=80,
+        )
+        mordent = Mordent(base_note, mordent_type=MordentType.UPPER, alternations=1)
+        expanded = mordent.expand()
+
+        _assert_exact_timing(self, base_note, expanded)
+        self.assertEqual(_durations(expanded), [Fraction(1, 12)] * 3)
+        self.assertEqual(
+            _offsets(expanded), [Fraction(0), Fraction(1, 12), Fraction(2, 12)]
+        )
+
+    def test_mordent_exact_timing_with_offset(self):
+        base_note = NoteEvent(
+            pitch=64,
+            time_numerator=3,
+            time_denominator=16,
+            duration_numerator=1,
+            duration_denominator=8,
+            velocity=80,
+        )
+        mordent = Mordent(base_note, mordent_type=MordentType.LOWER, alternations=2)
+        expanded = mordent.expand()
+
+        self.assertEqual(len(expanded), 5)
+        _assert_exact_timing(self, base_note, expanded)
+
 
 class TestIntegration(unittest.TestCase):
     """Integration tests combining multiple features"""
@@ -376,9 +496,28 @@ class TestIntegration(unittest.TestCase):
         trill = Trill(base_note, interval=2, speed=8)
         expanded = trill.expand()
 
-        # Total duration of expanded notes should approximately equal base note
-        total_duration = sum(n.duration for n in expanded)
-        self.assertAlmostEqual(total_duration, base_note.duration, places=1)
+        # Total duration of expanded notes must equal the base note exactly
+        total_duration = sum(_durations(expanded))
+        self.assertEqual(
+            total_duration,
+            Fraction(base_note.duration_numerator, base_note.duration_denominator),
+        )
+
+
+class TestNativeVersion(unittest.TestCase):
+    """Tests for native_version function"""
+
+    def test_native_version_format(self):
+        version = native_version()
+        self.assertRegex(version, r"^\d+\.\d+\.\d+$")
+
+    def test_native_version_matches_package_version(self):
+        # __version__ comes from installed package metadata; skip the
+        # comparison when the package is not installed (e.g. running from
+        # a source checkout without `pip install -e .`).
+        if __version__ == "0.0.0":
+            self.skipTest("package metadata not available")
+        self.assertEqual(native_version(), __version__)
 
 
 class TestDotNetBridge(unittest.TestCase):

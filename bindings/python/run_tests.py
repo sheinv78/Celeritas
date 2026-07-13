@@ -38,10 +38,12 @@ if __name__ == "__main__":
         print()
         print("Make sure native library is built and copied:")
         print(
-            "  dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64"
+            "  dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj"
+            " -c Release -r win-x64"
         )
         print("  mkdir -p celeritas/native")
         print(
-            "  cp ../../src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/Celeritas.Native.dll celeritas/native/"
+            "  cp ../../src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/"
+            "Celeritas.Native.dll celeritas/native/"
         )
         sys.exit(1)
