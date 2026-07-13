@@ -16,10 +16,22 @@ public sealed unsafe class NoteBuffer : IDisposable
     // Data arrays (SoA - Structure of Arrays)
 
     // Safe windows into the underlying arrays
-    public Span<int> Pitches => new(PitchPtr, Count);
-    public ReadOnlySpan<int> PitchesReadOnly => new(PitchPtr, Count);
-    public Span<float> Velocities => new(VelocityPtr, Count);
-    public ReadOnlySpan<float> VelocitiesReadOnly => new(VelocityPtr, Count);
+    public Span<int> Pitches
+    {
+        get { ThrowIfDisposed(); return new(PitchPtr, Count); }
+    }
+    public ReadOnlySpan<int> PitchesReadOnly
+    {
+        get { ThrowIfDisposed(); return new(PitchPtr, Count); }
+    }
+    public Span<float> Velocities
+    {
+        get { ThrowIfDisposed(); return new(VelocityPtr, Count); }
+    }
+    public ReadOnlySpan<float> VelocitiesReadOnly
+    {
+        get { ThrowIfDisposed(); return new(VelocityPtr, Count); }
+    }
 
     // Back-compat aliases (public surface can change; these are convenience)
     public Span<int> PitchSpan => Pitches;
@@ -66,19 +78,17 @@ public sealed unsafe class NoteBuffer : IDisposable
 
         Capacity = capacity;
 
-        PitchPtr = (int*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(int)), 64);
-        OffsetsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
-        OffsetsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
-        DurationsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
-        DurationsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(long)), 64);
-        VelocityPtr = (float*)NativeMemory.AlignedAlloc((nuint)(capacity * sizeof(float)), 64);
-
-        if (PitchPtr == null || OffsetsNumPtr == null || OffsetsDenPtr == null || DurationsNumPtr == null || DurationsDenPtr == null || VelocityPtr == null)
-            throw new OutOfMemoryException("Failed to allocate NoteBuffer arrays");
+        // Multiply in nuint (64-bit) — capacity * sizeof(long) overflows int for capacity > 268M
+        PitchPtr = (int*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(int), 64);
+        OffsetsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(long), 64);
+        OffsetsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(long), 64);
+        DurationsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(long), 64);
+        DurationsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(long), 64);
+        VelocityPtr = (float*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(float), 64);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ThrowIfDisposed()
+    internal void ThrowIfDisposed()
     {
         if (_disposed)
             throw new ObjectDisposedException(nameof(NoteBuffer));
@@ -137,18 +147,9 @@ public sealed unsafe class NoteBuffer : IDisposable
         for (var i = 0; i < Count; i++)
             indices[i] = i;
 
-        // Sort indices using integer comparison (avoid floating-point)
-        indices.Sort((a, b) =>
-        {
-            // a.Num / a.Den vs b.Num / b.Den  =>  a.Num * b.Den vs b.Num * a.Den
-            var cmp = (OffsetsNumPtr[a] * OffsetsDenPtr[b]) - (OffsetsNumPtr[b] * OffsetsDenPtr[a]);
-            return cmp switch
-            {
-                > 0 => 1,
-                < 0 => -1,
-                _ => 0
-            };
-        });
+        // Sort indices using exact integer comparison (Int128 cross-multiplication cannot overflow;
+        // tie-break on the original index keeps the sort stable)
+        indices.Sort(new OffsetIndexComparer(OffsetsNumPtr, OffsetsDenPtr));
 
         // In-place permutation using cycle sort (O(n) memory writes, O(1) extra memory per array)
         ApplyPermutation(indices, PitchPtr);
@@ -157,6 +158,16 @@ public sealed unsafe class NoteBuffer : IDisposable
         ApplyPermutationLong(indices, DurationsNumPtr);
         ApplyPermutationLong(indices, DurationsDenPtr);
         ApplyPermutationFloat(indices, VelocityPtr);
+    }
+
+    private readonly struct OffsetIndexComparer(long* nums, long* dens) : IComparer<int>
+    {
+        public int Compare(int a, int b)
+        {
+            // a.Num / a.Den vs b.Num / b.Den  =>  a.Num * b.Den vs b.Num * a.Den (denominators are positive)
+            var cmp = ((Int128)nums[a] * dens[b]).CompareTo((Int128)nums[b] * dens[a]);
+            return cmp != 0 ? cmp : a.CompareTo(b);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -256,8 +267,8 @@ public sealed unsafe class NoteBuffer : IDisposable
             var currentDen = OffsetsDenPtr[i];
             var start = i;
 
-            // Find all notes with the same time (integer comparison)
-            while (i < Count && OffsetsNumPtr[i] * currentDen == currentNum * OffsetsDenPtr[i])
+            // Find all notes with the same time (exact integer comparison, overflow-safe)
+            while (i < Count && (Int128)OffsetsNumPtr[i] * currentDen == (Int128)currentNum * OffsetsDenPtr[i])
             {
                 i++;
             }
@@ -285,7 +296,7 @@ public sealed unsafe class NoteBuffer : IDisposable
             var currentDen = OffsetsDenPtr[i];
             var start = i;
 
-            while (i < Count && OffsetsNumPtr[i] * currentDen == currentNum * OffsetsDenPtr[i])
+            while (i < Count && (Int128)OffsetsNumPtr[i] * currentDen == (Int128)currentNum * OffsetsDenPtr[i])
             {
                 i++;
             }

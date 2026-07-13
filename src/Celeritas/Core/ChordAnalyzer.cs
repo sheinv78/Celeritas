@@ -38,14 +38,20 @@ public static unsafe class ChordAnalyzer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int PitchClassIndex(int p)
+    {
+        // Fast path for the MIDI range; exact mod-12 for out-of-range values
+        // ((p & 0x7F) is NOT congruent to p mod 12 for negatives or p >= 128).
+        return (uint)p <= 127u ? p : ((p % 12) + 12) % 12;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ushort GetMaskScalar(ReadOnlySpan<int> pitches)
     {
         uint mask = 0;
         foreach (var p in pitches)
         {
-            // Fast modulo via bit operations for non-negative values.
-            // (p & 0x7F) guarantees indexing into [0-127].
-            mask |= PitchToBitLookup[p & 0x7F];
+            mask |= PitchToBitLookup[PitchClassIndex(p)];
         }
         return (ushort)mask;
     }
@@ -58,19 +64,19 @@ public static unsafe class ChordAnalyzer
         var len = pitches.Length;
 
         // Unroll by 4
-        var limit = len - 3;
+        var limit = len - 4;
         for (; i <= limit; i += 4)
         {
-            mask |= PitchToBitLookup[pitches[i] & 0x7F];
-            mask |= PitchToBitLookup[pitches[i + 1] & 0x7F];
-            mask |= PitchToBitLookup[pitches[i + 2] & 0x7F];
-            mask |= PitchToBitLookup[pitches[i + 3] & 0x7F];
+            mask |= PitchToBitLookup[PitchClassIndex(pitches[i])];
+            mask |= PitchToBitLookup[PitchClassIndex(pitches[i + 1])];
+            mask |= PitchToBitLookup[PitchClassIndex(pitches[i + 2])];
+            mask |= PitchToBitLookup[PitchClassIndex(pitches[i + 3])];
         }
 
         // Remainder
         for (; i < len; i++)
         {
-            mask |= PitchToBitLookup[pitches[i] & 0x7F];
+            mask |= PitchToBitLookup[PitchClassIndex(pitches[i])];
         }
 
         return (ushort)mask;
@@ -89,7 +95,27 @@ public static unsafe class ChordAnalyzer
     public static ChordInfo Identify(ReadOnlySpan<int> pitches)
     {
         var mask = GetMask(pitches);
-        return ChordLibrary.GetChord(mask);
+        var info = ChordLibrary.GetChord(mask);
+
+        // Sus2/Sus4/Quartal share one pitch-class set (rotations of {0,2,7}), so the mask
+        // lookup always answers Sus2. Use the actual bass note to disambiguate:
+        // bass == r+7 of the Sus2 root => Sus4 on the bass; bass == r+2 => Quartal on the bass.
+        if (info.Quality == ChordQuality.Sus2 && !pitches.IsEmpty)
+        {
+            var bass = pitches[0];
+            foreach (var p in pitches)
+            {
+                if (p < bass) bass = p;
+            }
+
+            var bassPc = ((bass % 12) + 12) % 12;
+            if (bassPc == (info.RootPitchClass + 7) % 12)
+                return new ChordInfo((byte)bassPc, ChordQuality.Sus4);
+            if (bassPc == (info.RootPitchClass + 2) % 12)
+                return new ChordInfo((byte)bassPc, ChordQuality.Quartal);
+        }
+
+        return info;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
