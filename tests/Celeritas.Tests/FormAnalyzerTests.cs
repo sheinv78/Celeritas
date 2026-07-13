@@ -151,6 +151,62 @@ public class FormAnalyzerTests
     }
 
     [Fact]
+    public void Analyze_DetectsPhrygianCadence_WhenPhraseEndsWithIvToVInMinor()
+    {
+        // Phrase ending with D minor (iv) -> E major (V) in A minor = Phrygian half cadence.
+        // Previously unreachable: the generic "any -> V = Half" arm shadowed it.
+        using var buffer = new NoteBuffer(7);
+
+        // Melodic note
+        buffer.AddNote(57, new Rational(0, 1), new Rational(1, 4)); // A3
+
+        // D minor chord (iv), first-inversion voicing (F in bass)
+        buffer.AddNote(53, new Rational(1, 2), new Rational(1, 2)); // F3
+        buffer.AddNote(57, new Rational(1, 2), new Rational(1, 2)); // A3
+        buffer.AddNote(62, new Rational(1, 2), new Rational(1, 2)); // D4
+
+        // E major chord (V)
+        buffer.AddNote(52, new Rational(1, 1), new Rational(1, 2)); // E3
+        buffer.AddNote(56, new Rational(1, 1), new Rational(1, 2)); // G#3
+        buffer.AddNote(59, new Rational(1, 1), new Rational(1, 2)); // B3
+
+        var key = new KeySignature("A", false);
+        var result = FormAnalyzer.Analyze(buffer, new FormAnalysisOptions(
+            MinRestForPhraseBoundary: new Rational(1, 2),
+            MinNotesPerPhrase: 2,
+            DetectCadences: true,
+            Key: key));
+
+        Assert.Single(result.Phrases);
+        Assert.Equal(CadenceType.Phrygian, result.Phrases[0].EndingCadence);
+        Assert.Single(result.Cadences);
+        Assert.Equal(CadenceType.Phrygian, result.Cadences[0].Type);
+    }
+
+    [Fact]
+    public void Analyze_DoesNotMutateInputBuffer()
+    {
+        // Notes added out of order: Analyze must sort a copy, not the caller's buffer.
+        using var buffer = new NoteBuffer(2);
+        buffer.AddNote(62, new Rational(1, 4), new Rational(1, 4));
+        buffer.AddNote(60, new Rational(0, 1), new Rational(1, 4));
+
+        var result = FormAnalyzer.Analyze(buffer, new FormAnalysisOptions(
+            MinRestForPhraseBoundary: new Rational(1, 2),
+            MinNotesPerPhrase: 2));
+
+        // Analysis still works on the sorted view
+        Assert.Single(result.Phrases);
+        Assert.Equal(new Rational(0, 1), result.Phrases[0].Start);
+
+        // Input buffer retains its original (unsorted) order
+        Assert.Equal(62, buffer.PitchAt(0));
+        Assert.Equal(new Rational(1, 4), buffer.GetOffset(0));
+        Assert.Equal(60, buffer.PitchAt(1));
+        Assert.Equal(new Rational(0, 1), buffer.GetOffset(1));
+    }
+
+    [Fact]
     public void Analyze_NoCadence_WhenKeyNotProvided()
     {
         using var buffer = new NoteBuffer(6);

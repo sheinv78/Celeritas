@@ -154,13 +154,16 @@ public static class KeyProfiler
         var root = bestKey % 12;
         var isMajor = bestKey < 12;
 
-        // Compute confidence (how much better is best vs second best)
+        // Compute confidence (how much better is best vs second best).
+        // When the best correlation is not positive the ratio is meaningless
+        // (division by a non-positive value), so report zero confidence.
         var sortedCorrelations = correlations.ToArray();
         Array.Sort(sortedCorrelations);
         Array.Reverse(sortedCorrelations);
 
-        var confidence = (sortedCorrelations[0] - sortedCorrelations[1]) /
-                         (sortedCorrelations[0] + 0.001f);
+        var confidence = sortedCorrelations[0] > 0f
+            ? (sortedCorrelations[0] - sortedCorrelations[1]) / (sortedCorrelations[0] + 0.001f)
+            : 0f;
         confidence = Math.Clamp(confidence, 0f, 1f);
 
         // Return all correlations for advanced analysis
@@ -216,7 +219,7 @@ public static class KeyProfiler
     {
         var notes = MusicNotation.Parse(notation);
         if (notes.Length == 0)
-            return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0 };
+            return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0, AllCorrelations = [] };
 
         Span<int> pitches = stackalloc int[notes.Length];
         for (var i = 0; i < notes.Length; i++)
@@ -231,7 +234,7 @@ public static class KeyProfiler
     public static KeyDetectionResult DetectFromPitches(ReadOnlySpan<NoteEvent> notes)
     {
         if (notes.IsEmpty)
-            return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0 };
+            return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0, AllCorrelations = [] };
 
         Span<int> pitches = stackalloc int[notes.Length];
         for (var i = 0; i < notes.Length; i++)
@@ -395,6 +398,15 @@ public static class KeyProfiler
         return v.ToScalar();
     }
 
+    // NOTE on correlation bias: the "correlation" computed here is a dot product of the
+    // z-scored input with the RAW (non-normalized) key profiles, divided by 12. Because
+    // the major and minor profiles have different standard deviations (sigma), this is
+    // not a true Pearson correlation and introduces a small systematic bias between
+    // major and minor scores. This is a deliberate tradeoff: normalizing each profile
+    // would change the absolute correlation values relied upon by downstream consumers
+    // and the ranking within each mode is unaffected. Comparisons of magnitudes across
+    // modes should therefore be treated as approximate.
+
     /// <summary>
     /// Scalar fallback for systems without SIMD.
     /// </summary>
@@ -453,6 +465,9 @@ public static class KeyProfiler
         Rational windowSize,
         Rational stepSize)
     {
+        if (stepSize <= Rational.Zero)
+            throw new ArgumentOutOfRangeException(nameof(stepSize), stepSize, "Step size must be positive");
+
         var results = new List<(Rational position, KeyDetectionResult result)>();
 
         var currentPos = Rational.Zero;

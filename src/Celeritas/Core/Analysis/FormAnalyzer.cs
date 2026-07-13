@@ -86,22 +86,38 @@ public static class FormAnalyzer
         if (count == 0)
             return new FormAnalysisResult([], [], Rational.Zero, []);
 
-        // Ensure deterministic phrase detection.
-        buffer.Sort();
+        // Ensure deterministic phrase detection without mutating the caller's buffer:
+        // copy the events out and sort the copy (stable, by offset).
+        var notes = new NoteEvent[count];
+        for (var i = 0; i < count; i++)
+            notes[i] = buffer.Get(i);
+
+        var isOrdered = true;
+        for (var i = 1; i < count; i++)
+        {
+            if (notes[i - 1].Offset > notes[i].Offset)
+            {
+                isOrdered = false;
+                break;
+            }
+        }
+
+        if (!isOrdered)
+            notes = [.. notes.OrderBy(n => n.Offset)];
 
         var rawPhrases = new List<(int startIdx, int endIdx, Rational start, Rational end, int noteCount)>();
 
         var phraseStartIndex = 0;
-        var phraseStartTime = buffer.GetOffset(0);
-        var phraseEndTime = buffer.GetOffset(0) + buffer.GetDuration(0);
+        var phraseStartTime = notes[0].Offset;
+        var phraseEndTime = notes[0].Offset + notes[0].Duration;
 
         for (var i = 0; i < count - 1; i++)
         {
-            var currentEnd = buffer.GetOffset(i) + buffer.GetDuration(i);
+            var currentEnd = notes[i].Offset + notes[i].Duration;
             if (currentEnd > phraseEndTime)
                 phraseEndTime = currentEnd;
 
-            var nextStart = buffer.GetOffset(i + 1);
+            var nextStart = notes[i + 1].Offset;
             var rest = nextStart - currentEnd;
 
             if (rest >= options.MinRestForPhraseBoundary)
@@ -113,14 +129,14 @@ public static class FormAnalyzer
 
                 phraseStartIndex = i + 1;
                 phraseStartTime = nextStart;
-                phraseEndTime = nextStart + buffer.GetDuration(i + 1);
+                phraseEndTime = nextStart + notes[i + 1].Duration;
             }
         }
 
         // Final phrase.
         {
             var lastIdx = count - 1;
-            var lastEnd = buffer.GetOffset(lastIdx) + buffer.GetDuration(lastIdx);
+            var lastEnd = notes[lastIdx].Offset + notes[lastIdx].Duration;
             if (lastEnd > phraseEndTime)
                 phraseEndTime = lastEnd;
 
@@ -139,7 +155,7 @@ public static class FormAnalyzer
 
             var cadenceType = options switch
             {
-                { DetectCadences: true, Key: not null } when endIdx - startIdx >= 1 => DetectCadenceAtPhraseEnd(buffer,
+                { DetectCadences: true, Key: not null } when endIdx - startIdx >= 1 => DetectCadenceAtPhraseEnd(notes,
                     startIdx, endIdx, options.Key.Value, cadences, phraseIdx),
                 _ => CadenceType.None
             };
@@ -154,14 +170,14 @@ public static class FormAnalyzer
 
         // Detect sections (A/B/A' patterns) based on phrase similarity
         var (sections, formLabel) = options.DetectSections
-            ? DetectSections(buffer, phrases, options.SectionSimilarityThreshold)
+            ? DetectSections(notes, phrases, options.SectionSimilarityThreshold)
             : ([], "");
 
         return new FormAnalysisResult(phrases, periods, totalLength, cadences, sections, formLabel);
     }
 
     private static CadenceType DetectCadenceAtPhraseEnd(
-        NoteBuffer buffer,
+        NoteEvent[] notes,
         int startIdx,
         int endIdx,
         KeySignature key,
@@ -178,15 +194,15 @@ public static class FormAnalyzer
         var secondLastNotes = new List<int>();
 
         // Get the ending time
-        var endTime = buffer.GetOffset(endIdx) + buffer.GetDuration(endIdx);
+        var endTime = notes[endIdx].Offset + notes[endIdx].Duration;
 
         // Collect notes sounding at the end (final chord)
         for (var i = endIdx; i >= startIdx; i--)
         {
-            var noteEnd = buffer.GetOffset(i) + buffer.GetDuration(i);
+            var noteEnd = notes[i].Offset + notes[i].Duration;
             if (noteEnd >= endTime - new Rational(1, 8)) // Within last 1/8th beat
             {
-                lastNotes.Add(buffer.PitchAt(i));
+                lastNotes.Add(notes[i].Pitch);
             }
             else
             {
@@ -200,13 +216,13 @@ public static class FormAnalyzer
         var searchEnd = endIdx - lastNotes.Count;
         if (searchEnd < startIdx) return CadenceType.None;
 
-        var secondChordEndTime = buffer.GetOffset(searchEnd) + buffer.GetDuration(searchEnd);
+        var secondChordEndTime = notes[searchEnd].Offset + notes[searchEnd].Duration;
         for (var i = searchEnd; i >= startIdx; i--)
         {
-            var noteEnd = buffer.GetOffset(i) + buffer.GetDuration(i);
+            var noteEnd = notes[i].Offset + notes[i].Duration;
             if (noteEnd >= secondChordEndTime - new Rational(1, 8))
             {
-                secondLastNotes.Add(buffer.PitchAt(i));
+                secondLastNotes.Add(notes[i].Pitch);
             }
             else
             {
@@ -252,16 +268,15 @@ public static class FormAnalyzer
             ScaleDegree.Iv when to == ScaleDegree.I => CadenceType.Plagal,
             // V → vi = Deceptive
             ScaleDegree.V when to == ScaleDegree.Vi => CadenceType.Deceptive,
+            // iv → V in minor = Phrygian half cadence.
+            // Must be checked BEFORE the generic "any → V = Half" arm, which
+            // would otherwise shadow it and make this arm unreachable.
+            ScaleDegree.Iv when to == ScaleDegree.V && !isMajor => CadenceType.Phrygian,
             _ => to switch
             {
                 // any → V = Half cadence
                 ScaleDegree.V => CadenceType.Half,
-                _ => isMajor switch
-                {
-                    // iv → V in minor = Phrygian half cadence
-                    false when from == ScaleDegree.Iv && to == ScaleDegree.V => CadenceType.Phrygian,
-                    _ => CadenceType.None
-                }
+                _ => CadenceType.None
             }
         };
     }
@@ -330,7 +345,7 @@ public static class FormAnalyzer
     /// Uses Jaccard similarity of pitch-class sets to group similar phrases.
     /// </summary>
     private static (IReadOnlyList<Section> Sections, string FormLabel) DetectSections(
-        NoteBuffer buffer,
+        NoteEvent[] notes,
         IReadOnlyList<Phrase> phrases,
         float similarityThreshold)
     {
@@ -351,7 +366,7 @@ public static class FormAnalyzer
             ushort mask = 0;
             for (var j = phrase.StartIndex; j <= phrase.EndIndex; j++)
             {
-                mask |= (ushort)(1 << (buffer.PitchAt(j) % 12));
+                mask |= (ushort)(1 << (notes[j].Pitch % 12));
             }
             phrasePcSets[i] = mask;
         }

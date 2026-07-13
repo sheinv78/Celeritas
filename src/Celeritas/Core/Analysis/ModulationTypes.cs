@@ -80,59 +80,54 @@ public static class KeyRelationships
     {
         var interval = (((to.Root - from.Root) % 12) + 12) % 12;
 
+        // Mode-aware arms (relative keys, diatonic mediants) must precede the generic
+        // chromatic-mediant arms so they remain reachable.
         return interval switch
         {
-            // Same root, different mode
+            // Same root
             0 when from.IsMajor != to.IsMajor => to.IsMajor ? "parallel major" : "parallel minor",
-            // Relative major/minor (3 semitones apart, opposite modes)
+            0 => "same key",
+            // Relative major/minor (opposite modes)
             3 when !from.IsMajor && to.IsMajor => "relative major",
             9 when from.IsMajor && !to.IsMajor => "relative minor",
+            // Diatonic mediant/submediant (opposite modes)
+            4 when from.IsMajor && !to.IsMajor => "mediant key (iii)",
+            8 when !from.IsMajor && to.IsMajor => "submediant key (VI)",
             // Dominant key (5th above)
             7 => "dominant key (V)",
             // Subdominant key (4th above / 5th below)
             5 => "subdominant key (IV)",
-            // Secondary dominants
+            // Supertonic
             2 => "supertonic key (II)",
-            4 => "mediant key (III)",
-            9 => "submediant key (VI)",
-            _ => interval switch
-            {
-                // Chromatic relationships
-                1 => "chromatic: up half step",
-                11 => "chromatic: down half step",
-                6 => "tritone key",
-                // Third relationships (romantic)
-                3 => "chromatic mediant (down m3)",
-                4 => "chromatic mediant (up M3)",
-                8 => "chromatic mediant (down M3)",
-                9 => "chromatic mediant (up m3)",
-                _ => $"distant key ({interval} semitones)"
-            }
+            // Third relationships (romantic / chromatic mediants)
+            3 => "chromatic mediant (up m3)",
+            4 => "chromatic mediant (up M3)",
+            8 => "chromatic mediant (down M3)",
+            9 => "chromatic mediant (down m3)",
+            // Chromatic relationships
+            1 => "chromatic: up half step",
+            11 => "chromatic: down half step",
+            6 => "tritone key",
+            _ => $"distant key ({interval} semitones)"
         };
     }
 
     /// <summary>
-    /// Check if two keys are closely related (share most notes).
+    /// Check if two keys are closely related (differ by at most one accidental).
+    /// Closely related keys are: the key itself, its relative, the dominant and
+    /// subdominant keys, and their relatives. For C major: G, F, Am, Em, Dm.
+    /// Parallel keys (C major / C minor) differ by three accidentals and are NOT
+    /// closely related under the standard definition.
     /// </summary>
     public static bool AreCloselyRelated(KeySignature a, KeySignature b)
     {
-        var interval = (((b.Root - a.Root) % 12) + 12) % 12;
+        // Normalize each key to its relative-major root, then compare positions
+        // on the circle of fifths: closely related = same position or one step away.
+        var relA = a.IsMajor ? a.Root : (a.Root + 3) % 12;
+        var relB = b.IsMajor ? b.Root : (b.Root + 3) % 12;
+        var interval = (((relB - relA) % 12) + 12) % 12;
 
-        return interval switch
-        {
-            // Same key
-            0 => true,
-            _ => interval switch
-            {
-                // Parallel major/minor
-                0 when a.IsMajor != b.IsMajor => true,
-                // Relative major/minor
-                3 or 9 when a.IsMajor != b.IsMajor => true,
-                // Dominant/Subdominant
-                5 or 7 => true,
-                _ => false
-            }
-        };
+        return interval is 0 or 5 or 7;
     }
 
     /// <summary>

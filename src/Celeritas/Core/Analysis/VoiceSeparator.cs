@@ -76,6 +76,12 @@ public static class VoiceSeparator
     private static readonly VoiceSeparatorOptions DefaultOptions = new();
 
     /// <summary>
+    /// Extra assignment cost (semitones) for voices that have no real notes yet,
+    /// so continuing an active voice wins over a synthetic register seed on ties.
+    /// </summary>
+    private const int SeedContinuityPenalty = 4;
+
+    /// <summary>
     /// Separate notes into voices using pitch-proximity algorithm.
     /// </summary>
     public static VoiceSeparationResult Separate(NoteBuffer buffer, int maxVoices = 4)
@@ -99,24 +105,45 @@ public static class VoiceSeparator
     {
         var res = Separate(buffer, maxVoices: 4, options ?? DefaultOptions);
 
-        // Ensure deterministic ordering: Index 0 is highest (soprano) per VoiceSeparator contract.
-        var voices = res.Voices.ToList();
+        // Map detected voices to SATB labels by pitch register (not by list position:
+        // filtering empty voices shifts indices, and e.g. a tenor/bass duet must not
+        // become "Soprano/Alto"). Unused labels get empty stub voices.
+        var nonEmpty = res.Voices
+            .Where(v => v.Notes.Count > 0)
+            .OrderByDescending(v => v.AveragePitch)
+            .Take(4)
+            .ToList();
 
-        while (voices.Count < 4)
-            voices.Add(new Voice { Index = voices.Count, Name = $"Voice {voices.Count + 1}" });
+        // Typical SATB register centers (same values as InitializeVoiceRanges).
+        int[] centers = [72, 64, 57, 48];
+        string[] names = ["Soprano", "Alto", "Tenor", "Bass"];
 
-        var soprano = RenameVoice(voices[0], "Soprano");
-        var alto = RenameVoice(voices[1], "Alto");
-        var tenor = RenameVoice(voices[2], "Tenor");
-        var bass = RenameVoice(voices[3], "Bass");
+        var slots = new Voice?[4];
+        if (nonEmpty.Count > 0)
+        {
+            var assignment = MinCostIncreasingAssignment(
+                nonEmpty.Count, 4,
+                (i, s) => Math.Abs(nonEmpty[i].AveragePitch - centers[s]));
+
+            for (var i = 0; i < nonEmpty.Count; i++)
+                slots[assignment[i]] = nonEmpty[i];
+        }
+
+        var labeled = new Voice[4];
+        for (var s = 0; s < 4; s++)
+        {
+            labeled[s] = slots[s] is { } voice
+                ? RenameVoice(voice, names[s])
+                : new Voice { Index = s, Name = names[s] };
+        }
 
         return new SatbSeparationResult
         {
             Full = res,
-            Soprano = soprano,
-            Alto = alto,
-            Tenor = tenor,
-            Bass = bass
+            Soprano = labeled[0],
+            Alto = labeled[1],
+            Tenor = labeled[2],
+            Bass = labeled[3]
         };
     }
 
@@ -178,6 +205,9 @@ public static class VoiceSeparator
 
         var noteToVoice = new Dictionary<int, int>();
         var voiceLastPitch = new int[maxVoices];
+        // Tracks whether a voice contains real notes yet; voiceLastPitch starts with
+        // synthetic register seeds which must not count as crossing partners.
+        var voiceHasNotes = new bool[maxVoices];
         var voiceCrossings = 0;
 
         // Initialize voice pitches based on typical ranges
@@ -193,23 +223,41 @@ public static class VoiceSeparator
 
             if (sliceNotes.Count <= maxVoices)
             {
-                // Simple case: assign top-down
+                // Assign notes to voices preserving pitch order (higher note -> higher
+                // voice) while minimizing total distance to each voice's previous pitch,
+                // so a monophonic line stays in the voice nearest its register.
+                var assignment = MinCostIncreasingAssignment(
+                    sliceNotes.Count, maxVoices,
+                    (i, v) =>
+                    {
+                        var distance = Math.Abs(sliceNotes[i].note.Pitch - voiceLastPitch[v]);
+                        if (distance > options.MaxMelodicInterval)
+                            distance += options.LargeJumpPenalty;
+                        // Prefer continuing a voice with real notes over starting a
+                        // fresh voice whose "last pitch" is just a synthetic seed —
+                        // otherwise a monophonic line drifts across voices on ties.
+                        if (!voiceHasNotes[v])
+                            distance += SeedContinuityPenalty;
+                        return distance;
+                    });
+
                 for (int i = 0; i < sliceNotes.Count; i++)
                 {
                     var (note, origIndex) = sliceNotes[i];
-                    var voiceIdx = AssignToNearestVoice(note.Pitch, voiceLastPitch,
-                        i, sliceNotes.Count, maxVoices, options);
+                    var voiceIdx = assignment[i];
 
                     voices[voiceIdx].Notes.Add(note);
                     noteToVoice[origIndex] = voiceIdx;
 
-                    // Check for voice crossing
-                    if (voiceIdx > 0 && note.Pitch > voiceLastPitch[voiceIdx - 1] && voiceLastPitch[voiceIdx - 1] > 0)
+                    // Check for voice crossing (only against voices that already
+                    // contain real notes, never against synthetic seed pitches)
+                    if (voiceIdx > 0 && voiceHasNotes[voiceIdx - 1] && note.Pitch > voiceLastPitch[voiceIdx - 1])
                         voiceCrossings++;
-                    if (voiceIdx < maxVoices - 1 && note.Pitch < voiceLastPitch[voiceIdx + 1] && voiceLastPitch[voiceIdx + 1] > 0)
+                    if (voiceIdx < maxVoices - 1 && voiceHasNotes[voiceIdx + 1] && note.Pitch < voiceLastPitch[voiceIdx + 1])
                         voiceCrossings++;
 
                     voiceLastPitch[voiceIdx] = note.Pitch;
+                    voiceHasNotes[voiceIdx] = true;
                 }
             }
             else
@@ -217,7 +265,8 @@ public static class VoiceSeparator
                 // More notes than voices: use pitch-proximity assignment
                 var usedVoices = new bool[maxVoices];
 
-                // First pass: assign to nearest available voice
+                // First pass: assign to nearest available voice; once every voice is
+                // taken, overflow notes go to the voice with the nearest last pitch.
                 foreach (var (note, origIndex) in sliceNotes)
                 {
                     var voiceIdx = FindBestVoice(note.Pitch, voiceLastPitch, usedVoices, maxVoices, options);
@@ -226,6 +275,7 @@ public static class VoiceSeparator
                     noteToVoice[origIndex] = voiceIdx;
                     usedVoices[voiceIdx] = true;
                     voiceLastPitch[voiceIdx] = note.Pitch;
+                    voiceHasNotes[voiceIdx] = true;
                 }
             }
         }
@@ -299,27 +349,70 @@ public static class VoiceSeparator
         }
     }
 
-    private static int AssignToNearestVoice(
-        int pitch, int[] voiceLastPitch,
-        int noteIndex, int totalInSlice, int maxVoices,
-        VoiceSeparatorOptions options)
+    /// <summary>
+    /// Find the minimal-cost strictly increasing assignment of <paramref name="itemCount"/>
+    /// items (ordered) to <paramref name="slotCount"/> slots (ordered), i.e. item i goes to
+    /// slot a[i] with a[0] &lt; a[1] &lt; ... Preserves ordering (high-to-low pitches map to
+    /// top-to-bottom voices) while minimizing the total assignment cost.
+    /// </summary>
+    private static int[] MinCostIncreasingAssignment(int itemCount, int slotCount, Func<int, int, double> cost)
     {
-        // Simple heuristic: if fewer notes than voices, assign by position
-        if (totalInSlice <= maxVoices)
+        const double Infinity = double.MaxValue / 4;
+
+        // dp[i, s] = min cost of assigning items 0..i with item i in slot s
+        var dp = new double[itemCount, slotCount];
+        var prev = new int[itemCount, slotCount];
+
+        for (var s = 0; s < slotCount; s++)
         {
-            // Spread across voices based on pitch ordering
-            var targetVoice = (noteIndex * maxVoices) / totalInSlice;
-            return Math.Clamp(targetVoice, 0, maxVoices - 1);
+            dp[0, s] = s <= slotCount - itemCount ? cost(0, s) : Infinity;
+            prev[0, s] = -1;
         }
 
-        return FindBestVoice(pitch, voiceLastPitch, new bool[maxVoices], maxVoices, options);
+        for (var i = 1; i < itemCount; i++)
+        {
+            var bestPrev = -1;
+            var bestPrevCost = Infinity;
+
+            for (var s = 0; s < slotCount; s++)
+            {
+                // Best predecessor uses any slot < s for item i-1
+                if (s > 0 && dp[i - 1, s - 1] < bestPrevCost)
+                {
+                    bestPrevCost = dp[i - 1, s - 1];
+                    bestPrev = s - 1;
+                }
+
+                // Item i in slot s must leave room for items after it
+                var feasible = s >= i && s <= slotCount - (itemCount - i);
+                dp[i, s] = feasible && bestPrev >= 0 ? bestPrevCost + cost(i, s) : Infinity;
+                prev[i, s] = bestPrev;
+            }
+        }
+
+        // Find best final slot and backtrack
+        var bestSlot = itemCount - 1;
+        for (var s = itemCount - 1; s < slotCount; s++)
+        {
+            if (dp[itemCount - 1, s] < dp[itemCount - 1, bestSlot])
+                bestSlot = s;
+        }
+
+        var assignment = new int[itemCount];
+        for (var i = itemCount - 1; i >= 0; i--)
+        {
+            assignment[i] = bestSlot;
+            bestSlot = prev[i, bestSlot];
+        }
+
+        return assignment;
     }
 
     private static int FindBestVoice(int pitch, int[] voiceLastPitch, bool[] usedVoices,
         int maxVoices, VoiceSeparatorOptions options)
     {
-        int bestVoice = 0;
-        int minDistance = int.MaxValue;
+        var bestVoice = -1;
+        var minDistance = int.MaxValue;
 
         for (int v = 0; v < maxVoices; v++)
         {
@@ -331,6 +424,22 @@ public static class VoiceSeparator
             if (distance > options.MaxMelodicInterval)
                 distance += options.LargeJumpPenalty;
 
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                bestVoice = v;
+            }
+        }
+
+        if (bestVoice >= 0)
+            return bestVoice;
+
+        // All voices already used in this slice (overflow): distribute the extra note
+        // to the voice with the nearest last pitch instead of dumping it into voice 0.
+        bestVoice = 0;
+        for (int v = 0; v < maxVoices; v++)
+        {
+            var distance = Math.Abs(pitch - voiceLastPitch[v]);
             if (distance < minDistance)
             {
                 minDistance = distance;
