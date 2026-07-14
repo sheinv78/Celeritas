@@ -8,6 +8,11 @@ updates:
     groups:
       nuget-minor-patch:
         update-types: ["minor", "patch"]
+    ignore:
+      # Bumping this build-time ANTLR code generator forces grammar regeneration,
+      # which requires a Java toolchain in every build/CI environment. Pin it
+      # manually and upgrade deliberately rather than on Dependabot's schedule.
+      - dependency-name: "Antlr4BuildTasks"
 
   # GitHub Actions used in workflows
   - package-ecosystem: "github-actions"
