@@ -163,6 +163,19 @@ public static class MidiIo
 
         // Set tempo (optional but useful for DAWs).
         var tempo = Tempo.FromBeatsPerMinute(options.Bpm);
+
+        // A MIDI Set Tempo meta event stores microseconds-per-quarter in 24 bits, so only
+        // [1, 16_777_215] is representable. Guard the whole positive range (not just <= 0):
+        // a very small Bpm (~1-3) overflows that limit and a huge Bpm rounds it to 0, either
+        // of which would surface as a raw DryWetMidi failure or a degenerate tempo.
+        const long maxMicrosecondsPerQuarter = 0xFF_FF_FF; // 16_777_215
+        if (tempo.MicrosecondsPerQuarterNote is < 1 or > maxMicrosecondsPerQuarter)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options.Bpm,
+                $"Bpm {options.Bpm} maps to {tempo.MicrosecondsPerQuarterNote} µs/quarter, outside the MIDI-encodable " +
+                $"range [1, {maxMicrosecondsPerQuarter}] (roughly 4-60000000 BPM).");
+        }
+
         track.Events.Add(new SetTempoEvent(tempo.MicrosecondsPerQuarterNote));
 
         using var notesManager = track.ManageNotes();
