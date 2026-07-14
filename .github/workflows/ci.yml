@@ -34,7 +34,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Cache NuGet packages
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.nuget/packages
         key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
@@ -57,14 +57,14 @@ jobs:
       run: dotnet test --no-build -c Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory TestResults
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v7
       with:
         directory: TestResults
         fail_ci_if_error: false
         flags: ${{ matrix.os }}
 
     - name: Upload coverage artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: coverage-${{ matrix.os }}
         path: TestResults/**/coverage.cobertura.xml
@@ -85,7 +85,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Cache NuGet packages
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.nuget/packages
         key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
@@ -98,7 +98,7 @@ jobs:
         dotnet run -c Release --filter '*' --exporters json
 
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: benchmark-results
         path: src/Celeritas.Benchmarks/BenchmarkDotNet.Artifacts/
@@ -122,7 +122,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Setup Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.11'
 
@@ -242,7 +242,7 @@ jobs:
         ls -la
 
     - name: Upload Python dist artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: python-dist-${{ matrix.os }}
         path: bindings/python/dist/*
@@ -279,7 +279,7 @@ jobs:
       run: dotnet pack src/Celeritas.CLI/Celeritas.CLI.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }} -o nupkgs
     
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: nupkgs
         path: nupkgs/*.nupkg
@@ -318,7 +318,7 @@ jobs:
         merge-multiple: true
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       with:
         files: |
           release-assets/nupkgs/*.nupkg

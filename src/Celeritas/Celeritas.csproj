@@ -47,13 +47,15 @@
     <ItemGroup>
       <PackageReference Include="Melanchall.DryWetMidi" Version="8.0.3" />
       <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
+      <!-- Pinned at 12.8.0: bumping this build-time ANTLR code generator forces grammar
+           regeneration, which requires a Java toolchain in every build environment. -->
       <PackageReference Include="Antlr4BuildTasks" Version="12.8.0" PrivateAssets="all" />
-      <!-- Antlr4BuildTasks 12.8.0 transitively pulls Microsoft.Build.Utilities.Core 17.8.3,
-           which has a known high-severity advisory (CVE-2025-55247 / GHSA-w3q9-fxm7-j8fq, NU1903).
-           Pin the first patched version of the 17.8 line directly;
-           PrivateAssets=all keeps it build-time only (it never ships in the package). -->
-      <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.43" PrivateAssets="all" ExcludeAssets="runtime" />
-      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+      <!-- Antlr4BuildTasks transitively pulls Microsoft.Build.Utilities.Core, whose older
+           builds carry a high-severity advisory (CVE-2025-55247 / GHSA-w3q9-fxm7-j8fq, NU1903).
+           Pin a patched version directly; PrivateAssets=all + ExcludeAssets=runtime keep it
+           build-time only (it never ships in the package). -->
+      <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.7.1" PrivateAssets="all" ExcludeAssets="runtime" />
+      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.301" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>

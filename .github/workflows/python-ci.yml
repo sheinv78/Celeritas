@@ -39,7 +39,7 @@ jobs:
         dotnet --list-sdks
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -129,9 +129,9 @@ jobs:
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v7
       with:
-        file: bindings/python/coverage.xml
+        files: bindings/python/coverage.xml
         flags: python
         name: python-${{ matrix.python-version }}
 
@@ -144,7 +144,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.11'
 
