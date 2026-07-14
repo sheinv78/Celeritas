@@ -53,10 +53,10 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal(["Cadences: Deceptive"], r.Highlights);
 
         Assert.Equal(
-            "This progression is in C Major, giving it a bright and optimistic character.\r\n"
-            + "The harmonic journey: establishes home → creates strong pull to resolve → establishes home → builds tension.\r\n"
+            "This progression is in C Major, giving it a bright and optimistic character.\n"
+            + "The harmonic journey: establishes home → creates strong pull to resolve → establishes home → builds tension.\n"
             + "Note: The ending uses a deceptive cadence - instead of resolving home, it takes an unexpected turn. This creates a 'to be continued' feeling.",
-            r.Narrative);
+            r.Narrative.ReplaceLineEndings("\n"));
 
         Assert.Equal(
             [
@@ -90,10 +90,10 @@ public class ProgressionAdvisorCharacterizationTests
             r.Cadences[0].Description);
 
         Assert.Equal(
-            "This progression is in C Major, giving it a bright and optimistic character.\r\n"
-            + "The harmonic journey: builds tension → creates strong pull to resolve → establishes home.\r\n"
+            "This progression is in C Major, giving it a bright and optimistic character.\n"
+            + "The harmonic journey: builds tension → creates strong pull to resolve → establishes home.\n"
             + "The authentic cadence at the end provides a satisfying, conclusive finish.",
-            r.Narrative);
+            r.Narrative.ReplaceLineEndings("\n"));
 
         Assert.Equal(
             [
@@ -117,10 +117,10 @@ public class ProgressionAdvisorCharacterizationTests
             r.Cadences[0].Description);
 
         Assert.Equal(
-            "This progression is in C Major, giving it a bright and optimistic character.\r\n"
-            + "The harmonic journey: establishes home → establishes home → builds tension → creates strong pull to resolve.\r\n"
+            "This progression is in C Major, giving it a bright and optimistic character.\n"
+            + "The harmonic journey: establishes home → establishes home → builds tension → creates strong pull to resolve.\n"
             + "Note: The progression ends on dominant - this creates unresolved tension, like an open question.",
-            r.Narrative);
+            r.Narrative.ReplaceLineEndings("\n"));
 
         Assert.Equal(
             [
@@ -165,11 +165,11 @@ public class ProgressionAdvisorCharacterizationTests
             r.Highlights);
 
         Assert.Equal(
-            "This progression is in A Minor, giving it a darker and more dramatic character.\r\n"
-            + "The use of raised 7th (harmonic minor) creates a strong pull toward resolution, adding drama and intensity.\r\n"
-            + "The harmonic journey: establishes home → builds tension → creates strong pull to resolve → establishes home.\r\n"
+            "This progression is in A Minor, giving it a darker and more dramatic character.\n"
+            + "The use of raised 7th (harmonic minor) creates a strong pull toward resolution, adding drama and intensity.\n"
+            + "The harmonic journey: establishes home → builds tension → creates strong pull to resolve → establishes home.\n"
             + "The authentic cadence at the end provides a satisfying, conclusive finish.",
-            r.Narrative);
+            r.Narrative.ReplaceLineEndings("\n"));
 
         Assert.Equal(["Strong authentic cadence provides satisfying resolution."], r.Suggestions);
     }
@@ -193,11 +193,11 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal(CadenceType.Authentic, r.Cadences[0].Type);
 
         Assert.Equal(
-            "This progression is in A Minor, giving it a darker and more dramatic character.\r\n"
-            + "The use of raised 7th (harmonic minor) creates a strong pull toward resolution, adding drama and intensity.\r\n"
-            + "The harmonic journey: establishes home → creates strong pull to resolve → establishes home.\r\n"
+            "This progression is in A Minor, giving it a darker and more dramatic character.\n"
+            + "The use of raised 7th (harmonic minor) creates a strong pull toward resolution, adding drama and intensity.\n"
+            + "The harmonic journey: establishes home → creates strong pull to resolve → establishes home.\n"
             + "The authentic cadence at the end provides a satisfying, conclusive finish.",
-            r.Narrative);
+            r.Narrative.ReplaceLineEndings("\n"));
 
         Assert.Equal(["Strong authentic cadence provides satisfying resolution."], r.Suggestions);
     }
@@ -225,9 +225,9 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal("C Major minor", r.BorrowedChords[0].SourceKey);
 
         Assert.Equal(
-            "This progression is in C Major, giving it a bright and optimistic character.\r\n"
+            "This progression is in C Major, giving it a bright and optimistic character.\n"
             + "The harmonic journey: establishes home → establishes home → builds tension → establishes home.",
-            r.Narrative);
+            r.Narrative.ReplaceLineEndings("\n"));
 
         Assert.Equal(
             [
@@ -253,11 +253,11 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal("Rough", r.QualityRating);
 
         Assert.Equal(
-            "This progression is in A Minor, giving it a darker and more dramatic character.\r\n"
-            + "The use of raised 7th (harmonic minor) creates a strong pull toward resolution, adding drama and intensity.\r\n"
-            + "The harmonic journey: establishes home → builds tension → creates strong pull to resolve.\r\n"
+            "This progression is in A Minor, giving it a darker and more dramatic character.\n"
+            + "The use of raised 7th (harmonic minor) creates a strong pull toward resolution, adding drama and intensity.\n"
+            + "The harmonic journey: establishes home → builds tension → creates strong pull to resolve.\n"
             + "Note: The progression ends on dominant - this creates unresolved tension, like an open question.",
-            r.Narrative);
+            r.Narrative.ReplaceLineEndings("\n"));
 
         Assert.Equal(
             ["Ending on the dominant (V) creates suspense. Add Am for complete resolution."],
@@ -269,7 +269,7 @@ public class ProgressionAdvisorCharacterizationTests
     {
         var r = ProgressionAdvisor.Analyze([]);
         Assert.Equal("", r.Pattern);
-        Assert.Equal("No chords provided.", r.Narrative);
+        Assert.Equal("No chords provided.", r.Narrative.ReplaceLineEndings("\n"));
         Assert.Empty(r.Chords);
         Assert.Empty(r.Suggestions);
     }
