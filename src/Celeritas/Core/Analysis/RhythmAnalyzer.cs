@@ -809,13 +809,13 @@ public static class RhythmAnalyzer
 
         // Swing description
         if (swing is > 0.55f and < 0.75f)
-            parts.Add($"with light swing ({swing:P0} ratio)");
+            parts.Add($"with light swing ({(int)Math.Round(swing * 100)}% ratio)");
         else if (swing >= 0.75f)
-            parts.Add($"with heavy swing/shuffle ({swing:P0} ratio)");
+            parts.Add($"with heavy swing/shuffle ({(int)Math.Round(swing * 100)}% ratio)");
 
         // Syncopation
         if (syncopation > 0.3f)
-            parts.Add($"highly syncopated ({syncopation:P0})");
+            parts.Add($"highly syncopated ({(int)Math.Round(syncopation * 100)}%)");
         else if (syncopation > 0.1f)
             parts.Add("with some syncopation");
 

@@ -27,7 +27,7 @@ public class ProgressionAdvisorCharacterizationTests
 
         Assert.Equal("C Major", r.Key.ToString());
         Assert.Equal("I - V - vi - IV", r.Pattern);
-        Assert.Equal("I - V - vi - IV in C Major (tension 28 %, complexity 39 %)", r.Summary);
+        Assert.Equal("I - V - vi - IV in C Major (tension 28%, complexity 39%)", r.Summary);
         Assert.False(r.UsesHarmonicMinor);
         Assert.False(r.HasModalMixture);
         Assert.Equal(0.3875f, r.Complexity);
@@ -74,7 +74,7 @@ public class ProgressionAdvisorCharacterizationTests
 
         Assert.Equal("C Major", r.Key.ToString());
         Assert.Equal("ii7 - V7 - Imaj7", r.Pattern);
-        Assert.Equal("ii7 - V7 - Imaj7 in C Major (tension 50 %, complexity 39 %)", r.Summary);
+        Assert.Equal("ii7 - V7 - Imaj7 in C Major (tension 50%, complexity 39%)", r.Summary);
         Assert.Equal("Fair", r.QualityRating);
 
         Assert.Equal(["ii7", "V7", "Imaj7"], r.Chords.Select(c => c.RomanNumeral));

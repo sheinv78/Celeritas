@@ -302,8 +302,8 @@ public sealed class RhythmPrediction
 
     public override string ToString()
     {
-        var alts = string.Join(", ", Alternatives.Select(a => $"{a.Duration} ({a.Probability:P0})"));
-        return $"Predicted: {MostLikely} ({Confidence:P0}){(alts.Length > 0 ? $" | Alternatives: {alts}" : "")}";
+        var alts = string.Join(", ", Alternatives.Select(a => $"{a.Duration} ({(int)Math.Round(a.Probability * 100)}%)"));
+        return $"Predicted: {MostLikely} ({(int)Math.Round(Confidence * 100)}%){(alts.Length > 0 ? $" | Alternatives: {alts}" : "")}";
     }
 }
 

@@ -531,7 +531,9 @@ public static class ProgressionAdvisor
             _ => "Rough"
         };
 
-        var summary = $"{pattern} in {key} (tension {avgTension:P0}, complexity {complexity:P0})";
+        // Culture-invariant percent formatting: {x:P0} is culture-dependent (some locales
+        // insert a space before %), which makes library output differ across machines.
+        var summary = $"{pattern} in {key} (tension {(int)Math.Round(avgTension * 100)}%, complexity {(int)Math.Round(complexity * 100)}%)";
 
         return new ProgressionReport
         {

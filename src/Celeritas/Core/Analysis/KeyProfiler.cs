@@ -530,7 +530,7 @@ public readonly record struct KeyDetectionResult(
     public override string ToString()
     {
         var keyName = ChordLibrary.NoteNames[Key.Root] + (Key.IsMajor ? " Major" : " Minor");
-        return $"{keyName} (confidence: {Confidence:P0})";
+        return $"{keyName} (confidence: {(int)Math.Round(Confidence * 100)}%)";
     }
 }
 
