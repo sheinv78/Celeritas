@@ -52,7 +52,7 @@
            which has a known high-severity advisory (CVE-2025-55247 / GHSA-w3q9-fxm7-j8fq, NU1903).
            Pin the first patched version of the 17.8 line directly;
            PrivateAssets=all keeps it build-time only (it never ships in the package). -->
-      <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.43" PrivateAssets="all" ExcludeAssets="runtime" />
+      <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.7.1" PrivateAssets="all" ExcludeAssets="runtime" />
       <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
     </ItemGroup>
 
