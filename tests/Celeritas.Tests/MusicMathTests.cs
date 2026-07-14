@@ -160,4 +160,17 @@ public class MusicMathTests
         Assert.Equal(new Rational(1, 2), offset2); // 2/4 -> 1/2
         Assert.Equal(new Rational(3, 4), offset3); // 3/4
     }
+
+    [Fact]
+    public void Quantize_ExtremeMagnitudeOffset_UsesExactFallbackPath()
+    {
+        // An offset numerator beyond Int32 forces Quantize's 128-bit fallback path.
+        // 5e9/3 on a 1/4 grid: (5e9 * 4) / 3 = 20e9/3, round-half-up -> 6,666,666,667 quarter units.
+        using var buffer = new NoteBuffer(1);
+        buffer.AddNote(60, new Rational(5_000_000_000L, 3), Rational.Quarter);
+
+        MusicMath.Quantize(buffer, Rational.Quarter);
+
+        Assert.Equal(new Rational(6_666_666_667L, 4), buffer.GetOffset(0));
+    }
 }
