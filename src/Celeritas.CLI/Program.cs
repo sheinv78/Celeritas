@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Celeritas.Core;
@@ -392,7 +393,16 @@ infoCommand.SetAction(parseResult =>
     Console.WriteLine($"Runtime: {Environment.Version}");
     Console.WriteLine();
     Console.WriteLine($"SIMD support: {SimdInfo.GetDescription()}");
-    Console.WriteLine($"Active tier:  {SimdInfo.GetBest()}");
+    Console.WriteLine($"Highest ISA:  {SimdInfo.GetBest()}");
+
+    // The compute kernels run on portable Vector<T>, whose width the JIT picks from the
+    // hardware — note that on AVX-512 machines .NET defaults Vector<T> to 256-bit unless
+    // DOTNET_PreferredVectorBitWidth=512 is set, so report the width actually in use rather
+    // than implying the highest ISA above is fully exercised.
+    var vectorBits = Vector<byte>.Count * 8;
+    Console.WriteLine(Vector.IsHardwareAccelerated
+        ? $"Active kernels: Vector<T> @ {vectorBits}-bit ({Vector<float>.Count} floats/op)"
+        : "Active kernels: scalar (no hardware SIMD)");
 });
 
 rootCommand.Subcommands.Add(infoCommand);

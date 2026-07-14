@@ -70,6 +70,34 @@ public class MidiIoTests
     }
 
     [Fact]
+    public void Export_BpmBelowMidiEncodableRange_ThrowsArgumentOutOfRange()
+    {
+        using var buffer = new NoteBuffer(1);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter);
+        using var ms = new MemoryStream();
+
+        // Bpm 3 maps to 20,000,000 µs/quarter, above the 24-bit Set Tempo limit (16,777,215).
+        // This must surface as a friendly ArgumentOutOfRangeException, not a raw library failure.
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(
+            () => MidiIo.Export(buffer, ms, new MidiExportOptions(Bpm: 3)));
+        Assert.Equal("options", ex.ParamName);
+    }
+
+    [Fact]
+    public void Export_LowestMidiEncodableBpm_RoundTrips()
+    {
+        using var buffer = new NoteBuffer(1);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter);
+        using var ms = new MemoryStream();
+
+        // Bpm 4 maps to 15,000,000 µs/quarter, just within the encodable range.
+        MidiIo.Export(buffer, ms, new MidiExportOptions(Bpm: 4));
+        ms.Position = 0;
+        using var imported = MidiIo.Import(ms);
+        Assert.Equal(1, imported.Count);
+    }
+
+    [Fact]
     public void Import_MaxNotesZero_ReturnsEmptyBuffer()
     {
         using var source = new NoteBuffer(2);

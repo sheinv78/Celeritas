@@ -84,18 +84,39 @@ public static unsafe class MusicMath
         var gNum = grid.Numerator;
         var gDen = grid.Denominator;
 
+        // When the grid and an offset all fit in Int32, every intermediate below is bounded by
+        // ~2^62 and stays exact in Int64; only near-Int64 magnitudes need the 128-bit path.
+        // gNum > 0 (checked above) and gDen > 0 always.
+        var gridFitsInt32 = gNum <= int.MaxValue && gDen <= int.MaxValue;
+
         for (var i = 0; i < count; i++)
         {
-            // offset / grid = (num * gDen) / (den * gNum); Int128 makes the cross-products exact.
-            // Both den and gNum are positive, so valDen > 0 and floor division rounds half-up correctly
-            // for negative offsets too.
-            var valNum = (Int128)offsetsNum[i] * gDen;
-            var valDen = (Int128)offsetsDen[i] * gNum;
-            var shifted = valNum + (valDen >> 1);
-            var rounded = shifted >= 0
-                ? shifted / valDen
-                : -((-shifted + valDen - 1) / valDen);
-            offsetsNum[i] = checked((long)(rounded * gNum));
+            var offNum = offsetsNum[i];
+            var offDen = offsetsDen[i]; // always > 0
+
+            // offset / grid = (offNum * gDen) / (offDen * gNum). The divisor is positive, so
+            // floor division rounds half-up correctly for negative offsets too.
+            if (gridFitsInt32 && offNum is >= int.MinValue and <= int.MaxValue && offDen <= int.MaxValue)
+            {
+                var valNum = offNum * gDen;
+                var valDen = offDen * gNum;
+                var shifted = valNum + (valDen >> 1);
+                var rounded = shifted >= 0
+                    ? shifted / valDen
+                    : -((-shifted + valDen - 1) / valDen);
+                offsetsNum[i] = rounded * gNum;
+                offsetsDen[i] = gDen;
+                continue;
+            }
+
+            // Exact 128-bit fallback for pathological magnitudes.
+            var valNum128 = (Int128)offNum * gDen;
+            var valDen128 = (Int128)offDen * gNum;
+            var shifted128 = valNum128 + (valDen128 >> 1);
+            var rounded128 = shifted128 >= 0
+                ? shifted128 / valDen128
+                : -((-shifted128 + valDen128 - 1) / valDen128);
+            offsetsNum[i] = checked((long)(rounded128 * gNum));
             offsetsDen[i] = gDen;
         }
 

@@ -92,7 +92,9 @@ public static class ModulationDetector
 
         var modulations = new List<ModulationEvent>();
         var currentKey = startKey;
-        var minModulationDuration = new Rational(2, 1); // At least 2 beats
+        // Whole-note time units (quarter = 1/4), so 2/1 is two whole notes (~two 4/4 bars,
+        // 8 quarter-beats). A foreign-key area shorter than this counts as a tonicization.
+        var minModulationDuration = new Rational(2, 1);
 
         // Convert to array for easier manipulation
         var notesArray = notes.ToArray();
@@ -139,12 +141,15 @@ public static class ModulationDetector
                 continue; // Not stable enough, probably just passing
             }
 
-            // Same target key detected on a contiguous run of indices: extend the
-            // run instead of emitting a duplicate event.
+            // Same target key still being detected within one analysis window of the last
+            // sighting: extend the run instead of emitting a duplicate. A tolerance of
+            // windowSize (rather than strict index adjacency) bridges the short gaps that
+            // occur when a single index dips below the stability threshold, while a genuine
+            // re-tonicization after a longer return home is still emitted as a new event.
             if (lastEmittedTarget is { } prevTarget
                 && prevTarget.Root == detectedKey.Value.Root
                 && prevTarget.IsMajor == detectedKey.Value.IsMajor
-                && i == lastEmittedIndex + 1)
+                && i - lastEmittedIndex <= windowSize)
             {
                 lastEmittedIndex = i;
                 continue;

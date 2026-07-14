@@ -195,6 +195,13 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
             var prevCosts = costs[i - 1];
             var currentPrev = prev[i];
 
+            // The chordal seventh of each 'from' voicing depends only on that voicing, so
+            // compute it once per source here instead of re-identifying the chord inside every
+            // one of the O(current x prev) transition-cost evaluations below.
+            var prevSeventhPcs = new int[prevVoicings.Length];
+            for (var k = 0; k < prevVoicings.Length; k++)
+                prevSeventhPcs[k] = VoiceLeadingRules.GetChordalSeventhPitchClass(prevVoicings[k]);
+
             // Parallel if enough work
             if (currentVoicings.Length * prevVoicings.Length > 1000)
             {
@@ -209,7 +216,7 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
                         if (prevCosts[k] >= float.MaxValue) continue;
 
                         var prevV = prevVoicings[k];
-                        var transitionCost = ComputeTransitionCost(prevV, current, keyRoot);
+                        var transitionCost = ComputeTransitionCost(prevV, current, keyRoot, prevSeventhPcs[k]);
 
                         if (transitionCost >= _options.MaxTransitionCost) continue;
 
@@ -237,7 +244,7 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
                         if (prevCosts[k] >= float.MaxValue) continue;
 
                         var prevV = prevVoicings[k];
-                        var transitionCost = ComputeTransitionCost(prevV, current, keyRoot);
+                        var transitionCost = ComputeTransitionCost(prevV, current, keyRoot, prevSeventhPcs[k]);
 
                         if (transitionCost >= _options.MaxTransitionCost) continue;
 
@@ -303,9 +310,9 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
     /// Compute the cost of transitioning between two voicings.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float ComputeTransitionCost(Voicing from, Voicing to, int keyRoot)
+    private float ComputeTransitionCost(Voicing from, Voicing to, int keyRoot, int fromChordalSeventhPc)
     {
-        var check = VoiceLeadingRules.Check(from, to, keyRoot);
+        var check = VoiceLeadingRules.Check(from, to, keyRoot, fromChordalSeventhPc);
 
         // If hard violations, return very high cost
         if (_options.StrictMode && !check.IsValid)
