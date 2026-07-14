@@ -303,12 +303,22 @@ public class FiguredBassRealizer
             };
         }
 
+        // Sum the ascending semitone steps degree-by-degree. Summing directly is
+        // robust to the scale array wrapping mod-12 mid-array (true for every key
+        // except C major, e.g. G major is [7,9,11,0,2,4,6]); a closed-form
+        // scale[target]-scale[bass]+12*octaves double-counts an octave there.
         var steps = interval - 1;
-        var octaves = (idx + steps) / 7;
-        var targetIdx = (idx + steps) % 7;
-        var semitones = scale[targetIdx] - scale[idx] + (12 * octaves);
-        if (semitones < 0)
-            semitones += 12;
+        var semitones = 0;
+        for (var k = 0; k < steps; k++)
+        {
+            var cur = scale[(idx + k) % 7];
+            var next = scale[(idx + k + 1) % 7];
+            var step = next - cur;
+            if (step <= 0)
+                step += 12; // ascending step across the octave wrap
+            semitones += step;
+        }
+
         return semitones;
     }
 
