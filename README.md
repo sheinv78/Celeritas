@@ -40,7 +40,7 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 Issues and PRs are welcome.
 
 Current version: **v0.9.0** (December 2025)  
-**362 tests** passing (C#) + **35 tests** (Python)
+Extensive test suite: **360+ C# tests** and **40 Python tests**
 
 ## Python API Coverage
 
@@ -408,7 +408,7 @@ cd bindings/python
 python test_celeritas.py
 ```
 
-**Current:** 362 C# tests + 35 Python tests, all passing
+**Current:** 360+ C# tests and 40 Python tests, all passing
 
 ## 🎉 Recent Updates (v0.9.0 - December 2025)
 
@@ -417,8 +417,8 @@ Highlights:
 - ✅ **Ornamentation** - Trills, mordents, turns, appoggiaturas
 - ✅ **Figured Bass** - Baroque chord notation realization
 - ✅ **ARM NEON SIMD** - High-performance on Apple Silicon and ARM64
-- ✅ **WebAssembly SIMD** - Browser-based music processing
-- ✅ **Python Bindings** - Full ctypes wrapper with 35 passing tests
+- 🧪 **WebAssembly SIMD** - Browser-based music processing (experimental, not yet CI-tested)
+- ✅ **Python Bindings** - Full ctypes wrapper with a dedicated test suite
 - ✅ **Round-Trip Formatting** - Export notes with directives back to notation
 
 ## 🔭 Next Ideas
@@ -437,7 +437,7 @@ Highlights:
 | x64 Intel/AMD   | AVX2     | ✅     | ~14M notes/sec                    |
 | x64 Intel/AMD   | SSE2     | ✅     | ~10M notes/sec                    |
 | ARM64           | NEON     | ✅     | ~10-15M notes/sec                 |
-| WebAssembly     | SIMD128  | ✅     | ~5-10M notes/sec                  |
+| WebAssembly     | SIMD128  | 🧪 experimental, not yet CI-tested | ~5-10M notes/sec (est.) |
 | Fallback        | Scalar   | ✅     | ~1M notes/sec                     |
 
 ## 📄 License

@@ -23,10 +23,12 @@ This requires:
 
 from __future__ import annotations
 
+import importlib.util
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 import os
+import sys
 
 
 @dataclass(frozen=True)
@@ -36,13 +38,41 @@ class DotNetLoadResult:
 
 
 def is_pythonnet_available() -> bool:
+    # Use find_spec instead of importing clr: importing clr initializes the
+    # .NET runtime as a side effect (with the wrong default on Windows).
     try:
-        import clr  # type: ignore
-
-        _ = clr
-        return True
+        return importlib.util.find_spec("clr") is not None
     except Exception:
         return False
+
+
+def _ensure_coreclr() -> None:
+    """Select the CoreCLR runtime before ``import clr``.
+
+    On Windows pythonnet defaults to the legacy .NET Framework runtime, which
+    cannot load the net10.0 Celeritas assembly. Explicitly load CoreCLR unless
+    the user already picked a runtime (via pythonnet.load() or the
+    PYTHONNET_RUNTIME environment variable).
+    """
+
+    try:
+        import pythonnet  # type: ignore
+    except Exception:
+        # Old pythonnet (<3) or unusual install; let `import clr` decide.
+        return
+
+    try:
+        already_loaded = pythonnet.get_runtime_info() is not None
+    except Exception:
+        already_loaded = False
+    if already_loaded:
+        return
+
+    if os.environ.get("PYTHONNET_RUNTIME"):
+        # Respect the user's explicit runtime choice.
+        pythonnet.load()
+    else:
+        pythonnet.load("coreclr")
 
 
 def _candidate_assembly_paths() -> list[Path]:
@@ -117,10 +147,18 @@ def load_celeritas(assembly_path: Optional[str] = None) -> DotNetLoadResult:
             "Or set CELERITAS_DOTNET_ASSEMBLY to an explicit path."
         )
 
+    # Select CoreCLR before the first `import clr` (see _ensure_coreclr).
+    _ensure_coreclr()
+
     # Import inside function so importing this module stays non-breaking.
     import clr  # type: ignore
 
-    clr.AddReference(resolved_path)
+    # Robust load pattern: make the assembly directory discoverable and
+    # reference the assembly by simple name (no path, no .dll suffix).
+    assembly_dir = str(Path(resolved_path).resolve().parent)
+    if assembly_dir not in sys.path:
+        sys.path.append(assembly_dir)
+    clr.AddReference("Celeritas")
 
     # After AddReference, pythonnet can import the namespace as a module.
     import importlib

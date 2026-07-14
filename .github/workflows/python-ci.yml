@@ -95,18 +95,17 @@ jobs:
         echo "Listing publish directory: ${publish_dir}"
         ls -la "${publish_dir}" || true
 
+        # The Python loader handles both prefixed (libCeleritas.Native.so)
+        # and unprefixed (Celeritas.Native.so) names, so no rename is needed.
         case "${RUNNER_OS}" in
           Windows)
             src="${publish_dir}/Celeritas.Native.dll"
-            dst="bindings/python/celeritas/native/Celeritas.Native.dll"
             ;;
           Linux)
             src="$(ls "${publish_dir}"/*.so 2>/dev/null | head -n 1 || true)"
-            dst="bindings/python/celeritas/native/libCeleritas.Native.so"
             ;;
           macOS)
             src="$(ls "${publish_dir}"/*.dylib 2>/dev/null | head -n 1 || true)"
-            dst="bindings/python/celeritas/native/libCeleritas.Native.dylib"
             ;;
           *)
             echo "Unsupported OS: ${RUNNER_OS}"
@@ -119,6 +118,7 @@ jobs:
           exit 1
         fi
 
+        dst="bindings/python/celeritas/native/$(basename "${src}")"
         cp "${src}" "${dst}"
         echo "Copied native library: ${src} -> ${dst}"
 
@@ -158,8 +158,8 @@ jobs:
       run: |
         # Stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+        # Full lint (fails the build on findings)
+        flake8 . --count --max-complexity=10 --max-line-length=100 --extend-exclude=build,dist --statistics
 
     - name: Check formatting with black
       working-directory: bindings/python
@@ -167,4 +167,4 @@ jobs:
 
     - name: Type check with mypy
       working-directory: bindings/python
-      run: mypy celeritas.py --ignore-missing-imports || true
+      run: mypy celeritas --ignore-missing-imports

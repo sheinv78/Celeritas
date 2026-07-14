@@ -117,22 +117,9 @@ public readonly record struct KeySignature
 
     private static byte ParseNoteName(string name)
     {
-        return name.ToUpperInvariant() switch
-        {
-            "C" => 0,
-            "C#" or "DB" => 1,
-            "D" => 2,
-            "D#" or "EB" => 3,
-            "E" => 4,
-            "F" => 5,
-            "F#" or "GB" => 6,
-            "G" => 7,
-            "G#" or "AB" => 8,
-            "A" => 9,
-            "A#" or "BB" => 10,
-            "B" => 11,
-            _ => 0
-        };
+        // Delegate to the shared parser so all note-name parsing agrees and
+        // unknown names throw instead of silently becoming C.
+        return ChordLibrary.GetPitchClass(name);
     }
 
     /// <summary>

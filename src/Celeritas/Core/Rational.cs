@@ -7,12 +7,21 @@ namespace Celeritas.Core;
 
 /// <summary>
 /// High-performance rational number for precise musical time representation.
-/// Automatically normalizes to the lowest terms.
+/// Automatically normalizes to the lowest terms; the denominator is always positive.
+/// <para>
+/// <c>default(Rational)</c> is a valid zero (0/1). Comparisons are exact (128-bit
+/// cross-multiplication, no overflow). Arithmetic operators reduce intermediate values
+/// via GCD and throw <see cref="OverflowException"/> if the true result does not fit
+/// in a 64-bit numerator/denominator, instead of silently wrapping.
+/// </para>
 /// </summary>
 public readonly record struct Rational : IComparable<Rational>
 {
-    public long Numerator { get; }
-    public long Denominator { get; }
+    private readonly long _numerator;
+    private readonly long _denominatorMinusOne; // stored minus one so default(Rational) == 0/1
+
+    public long Numerator => _numerator;
+    public long Denominator => _denominatorMinusOne + 1;
 
     public Rational(long numerator, long denominator)
     {
@@ -21,16 +30,23 @@ public readonly record struct Rational : IComparable<Rational>
 
         if (numerator == 0)
         {
-            Numerator = 0;
-            Denominator = 1;
+            _numerator = 0;
+            _denominatorMinusOne = 0;
             return;
         }
 
-        // Normalize: always simplify and keep denominator positive
+        // Normalize: always simplify and keep denominator positive.
+        // checked: -long.MinValue / MinValue-corner normalization must throw, not wrap.
         var gcd = Gcd(numerator, denominator);
-        var sign = denominator < 0 ? -1 : 1;
-        Numerator = sign * numerator / gcd;
-        Denominator = sign * denominator / gcd;
+        var num = numerator / gcd;
+        var den = denominator / gcd;
+        if (den < 0)
+        {
+            num = checked(-num);
+            den = checked(-den);
+        }
+        _numerator = num;
+        _denominatorMinusOne = den - 1;
     }
 
     public static Rational Zero => new(0, 1);
@@ -43,80 +59,113 @@ public readonly record struct Rational : IComparable<Rational>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static long Gcd(long a, long b)
     {
-        a = a < 0 ? -a : a;
-        b = b < 0 ? -b : b;
-        while (b != 0)
+        // Compute on unsigned magnitudes so long.MinValue does not overflow on negation
+        var x = a == long.MinValue ? (ulong)long.MaxValue + 1 : (ulong)Math.Abs(a);
+        var y = b == long.MinValue ? (ulong)long.MaxValue + 1 : (ulong)Math.Abs(b);
+        while (y != 0)
         {
-            var temp = b;
-            b = a % b;
-            a = temp;
+            var temp = y;
+            y = x % y;
+            x = temp;
         }
-        return a;
+        return (long)x;
     }
-
-    // Rational automatically normalizes on construction, so operators don't need to
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rational operator +(Rational a, Rational b)
     {
         // Optimization: if denominators are equal, no need to multiply
         if (a.Denominator == b.Denominator)
-            return new Rational(a.Numerator + b.Numerator, a.Denominator);
+            return new Rational(checked(a.Numerator + b.Numerator), a.Denominator);
 
+        // Reduce by the GCD of the denominators first to keep cross-products small
+        var g = Gcd(a.Denominator, b.Denominator);
+        var bScale = b.Denominator / g;
+        var aScale = a.Denominator / g;
         return new Rational(
-            (a.Numerator * b.Denominator) + (b.Numerator * a.Denominator),
-            a.Denominator * b.Denominator);
+            checked((a.Numerator * bScale) + (b.Numerator * aScale)),
+            checked(a.Denominator * bScale));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rational operator -(Rational a, Rational b)
     {
         if (a.Denominator == b.Denominator)
-            return new Rational(a.Numerator - b.Numerator, a.Denominator);
+            return new Rational(checked(a.Numerator - b.Numerator), a.Denominator);
 
+        var g = Gcd(a.Denominator, b.Denominator);
+        var bScale = b.Denominator / g;
+        var aScale = a.Denominator / g;
         return new Rational(
-            (a.Numerator * b.Denominator) - (b.Numerator * a.Denominator),
-            a.Denominator * b.Denominator);
+            checked((a.Numerator * bScale) - (b.Numerator * aScale)),
+            checked(a.Denominator * bScale));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Rational operator *(Rational a, Rational b) =>
-        new(a.Numerator * b.Numerator, a.Denominator * b.Denominator);
+    public static Rational operator -(Rational a) => new(checked(-a.Numerator), a.Denominator);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Rational operator /(Rational a, Rational b) =>
-        new(a.Numerator * b.Denominator, a.Denominator * b.Numerator);
+    public static Rational operator *(Rational a, Rational b)
+    {
+        // Cross-reduce before multiplying to avoid unnecessary overflow
+        var g1 = Gcd(a.Numerator, b.Denominator);
+        var g2 = Gcd(b.Numerator, a.Denominator);
+        return new Rational(
+            checked((a.Numerator / g1) * (b.Numerator / g2)),
+            checked((a.Denominator / g2) * (b.Denominator / g1)));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Rational operator /(Rational a, Rational b)
+    {
+        if (b.Numerator == 0)
+            throw new DivideByZeroException("Division by zero Rational");
+
+        var g1 = Gcd(a.Numerator, b.Numerator);
+        var g2 = Gcd(b.Denominator, a.Denominator);
+        return new Rational(
+            checked((a.Numerator / g1) * (b.Denominator / g2)),
+            checked((a.Denominator / g2) * (b.Numerator / g1)));
+    }
 
     // Fast multiply/divide by an integer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Rational operator *(Rational a, long b) => new(a.Numerator * b, a.Denominator);
+    public static Rational operator *(Rational a, long b)
+    {
+        var g = Gcd(a.Denominator, b);
+        return new Rational(checked(a.Numerator * (b / g)), a.Denominator / g);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Rational operator /(Rational a, long b) => new(a.Numerator, a.Denominator * b);
+    public static Rational operator /(Rational a, long b)
+    {
+        if (b == 0)
+            throw new DivideByZeroException("Division of Rational by zero");
 
-    // Comparison operators without creating temporaries
+        var g = Gcd(a.Numerator, b);
+        return new Rational(a.Numerator / g, checked(a.Denominator * (b / g)));
+    }
+
+    // Comparison operators: exact via 128-bit cross-multiplication (denominators are positive)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator <(Rational a, Rational b) =>
-        a.Numerator * b.Denominator < b.Numerator * a.Denominator;
+        (Int128)a.Numerator * b.Denominator < (Int128)b.Numerator * a.Denominator;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator >(Rational a, Rational b) =>
-        a.Numerator * b.Denominator > b.Numerator * a.Denominator;
+        (Int128)a.Numerator * b.Denominator > (Int128)b.Numerator * a.Denominator;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator <=(Rational a, Rational b) =>
-        a.Numerator * b.Denominator <= b.Numerator * a.Denominator;
+        (Int128)a.Numerator * b.Denominator <= (Int128)b.Numerator * a.Denominator;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator >=(Rational a, Rational b) =>
-        a.Numerator * b.Denominator >= b.Numerator * a.Denominator;
+        (Int128)a.Numerator * b.Denominator >= (Int128)b.Numerator * a.Denominator;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int CompareTo(Rational other)
-    {
-        var diff = (Numerator * other.Denominator) - (other.Numerator * Denominator);
-        return diff < 0 ? -1 : diff > 0 ? 1 : 0;
-    }
+    public int CompareTo(Rational other) =>
+        ((Int128)Numerator * other.Denominator).CompareTo((Int128)other.Numerator * Denominator);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double ToDouble() => (double)Numerator / Denominator;

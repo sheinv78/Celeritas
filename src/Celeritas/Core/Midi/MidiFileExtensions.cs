@@ -16,7 +16,8 @@ public enum MidiSplitMode
 public enum MidiMergeMode
 {
     /// <summary>
-    /// Keep tracks separate (default behavior of <see cref="MidiFileExtensions.Merge"/>).
+    /// Keep tracks separate (default behavior of
+    /// <see cref="MidiFileExtensions.Merge(Melanchall.DryWetMidi.Core.MidiFile, Melanchall.DryWetMidi.Core.MidiFile)"/>).
     /// </summary>
     AppendTracks,
 
@@ -30,7 +31,7 @@ public sealed record MidiFileStatistics(
     int TrackCount,
     int NoteCount,
     long TotalTicks,
-    Rational TotalBeats,
+    Rational TotalDuration, // in whole-note units (one 4/4 measure = 1)
     int? MinNoteNumber,
     int? MaxNoteNumber,
     IReadOnlyList<int> Channels);
@@ -59,6 +60,11 @@ public static class MidiFileExtensions
 
             if (file.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
             {
+                if (options.TicksPerQuarterNote is <= 0 or > short.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(options), options.TicksPerQuarterNote, "TicksPerQuarterNote must be in [1..32767].");
+                }
+
                 file.TimeDivision = new TicksPerQuarterNoteTimeDivision((short)options.TicksPerQuarterNote);
                 tpq = (TicksPerQuarterNoteTimeDivision)file.TimeDivision;
             }
@@ -82,16 +88,14 @@ public static class MidiFileExtensions
             {
                 var noteNumber = Math.Clamp(e.Pitch, 0, 127);
 
-                var timeTicks = MidiIo.BeatsToTicks(e.Offset, ticksPerQuarter);
-                var lengthTicks = Math.Max(1, MidiIo.BeatsToTicks(e.Duration, ticksPerQuarter));
+                var timeTicks = MidiIo.WholeNotesToTicks(e.Offset, ticksPerQuarter);
+                var lengthTicks = Math.Max(1, MidiIo.WholeNotesToTicks(e.Duration, ticksPerQuarter));
                 var lengthTicksInt = lengthTicks > int.MaxValue ? int.MaxValue : (int)lengthTicks;
 
-                var velocity = (byte)Math.Clamp((int)Math.Round(e.Velocity * 127.0), 1, 127);
-                velocity = velocity switch
-                {
-                    0 => options.DefaultVelocity,
-                    _ => velocity
-                };
+                var rawVelocity = (int)Math.Round(e.Velocity * 127.0);
+                var velocity = rawVelocity <= 0
+                    ? Math.Clamp(options.DefaultVelocity, (byte)1, (byte)127)
+                    : (byte)Math.Clamp(rawVelocity, 1, 127);
 
                 var note = new Note((SevenBitNumber)noteNumber, lengthTicksInt, timeTicks)
                 {
@@ -208,9 +212,12 @@ public static class MidiFileExtensions
 
             var trackCount = file.Chunks.OfType<TrackChunk>().Count();
 
-            var ticksPerQuarter = file.TimeDivision is TicksPerQuarterNoteTimeDivision tpq
-                ? tpq.TicksPerQuarterNote
-                : 480;
+            if (file.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
+            {
+                throw new NotSupportedException("Only ticks-per-quarter-note MIDI files are supported.");
+            }
+
+            var ticksPerQuarter = tpq.TicksPerQuarterNote;
 
             var noteCollection = file.GetNotes();
             var noteCount = noteCollection.Count;
@@ -253,13 +260,7 @@ public static class MidiFileExtensions
                         maxEventTime = abs;
                     }
 
-                    if (evt is SetTempoEvent)
-                    {
-                    }
-                    else if (evt is TimeSignatureEvent)
-                    {
-                    }
-                    else if (evt is ChannelEvent ce)
+                    if (evt is ChannelEvent ce)
                     {
                         channels.Add(ce.Channel);
                     }
@@ -267,13 +268,13 @@ public static class MidiFileExtensions
             }
 
             var totalTicks = Math.Max(maxNoteEnd, maxEventTime);
-            var totalBeats = new Rational(totalTicks, ticksPerQuarter);
+            var totalDuration = MidiIo.TicksToWholeNotes(totalTicks, ticksPerQuarter);
 
             return new MidiFileStatistics(
                 TrackCount: trackCount,
                 NoteCount: noteCount,
                 TotalTicks: totalTicks,
-                TotalBeats: totalBeats,
+                TotalDuration: totalDuration,
                 MinNoteNumber: minNoteNumber,
                 MaxNoteNumber: maxNoteNumber,
                 Channels: channels.OrderBy(c => c).ToArray());
@@ -315,8 +316,7 @@ public static class MidiFileExtensions
 
         foreach (var source in sources)
         {
-            var cloned = source.Clone();
-            foreach (var chunk in cloned.Chunks)
+            foreach (var chunk in source.Chunks)
             {
                 if (chunk is not TrackChunk track)
                     continue;
@@ -330,7 +330,8 @@ public static class MidiFileExtensions
                         endOfTrackPrototype ??= evt;
                         continue;
                     }
-                    collected.Add((abs, order++, CloneEvent(evt)));
+                    // Events are cloned individually, so no file-level clone is needed.
+                    collected.Add((abs, order++, evt.Clone()));
                 }
             }
         }
@@ -352,7 +353,7 @@ public static class MidiFileExtensions
 
         if (endOfTrackPrototype is not null)
         {
-            var eot = CloneEvent(endOfTrackPrototype);
+            var eot = endOfTrackPrototype.Clone();
             eot.DeltaTime = 0;
             mergedTrack.Events.Add(eot);
         }
@@ -467,8 +468,7 @@ public static class MidiFileExtensions
                 continue;
             }
 
-            // Clone via serialization to avoid depending on DryWetMIDI's clone API.
-            var clonedEvent = CloneEvent(evt);
+            var clonedEvent = evt.Clone();
             clonedEvent.DeltaTime = abs - prevKept;
             prevKept = abs;
 
@@ -476,20 +476,5 @@ public static class MidiFileExtensions
         }
 
         return filtered;
-    }
-
-    private static MidiEvent CloneEvent(MidiEvent evt)
-    {
-        using var ms = new MemoryStream();
-        var tempTrack = new TrackChunk();
-        tempTrack.Events.Add(evt);
-
-        var tempFile = new MidiFile(tempTrack);
-        tempFile.Write(ms);
-
-        ms.Position = 0;
-        var readBack = MidiFile.Read(ms);
-        var track = readBack.Chunks.OfType<TrackChunk>().First();
-        return track.Events.First();
     }
 }

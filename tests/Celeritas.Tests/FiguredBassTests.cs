@@ -95,6 +95,40 @@ public class FiguredBassTests
     }
 
     [Fact]
+    public void FiguredBassRealizer_NonCKey_VoicesDiatonicIntervalsWithoutOctaveError()
+    {
+        // Regression: in G major the scale pitch-class array wraps mid-array
+        // ([7,9,11,0,2,4,6]); a "6" above the bass D must be B a diatonic sixth
+        // (9 semitones) up, not an octave higher.
+        var options = new FiguredBassOptions
+        {
+            Key = new KeySignature(7, true), // G major
+            Style = VoiceLeadingStyle.Free,
+            MinPitch = 48,
+            MaxPitch = 84
+        };
+        var realizer = new FiguredBassRealizer(options);
+
+        var symbol = new FiguredBassSymbol
+        {
+            BassPitch = 50, // D3
+            Figures = [6],
+            Duration = new Rational(1, 4),
+            Time = Rational.Zero
+        };
+
+        var notes = realizer.RealizeSymbol(symbol);
+
+        // Upper voices: diatonic third (F#) and sixth (B) above D.
+        Assert.Equal(50, notes[0].Pitch); // D3 bass
+        Assert.Contains(notes, n => n.Pitch % 12 == 6); // F# (diatonic 3rd)
+        Assert.Contains(notes, n => n.Pitch % 12 == 11); // B (diatonic 6th)
+        // The sixth is B3 (59), a diatonic sixth above D3 (50) — not B4 (71).
+        var sixth = notes.First(n => n.Pitch % 12 == 11);
+        Assert.Equal(59, sixth.Pitch);
+    }
+
+    [Fact]
     public void FiguredBassRealizer_ParseFigures_ParsesCorrectly()
     {
         // Arrange & Act

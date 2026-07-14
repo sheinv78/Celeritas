@@ -1,12 +1,13 @@
 using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.Intrinsics.X86;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
 using Celeritas.Core.Harmonization;
 using Celeritas.Core.Midi;
+using Celeritas.Core.Simd;
 using Celeritas.Core.VoiceLeading;
 
 static string[] ExpandListArgs(string[] raw)
@@ -75,7 +76,7 @@ transposeCommand.Options.Add(semitonesOption);
 transposeCommand.Options.Add(delayOption);
 transposeCommand.Options.Add(notesOption);
 
-transposeCommand.SetAction(parseResult =>
+transposeCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var semitones = parseResult.GetValue(semitonesOption);
     var delay = parseResult.GetValue(delayOption);
@@ -83,8 +84,7 @@ transposeCommand.SetAction(parseResult =>
 
     if (noteStrings.Length == 0)
     {
-        Console.WriteLine("No notes provided. Use: celeritas transpose --semitones 2 --notes C4 E4 G4");
-        return;
+        throw new CliUsageException("No notes provided. Use: celeritas transpose --semitones 2 --notes C4 E4 G4");
     }
 
     Console.WriteLine($"Transposing by {semitones} semitones...");
@@ -92,18 +92,31 @@ transposeCommand.SetAction(parseResult =>
     var inputMidi = new int[noteStrings.Length];
     for (var i = 0; i < noteStrings.Length; i++)
     {
-        var token = noteStrings[i];
-        if (int.TryParse(token, out var midi))
-        {
-            inputMidi[i] = midi;
-        }
-        else
-        {
-            inputMidi[i] = MusicNotation.ParseNote(token);
-        }
+        inputMidi[i] = ParsePitch(noteStrings[i]);
     }
 
-    var outputMidi = inputMidi.Select(m => m + semitones).ToArray();
+    // Use the library transpose path (SIMD), then validate the resulting MIDI range.
+    using var buffer = new NoteBuffer(inputMidi.Length);
+    foreach (var pitch in inputMidi)
+    {
+        buffer.AddNote(pitch, Rational.Zero, Rational.Quarter);
+    }
+
+    MusicMath.Transpose(buffer, semitones);
+
+    var outputMidi = new int[buffer.Count];
+    for (var i = 0; i < buffer.Count; i++)
+    {
+        var pitch = buffer.Get(i).Pitch;
+        if (pitch is < 0 or > 127)
+        {
+            throw new CliUsageException(
+                $"Transposing '{noteStrings[i]}' by {semitones} semitones gives MIDI pitch {pitch}, outside the valid range 0-127.");
+        }
+
+        outputMidi[i] = pitch;
+    }
+
     var outputNames = outputMidi.Select(MusicMath.MidiToNoteName).ToArray();
 
     Console.WriteLine($"Input:  {string.Join(' ', noteStrings)}");
@@ -120,7 +133,7 @@ transposeCommand.SetAction(parseResult =>
             Thread.Sleep(delay);
         }
     }
-});
+}));
 
 rootCommand.Subcommands.Add(transposeCommand);
 
@@ -131,13 +144,18 @@ Command analyzeCommand = new("analyze", "Analyze chords");
 analyzeCommand.Options.Add(notesOption);
 analyzeCommand.Options.Add(keyOption);
 
-analyzeCommand.SetAction(parseResult =>
+analyzeCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var noteStrings = ExpandListArgs(parseResult.GetValue(notesOption) ?? []);
     var keyStr = parseResult.GetValue(keyOption);
 
+    if (noteStrings.Length == 0)
+    {
+        throw new CliUsageException("No notes provided. Use: celeritas analyze --notes C4 E4 G4");
+    }
+
     // Parse notes (supports both C4 notation and MIDI numbers)
-    var pitches = noteStrings.Select(n => MusicNotation.ParseNote(n)).ToArray();
+    var pitches = noteStrings.Select(ParsePitch).ToArray();
 
     Console.WriteLine($"Notes: [{string.Join(", ", noteStrings)}]");
     Console.WriteLine($"MIDI: [{string.Join(", ", pitches)}]");
@@ -171,7 +189,7 @@ analyzeCommand.SetAction(parseResult =>
             Console.WriteLine($"Detected key: {detectedKey}");
         }
     }
-});
+}));
 
 rootCommand.Subcommands.Add(analyzeCommand);
 
@@ -188,14 +206,13 @@ Option<string[]> chordsOption = new("--chords", "-c")
 Command progressionCommand = new("progression", "Analyze chord progression with detailed harmonic context and suggestions");
 progressionCommand.Options.Add(chordsOption);
 
-progressionCommand.SetAction(parseResult =>
+progressionCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var chordSymbols = ExpandListArgs(parseResult.GetValue(chordsOption) ?? []);
 
     if (chordSymbols.Length == 0)
     {
-        Console.WriteLine("No chords provided. Use: celeritas progression --chords Gm Ebmaj7 Cm D");
-        return;
+        throw new CliUsageException("No chords provided. Use: celeritas progression --chords Gm Ebmaj7 Cm D");
     }
 
     var report = ProgressionAdvisor.Analyze(chordSymbols);
@@ -323,7 +340,7 @@ progressionCommand.SetAction(parseResult =>
     }
 
     Console.WriteLine("================================================================");
-});
+}));
 
 rootCommand.Subcommands.Add(progressionCommand);
 
@@ -364,16 +381,18 @@ Command infoCommand = new("info", "System and SIMD support information");
 
 infoCommand.SetAction(parseResult =>
 {
+    var coreAssembly = typeof(NoteBuffer).Assembly;
+    var version = coreAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                  ?? coreAssembly.GetName().Version?.ToString()
+                  ?? "unknown";
+
     Console.WriteLine("Celeritas Music Engine");
     Console.WriteLine("═══════════════════════════════════════");
-    Console.WriteLine("Version: 1.0.0");
+    Console.WriteLine($"Version: {version}");
     Console.WriteLine($"Runtime: {Environment.Version}");
     Console.WriteLine();
-    Console.WriteLine("SIMD support:");
-    Console.WriteLine($"  AVX-512: {(Avx512F.IsSupported ? "✓" : "✗")}");
-    Console.WriteLine($"  AVX2:    {(Avx2.IsSupported ? "✓" : "✗")}");
-    Console.WriteLine($"  AVX:     {(Avx.IsSupported ? "✓" : "✗")}");
-    Console.WriteLine($"  SSE2:    {(Sse2.IsSupported ? "✓" : "✗")}");
+    Console.WriteLine($"SIMD support: {SimdInfo.GetDescription()}");
+    Console.WriteLine($"Active tier:  {SimdInfo.GetBest()}");
 });
 
 rootCommand.Subcommands.Add(infoCommand);
@@ -391,35 +410,25 @@ Option<string[]> keyDetectNotesOption = new("--notes", "-n")
 Command keyDetectCommand = new("keydetect", "Detect key using Krumhansl-Schmuckler algorithm (SIMD-optimized)");
 keyDetectCommand.Options.Add(keyDetectNotesOption);
 
-keyDetectCommand.SetAction(parseResult =>
+keyDetectCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var notesInput = ExpandListArgs(parseResult.GetValue(keyDetectNotesOption) ?? []);
 
     if (notesInput.Length == 0)
     {
-        Console.WriteLine("No notes provided. Use: celeritas keydetect --notes C4 E4 G4 B4 D5");
-        return;
+        throw new CliUsageException("No notes provided. Use: celeritas keydetect --notes C4 E4 G4 B4 D5");
     }
 
     // Parse notes
     var pitches = new List<int>();
     foreach (var note in notesInput)
     {
-        if (int.TryParse(note, out var midi))
-        {
-            pitches.Add(midi);
-        }
-        else
-        {
-            var parsed = MusicNotation.ParseNote(note);
-            if (parsed >= 0) pitches.Add(parsed);
-        }
+        pitches.Add(ParsePitch(note));
     }
 
     if (pitches.Count == 0)
     {
-        Console.WriteLine("Could not parse any notes.");
-        return;
+        throw new CliUsageException("Could not parse any notes.");
     }
 
     var sw = Stopwatch.StartNew();
@@ -443,9 +452,9 @@ keyDetectCommand.SetAction(parseResult =>
     }
 
     Console.WriteLine();
-    Console.WriteLine($"  SIMD: {(Avx512F.IsSupported ? "AVX-512" : Avx2.IsSupported ? "AVX2" : "Scalar")}");
+    Console.WriteLine($"  SIMD: {SimdInfo.GetDescription()}");
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
-});
+}));
 
 rootCommand.Subcommands.Add(keyDetectCommand);
 
@@ -469,15 +478,14 @@ Command voiceLeadCommand = new("voicelead", "Automatic SATB voice leading with c
 voiceLeadCommand.Options.Add(voiceLeadChordsOption);
 voiceLeadCommand.Options.Add(strictModeOption);
 
-voiceLeadCommand.SetAction(parseResult =>
+voiceLeadCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var chords = ExpandListArgs(parseResult.GetValue(voiceLeadChordsOption) ?? []);
     var strict = parseResult.GetValue(strictModeOption);
 
     if (chords.Length == 0)
     {
-        Console.WriteLine("No chords provided. Use: celeritas voicelead --chords Dm7 G7 Cmaj7");
-        return;
+        throw new CliUsageException("No chords provided. Use: celeritas voicelead --chords Dm7 G7 Cmaj7");
     }
 
     var options = strict ? VoiceLeadingSolverOptions.Strict : VoiceLeadingSolverOptions.Default;
@@ -511,7 +519,7 @@ voiceLeadCommand.SetAction(parseResult =>
     }
 
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
-});
+}));
 
 rootCommand.Subcommands.Add(voiceLeadCommand);
 
@@ -528,14 +536,13 @@ Option<string[]> modeNotesOption = new("--notes", "-n")
 Command modeCommand = new("mode", "Detect mode (Dorian, Phrygian, etc.) from notes");
 modeCommand.Options.Add(modeNotesOption);
 
-modeCommand.SetAction(parseResult =>
+modeCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var notesInput = ExpandListArgs(parseResult.GetValue(modeNotesOption) ?? []);
 
     if (notesInput.Length == 0)
     {
-        Console.WriteLine("No notes provided. Use: celeritas mode --notes D E F G A B C");
-        return;
+        throw new CliUsageException("No notes provided. Use: celeritas mode --notes D E F G A B C");
     }
 
     // Build pitch distribution and remember first note as root hint
@@ -557,7 +564,7 @@ modeCommand.SetAction(parseResult =>
                 // Accept pitch-class-only tokens like "D" or "Bb" by normalizing
                 // to a default octave. (Mode detection ignores octave anyway.)
                 var token = note;
-                if (Regex.IsMatch(token, "^[A-Ga-g](?:#{1,2}|b{1,2})?$") )
+                if (Regex.IsMatch(token, "^[A-Ga-g](?:#{1,2}|b{1,2})?$"))
                 {
                     token = token + "4";
                 }
@@ -607,7 +614,7 @@ modeCommand.SetAction(parseResult =>
 
     Console.WriteLine();
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
-});
+}));
 
 rootCommand.Subcommands.Add(modeCommand);
 
@@ -631,21 +638,18 @@ Command polyphonyCommand = new("polyphony", "Analyze polyphonic texture, voice s
 polyphonyCommand.Options.Add(polyNotesOption);
 polyphonyCommand.Options.Add(voicesOption);
 
-polyphonyCommand.SetAction(parseResult =>
+polyphonyCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var notesInput = parseResult.GetValue(polyNotesOption) ?? [];
     var maxVoices = parseResult.GetValue(voicesOption);
 
     if (notesInput.Length == 0)
     {
-        Console.WriteLine("No notes provided.");
-        Console.WriteLine("Format: Celeritas music notation");
-        Console.WriteLine("Example: celeritas polyphony --notes \"4/4: [C4 E4 G4 C5]/1\"");
-        return;
+        throw new CliUsageException(
+            "No notes provided. Format: Celeritas music notation. Example: celeritas polyphony --notes \"4/4: [C4 E4 G4 C5]/1\"");
     }
 
-    // Parse music notation into NoteBuffer.
-    // MusicNotation.Parse uses whole-note units (whole=1), while analysis expects beats in quarter-note units (quarter=1). Scale by 4.
+    // Parse music notation into NoteBuffer (whole-note time units throughout the library).
     var notation = string.Join(' ', notesInput);
     NoteEvent[] parsed;
     try
@@ -654,24 +658,21 @@ polyphonyCommand.SetAction(parseResult =>
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Could not parse music notation: {ex.Message}");
-        return;
+        throw new CliUsageException($"Could not parse music notation: {ex.Message}");
     }
 
     using var buffer = new NoteBuffer(Math.Max(parsed.Length, 1));
-    var quarterScale = new Rational(4, 1);
     foreach (var e in parsed)
     {
         if (e.Pitch == MusicNotation.RestPitch)
             continue;
 
-        buffer.Add(new NoteEvent(e.Pitch, e.Offset * quarterScale, e.Duration * quarterScale, e.Velocity));
+        buffer.Add(e);
     }
 
     if (buffer.Count == 0)
     {
-        Console.WriteLine("No valid notes parsed.");
-        return;
+        throw new CliUsageException("No valid notes parsed.");
     }
 
     var result = PolyphonyAnalyzer.Analyze(buffer, maxVoices);
@@ -776,7 +777,7 @@ polyphonyCommand.SetAction(parseResult =>
     };
     Console.WriteLine($"  OVERALL QUALITY: {result.QualityScore:P0} - {qualityEmoji}");
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
-});
+}));
 
 rootCommand.Subcommands.Add(polyphonyCommand);
 
@@ -814,7 +815,7 @@ rhythmCommand.Options.Add(rhythmStyleOption);
 rhythmCommand.Options.Add(predictCountOption);
 rhythmCommand.Options.Add(meterOption);
 
-rhythmCommand.SetAction(parseResult =>
+rhythmCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var durationsInput = ExpandListArgs(parseResult.GetValue(rhythmDurationsOption) ?? []);
     var style = parseResult.GetValue(rhythmStyleOption) ?? "classical";
@@ -823,9 +824,14 @@ rhythmCommand.SetAction(parseResult =>
 
     // Parse meter
     var meterParts = meterStr.Split('/');
-    var meter = meterParts.Length == 2
-        ? new TimeSignature(int.Parse(meterParts[0]), int.Parse(meterParts[1]))
-        : TimeSignature.Common;
+    if (meterParts.Length != 2
+        || !int.TryParse(meterParts[0], out var meterNumerator)
+        || !int.TryParse(meterParts[1], out var meterDenominator))
+    {
+        throw new CliUsageException($"Invalid meter '{meterStr}'. Expected a time signature like 4/4, 3/4, or 6/8.");
+    }
+
+    var meter = new TimeSignature(meterNumerator, meterDenominator);
 
     Console.WriteLine();
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
@@ -839,7 +845,14 @@ rhythmCommand.SetAction(parseResult =>
         var durations = new List<Rational>();
         foreach (var d in durationsInput)
         {
-            durations.Add(ParseRational(d));
+            try
+            {
+                durations.Add(ParseRational(d));
+            }
+            catch (Exception ex) when (ex is FormatException or OverflowException or ArgumentException)
+            {
+                throw new CliUsageException($"Invalid duration '{d}'. Expected a fraction like 1/4 or a decimal like 0.25.");
+            }
         }
 
         // Create NoteBuffer for analysis
@@ -960,7 +973,7 @@ rhythmCommand.SetAction(parseResult =>
     }
 
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
-});
+}));
 
 rootCommand.Subcommands.Add(rhythmCommand);
 
@@ -977,7 +990,7 @@ Option<string[]> melodyNotesOption = new("--notes", "-n")
 Command melodyCommand = new("melody", "Analyze melodic contour, intervals, and motifs");
 melodyCommand.Options.Add(melodyNotesOption);
 
-melodyCommand.SetAction(parseResult =>
+melodyCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var notesInput = ExpandListArgs(parseResult.GetValue(melodyNotesOption) ?? []);
 
@@ -985,16 +998,12 @@ melodyCommand.SetAction(parseResult =>
     var pitches = new List<int>();
     foreach (var note in notesInput)
     {
-        if (int.TryParse(note, out var midi))
-            pitches.Add(midi);
-        else
-            pitches.Add(MusicMath.NoteNameToMidi(note));
+        pitches.Add(ParsePitch(note));
     }
 
     if (pitches.Count == 0)
     {
-        Console.WriteLine("Error: No valid notes provided.");
-        return;
+        throw new CliUsageException("No notes provided. Use: celeritas melody --notes C4 D4 E4");
     }
 
     Console.WriteLine();
@@ -1082,7 +1091,7 @@ melodyCommand.SetAction(parseResult =>
     Console.WriteLine();
 
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
-});
+}));
 
 rootCommand.Subcommands.Add(melodyCommand);
 
@@ -1139,7 +1148,7 @@ midiImportCommand.Options.Add(midiInOption);
 midiImportCommand.Options.Add(midiChannelOption);
 midiImportCommand.Options.Add(midiLimitOption);
 
-midiImportCommand.SetAction(parseResult =>
+midiImportCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var inFile = parseResult.GetValue(midiInOption);
     var channel = parseResult.GetValue(midiChannelOption);
@@ -1147,8 +1156,7 @@ midiImportCommand.SetAction(parseResult =>
 
     if (inFile == null || !inFile.Exists)
     {
-        Console.WriteLine("Input file not found.");
-        return;
+        throw new CliUsageException($"Input file not found: {inFile?.FullName ?? "(none)"}");
     }
 
     using var buffer = MidiIo.Import(inFile.FullName, new MidiImportOptions(Channel: channel));
@@ -1176,7 +1184,7 @@ midiImportCommand.SetAction(parseResult =>
 
     Console.WriteLine();
     Console.WriteLine("  Notes (copy/paste into other commands like polyphony):");
-    Console.WriteLine("  Format: Pitch@Offset:Duration  (Offset/Duration in beats)");
+    Console.WriteLine("  Format: Pitch@Offset:Duration  (Offset/Duration in whole notes)");
     Console.WriteLine();
 
     var countToPrint = Math.Min(limit, buffer.Count);
@@ -1188,7 +1196,7 @@ midiImportCommand.SetAction(parseResult =>
 
     if (buffer.Count > countToPrint)
         Console.WriteLine($"  ... ({buffer.Count - countToPrint} more)");
-});
+}));
 
 Command midiExportCommand = new("export", "Export notes to a MIDI file");
 midiExportCommand.Options.Add(midiOutOption);
@@ -1197,7 +1205,7 @@ midiExportCommand.Options.Add(midiChannelOption);
 midiExportCommand.Options.Add(midiPpqOption);
 midiExportCommand.Options.Add(midiBpmOption);
 
-midiExportCommand.SetAction(parseResult =>
+midiExportCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var outFile = parseResult.GetValue(midiOutOption);
     var notesInput = parseResult.GetValue(midiNotesOption) ?? [];
@@ -1207,20 +1215,16 @@ midiExportCommand.SetAction(parseResult =>
 
     if (outFile == null)
     {
-        Console.WriteLine("Output file is required.");
-        return;
+        throw new CliUsageException("Output file is required.");
     }
 
     if (notesInput.Length == 0)
     {
-        Console.WriteLine("No notes provided.");
-        Console.WriteLine("Format: Celeritas music notation");
-        Console.WriteLine("Example: celeritas midi export --out out.mid --notes \"4/4: C4/4 E4/4 G4/4\"");
-        return;
+        throw new CliUsageException(
+            "No notes provided. Format: Celeritas music notation. Example: celeritas midi export --out out.mid --notes \"4/4: C4/4 E4/4 G4/4\"");
     }
 
-    // Interpret as Celeritas music notation. MusicNotation.Parse uses whole-note units (whole=1),
-    // while MIDI export expects beats in quarter-note units (quarter=1). Scale by 4.
+    // Interpret as Celeritas music notation (whole-note time units, matching MidiIo).
     var notation = string.Join(' ', notesInput);
     NoteEvent[] parsed;
     try
@@ -1229,8 +1233,7 @@ midiExportCommand.SetAction(parseResult =>
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Could not parse music notation: {ex.Message}");
-        return;
+        throw new CliUsageException($"Could not parse music notation: {ex.Message}");
     }
 
     var noteCount = 0;
@@ -1242,19 +1245,17 @@ midiExportCommand.SetAction(parseResult =>
 
     using var buffer = new NoteBuffer(Math.Max(noteCount, 1));
 
-    var quarterScale = new Rational(4, 1);
     foreach (var e in parsed)
     {
         if (e.Pitch == MusicNotation.RestPitch)
             continue;
 
-        buffer.Add(new NoteEvent(e.Pitch, e.Offset * quarterScale, e.Duration * quarterScale, e.Velocity));
+        buffer.Add(e);
     }
 
     if (buffer.Count == 0)
     {
-        Console.WriteLine("No valid notes parsed.");
-        return;
+        throw new CliUsageException("No valid notes parsed.");
     }
 
     buffer.Sort();
@@ -1263,7 +1264,7 @@ midiExportCommand.SetAction(parseResult =>
     Console.WriteLine();
     Console.WriteLine($"Wrote MIDI: {outFile.FullName}");
     Console.WriteLine($"Notes: {buffer.Count}, BPM: {bpm}, PPQ: {ppq}, Channel: {channel}");
-});
+}));
 
 midiCommand.Subcommands.Add(midiImportCommand);
 midiCommand.Subcommands.Add(midiExportCommand);
@@ -1274,7 +1275,7 @@ var transposeOption = new Option<int>("--semitones", "-s") { Description = "Semi
 midiTransposeCommand.Options.Add(midiInOption);
 midiTransposeCommand.Options.Add(midiOutOption);
 midiTransposeCommand.Options.Add(transposeOption);
-midiTransposeCommand.SetAction(parseResult =>
+midiTransposeCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var inFile = parseResult.GetValue(midiInOption);
     var outFile = parseResult.GetValue(midiOutOption);
@@ -1282,21 +1283,31 @@ midiTransposeCommand.SetAction(parseResult =>
 
     if (inFile == null || !inFile.Exists)
     {
-        Console.WriteLine("Error: Input file not found");
-        return;
+        throw new CliUsageException($"Input file not found: {inFile?.FullName ?? "(none)"}");
     }
 
     Console.WriteLine($"Loading MIDI file: {inFile.Name}");
-    var buffer = MidiIo.Import(inFile.FullName);
+    using var buffer = MidiIo.Import(inFile.FullName);
     Console.WriteLine($"Loaded {buffer.Count} notes");
 
     Console.WriteLine($"Transposing by {semitones} semitones...");
     MusicMath.Transpose(buffer, semitones);
 
+    // MusicMath.Transpose does not clamp; validate before exporting.
+    for (var i = 0; i < buffer.Count; i++)
+    {
+        var pitch = buffer.Get(i).Pitch;
+        if (pitch is < 0 or > 127)
+        {
+            throw new CliUsageException(
+                $"Transposing by {semitones} semitones moves a note to MIDI pitch {pitch}, outside the valid range 0-127.");
+        }
+    }
+
     Console.WriteLine($"Saving to: {outFile!.Name}");
     MidiIo.Export(buffer, outFile.FullName);
     Console.WriteLine("Done!");
-});
+}));
 
 // midi analyze - Analyze MIDI file
 Command midiAnalyzeCommand = new("analyze", "Analyze a MIDI file (key, chords, chromatic notes, modal turns)");
@@ -1308,7 +1319,7 @@ Option<string> midiAnalyzeFormatOption = new("--format", "-f")
     DefaultValueFactory = _ => "sections"
 };
 midiAnalyzeCommand.Options.Add(midiAnalyzeFormatOption);
-midiAnalyzeCommand.SetAction(parseResult =>
+midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var inFile = parseResult.GetValue(midiInOption);
     var formatRaw = parseResult.GetValue(midiAnalyzeFormatOption) ?? "sections";
@@ -1316,18 +1327,16 @@ midiAnalyzeCommand.SetAction(parseResult =>
 
     if (format is not ("sections" or "summary" or "timeline"))
     {
-        Console.WriteLine($"Error: Unknown format '{formatRaw}'. Expected: sections, summary, timeline.");
-        return;
+        throw new CliUsageException($"Unknown format '{formatRaw}'. Expected: sections, summary, timeline.");
     }
 
     if (inFile == null || !inFile.Exists)
     {
-        Console.WriteLine("Error: Input file not found");
-        return;
+        throw new CliUsageException($"Input file not found: {inFile?.FullName ?? "(none)"}");
     }
 
     Console.WriteLine($"Loading MIDI file: {inFile.Name}");
-    var buffer = MidiIo.Import(inFile.FullName);
+    using var buffer = MidiIo.Import(inFile.FullName);
     Console.WriteLine($"Loaded {buffer.Count} notes");
     Console.WriteLine();
 
@@ -1621,25 +1630,24 @@ midiAnalyzeCommand.SetAction(parseResult =>
             index--;
         return index;
     }
-});
+}));
 
 // midi info - Display MIDI file information
 Command midiInfoCommand = new("info", "Display MIDI file information");
 midiInfoCommand.Options.Add(midiInOption);
-midiInfoCommand.SetAction(parseResult =>
+midiInfoCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var inFile = parseResult.GetValue(midiInOption);
 
     if (inFile == null || !inFile.Exists)
     {
-        Console.WriteLine("Error: Input file not found");
-        return;
+        throw new CliUsageException($"Input file not found: {inFile?.FullName ?? "(none)"}");
     }
 
     Console.WriteLine($"MIDI File: {inFile.Name}");
     Console.WriteLine("═══════════════════════════════════════");
 
-    var buffer = MidiIo.Import(inFile.FullName);
+    using var buffer = MidiIo.Import(inFile.FullName);
 
     Console.WriteLine($"Notes: {buffer.Count}");
 
@@ -1649,7 +1657,7 @@ midiInfoCommand.SetAction(parseResult =>
         var last = buffer.Get(buffer.Count - 1);
         var totalDuration = last.Offset + last.Duration;
 
-        Console.WriteLine($"Duration: {totalDuration.ToDouble():F2} beats");
+        Console.WriteLine($"Duration (whole notes): {totalDuration.ToDouble():F2}");
 
         // Pitch range
         int minPitch = int.MaxValue, maxPitch = int.MinValue;
@@ -1661,7 +1669,7 @@ midiInfoCommand.SetAction(parseResult =>
         }
         Console.WriteLine($"Pitch Range: {MusicNotation.ToNotation(minPitch)} - {MusicNotation.ToNotation(maxPitch)} (MIDI {minPitch}-{maxPitch})");
     }
-});
+}));
 
 midiCommand.Subcommands.Add(midiTransposeCommand);
 midiCommand.Subcommands.Add(midiAnalyzeCommand);
@@ -1682,18 +1690,16 @@ Option<FileInfo?> pcsetCatalogOption = new("--catalog")
 };
 pcsetCommand.Options.Add(pcsetCatalogOption);
 
-pcsetCommand.SetAction(parseResult =>
+pcsetCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var noteStrings = ExpandListArgs(parseResult.GetValue(notesOption) ?? []);
     var catalogFile = parseResult.GetValue(pcsetCatalogOption);
     if (noteStrings.Length == 0)
     {
-        Console.WriteLine("No notes provided.");
-        Console.WriteLine("Example: celeritas pcset --notes C4 E4 G4");
-        return;
+        throw new CliUsageException("No notes provided. Example: celeritas pcset --notes C4 E4 G4");
     }
 
-    var pitches = noteStrings.Select(n => MusicNotation.ParseNote(n)).ToArray();
+    var pitches = noteStrings.Select(ParsePitch).ToArray();
     var pcs = PitchClassSetAnalyzer.Analyze(pitches);
 
     Console.WriteLine();
@@ -1743,11 +1749,49 @@ pcsetCommand.SetAction(parseResult =>
     }
     Console.WriteLine();
     Console.WriteLine("  Note: Forte number labeling is not included by default.");
-});
+}));
 
 rootCommand.Subcommands.Add(pcsetCommand);
 
 return rootCommand.Parse(args).Invoke();
+
+// Runs a command handler, converting expected user-input errors into a
+// friendly one-line message on stderr and exit code 1.
+static int RunGuarded(Action action)
+{
+    try
+    {
+        action();
+        return 0;
+    }
+    catch (Exception ex) when (ex is CliUsageException
+        or ArgumentException
+        or FormatException
+        or OverflowException
+        or InvalidDataException
+        or NotSupportedException
+        or IOException)
+    {
+        Console.Error.WriteLine($"Error: {ex.Message}");
+        return 1;
+    }
+}
+
+// Parses a note token as either a MIDI number ("60") or scientific notation ("C4"),
+// validating the 0-127 MIDI range. Throws for invalid input (handled by RunGuarded).
+static int ParsePitch(string token)
+{
+    var pitch = int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var midi)
+        ? midi
+        : MusicNotation.ParseNote(token);
+
+    if (pitch is < 0 or > 127)
+    {
+        throw new CliUsageException($"Note '{token}' is outside the valid MIDI range 0-127.");
+    }
+
+    return pitch;
+}
 
 static Rational ParseRational(string s)
 {
@@ -1764,3 +1808,8 @@ static Rational ParseRational(string s)
     }
     return new Rational(long.Parse(s), 1);
 }
+
+/// <summary>
+/// A user-input error that should be reported as a one-line message with exit code 1.
+/// </summary>
+internal sealed class CliUsageException(string message) : Exception(message);

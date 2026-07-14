@@ -84,10 +84,19 @@ import celeritas
     - Converts MIDI pitch (0..127) to scientific pitch notation
 - `identify_chord(pitches: List[int]) -> str`
     - Returns chord symbol like `Cmaj`, `Dm7`, `G7`
+    - Raises `CeleritasError` if the native call fails
 - `detect_key(pitches: List[int]) -> Tuple[str, bool]`
     - Returns `(key_name, is_major)`
+    - Raises `CeleritasError` if the native call fails
 - `parse_chord_symbol(symbol: str, max_pitches: int = 32) -> Optional[List[int]]`
     - Parses chord symbols like `C7(b9,#11)`, `C/E`, `C|G`
+- `native_version() -> str`
+    - Returns the version reported by the native library (e.g. `0.9.0`)
+
+### Errors
+
+- `CeleritasError` — raised when a native call fails; the message includes the
+  error reported by the native library (via `celeritas_get_last_error`).
 
 ### Ornaments
 
@@ -190,7 +199,7 @@ pip install pytest-cov
 pytest test_celeritas.py --cov=celeritas --cov-report=html
 ```
 
-**Test Coverage:** 35 tests (100% passing) covering NoteEvent, parsing, transpose (SIMD), chord/key detection, ornaments (trills, mordents), and integration scenarios.
+**Test Coverage:** 47 tests covering NoteEvent, parsing, transpose (SIMD), chord/key detection, ornaments (trills, mordents, exact rational timing), native version reporting, and integration scenarios.
 
 ### Building Native Library
 

@@ -11,7 +11,7 @@ internal sealed class PitchTransformerScalar : IPitchTransformer
     public unsafe void Transpose(int* pitches, int count, int semitones)
     {
         var i = 0;
-        var limit = count - 3;
+        var limit = count - 4;
         for (; i <= limit; i += 4)
         {
             pitches[i] += semitones;

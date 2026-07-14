@@ -13,7 +13,7 @@ public static class KeyAnalyzer
 {
     // Scale masks for quick degree identification
     public const ushort MajorScaleMask = 0b101010110101; // C D E F G A B = bits 0,2,4,5,7,9,11
-    public const ushort MinorScaleMask = 0b101101011010; // C D Eb F G Ab Bb = bits 0,2,3,5,7,8,10
+    public const ushort MinorScaleMask = 0b010110101101; // C D Eb F G Ab Bb = bits 0,2,3,5,7,8,10
 
     private static readonly ushort[] MajorScaleMasksByRoot;
     private static readonly ushort[] MinorScaleMasksByRoot;
@@ -25,9 +25,21 @@ public static class KeyAnalyzer
 
         for (var root = 0; root < 12; root++)
         {
-            MajorScaleMasksByRoot[root] = RotateRight(MajorScaleMask, root);
-            MinorScaleMasksByRoot[root] = RotateRight(MinorScaleMask, root);
+            // Transposing a scale UP by `root` semitones moves bit k to bit (k+root) mod 12,
+            // i.e. a LEFT rotation of the 12-bit mask.
+            MajorScaleMasksByRoot[root] = RotateLeft(MajorScaleMask, root);
+            MinorScaleMasksByRoot[root] = RotateLeft(MinorScaleMask, root);
         }
+    }
+
+    /// <summary>
+    /// Pitch-class mask of the major or natural-minor scale rooted at <paramref name="root"/> (0=C…11=B).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ushort GetScaleMask(int root, bool isMajor)
+    {
+        var index = ((root % 12) + 12) % 12;
+        return isMajor ? MajorScaleMasksByRoot[index] : MinorScaleMasksByRoot[index];
     }
 
     /// <summary>
@@ -224,13 +236,26 @@ public static class KeyAnalyzer
     public static KeySignature DetectKey(NoteBuffer buffer) => IdentifyKey(buffer.PitchSpan);
 
     /// <summary>
-    /// Cyclic right rotation (ROR) for 12-bit mask
+    /// Cyclic right rotation (ROR) for 12-bit mask. Moves bit k to bit (k-shift) mod 12,
+    /// i.e. transposes a pitch-class mask DOWN by <paramref name="shift"/> semitones.
+    /// To transpose a scale to a root, use <see cref="GetScaleMask"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ushort RotateRight(ushort value, int shift)
     {
         shift %= 12;
         return (ushort)(((value >> shift) | (value << (12 - shift))) & 0xFFF);
+    }
+
+    /// <summary>
+    /// Cyclic left rotation for 12-bit mask. Moves bit k to bit (k+shift) mod 12,
+    /// i.e. transposes a pitch-class mask UP by <paramref name="shift"/> semitones.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ushort RotateLeft(ushort value, int shift)
+    {
+        shift %= 12;
+        return (ushort)(((value << shift) | (value >> (12 - shift))) & 0xFFF);
     }
 
     /// <summary>

@@ -335,21 +335,23 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
             _ => throw new ArgumentException($"Invalid pitch name: {pitchName}")
         };
 
-        // Handle accidentals
+        // Handle accidentals WITHOUT mod-12 wrap, so Cb4 = B3 (59) and B#4 = C5 (72)
+        // stay in the correct octave.
+        var accidentalOffset = 0;
         var accidentalCtx = context.accidental();
         if (accidentalCtx != null)
         {
             if (accidentalCtx.SHARP() != null)
-                pitchClass = (pitchClass + 1) % 12;
+                accidentalOffset = 1;
             else if (accidentalCtx.FLAT() != null)
-                pitchClass = (pitchClass + 11) % 12;
+                accidentalOffset = -1;
         }
 
         // Get octave
         var octave = int.Parse(context.octave().INT().GetText());
 
         // Calculate MIDI pitch: C4 = 60
-        return ((octave + 1) * 12) + pitchClass;
+        return ((octave + 1) * 12) + pitchClass + accidentalOffset;
     }
 
     private static Rational ParseDuration(MusicNotationParser.DurationContext context)

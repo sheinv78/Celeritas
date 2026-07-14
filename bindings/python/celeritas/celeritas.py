@@ -9,6 +9,7 @@ License: BSL-1.1
 import ctypes
 import os
 import platform
+from fractions import Fraction
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
@@ -18,25 +19,52 @@ _NOTE_NAMES_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#",
 _NOTE_NAMES_FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 
 
-def _load_native_library():
+class CeleritasError(Exception):
+    """Raised when a native Celeritas call fails."""
+
+
+def _load_native_library() -> ctypes.CDLL:
     system = platform.system()
     if system == "Windows":
-        lib_name = "Celeritas.Native.dll"
+        lib_names = ["Celeritas.Native.dll"]
     elif system == "Darwin":
-        lib_name = "libCeleritas.Native.dylib"
+        # NativeAOT publishes "Celeritas.Native.dylib" (no "lib" prefix);
+        # packagers may rename it to the conventional prefixed form.
+        lib_names = ["libCeleritas.Native.dylib", "Celeritas.Native.dylib"]
     else:  # Linux
-        lib_name = "libCeleritas.Native.so"
+        lib_names = ["libCeleritas.Native.so", "Celeritas.Native.so"]
+
+    native_dir = os.path.join(os.path.dirname(__file__), "native")
+    attempted = []
+    last_error: Optional[OSError] = None
 
     # Try to load from package directory
-    lib_path = os.path.join(os.path.dirname(__file__), "native", lib_name)
-    if os.path.exists(lib_path):
-        return ctypes.CDLL(lib_path)
+    for lib_name in lib_names:
+        lib_path = os.path.join(native_dir, lib_name)
+        attempted.append(lib_path)
+        if os.path.exists(lib_path):
+            try:
+                return ctypes.CDLL(lib_path)
+            except OSError as exc:
+                last_error = exc
 
     # Try system path
-    try:
-        return ctypes.CDLL(lib_name)
-    except OSError:
-        raise RuntimeError(f"Could not load Celeritas native library: {lib_name}")
+    for lib_name in lib_names:
+        attempted.append(lib_name)
+        try:
+            return ctypes.CDLL(lib_name)
+        except OSError as exc:
+            last_error = exc
+
+    raise RuntimeError(
+        "Could not load the Celeritas native library.\n"
+        "Tried: " + ", ".join(attempted) + "\n"
+        "Build it with:\n"
+        "  dotnet publish src/Celeritas.Native/Celeritas.Native.csproj"
+        " -c Release -r <rid>\n"
+        "and copy the resulting shared library into the package's"
+        " 'celeritas/native' directory."
+    ) from last_error
 
 
 _lib = _load_native_library()
@@ -121,6 +149,67 @@ _lib.celeritas_parse_chord_symbol.argtypes = [
 ]
 _lib.celeritas_parse_chord_symbol.restype = ctypes.c_byte
 
+_lib.celeritas_identify_chord.argtypes = [
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.c_int,
+    ctypes.c_char_p,
+    ctypes.c_int,
+]
+_lib.celeritas_identify_chord.restype = ctypes.c_byte
+
+_lib.celeritas_detect_key.argtypes = [
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.c_int,
+    ctypes.c_char_p,
+    ctypes.c_int,
+    ctypes.POINTER(ctypes.c_int),
+]
+_lib.celeritas_detect_key.restype = ctypes.c_byte
+
+# Newer exports; may be absent when an older native library is loaded.
+try:
+    _lib.celeritas_get_last_error.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    _lib.celeritas_get_last_error.restype = ctypes.c_int
+    _has_get_last_error = True
+except AttributeError:  # pragma: no cover - old native library
+    _has_get_last_error = False
+
+try:
+    _lib.celeritas_version.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    _lib.celeritas_version.restype = ctypes.c_byte
+    _has_version = True
+except AttributeError:  # pragma: no cover - old native library
+    _has_version = False
+
+
+def _get_last_error() -> str:
+    """Fetch the last error message recorded by the native library."""
+
+    if not _has_get_last_error:
+        return ""
+    buffer = ctypes.create_string_buffer(1024)
+    written = _lib.celeritas_get_last_error(buffer, len(buffer))
+    if written <= 0:
+        return ""
+    return buffer.value.decode("utf-8", errors="replace")
+
+
+def native_version() -> str:
+    """Return the version string reported by the native library."""
+
+    if not _has_version:
+        raise CeleritasError(
+            "The loaded native library does not export celeritas_version; "
+            "rebuild the native library from the current sources."
+        )
+    buffer = ctypes.create_string_buffer(64)
+    success = _lib.celeritas_version(buffer, len(buffer))
+    if not success:
+        raise CeleritasError(
+            _get_last_error() or "celeritas_version failed with no error message"
+        )
+    return buffer.value.decode("utf-8")
+
 
 def parse_note(notation: str) -> Optional[NoteEvent]:
     """Parse a single note from string notation (e.g., 'C4', 'F#5', 'Bb3').
@@ -192,24 +281,19 @@ def identify_chord(pitches: List[int]) -> str:
 
     Returns:
         Chord symbol (e.g., 'Cmaj', 'Dm7', 'G7')
-    """
 
-    _lib.celeritas_identify_chord.argtypes = [
-        ctypes.POINTER(ctypes.c_int),
-        ctypes.c_int,
-        ctypes.c_char_p,
-        ctypes.c_int,
-    ]
-    _lib.celeritas_identify_chord.restype = ctypes.c_byte
+    Raises:
+        CeleritasError: If the native chord identification fails.
+    """
 
     n = len(pitches)
     pitch_array = (ctypes.c_int * n)(*pitches)
     buffer = ctypes.create_string_buffer(64)
 
     success = _lib.celeritas_identify_chord(pitch_array, n, buffer, 64)
-    if success:
-        return buffer.value.decode("utf-8")
-    return "Unknown"
+    if not success:
+        raise CeleritasError(_get_last_error() or "celeritas_identify_chord failed")
+    return buffer.value.decode("utf-8")
 
 
 def detect_key(pitches: List[int]) -> Tuple[str, bool]:
@@ -220,16 +304,10 @@ def detect_key(pitches: List[int]) -> Tuple[str, bool]:
 
     Returns:
         Tuple of (key_name, is_major)
-    """
 
-    _lib.celeritas_detect_key.argtypes = [
-        ctypes.POINTER(ctypes.c_int),
-        ctypes.c_int,
-        ctypes.c_char_p,
-        ctypes.c_int,
-        ctypes.POINTER(ctypes.c_int),
-    ]
-    _lib.celeritas_detect_key.restype = ctypes.c_byte
+    Raises:
+        CeleritasError: If the native key detection fails.
+    """
 
     n = len(pitches)
     pitch_array = (ctypes.c_int * n)(*pitches)
@@ -239,9 +317,9 @@ def detect_key(pitches: List[int]) -> Tuple[str, bool]:
     success = _lib.celeritas_detect_key(
         pitch_array, n, buffer, 16, ctypes.byref(is_major)
     )
-    if success:
-        return (buffer.value.decode("utf-8"), bool(is_major.value))
-    return ("C", True)
+    if not success:
+        raise CeleritasError(_get_last_error() or "celeritas_detect_key failed")
+    return (buffer.value.decode("utf-8"), bool(is_major.value))
 
 
 def parse_chord_symbol(symbol: str, max_pitches: int = 32) -> Optional[List[int]]:
@@ -294,30 +372,41 @@ class Trill:
         self.end_with_turn = end_with_turn
 
     def expand(self) -> List[NoteEvent]:
-        """Expand trill into sequence of notes"""
+        """Expand trill into sequence of notes.
+
+        Timing is computed with exact rational arithmetic (fractions of a
+        whole note). The last note is shortened if necessary so that the
+        expanded durations sum exactly to the base note's duration.
+        """
 
         notes = []
-        note_duration = 1.0 / (self.speed * 4)
+        # `speed` notes per quarter note = 1/(speed*4) of a whole note each.
+        step = Fraction(1, self.speed * 4)
         upper_pitch = self.base_note.pitch + self.interval
 
-        current_time = self.base_note.time
-        end_time = current_time + self.base_note.duration
+        current_time = Fraction(
+            self.base_note.time_numerator, self.base_note.time_denominator
+        )
+        end_time = current_time + Fraction(
+            self.base_note.duration_numerator, self.base_note.duration_denominator
+        )
 
         use_upper = self.start_with_upper
 
         while current_time < end_time:
+            duration = min(step, end_time - current_time)
             pitch = upper_pitch if use_upper else self.base_note.pitch
             notes.append(
                 NoteEvent(
                     pitch=pitch,
-                    time_numerator=int(current_time * 4),
-                    time_denominator=4,
-                    duration_numerator=1,
-                    duration_denominator=self.speed * 4,
+                    time_numerator=current_time.numerator,
+                    time_denominator=current_time.denominator,
+                    duration_numerator=duration.numerator,
+                    duration_denominator=duration.denominator,
                     velocity=self.base_note.velocity,
                 )
             )
-            current_time += note_duration
+            current_time += duration
             use_upper = not use_upper
 
         return notes
@@ -339,11 +428,22 @@ class Mordent:
         self.alternations = alternations
 
     def expand(self) -> List[NoteEvent]:
-        """Expand mordent into sequence of notes"""
+        """Expand mordent into sequence of notes.
+
+        Timing is computed with exact rational arithmetic (fractions of a
+        whole note), so the expanded durations sum exactly to the base
+        note's duration and no zero-duration notes are produced.
+        """
 
         notes = []
         note_count = 2 * self.alternations + 1
-        note_duration = self.base_note.duration / note_count
+        note_duration = (
+            Fraction(
+                self.base_note.duration_numerator,
+                self.base_note.duration_denominator,
+            )
+            / note_count
+        )
 
         neighbor_pitch = (
             self.base_note.pitch + self.interval
@@ -351,17 +451,19 @@ class Mordent:
             else self.base_note.pitch - self.interval
         )
 
-        current_time = self.base_note.time
+        current_time = Fraction(
+            self.base_note.time_numerator, self.base_note.time_denominator
+        )
 
         for i in range(note_count):
             pitch = self.base_note.pitch if i % 2 == 0 else neighbor_pitch
             notes.append(
                 NoteEvent(
                     pitch=pitch,
-                    time_numerator=int(current_time * 4),
-                    time_denominator=4,
-                    duration_numerator=int(note_duration * 4),
-                    duration_denominator=4,
+                    time_numerator=current_time.numerator,
+                    time_denominator=current_time.denominator,
+                    duration_numerator=note_duration.numerator,
+                    duration_denominator=note_duration.denominator,
                     velocity=self.base_note.velocity,
                 )
             )
@@ -370,15 +472,13 @@ class Mordent:
         return notes
 
 
-try:
-    from importlib.metadata import version as _pkg_version
-except Exception:  # pragma: no cover
-    _pkg_version = None
-
-if _pkg_version is None:  # pragma: no cover
-    __version__ = "0.0.0"
-else:
+def _detect_package_version() -> str:
     try:
-        __version__ = _pkg_version("celeritas")
+        from importlib.metadata import version as pkg_version
+
+        return pkg_version("celeritas")
     except Exception:  # pragma: no cover
-        __version__ = "0.0.0"
+        return "0.0.0"
+
+
+__version__ = _detect_package_version()

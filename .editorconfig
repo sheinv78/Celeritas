@@ -13,7 +13,9 @@ trim_trailing_whitespace = true
 [*.{cs,csx,vb,vbx}]
 indent_size = 4
 indent_style = space
-end_of_line = crlf
+# end_of_line intentionally NOT set: git stores LF and converts per platform
+# (core.autocrlf), so enforcing crlf here fails `dotnet format --verify-no-changes`
+# on Linux/macOS CI runners where checkouts are LF.
 
 # XML project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]

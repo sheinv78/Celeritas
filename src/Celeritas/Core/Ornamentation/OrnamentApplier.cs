@@ -73,12 +73,37 @@ public static class OrnamentApplier
                 Interval = appoggiatura.Interval,
                 Direction = appoggiatura.Direction
             },
+            GraceNote grace => new GraceNote
+            {
+                BaseNote = baseNote,
+                Type = grace.Type,
+                Intervals = grace.Intervals,
+                DurationRatio = grace.DurationRatio
+            },
+            Glissando gliss => new Glissando
+            {
+                BaseNote = baseNote,
+                TargetPitch = gliss.TargetPitch,
+                IsAbsolute = gliss.IsAbsolute,
+                Steps = gliss.Steps,
+                Chromatic = gliss.Chromatic
+            },
+            Articulation artic => new Articulation
+            {
+                BaseNote = baseNote,
+                Type = artic.Type,
+                DurationMultiplier = artic.DurationMultiplier,
+                VelocityMultiplier = artic.VelocityMultiplier
+            },
+            // Custom subclasses cannot be rebased generically; the caller's BaseNote is used as-is.
             _ => ornament
         };
     }
 
     /// <summary>
-    /// Apply ornaments to a sequence of notes
+    /// Apply ornaments to a sequence of notes. An ornament is matched to a note by
+    /// (Offset, Pitch) of its BaseNote, so multiple ornaments may share an offset
+    /// (e.g. on different notes of a chord). Ornaments that match no note are ignored.
     /// </summary>
     public static NoteEvent[] ApplyOrnaments(NoteEvent[] notes, Ornament[] ornaments)
     {
@@ -86,15 +111,24 @@ public static class OrnamentApplier
             return notes;
 
         var result = new List<NoteEvent>();
-        var ornamentDict = ornaments.ToDictionary(o => o.BaseNote.Offset);
+        var pending = new Dictionary<(Rational Offset, int Pitch), Queue<Ornament>>();
+        foreach (var ornament in ornaments)
+        {
+            var key = (ornament.BaseNote.Offset, ornament.BaseNote.Pitch);
+            if (!pending.TryGetValue(key, out var queue))
+            {
+                queue = new Queue<Ornament>();
+                pending[key] = queue;
+            }
+            queue.Enqueue(ornament);
+        }
 
         foreach (var note in notes)
         {
-            if (ornamentDict.TryGetValue(note.Offset, out var ornament))
+            if (pending.TryGetValue((note.Offset, note.Pitch), out var queue) && queue.Count > 0)
             {
                 // Expand ornament and add resulting notes
-                var expanded = ornament.Expand();
-                result.AddRange(expanded);
+                result.AddRange(queue.Dequeue().Expand());
             }
             else
             {

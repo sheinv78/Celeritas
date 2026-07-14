@@ -253,25 +253,14 @@ public class FiguredBassRealizer
     }
 
     /// <summary>
-    /// Calculate pitch from bass note and interval
+    /// Calculate pitch from bass note and figured-bass interval.
+    /// Figures are DIATONIC by definition: "3" above A in C major is C (minor third),
+    /// not C# — the interval is counted along the key's scale. Accidentals in the
+    /// figures chromatically alter the diatonic pitch.
     /// </summary>
-    private static int CalculatePitch(int bassPitch, int interval, Dictionary<int, char>? accidentals)
+    private int CalculatePitch(int bassPitch, int interval, Dictionary<int, char>? accidentals)
     {
-        // Convert figured bass interval to semitones
-        var semitones = interval switch
-        {
-            2 => 2,   // Major second
-            3 => 4,   // Major third
-            4 => 5,   // Perfect fourth
-            5 => 7,   // Perfect fifth
-            6 => 9,   // Major sixth
-            7 => 10,  // Minor seventh (dominant)
-            8 => 12,  // Octave
-            9 => 14,  // Major ninth
-            _ => 0
-        };
-
-        var pitch = bassPitch + semitones;
+        var pitch = bassPitch + DiatonicIntervalSemitones(bassPitch, interval);
 
         // Apply accidentals if specified
         if (accidentals != null && accidentals.TryGetValue(interval, out var accidental))
@@ -286,6 +275,51 @@ public class FiguredBassRealizer
         }
 
         return pitch;
+    }
+
+    private int DiatonicIntervalSemitones(int bassPitch, int interval)
+    {
+        if (interval <= 1)
+            return 0;
+
+        var scale = _options.Key.GetScale(); // 7 ascending pitch classes of the key
+        var bassPc = ((bassPitch % 12) + 12) % 12;
+        var idx = Array.IndexOf(scale, bassPc);
+
+        if (idx < 0)
+        {
+            // Chromatic bass (not in the key): fall back to the closest generic mapping.
+            return interval switch
+            {
+                2 => 2,
+                3 => 4,
+                4 => 5,
+                5 => 7,
+                6 => 9,
+                7 => 10,
+                8 => 12,
+                9 => 14,
+                _ => 0
+            };
+        }
+
+        // Sum the ascending semitone steps degree-by-degree. Summing directly is
+        // robust to the scale array wrapping mod-12 mid-array (true for every key
+        // except C major, e.g. G major is [7,9,11,0,2,4,6]); a closed-form
+        // scale[target]-scale[bass]+12*octaves double-counts an octave there.
+        var steps = interval - 1;
+        var semitones = 0;
+        for (var k = 0; k < steps; k++)
+        {
+            var cur = scale[(idx + k) % 7];
+            var next = scale[(idx + k + 1) % 7];
+            var step = next - cur;
+            if (step <= 0)
+                step += 12; // ascending step across the octave wrap
+            semitones += step;
+        }
+
+        return semitones;
     }
 
     /// <summary>
@@ -307,7 +341,8 @@ public class FiguredBassRealizer
     }
 
     /// <summary>
-    /// Parse figured bass notation string (e.g., "6", "7", "6/5", "4/3")
+    /// Parse figured bass notation string (e.g., "6", "7", "6/5", "#3/#5").
+    /// Accidental prefixes are tolerated here (use <see cref="ParseAccidentals"/> to read them).
     /// </summary>
     public static int[] ParseFigures(string figuresStr)
     {
@@ -317,27 +352,33 @@ public class FiguredBassRealizer
         }
 
         var parts = figuresStr.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        return [.. parts.Select(p => int.Parse(p.Trim()))];
+        var figures = new List<int>(parts.Length);
+        foreach (var part in parts)
+        {
+            var digits = new string(part.Where(char.IsDigit).ToArray());
+            if (digits.Length > 0)
+            {
+                figures.Add(int.Parse(digits));
+            }
+        }
+
+        return [.. figures];
     }
 
     /// <summary>
-    /// Parse accidentals from figured bass string (e.g., "#3", "b7")
+    /// Parse accidentals from figured bass string (e.g., "#3", "b7", "#3/#5")
     /// </summary>
     public static Dictionary<int, char> ParseAccidentals(string figuresStr)
     {
         var accidentals = new Dictionary<int, char>();
 
-        foreach (var c in figuresStr)
+        for (var i = 0; i < figuresStr.Length; i++)
         {
-            if (c is '#' or 'b' or 'n')
+            var c = figuresStr[i];
+            if (c is '#' or 'b' or 'n' && i + 1 < figuresStr.Length && char.IsDigit(figuresStr[i + 1]))
             {
-                // Look for following digit
-                var idx = figuresStr.IndexOf(c);
-                if (idx + 1 < figuresStr.Length && char.IsDigit(figuresStr[idx + 1]))
-                {
-                    var interval = int.Parse(figuresStr[idx + 1].ToString());
-                    accidentals[interval] = c;
-                }
+                var interval = figuresStr[i + 1] - '0';
+                accidentals[interval] = c;
             }
         }
 
@@ -364,6 +405,13 @@ public class FiguredBassOptions
     /// Voice leading style
     /// </summary>
     public VoiceLeadingStyle Style { get; init; } = VoiceLeadingStyle.Smooth;
+
+    /// <summary>
+    /// Key used to interpret figures diatonically (default: C major).
+    /// Figured-bass intervals are scale steps in this key; accidentals in the
+    /// figures alter them chromatically.
+    /// </summary>
+    public KeySignature Key { get; init; } = new(0, true);
 }
 
 /// <summary>

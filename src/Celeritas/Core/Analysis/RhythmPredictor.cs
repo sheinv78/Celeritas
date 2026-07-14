@@ -20,6 +20,9 @@ public enum RhythmStyle
 /// </summary>
 public sealed class RhythmPredictor
 {
+    // Stores RAW transition counts; probabilities are computed at query time.
+    // This keeps repeated Train() calls accumulating correctly (normalizing in
+    // place would mix probabilities with subsequent raw counts).
     private readonly Dictionary<string, Dictionary<Rational, float>> _transitions = [];
     private readonly int _order;
     private readonly Random _random;
@@ -58,16 +61,6 @@ public sealed class RhythmPredictor
 
             dist.TryGetValue(next, out var count);
             dist[next] = count + 1;
-        }
-
-        // Normalize probabilities
-        foreach (var (_, dist) in _transitions)
-        {
-            var total = dist.Values.Sum();
-            foreach (var key in dist.Keys.ToList())
-            {
-                dist[key] /= total;
-            }
         }
     }
 
@@ -108,15 +101,16 @@ public sealed class RhythmPredictor
             return FallbackPredict(recentDurations);
         }
 
+        var total = dist.Values.Sum();
         var sorted = dist.OrderByDescending(kv => kv.Value).ToList();
         var best = sorted[0];
 
         return new RhythmPrediction
         {
             MostLikely = best.Key,
-            Confidence = best.Value,
+            Confidence = best.Value / total,
             Alternatives = sorted.Skip(1).Take(4).Select(kv =>
-                new RhythmAlternative { Duration = kv.Key, Probability = kv.Value }).ToList(),
+                new RhythmAlternative { Duration = kv.Key, Probability = kv.Value / total }).ToList(),
             ContextFound = true
         };
     }
@@ -235,13 +229,14 @@ public sealed class RhythmPredictor
             }
         }
 
-        // Sample from distribution
-        var r = _random.NextDouble();
+        // Sample from distribution (raw counts, so scale the random draw by the total)
+        var total = dist.Values.Sum();
+        var r = _random.NextDouble() * total;
         var cumulative = 0f;
 
-        foreach (var (duration, prob) in dist)
+        foreach (var (duration, count) in dist)
         {
-            cumulative += prob;
+            cumulative += count;
             if (r <= cumulative)
             {
                 return duration;
@@ -264,13 +259,14 @@ public sealed class RhythmPredictor
             var context = GetContext(recentDurations, recentDurations.Count - o, o);
             if (_transitions.TryGetValue(context, out var dist) && dist.Count > 0)
             {
+                var total = dist.Values.Sum();
                 var sorted = dist.OrderByDescending(kv => kv.Value).ToList();
                 return new RhythmPrediction
                 {
                     MostLikely = sorted[0].Key,
-                    Confidence = sorted[0].Value * 0.8f, // Lower confidence for fallback
+                    Confidence = sorted[0].Value / total * 0.8f, // Lower confidence for fallback
                     Alternatives = sorted.Skip(1).Take(4).Select(kv =>
-                        new RhythmAlternative { Duration = kv.Key, Probability = kv.Value }).ToList(),
+                        new RhythmAlternative { Duration = kv.Key, Probability = kv.Value / total }).ToList(),
                     ContextFound = true
                 };
             }
@@ -306,8 +302,8 @@ public sealed class RhythmPrediction
 
     public override string ToString()
     {
-        var alts = string.Join(", ", Alternatives.Select(a => $"{a.Duration} ({a.Probability:P0})"));
-        return $"Predicted: {MostLikely} ({Confidence:P0}){(alts.Length > 0 ? $" | Alternatives: {alts}" : "")}";
+        var alts = string.Join(", ", Alternatives.Select(a => $"{a.Duration} ({(int)Math.Round(a.Probability * 100)}%)"));
+        return $"Predicted: {MostLikely} ({(int)Math.Round(Confidence * 100)}%){(alts.Length > 0 ? $" | Alternatives: {alts}" : "")}";
     }
 }
 

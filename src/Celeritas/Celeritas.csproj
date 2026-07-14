@@ -3,17 +3,14 @@
     <PropertyGroup>
         <OutputType>Library</OutputType>
         <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <OptimizationPreference>Speed</OptimizationPreference>
 
         <!-- Enable native exports for Python bindings -->
         <EnableDynamicLoading>true</EnableDynamicLoading>
 
-        <!-- NuGet Package metadata -->
+        <!-- NuGet Package metadata (version is set centrally in Directory.Build.props) -->
         <PackageId>Celeritas</PackageId>
-        <Version>0.9.0</Version>
         <Authors>Vladimir V. Shein</Authors>
         <Company>Vladimir V. Shein</Company>
         <Product>Celeritas Music Engine</Product>
@@ -33,19 +30,30 @@
         <!-- ANTLR4 code generation -->
         <Antlr4UseCSharpGenerator>true</Antlr4UseCSharpGenerator>
 
-        <!-- Suppress transitive dependency warnings -->
-        <NoWarn>$(NoWarn);NU1903</NoWarn>
+        <!-- SourceLink: embed repository info so consumers can step into sources -->
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
 
-        <!-- Code Analysis -->
-        <AnalysisLevel>latest</AnalysisLevel>
-        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <!-- XML documentation: ship docs with the package, but don't fail the build
+             on missing XML comments (CS1591) — the codebase has partial doc coverage. -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
+
+    <ItemGroup>
+      <InternalsVisibleTo Include="Celeritas.Tests" />
+    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Melanchall.DryWetMidi" Version="8.0.3" />
       <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
       <PackageReference Include="Antlr4BuildTasks" Version="12.8.0" PrivateAssets="all" />
+      <!-- Antlr4BuildTasks 12.8.0 transitively pulls Microsoft.Build.Utilities.Core 17.8.3,
+           which has a known high-severity advisory (CVE-2025-55247 / GHSA-w3q9-fxm7-j8fq, NU1903).
+           Pin the first patched version of the 17.8 line directly;
+           PrivateAssets=all keeps it build-time only (it never ships in the package). -->
+      <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.43" PrivateAssets="all" ExcludeAssets="runtime" />
+      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>

@@ -4,6 +4,7 @@ Public API surface for the Celeritas native bindings.
 """
 
 from .celeritas import (
+    CeleritasError,
     NoteEvent,
     ChordQuality,
     MordentType,
@@ -14,6 +15,7 @@ from .celeritas import (
     identify_chord,
     detect_key,
     parse_chord_symbol,
+    native_version,
     Trill,
     Mordent,
     __version__,
@@ -22,6 +24,7 @@ from .celeritas import (
 from .dotnet import DotNetLoadResult, is_pythonnet_available, load_celeritas
 
 __all__ = [
+    "CeleritasError",
     "NoteEvent",
     "ChordQuality",
     "MordentType",
@@ -32,6 +35,7 @@ __all__ = [
     "identify_chord",
     "detect_key",
     "parse_chord_symbol",
+    "native_version",
     "Trill",
     "Mordent",
     "__version__",

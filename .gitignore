@@ -8,8 +8,10 @@ riderModule.iml
 nupkgs/
 *.nupkg
 *.snupkg
-# Test artifacts
+# Test artifacts (generated MIDI files) — but keep committed fixtures
 test-data/*.mid
+!test-data/fixtures/
+!test-data/fixtures/*.mid
 # Benchmark results
 BenchmarkDotNet.Artifacts/
 # ANTLR debug files

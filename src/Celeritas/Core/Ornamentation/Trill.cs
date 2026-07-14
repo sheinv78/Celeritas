@@ -34,6 +34,9 @@ public class Trill : Ornament
 
     public override NoteEvent[] Expand()
     {
+        if (Speed <= 0)
+            throw new ArgumentOutOfRangeException(nameof(Speed), Speed, "Trill speed must be positive");
+
         var endWithTurn = EndWithTurn || HasTurnEnding;
         var noteDuration = new Rational(1, Speed * 4); // Duration per trill note
         var upperNote = BaseNote.Pitch + Interval;
@@ -44,6 +47,12 @@ public class Trill : Ornament
 
         // Calculate how many notes fit
         var totalNotes = (int)((BaseNote.Duration.Numerator * Speed * 4) / BaseNote.Duration.Denominator);
+
+        // The base note is shorter than a single trill unit — expanding would silently
+        // delete it; keep the plain note instead.
+        if (totalNotes == 0)
+            return [BaseNote];
+
         var maxNotes = totalNotes + (endWithTurn ? 2 : 0);
 
         // Rent buffer from pool
@@ -81,6 +90,18 @@ public class Trill : Ornament
                 if (currentTime < endTime)
                 {
                     buffer[count++] = new NoteEvent(BaseNote.Pitch, currentTime, endTime - currentTime, BaseNote.Velocity);
+                }
+            }
+
+            // Stretch the final note to the exact end of the base note so the expansion
+            // always sums to BaseNote.Duration (no gap before the next melody note).
+            if (count > 0)
+            {
+                var last = buffer[count - 1];
+                var lastEnd = last.Offset + last.Duration;
+                if (lastEnd != endTime)
+                {
+                    buffer[count - 1] = new NoteEvent(last.Pitch, last.Offset, endTime - last.Offset, last.Velocity);
                 }
             }
 

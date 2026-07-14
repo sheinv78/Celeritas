@@ -60,7 +60,7 @@ def main():
     )
     trill = Trill(base_note, interval=2, speed=8)
     expanded = trill.expand()
-    print(f"   Base note: E4 (pitch 64), duration: 1/2")
+    print("   Base note: E4 (pitch 64), duration: 1/2")
     print(f"   Trill expanded to {len(expanded)} notes")
     print(f"   First 3 pitches: {[n.pitch for n in expanded[:3]]}")
 
@@ -77,7 +77,7 @@ def main():
 
     large_list = list(range(60, 72)) * 10000  # 120,000 pitches
     start = time.time()
-    transposed_large = transpose(large_list, 5)
+    transpose(large_list, 5)
     elapsed = (time.time() - start) * 1000
     print(f"   Transposed {len(large_list):,} pitches in {elapsed:.2f}ms")
     print(f"   Rate: {len(large_list)/elapsed*1000:,.0f} pitches/second")

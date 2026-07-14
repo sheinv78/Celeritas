@@ -7,8 +7,8 @@ namespace Celeritas.Tests;
 public sealed class AccompanimentGeneratorTests
 {
     // AccompanimentOptions.Default: BassOctave=2 (C2=36), ChordOctave=4 (middle C), MaxChordTones=4
-    private const int PitchClassG  = 7;   // G in mod-12
-    private const int PitchClassC  = 0;   // C in mod-12
+    private const int PitchClassG = 7;   // G in mod-12
+    private const int PitchClassC = 0;   // C in mod-12
 
     [Fact]
     public void Generate_FromRoman_Block_ProducesBassPlusChordTones()
@@ -59,7 +59,7 @@ public sealed class AccompanimentGeneratorTests
         // Override only non-default values; BassOctave/ChordOctave remain at defaults (2 and 4).
         var options = AccompanimentOptions.Default with
         {
-            Pattern     = AccompanimentPattern.Arpeggio,
+            Pattern = AccompanimentPattern.Arpeggio,
             Subdivision = Rational.Quarter
         };
 
@@ -68,11 +68,11 @@ public sealed class AccompanimentGeneratorTests
         // 1/1 duration ÷ 1/4 step = 4 steps (bass on step 0, then 3 chord tones)
         const int stepsPerWholeNote = 4;
         Assert.Equal(stepsPerWholeNote, events.Length);
-        Assert.Equal(Rational.Zero,         events[0].Offset);
-        Assert.Equal(new Rational(1, 4),    events[0].Duration);
-        Assert.Equal(new Rational(1, 4),    events[1].Offset);
-        Assert.Equal(new Rational(1, 2),    events[2].Offset);
-        Assert.Equal(new Rational(3, 4),    events[3].Offset);
+        Assert.Equal(Rational.Zero, events[0].Offset);
+        Assert.Equal(new Rational(1, 4), events[0].Duration);
+        Assert.Equal(new Rational(1, 4), events[1].Offset);
+        Assert.Equal(new Rational(1, 2), events[2].Offset);
+        Assert.Equal(new Rational(3, 4), events[3].Offset);
 
         // First event is bass — pitch class C (0).
         Assert.Equal(PitchClassC, events[0].Pitch % 12);

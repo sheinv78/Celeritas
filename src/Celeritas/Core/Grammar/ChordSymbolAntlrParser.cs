@@ -205,7 +205,20 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
     {
         if (suffix.quality() is { } q)
         {
-            builder.ApplyQuality(q.GetText());
+            var qText = q.GetText();
+
+            // "Cmmaj7" / "C-maj7": a bare maj/Δ AFTER an explicit minor marks the major seventh
+            // instead of overwriting the minor third (same rule as the parenthesized m(maj7) path).
+            if (builder.IsMinorTriad &&
+                (string.Equals(qText, "maj", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(qText, "major", StringComparison.OrdinalIgnoreCase) ||
+                 qText == "Δ"))
+            {
+                builder.MarkMajorSeventh();
+                return;
+            }
+
+            builder.ApplyQuality(qText);
             return;
         }
 
@@ -344,14 +357,13 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
             _ => 0
         };
 
-        // Remaining characters are accidentals.
+        // Remaining characters are accidentals ('-' is a quality token, never an accidental).
         for (var i = 1; i < text.Length; i++)
         {
             pc += text[i] switch
             {
                 '#' => 1,
                 'b' => -1,
-                '-' => -1,
                 _ => 0
             };
         }

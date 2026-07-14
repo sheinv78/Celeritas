@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Vladimir V. Shein
+// Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
 using Celeritas.Core;

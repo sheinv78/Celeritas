@@ -92,7 +92,6 @@ public static class ModulationDetector
 
         var modulations = new List<ModulationEvent>();
         var currentKey = startKey;
-        var windowSize = 8; // Number of chords to analyze at once
         var minModulationDuration = new Rational(2, 1); // At least 2 beats
 
         // Convert to array for easier manipulation
@@ -108,6 +107,15 @@ public static class ModulationDetector
                 EndKey = startKey
             };
         }
+
+        // Number of chords to analyze at once; shrink for short inputs so pieces
+        // with few chords are still analyzed from the first possible window.
+        var windowSize = Math.Clamp(chords.Count / 2, 2, 8);
+
+        // Deduplication of tonicization events: while stability holds, the same
+        // target key would otherwise re-fire at every consecutive index.
+        KeySignature? lastEmittedTarget = null;
+        var lastEmittedIndex = int.MinValue;
 
         for (int i = windowSize; i < chords.Count; i++)
         {
@@ -129,6 +137,17 @@ public static class ModulationDetector
             if (stability < 0.5f)
             {
                 continue; // Not stable enough, probably just passing
+            }
+
+            // Same target key detected on a contiguous run of indices: extend the
+            // run instead of emitting a duplicate event.
+            if (lastEmittedTarget is { } prevTarget
+                && prevTarget.Root == detectedKey.Value.Root
+                && prevTarget.IsMajor == detectedKey.Value.IsMajor
+                && i == lastEmittedIndex + 1)
+            {
+                lastEmittedIndex = i;
+                continue;
             }
 
             // Determine modulation type
@@ -161,6 +180,8 @@ public static class ModulationDetector
             };
 
             modulations.Add(modulation);
+            lastEmittedTarget = detectedKey.Value;
+            lastEmittedIndex = i;
 
             currentKey = isTonicization switch
             {
@@ -237,18 +258,7 @@ public static class ModulationDetector
             return null;
         }
 
-        // Collect all pitch classes in the window
-        var pitchClassCounts = new int[12];
-
-        foreach (var chord in window)
-        {
-            foreach (var pc in chord.PitchClasses)
-            {
-                pitchClassCounts[pc]++;
-            }
-        }
-
-        // Use key profiler to detect key
+        // Collect all pitch classes in the window and detect the key
         var allPitches = new List<int>();
         foreach (var chord in window)
         {
@@ -376,32 +386,59 @@ public static class ModulationDetector
 
         try
         {
-            var scale = key.GetScale();
-            var root = pitchClasses[0];
-
-            // Check if root is in the scale
-            if (!scale.Contains(root))
+            // Identify the actual chord root and quality (pitchClasses[0] is just the
+            // lowest pitch class, not the harmonic root).
+            var info = ChordAnalyzer.Identify(pitchClasses);
+            if (info.Quality == ChordQuality.Unknown)
             {
                 return null;
             }
 
-            var scaleIndex = Array.IndexOf(scale, root);
+            var scale = key.GetScale();
+            var scaleIndex = Array.IndexOf(scale, (int)info.RootPitchClass);
             if (scaleIndex < 0)
             {
                 return null;
             }
 
-            // Create simple roman numeral description
-            var scaleDegree = (ScaleDegree)(scaleIndex + 1);
+            var scaleDegree = ScaleIndexToDegree(scaleIndex);
+            var function = DegreeToFunction(scaleDegree);
 
-            // Simplified - just return a basic roman numeral chord
-            return new RomanNumeralChord(scaleDegree, ChordQuality.Major, HarmonicFunction.Tonic);
+            return new RomanNumeralChord(scaleDegree, info.Quality, function);
         }
         catch
         {
             return null;
         }
     }
+
+    /// <summary>
+    /// Map a diatonic scale index (0..6) to its ScaleDegree enum member.
+    /// (The enum values are semitone offsets, so a plain cast is NOT valid.)
+    /// </summary>
+    private static ScaleDegree ScaleIndexToDegree(int scaleIndex) => scaleIndex switch
+    {
+        0 => ScaleDegree.I,
+        1 => ScaleDegree.Ii,
+        2 => ScaleDegree.Iii,
+        3 => ScaleDegree.Iv,
+        4 => ScaleDegree.V,
+        5 => ScaleDegree.Vi,
+        6 => ScaleDegree.Vii,
+        _ => ScaleDegree.I
+    };
+
+    /// <summary>
+    /// Harmonic function of a diatonic degree (same mapping KeyAnalyzer uses:
+    /// I/iii/vi = Tonic, ii/IV = Subdominant, V/vii = Dominant).
+    /// </summary>
+    private static HarmonicFunction DegreeToFunction(ScaleDegree degree) => degree switch
+    {
+        ScaleDegree.I or ScaleDegree.Iii or ScaleDegree.Vi => HarmonicFunction.Tonic,
+        ScaleDegree.Ii or ScaleDegree.Iv => HarmonicFunction.Subdominant,
+        ScaleDegree.V or ScaleDegree.Vii => HarmonicFunction.Dominant,
+        _ => HarmonicFunction.Tonic
+    };
 
     private static string DescribeModulation(
         KeySignature fromKey,

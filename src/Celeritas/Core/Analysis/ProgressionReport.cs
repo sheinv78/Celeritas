@@ -111,14 +111,14 @@ public sealed class ProgressionReport
         var sb = new StringBuilder();
 
         sb.AppendLine("=== Progression Analysis ===");
-        sb.AppendLine($"Key: {Key} (confidence: {KeyConfidence:P0})");
+        sb.AppendLine($"Key: {Key} (confidence: {(int)Math.Round(KeyConfidence * 100)}%)");
         sb.AppendLine($"Pattern: {Pattern}");
 
         if (!string.IsNullOrWhiteSpace(Summary))
             sb.AppendLine($"Summary: {Summary}");
 
         if (TensionCurve is { Length: > 0 })
-            sb.AppendLine($"Avg tension: {AverageTension:P0} (complexity: {Complexity:P0})");
+            sb.AppendLine($"Avg tension: {(int)Math.Round(AverageTension * 100)}% (complexity: {(int)Math.Round(Complexity * 100)}%)");
 
         sb.AppendLine();
 

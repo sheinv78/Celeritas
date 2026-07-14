@@ -29,7 +29,7 @@ public readonly struct TimeSignature(int beatsPerMeasure, int beatUnit) : IEquat
     public static TimeSignature Compound12 => new(12, 8);
 
     /// <summary>Is this a compound meter (beats subdivide into 3)?</summary>
-    public bool IsCompound => BeatsPerMeasure is 6 or 9 or 12 && BeatUnit == 8;
+    public bool IsCompound => BeatsPerMeasure is 6 or 9 or 12 && BeatUnit is 4 or 8;
 
     /// <summary>Is this a simple meter (beats subdivide into 2)?</summary>
     public bool IsSimple => !IsCompound;
@@ -717,9 +717,15 @@ public static class RhythmAnalyzer
         }
 
         var measureCount = events.Max(e => e.Measure) + 1;
-        var avgDur = new Rational(
-            durations.Sum(d => d.Numerator) / durations.Count,
-            durations.First().Denominator);
+
+        // Exact mean via Rational arithmetic (numerators cannot simply be summed
+        // across different denominators).
+        var durationSum = Rational.Zero;
+        foreach (var d in durations)
+        {
+            durationSum += d;
+        }
+        var avgDur = durationSum / durations.Count;
 
         return new RhythmStatistics
         {
@@ -778,6 +784,9 @@ public static class RhythmAnalyzer
         var totalDuration = onsets[^1].offset + onsets[^1].duration - onsets[0].offset;
         var measures = totalDuration.ToDouble() / meter.MeasureDuration.ToDouble();
 
+        if (measures <= 0)
+            return 0;
+
         return (float)(onsets.Count / measures / meter.BeatsPerMeasure);
     }
 
@@ -800,13 +809,13 @@ public static class RhythmAnalyzer
 
         // Swing description
         if (swing is > 0.55f and < 0.75f)
-            parts.Add($"with light swing ({swing:P0} ratio)");
+            parts.Add($"with light swing ({(int)Math.Round(swing * 100)}% ratio)");
         else if (swing >= 0.75f)
-            parts.Add($"with heavy swing/shuffle ({swing:P0} ratio)");
+            parts.Add($"with heavy swing/shuffle ({(int)Math.Round(swing * 100)}% ratio)");
 
         // Syncopation
         if (syncopation > 0.3f)
-            parts.Add($"highly syncopated ({syncopation:P0})");
+            parts.Add($"highly syncopated ({(int)Math.Round(syncopation * 100)}%)");
         else if (syncopation > 0.1f)
             parts.Add("with some syncopation");
 

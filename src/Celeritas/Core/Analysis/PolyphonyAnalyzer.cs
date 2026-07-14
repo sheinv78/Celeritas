@@ -441,17 +441,37 @@ public static class PolyphonyAnalyzer
 
         for (int v = 0; v < voices.Voices.Count; v++)
         {
+            // Explicit search instead of FirstOrDefault + pitch sentinel, so MIDI
+            // pitch 0 is treated as a real note rather than "no note".
             var voice = voices.Voices[v];
-            var note = voice.Notes.FirstOrDefault(n =>
-                n.Offset <= time && n.End > time);
-
-            if (note.Pitch > 0) // Valid note
+            foreach (var note in voice.Notes)
             {
-                result.Add((v, note.Pitch));
+                if (note.Offset <= time && note.End > time)
+                {
+                    result.Add((v, note.Pitch));
+                    break;
+                }
             }
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Pitch of the given voice in a sounding-notes list, or null when the voice
+    /// is silent (avoids the MIDI-pitch-0 sentinel problem of FirstOrDefault).
+    /// </summary>
+    private static int? FindVoicePitch(List<(int voiceIdx, int pitch)> notes, int voiceIdx)
+    {
+        foreach (var (v, pitch) in notes)
+        {
+            if (v == voiceIdx)
+            {
+                return pitch;
+            }
+        }
+
+        return null;
     }
 
     private static List<VoiceMotion> AnalyzeMotions(
@@ -473,18 +493,19 @@ public static class PolyphonyAnalyzer
             {
                 for (int j = i + 1; j < voices.Voices.Count; j++)
                 {
-                    var pitch1T1 = notes1.FirstOrDefault(n => n.voiceIdx == i).pitch;
-                    var pitch2T1 = notes1.FirstOrDefault(n => n.voiceIdx == j).pitch;
-                    var pitch1T2 = notes2.FirstOrDefault(n => n.voiceIdx == i).pitch;
-                    var pitch2T2 = notes2.FirstOrDefault(n => n.voiceIdx == j).pitch;
+                    var pitch1T1 = FindVoicePitch(notes1, i);
+                    var pitch2T1 = FindVoicePitch(notes1, j);
+                    var pitch1T2 = FindVoicePitch(notes2, i);
+                    var pitch2T2 = FindVoicePitch(notes2, j);
 
-                    if (pitch1T1 == 0 || pitch2T1 == 0 || pitch1T2 == 0 || pitch2T2 == 0)
+                    if (pitch1T1 is not { } p1T1 || pitch2T1 is not { } p2T1 ||
+                        pitch1T2 is not { } p1T2 || pitch2T2 is not { } p2T2)
                     {
                         continue;
                     }
 
-                    var motion1 = pitch1T2 - pitch1T1;
-                    var motion2 = pitch2T2 - pitch2T1;
+                    var motion1 = p1T2 - p1T1;
+                    var motion2 = p2T2 - p2T1;
                     var motionType = ClassifyMotion(motion1, motion2);
 
                     motions.Add(new VoiceMotion
@@ -500,16 +521,16 @@ public static class PolyphonyAnalyzer
                             Voice1 = i,
                             Voice2 = j,
                             Time = time1,
-                            Pitch1 = pitch1T1,
-                            Pitch2 = pitch2T1
+                            Pitch1 = p1T1,
+                            Pitch2 = p2T1
                         },
                         ToInterval = new VoiceInterval
                         {
                             Voice1 = i,
                             Voice2 = j,
                             Time = time2,
-                            Pitch1 = pitch1T2,
-                            Pitch2 = pitch2T2
+                            Pitch1 = p1T2,
+                            Pitch2 = p2T2
                         }
                     });
                 }

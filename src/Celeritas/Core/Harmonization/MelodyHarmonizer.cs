@@ -28,7 +28,7 @@ public sealed class MelodyHarmonizer
     /// <summary>
     /// Create a harmonizer with custom strategies.
     /// </summary>
-    private MelodyHarmonizer(
+    public MelodyHarmonizer(
         IChordCandidateProvider candidateProvider,
         ITransitionScorer transitionScorer,
         IMelodyFitScorer fitScorer,
@@ -64,7 +64,7 @@ public sealed class MelodyHarmonizer
     /// <summary>
     /// Harmonize a melody in a specified key.
     /// </summary>
-    private HarmonizationResult Harmonize(ReadOnlySpan<NoteEvent> melody, KeySignature key)
+    public HarmonizationResult Harmonize(ReadOnlySpan<NoteEvent> melody, KeySignature key)
     {
         if (melody.IsEmpty)
         {

@@ -26,7 +26,7 @@ public class MidiFileExtensionsTests
         Assert.Equal(MidiPitch.C5, stats.MaxNoteNumber); // C5 = 72
         Assert.Contains(0, stats.Channels);
         Assert.True(stats.TotalTicks >= 480);
-        Assert.True(stats.TotalBeats.ToDouble() > 0);
+        Assert.True(stats.TotalDuration.ToDouble() > 0);
     }
 
     [Fact]

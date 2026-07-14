@@ -58,7 +58,7 @@ public static class MusicNotation
         }
 
         // Root pitch class
-        if (!TryParsePitchClass(notation, out var pitchClass, out var consumed))
+        if (!TryParsePitchClass(notation, out var pitchClass, out var octaveCarry, out var consumed))
         {
             return false;
         }
@@ -74,8 +74,9 @@ public static class MusicNotation
             return false;
         }
 
-        // MIDI number: (octave + 1) * 12 + pitchClass, where C-1 = 0
-        var value = ((octave + 1) * 12) + pitchClass;
+        // MIDI number: (octave + 1) * 12 + pitchClass, where C-1 = 0.
+        // octaveCarry keeps enharmonic spellings in the right octave (Cb4 = B3, B#4 = C5).
+        var value = ((octave + octaveCarry + 1) * 12) + pitchClass;
         if ((uint)value > 127u)
         {
             return false;
@@ -328,7 +329,7 @@ public static class MusicNotation
         };
 
         static bool NeedsQuotes(string value) =>
-            value.Contains(' ') || value.Contains('\t') || !char.IsLower(value[0]);
+            value.Length == 0 || value.Contains(' ') || value.Contains('\t') || !char.IsLower(value[0]);
     }
 
     /// <summary>
@@ -438,6 +439,13 @@ public static class MusicNotation
                 currentTime = note.Offset + note.Duration;
                 noteIndex++;
             }
+            else if (directiveIndex < directives.Length)
+            {
+                // Notes are exhausted but directives remain past currentTime:
+                // jump to the next directive's time so the drain loop above emits it
+                // (otherwise nothing advances and the loop never terminates).
+                currentTime = directives[directiveIndex].Time;
+            }
         }
 
         return sb.ToString();
@@ -538,8 +546,18 @@ public static class MusicNotation
     }
 
     internal static bool TryParsePitchClass(ReadOnlySpan<char> text, out int pitchClass, out int consumed)
+        => TryParsePitchClass(text, out pitchClass, out _, out consumed);
+
+    /// <summary>
+    /// Parses a note name with optional accidental. <paramref name="pitchClass"/> is the
+    /// normalized pitch class (0-11); <paramref name="octaveCarry"/> is -1/0/+1 when the
+    /// accidental crosses an octave boundary (Cb → B with carry -1, B# → C with carry +1),
+    /// so octave-aware callers can compute the correct MIDI pitch.
+    /// </summary>
+    internal static bool TryParsePitchClass(ReadOnlySpan<char> text, out int pitchClass, out int octaveCarry, out int consumed)
     {
         pitchClass = 0;
+        octaveCarry = 0;
         consumed = 0;
 
         text = text.Trim();
@@ -572,14 +590,25 @@ public static class MusicNotation
             var accidental = text[1];
             if (accidental is '#' or '♯')
             {
-                pitchClass = (pitchClass + 1) % 12;
+                pitchClass += 1;
                 consumed = 2;
             }
             else if (accidental is 'b' or '♭')
             {
-                pitchClass = (pitchClass + 11) % 12;
+                pitchClass -= 1;
                 consumed = 2;
             }
+        }
+
+        if (pitchClass < 0)
+        {
+            pitchClass += 12;
+            octaveCarry = -1;
+        }
+        else if (pitchClass > 11)
+        {
+            pitchClass -= 12;
+            octaveCarry = 1;
         }
 
         return true;
