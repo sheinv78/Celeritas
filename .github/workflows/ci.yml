@@ -64,7 +64,7 @@ jobs:
         flags: ${{ matrix.os }}
 
     - name: Upload coverage artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: coverage-${{ matrix.os }}
         path: TestResults/**/coverage.cobertura.xml
@@ -98,7 +98,7 @@ jobs:
         dotnet run -c Release --filter '*' --exporters json
 
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: benchmark-results
         path: src/Celeritas.Benchmarks/BenchmarkDotNet.Artifacts/
@@ -242,7 +242,7 @@ jobs:
         ls -la
 
     - name: Upload Python dist artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: python-dist-${{ matrix.os }}
         path: bindings/python/dist/*
@@ -279,7 +279,7 @@ jobs:
       run: dotnet pack src/Celeritas.CLI/Celeritas.CLI.csproj -c Release -p:Version=${{ steps.get_version.outputs.VERSION }} -o nupkgs
     
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: nupkgs
         path: nupkgs/*.nupkg
