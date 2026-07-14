@@ -53,7 +53,7 @@
            Pin the first patched version of the 17.8 line directly;
            PrivateAssets=all keeps it build-time only (it never ships in the package). -->
       <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.43" PrivateAssets="all" ExcludeAssets="runtime" />
-      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.301" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>
