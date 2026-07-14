@@ -56,6 +56,16 @@
            build-time only (it never ships in the package). -->
       <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.7.1" PrivateAssets="all" ExcludeAssets="runtime" />
       <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.301" PrivateAssets="all" />
+
+      <!-- Public API surface tracking: any public API change not recorded in
+           PublicAPI.{Shipped,Unshipped}.txt is flagged (RS0016/RS0017). This is the
+           guardrail for curating and freezing the API on the road to 1.0. -->
+      <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+      <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
     </ItemGroup>
 
     <ItemGroup>

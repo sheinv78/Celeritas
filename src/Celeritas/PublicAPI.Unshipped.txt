@@ -1,0 +1,1869 @@
+#nullable enable
+abstract Celeritas.Core.Ornamentation.Ornament.Expand() -> Celeritas.Core.NoteEvent[]!
+Celeritas.Core.Accompaniment.AccompanimentGenerator
+Celeritas.Core.Accompaniment.AccompanimentOptions
+Celeritas.Core.Accompaniment.AccompanimentOptions.AccompanimentOptions() -> void
+Celeritas.Core.Accompaniment.AccompanimentOptions.AccompanimentOptions(Celeritas.Core.Accompaniment.AccompanimentPattern Pattern, int BassOctave, int ChordOctave, float BassVelocity, float ChordVelocity, Celeritas.Core.Rational Subdivision, int MaxChordTones) -> void
+Celeritas.Core.Accompaniment.AccompanimentOptions.BassOctave.get -> int
+Celeritas.Core.Accompaniment.AccompanimentOptions.BassOctave.init -> void
+Celeritas.Core.Accompaniment.AccompanimentOptions.BassVelocity.get -> float
+Celeritas.Core.Accompaniment.AccompanimentOptions.BassVelocity.init -> void
+Celeritas.Core.Accompaniment.AccompanimentOptions.ChordOctave.get -> int
+Celeritas.Core.Accompaniment.AccompanimentOptions.ChordOctave.init -> void
+Celeritas.Core.Accompaniment.AccompanimentOptions.ChordVelocity.get -> float
+Celeritas.Core.Accompaniment.AccompanimentOptions.ChordVelocity.init -> void
+Celeritas.Core.Accompaniment.AccompanimentOptions.MaxChordTones.get -> int
+Celeritas.Core.Accompaniment.AccompanimentOptions.MaxChordTones.init -> void
+Celeritas.Core.Accompaniment.AccompanimentOptions.Pattern.get -> Celeritas.Core.Accompaniment.AccompanimentPattern
+Celeritas.Core.Accompaniment.AccompanimentOptions.Pattern.init -> void
+Celeritas.Core.Accompaniment.AccompanimentOptions.Subdivision.get -> Celeritas.Core.Rational
+Celeritas.Core.Accompaniment.AccompanimentOptions.Subdivision.init -> void
+Celeritas.Core.Accompaniment.AccompanimentPattern
+Celeritas.Core.Accompaniment.AccompanimentPattern.Arpeggio = 1 -> Celeritas.Core.Accompaniment.AccompanimentPattern
+Celeritas.Core.Accompaniment.AccompanimentPattern.Block = 0 -> Celeritas.Core.Accompaniment.AccompanimentPattern
+Celeritas.Core.Accompaniment.HarmonicRhythmItem
+Celeritas.Core.Accompaniment.HarmonicRhythmItem.Chord.get -> Celeritas.Core.RomanNumeralChord
+Celeritas.Core.Accompaniment.HarmonicRhythmItem.Chord.init -> void
+Celeritas.Core.Accompaniment.HarmonicRhythmItem.Duration.get -> Celeritas.Core.Rational
+Celeritas.Core.Accompaniment.HarmonicRhythmItem.Duration.init -> void
+Celeritas.Core.Accompaniment.HarmonicRhythmItem.HarmonicRhythmItem() -> void
+Celeritas.Core.Accompaniment.HarmonicRhythmItem.HarmonicRhythmItem(Celeritas.Core.RomanNumeralChord Chord, Celeritas.Core.Rational Duration) -> void
+Celeritas.Core.Analysis.BeatStrength
+Celeritas.Core.Analysis.BeatStrength.Medium = 1 -> Celeritas.Core.Analysis.BeatStrength
+Celeritas.Core.Analysis.BeatStrength.Strong = 0 -> Celeritas.Core.Analysis.BeatStrength
+Celeritas.Core.Analysis.BeatStrength.Subdivision = 3 -> Celeritas.Core.Analysis.BeatStrength
+Celeritas.Core.Analysis.BeatStrength.Weak = 2 -> Celeritas.Core.Analysis.BeatStrength
+Celeritas.Core.Analysis.BorrowedChordInfo
+Celeritas.Core.Analysis.BorrowedChordInfo.BorrowedChordInfo() -> void
+Celeritas.Core.Analysis.BorrowedChordInfo.Chord.get -> string!
+Celeritas.Core.Analysis.BorrowedChordInfo.Chord.init -> void
+Celeritas.Core.Analysis.BorrowedChordInfo.Position.get -> int
+Celeritas.Core.Analysis.BorrowedChordInfo.Position.init -> void
+Celeritas.Core.Analysis.BorrowedChordInfo.SourceKey.get -> string!
+Celeritas.Core.Analysis.BorrowedChordInfo.SourceKey.init -> void
+Celeritas.Core.Analysis.CadenceInfo
+Celeritas.Core.Analysis.CadenceInfo.CadenceInfo() -> void
+Celeritas.Core.Analysis.CadenceInfo.CadenceInfo(Celeritas.Core.Analysis.CadenceType Type, int Position, string! FromChord, string! ToChord, string! Description) -> void
+Celeritas.Core.Analysis.CadenceInfo.Description.get -> string!
+Celeritas.Core.Analysis.CadenceInfo.Description.init -> void
+Celeritas.Core.Analysis.CadenceInfo.FromChord.get -> string!
+Celeritas.Core.Analysis.CadenceInfo.FromChord.init -> void
+Celeritas.Core.Analysis.CadenceInfo.Position.get -> int
+Celeritas.Core.Analysis.CadenceInfo.Position.init -> void
+Celeritas.Core.Analysis.CadenceInfo.ToChord.get -> string!
+Celeritas.Core.Analysis.CadenceInfo.ToChord.init -> void
+Celeritas.Core.Analysis.CadenceInfo.Type.get -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.CadenceInfo.Type.init -> void
+Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.CadenceType.Authentic = 1 -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.CadenceType.Deceptive = 5 -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.CadenceType.Half = 6 -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.CadenceType.ImperfectAuthentic = 3 -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.CadenceType.None = 0 -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.CadenceType.PerfectAuthentic = 2 -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.CadenceType.Phrygian = 7 -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.CadenceType.Plagal = 4 -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.ChordAnalysisDetail
+Celeritas.Core.Analysis.ChordAnalysisDetail.AlteredNotes.get -> string?
+Celeritas.Core.Analysis.ChordAnalysisDetail.AlteredNotes.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.Character.get -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordAnalysisDetail.Character.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.ChordAnalysisDetail() -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.Description.get -> string!
+Celeritas.Core.Analysis.ChordAnalysisDetail.Description.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.Function.get -> string!
+Celeritas.Core.Analysis.ChordAnalysisDetail.Function.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.IsBorrowed.get -> bool
+Celeritas.Core.Analysis.ChordAnalysisDetail.IsBorrowed.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.Notes.get -> string![]!
+Celeritas.Core.Analysis.ChordAnalysisDetail.Notes.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.RomanNumeral.get -> string!
+Celeritas.Core.Analysis.ChordAnalysisDetail.RomanNumeral.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.SpecialNote.get -> string?
+Celeritas.Core.Analysis.ChordAnalysisDetail.SpecialNote.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.Symbol.get -> string!
+Celeritas.Core.Analysis.ChordAnalysisDetail.Symbol.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.UsesAlteredScale.get -> bool
+Celeritas.Core.Analysis.ChordAnalysisDetail.UsesAlteredScale.init -> void
+Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Bright = 8 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Dark = 6 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Dreamy = 2 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Heroic = 5 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Melancholic = 3 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Modal = 11 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Mysterious = 9 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Powerful = 10 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Stable = 0 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Suspended = 7 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Tense = 4 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacter.Warm = 1 -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacterClassification
+Celeritas.Core.Analysis.ChordCharacterClassification.Brightness.get -> float
+Celeritas.Core.Analysis.ChordCharacterClassification.Brightness.init -> void
+Celeritas.Core.Analysis.ChordCharacterClassification.Character.get -> Celeritas.Core.Analysis.ChordCharacter
+Celeritas.Core.Analysis.ChordCharacterClassification.Character.init -> void
+Celeritas.Core.Analysis.ChordCharacterClassification.ChordCharacterClassification(string! Mood, float Stability, float Brightness, Celeritas.Core.Analysis.ChordCharacter Character, Celeritas.Core.ChordQuality Quality) -> void
+Celeritas.Core.Analysis.ChordCharacterClassification.Mood.get -> string!
+Celeritas.Core.Analysis.ChordCharacterClassification.Mood.init -> void
+Celeritas.Core.Analysis.ChordCharacterClassification.Quality.get -> Celeritas.Core.ChordQuality
+Celeritas.Core.Analysis.ChordCharacterClassification.Quality.init -> void
+Celeritas.Core.Analysis.ChordCharacterClassification.Stability.get -> float
+Celeritas.Core.Analysis.ChordCharacterClassification.Stability.init -> void
+Celeritas.Core.Analysis.ChordCharacterClassifier
+Celeritas.Core.Analysis.ChordSuggestion
+Celeritas.Core.Analysis.ChordSuggestion.Chord.get -> string!
+Celeritas.Core.Analysis.ChordSuggestion.Chord.init -> void
+Celeritas.Core.Analysis.ChordSuggestion.ChordSuggestion(string! chord, string! reason, float score) -> void
+Celeritas.Core.Analysis.ChordSuggestion.Reason.get -> string!
+Celeritas.Core.Analysis.ChordSuggestion.Reason.init -> void
+Celeritas.Core.Analysis.ChordSuggestion.Score.get -> float
+Celeritas.Core.Analysis.ChordSuggestion.Score.init -> void
+Celeritas.Core.Analysis.ChromaticPitchEvent
+Celeritas.Core.Analysis.ChromaticPitchEvent.Alteration.get -> string!
+Celeritas.Core.Analysis.ChromaticPitchEvent.Alteration.init -> void
+Celeritas.Core.Analysis.ChromaticPitchEvent.ChromaticPitchEvent() -> void
+Celeritas.Core.Analysis.ChromaticPitchEvent.ChromaticPitchEvent(Celeritas.Core.Rational Offset, int Pitch, byte PitchClass, string! NoteName, string! Alteration) -> void
+Celeritas.Core.Analysis.ChromaticPitchEvent.NoteName.get -> string!
+Celeritas.Core.Analysis.ChromaticPitchEvent.NoteName.init -> void
+Celeritas.Core.Analysis.ChromaticPitchEvent.Offset.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.ChromaticPitchEvent.Offset.init -> void
+Celeritas.Core.Analysis.ChromaticPitchEvent.Pitch.get -> int
+Celeritas.Core.Analysis.ChromaticPitchEvent.Pitch.init -> void
+Celeritas.Core.Analysis.ChromaticPitchEvent.PitchClass.get -> byte
+Celeritas.Core.Analysis.ChromaticPitchEvent.PitchClass.init -> void
+Celeritas.Core.Analysis.CounterpointRulesCheckResult
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.HiddenParallels.get -> int
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.HiddenParallels.init -> void
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.ParallelFifths.get -> int
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.ParallelFifths.init -> void
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.ParallelOctaves.get -> int
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.ParallelOctaves.init -> void
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.QualityScore.get -> float
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.QualityScore.init -> void
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.SpacingViolations.get -> int
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.SpacingViolations.init -> void
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.Violations.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.CounterpointViolation!>!
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.Violations.init -> void
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.VoiceCrossing.get -> int
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.VoiceCrossing.init -> void
+Celeritas.Core.Analysis.CounterpointViolation
+Celeritas.Core.Analysis.CounterpointViolation.Description.get -> string!
+Celeritas.Core.Analysis.CounterpointViolation.Description.init -> void
+Celeritas.Core.Analysis.CounterpointViolation.Severity.get -> string!
+Celeritas.Core.Analysis.CounterpointViolation.Severity.init -> void
+Celeritas.Core.Analysis.CounterpointViolation.Time.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.CounterpointViolation.Time.init -> void
+Celeritas.Core.Analysis.CounterpointViolation.Type.get -> string!
+Celeritas.Core.Analysis.CounterpointViolation.Type.init -> void
+Celeritas.Core.Analysis.CounterpointViolation.Voice1.get -> int
+Celeritas.Core.Analysis.CounterpointViolation.Voice1.init -> void
+Celeritas.Core.Analysis.CounterpointViolation.Voice2.get -> int
+Celeritas.Core.Analysis.CounterpointViolation.Voice2.init -> void
+Celeritas.Core.Analysis.FormAnalysisOptions
+Celeritas.Core.Analysis.FormAnalysisOptions.DetectCadences.get -> bool
+Celeritas.Core.Analysis.FormAnalysisOptions.DetectCadences.init -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.DetectSections.get -> bool
+Celeritas.Core.Analysis.FormAnalysisOptions.DetectSections.init -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.FormAnalysisOptions(Celeritas.Core.Rational MinRestForPhraseBoundary, int MinNotesPerPhrase = 2, Celeritas.Core.Rational PeriodLengthTolerance = default(Celeritas.Core.Rational), bool DetectCadences = true, Celeritas.Core.KeySignature? Key = null, bool DetectSections = true, float SectionSimilarityThreshold = 0.7) -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.Key.get -> Celeritas.Core.KeySignature?
+Celeritas.Core.Analysis.FormAnalysisOptions.Key.init -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.MinNotesPerPhrase.get -> int
+Celeritas.Core.Analysis.FormAnalysisOptions.MinNotesPerPhrase.init -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.MinRestForPhraseBoundary.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.FormAnalysisOptions.MinRestForPhraseBoundary.init -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.PeriodLengthTolerance.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.FormAnalysisOptions.PeriodLengthTolerance.init -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.SectionSimilarityThreshold.get -> float
+Celeritas.Core.Analysis.FormAnalysisOptions.SectionSimilarityThreshold.init -> void
+Celeritas.Core.Analysis.FormAnalysisResult
+Celeritas.Core.Analysis.FormAnalysisResult.Cadences.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.CadenceInfo>!
+Celeritas.Core.Analysis.FormAnalysisResult.Cadences.init -> void
+Celeritas.Core.Analysis.FormAnalysisResult.FormAnalysisResult(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Phrase>! Phrases, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Period>! Periods, Celeritas.Core.Rational TotalLength, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.CadenceInfo>! Cadences) -> void
+Celeritas.Core.Analysis.FormAnalysisResult.FormAnalysisResult(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Phrase>! Phrases, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Period>! Periods, Celeritas.Core.Rational TotalLength, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.CadenceInfo>! Cadences, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Section>! Sections, string! FormLabel) -> void
+Celeritas.Core.Analysis.FormAnalysisResult.FormLabel.get -> string!
+Celeritas.Core.Analysis.FormAnalysisResult.FormLabel.init -> void
+Celeritas.Core.Analysis.FormAnalysisResult.Periods.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Period>!
+Celeritas.Core.Analysis.FormAnalysisResult.Periods.init -> void
+Celeritas.Core.Analysis.FormAnalysisResult.Phrases.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Phrase>!
+Celeritas.Core.Analysis.FormAnalysisResult.Phrases.init -> void
+Celeritas.Core.Analysis.FormAnalysisResult.Sections.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Section>!
+Celeritas.Core.Analysis.FormAnalysisResult.Sections.init -> void
+Celeritas.Core.Analysis.FormAnalysisResult.TotalLength.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.FormAnalysisResult.TotalLength.init -> void
+Celeritas.Core.Analysis.FormAnalyzer
+Celeritas.Core.Analysis.GrooveFeel
+Celeritas.Core.Analysis.GrooveFeel.Compound = 4 -> Celeritas.Core.Analysis.GrooveFeel
+Celeritas.Core.Analysis.GrooveFeel.Latin = 3 -> Celeritas.Core.Analysis.GrooveFeel
+Celeritas.Core.Analysis.GrooveFeel.Shuffle = 2 -> Celeritas.Core.Analysis.GrooveFeel
+Celeritas.Core.Analysis.GrooveFeel.Straight = 0 -> Celeritas.Core.Analysis.GrooveFeel
+Celeritas.Core.Analysis.GrooveFeel.Swing = 1 -> Celeritas.Core.Analysis.GrooveFeel
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.HarmonicColorAnalysisOptions(int ModalTurnWindowChords, double MinModalTurnCoverage, double MinModalTurnImprovement) -> void
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.MinModalTurnCoverage.get -> double
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.MinModalTurnCoverage.init -> void
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.MinModalTurnImprovement.get -> double
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.MinModalTurnImprovement.init -> void
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.ModalTurnWindowChords.get -> int
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.ModalTurnWindowChords.init -> void
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.ChromaticNotes.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ChromaticPitchEvent>!
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.ChromaticNotes.init -> void
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.ColorfulnessRating.get -> double
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.Description.get -> string!
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.HarmonicColorAnalysisResult(Celeritas.Core.KeySignature Key, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ChromaticPitchEvent>! ChromaticNotes, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalTurnEvent>! ModalTurns, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.MelodicHarmonyEvent>! MelodicHarmony) -> void
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.Key.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.Key.init -> void
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.MelodicHarmony.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.MelodicHarmonyEvent>!
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.MelodicHarmony.init -> void
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.ModalTurns.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalTurnEvent>!
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.ModalTurns.init -> void
+Celeritas.Core.Analysis.HarmonicColorAnalyzer
+Celeritas.Core.Analysis.ImitationDetectionResult
+Celeritas.Core.Analysis.ImitationDetectionResult.HasImitation.get -> bool
+Celeritas.Core.Analysis.ImitationDetectionResult.HasImitation.init -> void
+Celeritas.Core.Analysis.ImitationDetectionResult.Interval.get -> int
+Celeritas.Core.Analysis.ImitationDetectionResult.Interval.init -> void
+Celeritas.Core.Analysis.ImitationDetectionResult.TimeDelay.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.ImitationDetectionResult.TimeDelay.init -> void
+Celeritas.Core.Analysis.ImitationDetectionResult.Type.get -> string!
+Celeritas.Core.Analysis.ImitationDetectionResult.Type.init -> void
+Celeritas.Core.Analysis.ImitationDetectionResult.VoicesInvolved.get -> System.Collections.Generic.IReadOnlyList<int>!
+Celeritas.Core.Analysis.ImitationDetectionResult.VoicesInvolved.init -> void
+Celeritas.Core.Analysis.IntervalQuality
+Celeritas.Core.Analysis.IntervalQuality.ImperfectConsonance = 1 -> Celeritas.Core.Analysis.IntervalQuality
+Celeritas.Core.Analysis.IntervalQuality.MildDissonance = 2 -> Celeritas.Core.Analysis.IntervalQuality
+Celeritas.Core.Analysis.IntervalQuality.PerfectConsonance = 0 -> Celeritas.Core.Analysis.IntervalQuality
+Celeritas.Core.Analysis.IntervalQuality.SharpDissonance = 3 -> Celeritas.Core.Analysis.IntervalQuality
+Celeritas.Core.Analysis.IntervalStatistics
+Celeritas.Core.Analysis.IntervalStatistics.ConsonanceRatio.get -> float
+Celeritas.Core.Analysis.IntervalStatistics.DissonanceRatio.get -> float
+Celeritas.Core.Analysis.IntervalStatistics.ImperfectConsonances.get -> int
+Celeritas.Core.Analysis.IntervalStatistics.ImperfectConsonances.init -> void
+Celeritas.Core.Analysis.IntervalStatistics.IntervalCounts.get -> int[]!
+Celeritas.Core.Analysis.IntervalStatistics.IntervalStatistics() -> void
+Celeritas.Core.Analysis.IntervalStatistics.MildDissonances.get -> int
+Celeritas.Core.Analysis.IntervalStatistics.MildDissonances.init -> void
+Celeritas.Core.Analysis.IntervalStatistics.PerfectConsonances.get -> int
+Celeritas.Core.Analysis.IntervalStatistics.PerfectConsonances.init -> void
+Celeritas.Core.Analysis.IntervalStatistics.SharpDissonances.get -> int
+Celeritas.Core.Analysis.IntervalStatistics.SharpDissonances.init -> void
+Celeritas.Core.Analysis.IntervalStatistics.Total.get -> int
+Celeritas.Core.Analysis.KeyCorrelation
+Celeritas.Core.Analysis.KeyCorrelation.Correlation.get -> float
+Celeritas.Core.Analysis.KeyCorrelation.Correlation.init -> void
+Celeritas.Core.Analysis.KeyCorrelation.Key.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.KeyCorrelation.Key.init -> void
+Celeritas.Core.Analysis.KeyCorrelation.KeyCorrelation() -> void
+Celeritas.Core.Analysis.KeyCorrelation.KeyCorrelation(Celeritas.Core.KeySignature Key, float Correlation) -> void
+Celeritas.Core.Analysis.KeyDetectionResult
+Celeritas.Core.Analysis.KeyDetectionResult.AllCorrelations.get -> Celeritas.Core.Analysis.KeyCorrelation[]!
+Celeritas.Core.Analysis.KeyDetectionResult.AllCorrelations.init -> void
+Celeritas.Core.Analysis.KeyDetectionResult.Confidence.get -> float
+Celeritas.Core.Analysis.KeyDetectionResult.Confidence.init -> void
+Celeritas.Core.Analysis.KeyDetectionResult.Key.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.KeyDetectionResult.Key.init -> void
+Celeritas.Core.Analysis.KeyDetectionResult.KeyDetectionResult() -> void
+Celeritas.Core.Analysis.KeyDetectionResult.KeyDetectionResult(Celeritas.Core.KeySignature Key, float Confidence, Celeritas.Core.Analysis.KeyCorrelation[]! AllCorrelations) -> void
+Celeritas.Core.Analysis.KeyDetectionResult.TopKeys(int n) -> System.Collections.Generic.IEnumerable<Celeritas.Core.Analysis.KeyCorrelation>!
+Celeritas.Core.Analysis.KeyProfiler
+Celeritas.Core.Analysis.KeyRelationships
+Celeritas.Core.Analysis.KeyTrajectory
+Celeritas.Core.Analysis.KeyTrajectory.DetectModulations() -> System.Collections.Generic.IEnumerable<(Celeritas.Core.Rational Position, Celeritas.Core.KeySignature FromKey, Celeritas.Core.KeySignature ToKey)>!
+Celeritas.Core.Analysis.KeyTrajectory.KeyTrajectory(System.Collections.Generic.List<(Celeritas.Core.Rational, Celeritas.Core.Analysis.KeyDetectionResult)>! points) -> void
+Celeritas.Core.Analysis.MelodicContour
+Celeritas.Core.Analysis.MelodicContour.Arch = 2 -> Celeritas.Core.Analysis.MelodicContour
+Celeritas.Core.Analysis.MelodicContour.Ascending = 0 -> Celeritas.Core.Analysis.MelodicContour
+Celeritas.Core.Analysis.MelodicContour.Bowl = 3 -> Celeritas.Core.Analysis.MelodicContour
+Celeritas.Core.Analysis.MelodicContour.Complex = 6 -> Celeritas.Core.Analysis.MelodicContour
+Celeritas.Core.Analysis.MelodicContour.Descending = 1 -> Celeritas.Core.Analysis.MelodicContour
+Celeritas.Core.Analysis.MelodicContour.Static = 5 -> Celeritas.Core.Analysis.MelodicContour
+Celeritas.Core.Analysis.MelodicContour.Wave = 4 -> Celeritas.Core.Analysis.MelodicContour
+Celeritas.Core.Analysis.MelodicDirection
+Celeritas.Core.Analysis.MelodicDirection.Ascending = 0 -> Celeritas.Core.Analysis.MelodicDirection
+Celeritas.Core.Analysis.MelodicDirection.Descending = 1 -> Celeritas.Core.Analysis.MelodicDirection
+Celeritas.Core.Analysis.MelodicDirection.Static = 2 -> Celeritas.Core.Analysis.MelodicDirection
+Celeritas.Core.Analysis.MelodicHarmonyEvent
+Celeritas.Core.Analysis.MelodicHarmonyEvent.ChordEnd.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.MelodicHarmonyEvent.ChordEnd.init -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.ChordMask.get -> ushort
+Celeritas.Core.Analysis.MelodicHarmonyEvent.ChordMask.init -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.ChordStart.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.MelodicHarmonyEvent.ChordStart.init -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Description.get -> string!
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Description.init -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.IsChordTone.get -> bool
+Celeritas.Core.Analysis.MelodicHarmonyEvent.IsChordTone.init -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.MelodicHarmonyEvent() -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.MelodicHarmonyEvent(Celeritas.Core.Rational Offset, int Pitch, byte PitchClass, Celeritas.Core.Rational ChordStart, Celeritas.Core.Rational ChordEnd, ushort ChordMask, bool IsChordTone, Celeritas.Core.Analysis.MelodicHarmonyEventType Type, string! Description) -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Offset.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Offset.init -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Pitch.get -> int
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Pitch.init -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.PitchClass.get -> byte
+Celeritas.Core.Analysis.MelodicHarmonyEvent.PitchClass.init -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Type.get -> Celeritas.Core.Analysis.MelodicHarmonyEventType
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Type.init -> void
+Celeritas.Core.Analysis.MelodicHarmonyEventType
+Celeritas.Core.Analysis.MelodicHarmonyEventType.Appoggiatura = 3 -> Celeritas.Core.Analysis.MelodicHarmonyEventType
+Celeritas.Core.Analysis.MelodicHarmonyEventType.ChordTone = 0 -> Celeritas.Core.Analysis.MelodicHarmonyEventType
+Celeritas.Core.Analysis.MelodicHarmonyEventType.NeighborTone = 2 -> Celeritas.Core.Analysis.MelodicHarmonyEventType
+Celeritas.Core.Analysis.MelodicHarmonyEventType.OtherNonChordTone = 5 -> Celeritas.Core.Analysis.MelodicHarmonyEventType
+Celeritas.Core.Analysis.MelodicHarmonyEventType.PassingTone = 1 -> Celeritas.Core.Analysis.MelodicHarmonyEventType
+Celeritas.Core.Analysis.MelodicHarmonyEventType.Suspension = 4 -> Celeritas.Core.Analysis.MelodicHarmonyEventType
+Celeritas.Core.Analysis.MelodicHarmonyEventType.Unclassified = 6 -> Celeritas.Core.Analysis.MelodicHarmonyEventType
+Celeritas.Core.Analysis.MelodicInterval
+Celeritas.Core.Analysis.MelodicInterval.Direction.get -> Celeritas.Core.Analysis.MelodicDirection
+Celeritas.Core.Analysis.MelodicInterval.Direction.init -> void
+Celeritas.Core.Analysis.MelodicInterval.MelodicInterval() -> void
+Celeritas.Core.Analysis.MelodicInterval.MelodicInterval(int Semitones, Celeritas.Core.Analysis.MelodicDirection Direction, Celeritas.Core.Analysis.MelodicMotionType Motion) -> void
+Celeritas.Core.Analysis.MelodicInterval.Motion.get -> Celeritas.Core.Analysis.MelodicMotionType
+Celeritas.Core.Analysis.MelodicInterval.Motion.init -> void
+Celeritas.Core.Analysis.MelodicInterval.Semitones.get -> int
+Celeritas.Core.Analysis.MelodicInterval.Semitones.init -> void
+Celeritas.Core.Analysis.MelodicIntervalStats
+Celeritas.Core.Analysis.MelodicIntervalStats.AverageInterval.get -> double
+Celeritas.Core.Analysis.MelodicIntervalStats.AverageInterval.init -> void
+Celeritas.Core.Analysis.MelodicIntervalStats.IntervalHistogram.get -> System.Collections.Generic.IReadOnlyDictionary<int, int>!
+Celeritas.Core.Analysis.MelodicIntervalStats.IntervalHistogram.init -> void
+Celeritas.Core.Analysis.MelodicIntervalStats.LargestLeap.get -> int
+Celeritas.Core.Analysis.MelodicIntervalStats.LargestLeap.init -> void
+Celeritas.Core.Analysis.MelodicIntervalStats.LeapPercent.get -> double
+Celeritas.Core.Analysis.MelodicIntervalStats.LeapPercent.init -> void
+Celeritas.Core.Analysis.MelodicIntervalStats.MelodicIntervalStats() -> void
+Celeritas.Core.Analysis.MelodicIntervalStats.MotionHistogram.get -> System.Collections.Generic.IReadOnlyDictionary<Celeritas.Core.Analysis.MelodicMotionType, int>!
+Celeritas.Core.Analysis.MelodicIntervalStats.MotionHistogram.init -> void
+Celeritas.Core.Analysis.MelodicIntervalStats.RepetitionPercent.get -> double
+Celeritas.Core.Analysis.MelodicIntervalStats.RepetitionPercent.init -> void
+Celeritas.Core.Analysis.MelodicIntervalStats.StepPercent.get -> double
+Celeritas.Core.Analysis.MelodicIntervalStats.StepPercent.init -> void
+Celeritas.Core.Analysis.MelodicIntervalStats.TotalIntervals.get -> int
+Celeritas.Core.Analysis.MelodicIntervalStats.TotalIntervals.init -> void
+Celeritas.Core.Analysis.MelodicMotionType
+Celeritas.Core.Analysis.MelodicMotionType.LargeLeap = 4 -> Celeritas.Core.Analysis.MelodicMotionType
+Celeritas.Core.Analysis.MelodicMotionType.MediumLeap = 3 -> Celeritas.Core.Analysis.MelodicMotionType
+Celeritas.Core.Analysis.MelodicMotionType.Repetition = 0 -> Celeritas.Core.Analysis.MelodicMotionType
+Celeritas.Core.Analysis.MelodicMotionType.SmallLeap = 2 -> Celeritas.Core.Analysis.MelodicMotionType
+Celeritas.Core.Analysis.MelodicMotionType.Step = 1 -> Celeritas.Core.Analysis.MelodicMotionType
+Celeritas.Core.Analysis.MelodyAnalysisResult
+Celeritas.Core.Analysis.MelodyAnalysisResult.Ambitus.get -> int
+Celeritas.Core.Analysis.MelodyAnalysisResult.Ambitus.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.AmbitusDescription.get -> string!
+Celeritas.Core.Analysis.MelodyAnalysisResult.AmbitusDescription.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.CharacterDescription.get -> string!
+Celeritas.Core.Analysis.MelodyAnalysisResult.CharacterDescription.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.Complexity.get -> double
+Celeritas.Core.Analysis.MelodyAnalysisResult.Complexity.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.Conjunctness.get -> double
+Celeritas.Core.Analysis.MelodyAnalysisResult.Conjunctness.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.Contour.get -> Celeritas.Core.Analysis.MelodicContour
+Celeritas.Core.Analysis.MelodyAnalysisResult.Contour.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.ContourDescription.get -> string!
+Celeritas.Core.Analysis.MelodyAnalysisResult.ContourDescription.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.HighestPitch.get -> int
+Celeritas.Core.Analysis.MelodyAnalysisResult.HighestPitch.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.Intervals.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.MelodicInterval>!
+Celeritas.Core.Analysis.MelodyAnalysisResult.Intervals.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.LowestPitch.get -> int
+Celeritas.Core.Analysis.MelodyAnalysisResult.LowestPitch.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.MelodyAnalysisResult() -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.Motifs.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Motif!>!
+Celeritas.Core.Analysis.MelodyAnalysisResult.Motifs.init -> void
+Celeritas.Core.Analysis.MelodyAnalysisResult.Statistics.get -> Celeritas.Core.Analysis.MelodicIntervalStats!
+Celeritas.Core.Analysis.MelodyAnalysisResult.Statistics.init -> void
+Celeritas.Core.Analysis.MelodyAnalyzer
+Celeritas.Core.Analysis.MeterDetectionResult
+Celeritas.Core.Analysis.MeterDetectionResult.Alternatives.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.TimeSignature>!
+Celeritas.Core.Analysis.MeterDetectionResult.Alternatives.init -> void
+Celeritas.Core.Analysis.MeterDetectionResult.Confidence.get -> float
+Celeritas.Core.Analysis.MeterDetectionResult.Confidence.init -> void
+Celeritas.Core.Analysis.MeterDetectionResult.Reasoning.get -> string!
+Celeritas.Core.Analysis.MeterDetectionResult.Reasoning.init -> void
+Celeritas.Core.Analysis.MeterDetectionResult.Tempo.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.MeterDetectionResult.Tempo.init -> void
+Celeritas.Core.Analysis.MeterDetectionResult.TimeSignature.get -> Celeritas.Core.Analysis.TimeSignature
+Celeritas.Core.Analysis.MeterDetectionResult.TimeSignature.init -> void
+Celeritas.Core.Analysis.ModalKey
+Celeritas.Core.Analysis.ModalKey.Equals(Celeritas.Core.Analysis.ModalKey other) -> bool
+Celeritas.Core.Analysis.ModalKey.ModalKey() -> void
+Celeritas.Core.Analysis.ModalKey.ModalKey(byte root, Celeritas.Core.Analysis.Mode mode) -> void
+Celeritas.Core.Analysis.ModalKey.Mode.get -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.ModalKey.ParallelMajor.get -> Celeritas.Core.Analysis.ModalKey
+Celeritas.Core.Analysis.ModalKey.ParallelMinor.get -> Celeritas.Core.Analysis.ModalKey
+Celeritas.Core.Analysis.ModalKey.RelativeMajor.get -> Celeritas.Core.Analysis.ModalKey
+Celeritas.Core.Analysis.ModalKey.Root.get -> byte
+Celeritas.Core.Analysis.ModalKey.ToKeySignature() -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.ModalProgression
+Celeritas.Core.Analysis.ModalProgression.Degrees.get -> System.Collections.Generic.IReadOnlyList<int>!
+Celeritas.Core.Analysis.ModalProgression.Degrees.init -> void
+Celeritas.Core.Analysis.ModalProgression.Description.get -> string!
+Celeritas.Core.Analysis.ModalProgression.Description.init -> void
+Celeritas.Core.Analysis.ModalProgression.ModalProgression() -> void
+Celeritas.Core.Analysis.ModalProgression.ModalProgression(string! Name, string! Description, System.Collections.Generic.IReadOnlyList<int>! Degrees) -> void
+Celeritas.Core.Analysis.ModalProgression.Name.get -> string!
+Celeritas.Core.Analysis.ModalProgression.Name.init -> void
+Celeritas.Core.Analysis.ModalProgressions
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.ModalMixtureChord(int Position, string! Symbol, int RootPitchClass, System.Collections.Generic.IReadOnlyList<int>! OutOfScalePitchClasses) -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.OutOfScalePitchClasses.get -> System.Collections.Generic.IReadOnlyList<int>!
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.OutOfScalePitchClasses.init -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.Position.get -> int
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.Position.init -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.RootPitchClass.get -> int
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.RootPitchClass.init -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.Symbol.get -> string!
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.Symbol.init -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.BorrowedChords.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord!>!
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.BorrowedChords.init -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.Degrees.get -> System.Collections.Generic.IReadOnlyList<int>!
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.Degrees.init -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.DetectedKey.get -> Celeritas.Core.Analysis.ModalKey
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.DetectedKey.init -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.HasModalMixture.get -> bool
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.MatchedProgression.get -> Celeritas.Core.Analysis.ModalProgression?
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.MatchedProgression.init -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.ModalProgressionAnalysisResult() -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.ModeConfidence.get -> float
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.ModeConfidence.init -> void
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.ProgressionConfidence.get -> float
+Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.ProgressionConfidence.init -> void
+Celeritas.Core.Analysis.ModalTurnEvent
+Celeritas.Core.Analysis.ModalTurnEvent.Confidence.get -> double
+Celeritas.Core.Analysis.ModalTurnEvent.Confidence.init -> void
+Celeritas.Core.Analysis.ModalTurnEvent.EndChordIndex.get -> int
+Celeritas.Core.Analysis.ModalTurnEvent.EndChordIndex.init -> void
+Celeritas.Core.Analysis.ModalTurnEvent.ModalTurnEvent() -> void
+Celeritas.Core.Analysis.ModalTurnEvent.ModalTurnEvent(int StartChordIndex, int EndChordIndex, Celeritas.Core.Analysis.Mode Mode, double Confidence, byte[]! OutOfKeyPitchClasses) -> void
+Celeritas.Core.Analysis.ModalTurnEvent.Mode.get -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.ModalTurnEvent.Mode.init -> void
+Celeritas.Core.Analysis.ModalTurnEvent.OutOfKeyPitchClasses.get -> byte[]!
+Celeritas.Core.Analysis.ModalTurnEvent.OutOfKeyPitchClasses.init -> void
+Celeritas.Core.Analysis.ModalTurnEvent.StartChordIndex.get -> int
+Celeritas.Core.Analysis.ModalTurnEvent.StartChordIndex.init -> void
+Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.Aeolian = 5 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.Altered = 12 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.Blues = 16 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.DiminishedHalfWhole = 14 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.DiminishedWholeHalf = 15 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.Dorian = 1 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.HarmonicMinor = 7 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.Ionian = 0 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.Locrian = 6 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.LocrianNatural2 = 11 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.Lydian = 3 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.LydianDominant = 10 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.MajorPentatonic = 17 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.MelodicMinor = 8 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.MinorPentatonic = 18 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.Mixolydian = 4 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.Phrygian = 2 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.PhrygianDominant = 9 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.Mode.WholeTone = 13 -> Celeritas.Core.Analysis.Mode
+Celeritas.Core.Analysis.ModeLibrary
+Celeritas.Core.Analysis.ModulationAnalysisResult
+Celeritas.Core.Analysis.ModulationAnalysisResult.EndKey.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.ModulationAnalysisResult.EndKey.init -> void
+Celeritas.Core.Analysis.ModulationAnalysisResult.KeyCount.get -> int
+Celeritas.Core.Analysis.ModulationAnalysisResult.ModulationAnalysisResult() -> void
+Celeritas.Core.Analysis.ModulationAnalysisResult.Modulations.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModulationEvent!>!
+Celeritas.Core.Analysis.ModulationAnalysisResult.Modulations.init -> void
+Celeritas.Core.Analysis.ModulationAnalysisResult.StartKey.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.ModulationAnalysisResult.StartKey.init -> void
+Celeritas.Core.Analysis.ModulationAnalysisResult.TonicizationCount.get -> int
+Celeritas.Core.Analysis.ModulationAnalysisResult.TrueModulationCount.get -> int
+Celeritas.Core.Analysis.ModulationDetector
+Celeritas.Core.Analysis.ModulationEvent
+Celeritas.Core.Analysis.ModulationEvent.Confidence.get -> float
+Celeritas.Core.Analysis.ModulationEvent.Confidence.init -> void
+Celeritas.Core.Analysis.ModulationEvent.Description.get -> string?
+Celeritas.Core.Analysis.ModulationEvent.Description.init -> void
+Celeritas.Core.Analysis.ModulationEvent.Duration.get -> Celeritas.Core.Rational?
+Celeritas.Core.Analysis.ModulationEvent.Duration.init -> void
+Celeritas.Core.Analysis.ModulationEvent.FromKey.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.ModulationEvent.FromKey.init -> void
+Celeritas.Core.Analysis.ModulationEvent.ModulationEvent() -> void
+Celeritas.Core.Analysis.ModulationEvent.Offset.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.ModulationEvent.Offset.init -> void
+Celeritas.Core.Analysis.ModulationEvent.PivotChord.get -> (Celeritas.Core.RomanNumeralChord? FromContext, Celeritas.Core.RomanNumeralChord? ToContext)?
+Celeritas.Core.Analysis.ModulationEvent.PivotChord.init -> void
+Celeritas.Core.Analysis.ModulationEvent.ToKey.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.ModulationEvent.ToKey.init -> void
+Celeritas.Core.Analysis.ModulationEvent.Type.get -> Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.ModulationEvent.Type.init -> void
+Celeritas.Core.Analysis.ModulationInfo
+Celeritas.Core.Analysis.ModulationInfo.Description.get -> string!
+Celeritas.Core.Analysis.ModulationInfo.Description.init -> void
+Celeritas.Core.Analysis.ModulationInfo.Duration.get -> int
+Celeritas.Core.Analysis.ModulationInfo.Duration.init -> void
+Celeritas.Core.Analysis.ModulationInfo.FromKey.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.ModulationInfo.FromKey.init -> void
+Celeritas.Core.Analysis.ModulationInfo.KeyRelationship.get -> string!
+Celeritas.Core.Analysis.ModulationInfo.KeyRelationship.init -> void
+Celeritas.Core.Analysis.ModulationInfo.ModulationInfo() -> void
+Celeritas.Core.Analysis.ModulationInfo.PivotAnalysis.get -> string?
+Celeritas.Core.Analysis.ModulationInfo.PivotAnalysis.init -> void
+Celeritas.Core.Analysis.ModulationInfo.PivotChord.get -> string?
+Celeritas.Core.Analysis.ModulationInfo.PivotChord.init -> void
+Celeritas.Core.Analysis.ModulationInfo.Position.get -> int
+Celeritas.Core.Analysis.ModulationInfo.Position.init -> void
+Celeritas.Core.Analysis.ModulationInfo.ToKey.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.ModulationInfo.ToKey.init -> void
+Celeritas.Core.Analysis.ModulationInfo.Type.get -> Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.ModulationInfo.Type.init -> void
+Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.ModulationType.Chromatic = 4 -> Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.ModulationType.Direct = 2 -> Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.ModulationType.Enharmonic = 5 -> Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.ModulationType.ModalInterchange = 6 -> Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.ModulationType.PivotChord = 1 -> Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.ModulationType.Sequential = 3 -> Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.ModulationType.Tonicization = 0 -> Celeritas.Core.Analysis.ModulationType
+Celeritas.Core.Analysis.Motif
+Celeritas.Core.Analysis.Motif.IntervalPattern.get -> int[]!
+Celeritas.Core.Analysis.Motif.IntervalPattern.init -> void
+Celeritas.Core.Analysis.Motif.Length.get -> int
+Celeritas.Core.Analysis.Motif.Length.init -> void
+Celeritas.Core.Analysis.Motif.Motif() -> void
+Celeritas.Core.Analysis.Motif.Occurrences.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Rational>!
+Celeritas.Core.Analysis.Motif.Occurrences.init -> void
+Celeritas.Core.Analysis.Motif.PatternDescription.get -> string!
+Celeritas.Core.Analysis.Motif.Significance.get -> double
+Celeritas.Core.Analysis.Motif.Significance.init -> void
+Celeritas.Core.Analysis.MotionStatistics
+Celeritas.Core.Analysis.MotionStatistics.Contrary.get -> int
+Celeritas.Core.Analysis.MotionStatistics.Contrary.init -> void
+Celeritas.Core.Analysis.MotionStatistics.ContraryPercent.get -> float
+Celeritas.Core.Analysis.MotionStatistics.MotionStatistics() -> void
+Celeritas.Core.Analysis.MotionStatistics.Oblique.get -> int
+Celeritas.Core.Analysis.MotionStatistics.Oblique.init -> void
+Celeritas.Core.Analysis.MotionStatistics.ObliquePercent.get -> float
+Celeritas.Core.Analysis.MotionStatistics.Parallel.get -> int
+Celeritas.Core.Analysis.MotionStatistics.Parallel.init -> void
+Celeritas.Core.Analysis.MotionStatistics.ParallelPercent.get -> float
+Celeritas.Core.Analysis.MotionStatistics.Similar.get -> int
+Celeritas.Core.Analysis.MotionStatistics.Similar.init -> void
+Celeritas.Core.Analysis.MotionStatistics.SimilarPercent.get -> float
+Celeritas.Core.Analysis.MotionStatistics.Static.get -> int
+Celeritas.Core.Analysis.MotionStatistics.Static.init -> void
+Celeritas.Core.Analysis.MotionStatistics.Total.get -> int
+Celeritas.Core.Analysis.MotionType
+Celeritas.Core.Analysis.MotionType.Contrary = 2 -> Celeritas.Core.Analysis.MotionType
+Celeritas.Core.Analysis.MotionType.Oblique = 3 -> Celeritas.Core.Analysis.MotionType
+Celeritas.Core.Analysis.MotionType.Parallel = 0 -> Celeritas.Core.Analysis.MotionType
+Celeritas.Core.Analysis.MotionType.Similar = 1 -> Celeritas.Core.Analysis.MotionType
+Celeritas.Core.Analysis.MotionType.Static = 4 -> Celeritas.Core.Analysis.MotionType
+Celeritas.Core.Analysis.Period
+Celeritas.Core.Analysis.Period.FirstPhraseIndex.get -> int
+Celeritas.Core.Analysis.Period.FirstPhraseIndex.init -> void
+Celeritas.Core.Analysis.Period.LengthA.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.Period.LengthA.init -> void
+Celeritas.Core.Analysis.Period.LengthB.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.Period.LengthB.init -> void
+Celeritas.Core.Analysis.Period.Period() -> void
+Celeritas.Core.Analysis.Period.Period(int FirstPhraseIndex, int SecondPhraseIndex, Celeritas.Core.Rational LengthA, Celeritas.Core.Rational LengthB) -> void
+Celeritas.Core.Analysis.Period.SecondPhraseIndex.get -> int
+Celeritas.Core.Analysis.Period.SecondPhraseIndex.init -> void
+Celeritas.Core.Analysis.Phrase
+Celeritas.Core.Analysis.Phrase.End.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.Phrase.End.init -> void
+Celeritas.Core.Analysis.Phrase.EndIndex.get -> int
+Celeritas.Core.Analysis.Phrase.EndIndex.init -> void
+Celeritas.Core.Analysis.Phrase.EndingCadence.get -> Celeritas.Core.Analysis.CadenceType
+Celeritas.Core.Analysis.Phrase.EndingCadence.init -> void
+Celeritas.Core.Analysis.Phrase.Length.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.Phrase.NoteCount.get -> int
+Celeritas.Core.Analysis.Phrase.NoteCount.init -> void
+Celeritas.Core.Analysis.Phrase.Phrase() -> void
+Celeritas.Core.Analysis.Phrase.Phrase(int StartIndex, int EndIndex, Celeritas.Core.Rational Start, Celeritas.Core.Rational End, int NoteCount, Celeritas.Core.Analysis.CadenceType EndingCadence = Celeritas.Core.Analysis.CadenceType.None) -> void
+Celeritas.Core.Analysis.Phrase.Start.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.Phrase.Start.init -> void
+Celeritas.Core.Analysis.Phrase.StartIndex.get -> int
+Celeritas.Core.Analysis.Phrase.StartIndex.init -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.Cardinality.get -> int
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.Cardinality.init -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.IntervalVector.get -> int[]!
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.IntervalVector.init -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.IntervalVectorText.get -> string!
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.Mask.get -> ushort
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.Mask.init -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.NormalOrder.get -> int[]!
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.NormalOrder.init -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.NormalOrderText.get -> string!
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.PitchClasses.get -> int[]!
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.PitchClasses.init -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.PitchClassesText.get -> string!
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.PitchClassSetAnalysisResult() -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.PitchClassSetAnalysisResult(ushort Mask, int Cardinality, int[]! PitchClasses, int[]! NormalOrder, int[]! PrimeForm, int[]! IntervalVector) -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.PrimeForm.get -> int[]!
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.PrimeForm.init -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.PrimeFormText.get -> string!
+Celeritas.Core.Analysis.PitchClassSetAnalyzer
+Celeritas.Core.Analysis.PitchClassSetCatalog
+Celeritas.Core.Analysis.PitchClassSetCatalog.TryGetByPrimeForm(int[]! primeForm, out Celeritas.Core.Analysis.PitchClassSetCatalogEntry? entry) -> bool
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.Forte.get -> string!
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.Forte.init -> void
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.Name.get -> string?
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.Name.init -> void
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.Notes.get -> string?
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.Notes.init -> void
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.PitchClassSetCatalogEntry(string! Forte, int[]! PrimeForm, string? Name = null, string? Notes = null) -> void
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.PrimeForm.get -> int[]!
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.PrimeForm.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalysisResult
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.Intervals.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.VoiceInterval>!
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.Intervals.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.IntervalStats.get -> Celeritas.Core.Analysis.IntervalStatistics!
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.IntervalStats.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.Motions.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.VoiceMotion>!
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.Motions.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.MotionStats.get -> Celeritas.Core.Analysis.MotionStatistics!
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.MotionStats.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.QualityScore.get -> float
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.QualityScore.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.TextureDensity.get -> float
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.TextureDensity.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.Violations.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.CounterpointViolation!>!
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.Violations.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.VoiceIndependence.get -> float
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.VoiceIndependence.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.Voices.get -> Celeritas.Core.Analysis.VoiceSeparationResult!
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.Voices.init -> void
+Celeritas.Core.Analysis.PolyphonyAnalyzer
+Celeritas.Core.Analysis.ProgressionAdvisor
+Celeritas.Core.Analysis.ProgressionReport
+Celeritas.Core.Analysis.ProgressionReport.AverageMovement.get -> float
+Celeritas.Core.Analysis.ProgressionReport.AverageMovement.init -> void
+Celeritas.Core.Analysis.ProgressionReport.AverageTension.get -> float
+Celeritas.Core.Analysis.ProgressionReport.AverageTension.init -> void
+Celeritas.Core.Analysis.ProgressionReport.BorrowedChords.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.BorrowedChordInfo!>!
+Celeritas.Core.Analysis.ProgressionReport.BorrowedChords.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Cadences.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.CadenceInfo>!
+Celeritas.Core.Analysis.ProgressionReport.Cadences.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Chords.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ChordAnalysisDetail!>!
+Celeritas.Core.Analysis.ProgressionReport.Chords.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Complexity.get -> float
+Celeritas.Core.Analysis.ProgressionReport.Complexity.init -> void
+Celeritas.Core.Analysis.ProgressionReport.HasBorrowedChords.get -> bool
+Celeritas.Core.Analysis.ProgressionReport.HasModalMixture.get -> bool
+Celeritas.Core.Analysis.ProgressionReport.HasModalMixture.init -> void
+Celeritas.Core.Analysis.ProgressionReport.HasSecondaryDominants.get -> bool
+Celeritas.Core.Analysis.ProgressionReport.Highlights.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Celeritas.Core.Analysis.ProgressionReport.Highlights.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Key.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Analysis.ProgressionReport.Key.init -> void
+Celeritas.Core.Analysis.ProgressionReport.KeyConfidence.get -> float
+Celeritas.Core.Analysis.ProgressionReport.KeyConfidence.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Modulations.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModulationInfo!>!
+Celeritas.Core.Analysis.ProgressionReport.Modulations.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Narrative.get -> string!
+Celeritas.Core.Analysis.ProgressionReport.Narrative.init -> void
+Celeritas.Core.Analysis.ProgressionReport.ParallelFifths.get -> int
+Celeritas.Core.Analysis.ProgressionReport.ParallelFifths.init -> void
+Celeritas.Core.Analysis.ProgressionReport.ParallelOctaves.get -> int
+Celeritas.Core.Analysis.ProgressionReport.ParallelOctaves.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Pattern.get -> string!
+Celeritas.Core.Analysis.ProgressionReport.Pattern.init -> void
+Celeritas.Core.Analysis.ProgressionReport.ProgressionReport() -> void
+Celeritas.Core.Analysis.ProgressionReport.QualityRating.get -> string!
+Celeritas.Core.Analysis.ProgressionReport.QualityRating.init -> void
+Celeritas.Core.Analysis.ProgressionReport.SecondaryDominants.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.SecondaryDominantInfo!>!
+Celeritas.Core.Analysis.ProgressionReport.SecondaryDominants.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Smoothness.get -> float
+Celeritas.Core.Analysis.ProgressionReport.Smoothness.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Suggestions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Celeritas.Core.Analysis.ProgressionReport.Suggestions.init -> void
+Celeritas.Core.Analysis.ProgressionReport.Summary.get -> string!
+Celeritas.Core.Analysis.ProgressionReport.Summary.init -> void
+Celeritas.Core.Analysis.ProgressionReport.TensionCurve.get -> float[]?
+Celeritas.Core.Analysis.ProgressionReport.TensionCurve.init -> void
+Celeritas.Core.Analysis.ProgressionReport.ToFormattedReport() -> string!
+Celeritas.Core.Analysis.ProgressionReport.UsesHarmonicMinor.get -> bool
+Celeritas.Core.Analysis.ProgressionReport.UsesHarmonicMinor.init -> void
+Celeritas.Core.Analysis.ProgressionReport.UsesMelodicMinor.get -> bool
+Celeritas.Core.Analysis.ProgressionReport.UsesMelodicMinor.init -> void
+Celeritas.Core.Analysis.RhythmAlternative
+Celeritas.Core.Analysis.RhythmAlternative.Duration.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmAlternative.Duration.init -> void
+Celeritas.Core.Analysis.RhythmAlternative.Probability.get -> float
+Celeritas.Core.Analysis.RhythmAlternative.Probability.init -> void
+Celeritas.Core.Analysis.RhythmAlternative.RhythmAlternative() -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult
+Celeritas.Core.Analysis.RhythmAnalysisResult.Density.get -> float
+Celeritas.Core.Analysis.RhythmAnalysisResult.Density.init -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.Events.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.RhythmEvent>!
+Celeritas.Core.Analysis.RhythmAnalysisResult.Events.init -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.GrooveDrive.get -> float
+Celeritas.Core.Analysis.RhythmAnalysisResult.GrooveDrive.init -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.GrooveFeel.get -> Celeritas.Core.Analysis.GrooveFeel
+Celeritas.Core.Analysis.RhythmAnalysisResult.GrooveFeel.init -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.Meter.get -> Celeritas.Core.Analysis.MeterDetectionResult!
+Celeritas.Core.Analysis.RhythmAnalysisResult.Meter.init -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.PatternMatches.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.RhythmPatternMatch!>!
+Celeritas.Core.Analysis.RhythmAnalysisResult.PatternMatches.init -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.Statistics.get -> Celeritas.Core.Analysis.RhythmStatistics!
+Celeritas.Core.Analysis.RhythmAnalysisResult.Statistics.init -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.SwingRatio.get -> float
+Celeritas.Core.Analysis.RhythmAnalysisResult.SwingRatio.init -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.Syncopation.get -> float
+Celeritas.Core.Analysis.RhythmAnalysisResult.Syncopation.init -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.TextureDescription.get -> string!
+Celeritas.Core.Analysis.RhythmAnalysisResult.TextureDescription.init -> void
+Celeritas.Core.Analysis.RhythmAnalyzer
+Celeritas.Core.Analysis.RhythmEvent
+Celeritas.Core.Analysis.RhythmEvent.BeatInMeasure.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmEvent.BeatInMeasure.init -> void
+Celeritas.Core.Analysis.RhythmEvent.Duration.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmEvent.Duration.init -> void
+Celeritas.Core.Analysis.RhythmEvent.End.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmEvent.IsSyncopated.get -> bool
+Celeritas.Core.Analysis.RhythmEvent.IsSyncopated.init -> void
+Celeritas.Core.Analysis.RhythmEvent.Measure.get -> int
+Celeritas.Core.Analysis.RhythmEvent.Measure.init -> void
+Celeritas.Core.Analysis.RhythmEvent.Offset.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmEvent.Offset.init -> void
+Celeritas.Core.Analysis.RhythmEvent.OriginalIndex.get -> int
+Celeritas.Core.Analysis.RhythmEvent.OriginalIndex.init -> void
+Celeritas.Core.Analysis.RhythmEvent.RhythmEvent() -> void
+Celeritas.Core.Analysis.RhythmEvent.Strength.get -> Celeritas.Core.Analysis.BeatStrength
+Celeritas.Core.Analysis.RhythmEvent.Strength.init -> void
+Celeritas.Core.Analysis.RhythmModels
+Celeritas.Core.Analysis.RhythmModelStats
+Celeritas.Core.Analysis.RhythmModelStats.MostCommonDurations.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Rational>!
+Celeritas.Core.Analysis.RhythmModelStats.MostCommonDurations.init -> void
+Celeritas.Core.Analysis.RhythmModelStats.Order.get -> int
+Celeritas.Core.Analysis.RhythmModelStats.Order.init -> void
+Celeritas.Core.Analysis.RhythmModelStats.RhythmModelStats() -> void
+Celeritas.Core.Analysis.RhythmModelStats.TotalTransitions.get -> int
+Celeritas.Core.Analysis.RhythmModelStats.TotalTransitions.init -> void
+Celeritas.Core.Analysis.RhythmModelStats.UniqueContexts.get -> int
+Celeritas.Core.Analysis.RhythmModelStats.UniqueContexts.init -> void
+Celeritas.Core.Analysis.RhythmPattern
+Celeritas.Core.Analysis.RhythmPattern.Description.get -> string?
+Celeritas.Core.Analysis.RhythmPattern.Description.init -> void
+Celeritas.Core.Analysis.RhythmPattern.Durations.get -> Celeritas.Core.Rational[]!
+Celeritas.Core.Analysis.RhythmPattern.Durations.init -> void
+Celeritas.Core.Analysis.RhythmPattern.Name.get -> string!
+Celeritas.Core.Analysis.RhythmPattern.Name.init -> void
+Celeritas.Core.Analysis.RhythmPattern.RhythmPattern() -> void
+Celeritas.Core.Analysis.RhythmPattern.Style.get -> string?
+Celeritas.Core.Analysis.RhythmPattern.Style.init -> void
+Celeritas.Core.Analysis.RhythmPatternMatch
+Celeritas.Core.Analysis.RhythmPatternMatch.Count.get -> int
+Celeritas.Core.Analysis.RhythmPatternMatch.Count.init -> void
+Celeritas.Core.Analysis.RhythmPatternMatch.MatchQuality.get -> float
+Celeritas.Core.Analysis.RhythmPatternMatch.MatchQuality.init -> void
+Celeritas.Core.Analysis.RhythmPatternMatch.Pattern.get -> Celeritas.Core.Analysis.RhythmPattern!
+Celeritas.Core.Analysis.RhythmPatternMatch.Pattern.init -> void
+Celeritas.Core.Analysis.RhythmPatternMatch.StartIndex.get -> int
+Celeritas.Core.Analysis.RhythmPatternMatch.StartIndex.init -> void
+Celeritas.Core.Analysis.RhythmPatternMatch.StartOffset.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmPatternMatch.StartOffset.init -> void
+Celeritas.Core.Analysis.RhythmPrediction
+Celeritas.Core.Analysis.RhythmPrediction.Alternatives.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.RhythmAlternative!>!
+Celeritas.Core.Analysis.RhythmPrediction.Alternatives.init -> void
+Celeritas.Core.Analysis.RhythmPrediction.Confidence.get -> float
+Celeritas.Core.Analysis.RhythmPrediction.Confidence.init -> void
+Celeritas.Core.Analysis.RhythmPrediction.ContextFound.get -> bool
+Celeritas.Core.Analysis.RhythmPrediction.ContextFound.init -> void
+Celeritas.Core.Analysis.RhythmPrediction.MostLikely.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmPrediction.MostLikely.init -> void
+Celeritas.Core.Analysis.RhythmPrediction.RhythmPrediction() -> void
+Celeritas.Core.Analysis.RhythmPredictor
+Celeritas.Core.Analysis.RhythmPredictor.Generate(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Rational>! seed, int length) -> System.Collections.Generic.List<Celeritas.Core.Rational>!
+Celeritas.Core.Analysis.RhythmPredictor.GenerateMeasure(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Rational>! seed, Celeritas.Core.Analysis.TimeSignature meter) -> System.Collections.Generic.List<Celeritas.Core.Rational>!
+Celeritas.Core.Analysis.RhythmPredictor.GetStats() -> Celeritas.Core.Analysis.RhythmModelStats!
+Celeritas.Core.Analysis.RhythmPredictor.Predict(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Rational>! recentDurations) -> Celeritas.Core.Analysis.RhythmPrediction!
+Celeritas.Core.Analysis.RhythmPredictor.RhythmPredictor(int order = 2, int? seed = null) -> void
+Celeritas.Core.Analysis.RhythmPredictor.Train(Celeritas.Core.NoteBuffer! buffer) -> void
+Celeritas.Core.Analysis.RhythmPredictor.Train(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Rational>! durations) -> void
+Celeritas.Core.Analysis.RhythmStatistics
+Celeritas.Core.Analysis.RhythmStatistics.AverageDuration.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmStatistics.AverageDuration.init -> void
+Celeritas.Core.Analysis.RhythmStatistics.DurationHistogram.get -> System.Collections.Generic.Dictionary<Celeritas.Core.Rational, int>!
+Celeritas.Core.Analysis.RhythmStatistics.DurationHistogram.init -> void
+Celeritas.Core.Analysis.RhythmStatistics.LongestDuration.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmStatistics.LongestDuration.init -> void
+Celeritas.Core.Analysis.RhythmStatistics.MeasureCount.get -> int
+Celeritas.Core.Analysis.RhythmStatistics.MeasureCount.init -> void
+Celeritas.Core.Analysis.RhythmStatistics.NotesPerMeasure.get -> float
+Celeritas.Core.Analysis.RhythmStatistics.NotesPerMeasure.init -> void
+Celeritas.Core.Analysis.RhythmStatistics.ShortestDuration.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.RhythmStatistics.ShortestDuration.init -> void
+Celeritas.Core.Analysis.RhythmStatistics.StrengthHistogram.get -> System.Collections.Generic.Dictionary<Celeritas.Core.Analysis.BeatStrength, int>!
+Celeritas.Core.Analysis.RhythmStatistics.StrengthHistogram.init -> void
+Celeritas.Core.Analysis.RhythmStatistics.SyncopatedNotes.get -> int
+Celeritas.Core.Analysis.RhythmStatistics.SyncopatedNotes.init -> void
+Celeritas.Core.Analysis.RhythmStatistics.SyncopationPercent.get -> float
+Celeritas.Core.Analysis.RhythmStatistics.TotalNotes.get -> int
+Celeritas.Core.Analysis.RhythmStatistics.TotalNotes.init -> void
+Celeritas.Core.Analysis.RhythmStyle
+Celeritas.Core.Analysis.RhythmStyle.Classical = 0 -> Celeritas.Core.Analysis.RhythmStyle
+Celeritas.Core.Analysis.RhythmStyle.Jazz = 1 -> Celeritas.Core.Analysis.RhythmStyle
+Celeritas.Core.Analysis.RhythmStyle.Latin = 3 -> Celeritas.Core.Analysis.RhythmStyle
+Celeritas.Core.Analysis.RhythmStyle.Rock = 2 -> Celeritas.Core.Analysis.RhythmStyle
+Celeritas.Core.Analysis.RhythmStyle.Waltz = 4 -> Celeritas.Core.Analysis.RhythmStyle
+Celeritas.Core.Analysis.SatbSeparationResult
+Celeritas.Core.Analysis.SatbSeparationResult.Alto.get -> Celeritas.Core.Analysis.Voice!
+Celeritas.Core.Analysis.SatbSeparationResult.Alto.init -> void
+Celeritas.Core.Analysis.SatbSeparationResult.Bass.get -> Celeritas.Core.Analysis.Voice!
+Celeritas.Core.Analysis.SatbSeparationResult.Bass.init -> void
+Celeritas.Core.Analysis.SatbSeparationResult.Full.get -> Celeritas.Core.Analysis.VoiceSeparationResult!
+Celeritas.Core.Analysis.SatbSeparationResult.Full.init -> void
+Celeritas.Core.Analysis.SatbSeparationResult.Soprano.get -> Celeritas.Core.Analysis.Voice!
+Celeritas.Core.Analysis.SatbSeparationResult.Soprano.init -> void
+Celeritas.Core.Analysis.SatbSeparationResult.Tenor.get -> Celeritas.Core.Analysis.Voice!
+Celeritas.Core.Analysis.SatbSeparationResult.Tenor.init -> void
+Celeritas.Core.Analysis.SecondaryDominantInfo
+Celeritas.Core.Analysis.SecondaryDominantInfo.Chord.get -> string!
+Celeritas.Core.Analysis.SecondaryDominantInfo.Chord.init -> void
+Celeritas.Core.Analysis.SecondaryDominantInfo.Position.get -> int
+Celeritas.Core.Analysis.SecondaryDominantInfo.Position.init -> void
+Celeritas.Core.Analysis.SecondaryDominantInfo.SecondaryDominantInfo() -> void
+Celeritas.Core.Analysis.SecondaryDominantInfo.Target.get -> string!
+Celeritas.Core.Analysis.SecondaryDominantInfo.Target.init -> void
+Celeritas.Core.Analysis.SecondaryDominantInfo.TargetDegree.get -> string?
+Celeritas.Core.Analysis.SecondaryDominantInfo.TargetDegree.init -> void
+Celeritas.Core.Analysis.Section
+Celeritas.Core.Analysis.Section.End.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.Section.End.init -> void
+Celeritas.Core.Analysis.Section.EndPhraseIndex.get -> int
+Celeritas.Core.Analysis.Section.EndPhraseIndex.init -> void
+Celeritas.Core.Analysis.Section.Label.get -> char
+Celeritas.Core.Analysis.Section.Label.init -> void
+Celeritas.Core.Analysis.Section.Length.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.Section.PhraseCount.get -> int
+Celeritas.Core.Analysis.Section.Section() -> void
+Celeritas.Core.Analysis.Section.Section(char Label, int StartPhraseIndex, int EndPhraseIndex, Celeritas.Core.Rational Start, Celeritas.Core.Rational End) -> void
+Celeritas.Core.Analysis.Section.Start.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.Section.Start.init -> void
+Celeritas.Core.Analysis.Section.StartPhraseIndex.get -> int
+Celeritas.Core.Analysis.Section.StartPhraseIndex.init -> void
+Celeritas.Core.Analysis.TimeSignature
+Celeritas.Core.Analysis.TimeSignature.BeatDuration.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.TimeSignature.BeatsPerMeasure.get -> int
+Celeritas.Core.Analysis.TimeSignature.BeatUnit.get -> int
+Celeritas.Core.Analysis.TimeSignature.Equals(Celeritas.Core.Analysis.TimeSignature other) -> bool
+Celeritas.Core.Analysis.TimeSignature.IsCompound.get -> bool
+Celeritas.Core.Analysis.TimeSignature.IsSimple.get -> bool
+Celeritas.Core.Analysis.TimeSignature.MeasureDuration.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.TimeSignature.StrongBeats.get -> int
+Celeritas.Core.Analysis.TimeSignature.TimeSignature() -> void
+Celeritas.Core.Analysis.TimeSignature.TimeSignature(int beatsPerMeasure, int beatUnit) -> void
+Celeritas.Core.Analysis.Voice
+Celeritas.Core.Analysis.Voice.AmbitusEnd.get -> int
+Celeritas.Core.Analysis.Voice.AmbitusStart.get -> int
+Celeritas.Core.Analysis.Voice.AveragePitch.get -> float
+Celeritas.Core.Analysis.Voice.Index.get -> int
+Celeritas.Core.Analysis.Voice.Index.init -> void
+Celeritas.Core.Analysis.Voice.Name.get -> string!
+Celeritas.Core.Analysis.Voice.Name.init -> void
+Celeritas.Core.Analysis.Voice.Notes.get -> System.Collections.Generic.List<Celeritas.Core.Analysis.VoiceNote>!
+Celeritas.Core.Analysis.Voice.Range.get -> (int Min, int Max)
+Celeritas.Core.Analysis.Voice.Voice() -> void
+Celeritas.Core.Analysis.VoiceInterval
+Celeritas.Core.Analysis.VoiceInterval.Interval.get -> int
+Celeritas.Core.Analysis.VoiceInterval.Pitch1.get -> int
+Celeritas.Core.Analysis.VoiceInterval.Pitch1.init -> void
+Celeritas.Core.Analysis.VoiceInterval.Pitch2.get -> int
+Celeritas.Core.Analysis.VoiceInterval.Pitch2.init -> void
+Celeritas.Core.Analysis.VoiceInterval.Quality.get -> Celeritas.Core.Analysis.IntervalQuality
+Celeritas.Core.Analysis.VoiceInterval.RawInterval.get -> int
+Celeritas.Core.Analysis.VoiceInterval.Time.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.VoiceInterval.Time.init -> void
+Celeritas.Core.Analysis.VoiceInterval.Voice1.get -> int
+Celeritas.Core.Analysis.VoiceInterval.Voice1.init -> void
+Celeritas.Core.Analysis.VoiceInterval.Voice2.get -> int
+Celeritas.Core.Analysis.VoiceInterval.Voice2.init -> void
+Celeritas.Core.Analysis.VoiceInterval.VoiceInterval() -> void
+Celeritas.Core.Analysis.VoiceMotion
+Celeritas.Core.Analysis.VoiceMotion.FromInterval.get -> Celeritas.Core.Analysis.VoiceInterval
+Celeritas.Core.Analysis.VoiceMotion.FromInterval.init -> void
+Celeritas.Core.Analysis.VoiceMotion.FromTime.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.VoiceMotion.FromTime.init -> void
+Celeritas.Core.Analysis.VoiceMotion.IsHiddenPerfect.get -> bool
+Celeritas.Core.Analysis.VoiceMotion.ToInterval.get -> Celeritas.Core.Analysis.VoiceInterval
+Celeritas.Core.Analysis.VoiceMotion.ToInterval.init -> void
+Celeritas.Core.Analysis.VoiceMotion.Type.get -> Celeritas.Core.Analysis.MotionType
+Celeritas.Core.Analysis.VoiceMotion.Type.init -> void
+Celeritas.Core.Analysis.VoiceMotion.Voice1.get -> int
+Celeritas.Core.Analysis.VoiceMotion.Voice1.init -> void
+Celeritas.Core.Analysis.VoiceMotion.Voice1Motion.get -> int
+Celeritas.Core.Analysis.VoiceMotion.Voice1Motion.init -> void
+Celeritas.Core.Analysis.VoiceMotion.Voice2.get -> int
+Celeritas.Core.Analysis.VoiceMotion.Voice2.init -> void
+Celeritas.Core.Analysis.VoiceMotion.Voice2Motion.get -> int
+Celeritas.Core.Analysis.VoiceMotion.Voice2Motion.init -> void
+Celeritas.Core.Analysis.VoiceMotion.VoiceMotion() -> void
+Celeritas.Core.Analysis.VoiceNote
+Celeritas.Core.Analysis.VoiceNote.Duration.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.VoiceNote.Duration.init -> void
+Celeritas.Core.Analysis.VoiceNote.End.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.VoiceNote.Offset.get -> Celeritas.Core.Rational
+Celeritas.Core.Analysis.VoiceNote.Offset.init -> void
+Celeritas.Core.Analysis.VoiceNote.OriginalIndex.get -> int
+Celeritas.Core.Analysis.VoiceNote.OriginalIndex.init -> void
+Celeritas.Core.Analysis.VoiceNote.Pitch.get -> int
+Celeritas.Core.Analysis.VoiceNote.Pitch.init -> void
+Celeritas.Core.Analysis.VoiceNote.Velocity.get -> float
+Celeritas.Core.Analysis.VoiceNote.Velocity.init -> void
+Celeritas.Core.Analysis.VoiceNote.VoiceNote() -> void
+Celeritas.Core.Analysis.VoiceSeparationResult
+Celeritas.Core.Analysis.VoiceSeparationResult.NoteToVoice.get -> System.Collections.Generic.Dictionary<int, int>!
+Celeritas.Core.Analysis.VoiceSeparationResult.NoteToVoice.init -> void
+Celeritas.Core.Analysis.VoiceSeparationResult.SeparationQuality.get -> float
+Celeritas.Core.Analysis.VoiceSeparationResult.SeparationQuality.init -> void
+Celeritas.Core.Analysis.VoiceSeparationResult.TotalNotes.get -> int
+Celeritas.Core.Analysis.VoiceSeparationResult.TotalNotes.init -> void
+Celeritas.Core.Analysis.VoiceSeparationResult.VoiceCrossings.get -> int
+Celeritas.Core.Analysis.VoiceSeparationResult.VoiceCrossings.init -> void
+Celeritas.Core.Analysis.VoiceSeparationResult.Voices.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Voice!>!
+Celeritas.Core.Analysis.VoiceSeparationResult.Voices.init -> void
+Celeritas.Core.Analysis.VoiceSeparator
+Celeritas.Core.Analysis.VoiceSeparatorOptions
+Celeritas.Core.Analysis.VoiceSeparatorOptions.AllowCrossings.get -> bool
+Celeritas.Core.Analysis.VoiceSeparatorOptions.AllowCrossings.init -> void
+Celeritas.Core.Analysis.VoiceSeparatorOptions.LargeJumpPenalty.get -> int
+Celeritas.Core.Analysis.VoiceSeparatorOptions.LargeJumpPenalty.init -> void
+Celeritas.Core.Analysis.VoiceSeparatorOptions.MaxMelodicInterval.get -> int
+Celeritas.Core.Analysis.VoiceSeparatorOptions.MaxMelodicInterval.init -> void
+Celeritas.Core.Analysis.VoiceSeparatorOptions.PreferStepwise.get -> bool
+Celeritas.Core.Analysis.VoiceSeparatorOptions.PreferStepwise.init -> void
+Celeritas.Core.Analysis.VoiceSeparatorOptions.VoiceSeparatorOptions() -> void
+Celeritas.Core.ChordAnalyzer
+Celeritas.Core.ChordInfo
+Celeritas.Core.ChordInfo.ChordInfo() -> void
+Celeritas.Core.ChordInfo.ChordInfo(byte RootPitchClass, Celeritas.Core.ChordQuality Quality) -> void
+Celeritas.Core.ChordInfo.Quality.get -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordInfo.Quality.init -> void
+Celeritas.Core.ChordInfo.Root.get -> string!
+Celeritas.Core.ChordInfo.RootPitchClass.get -> byte
+Celeritas.Core.ChordInfo.RootPitchClass.init -> void
+Celeritas.Core.ChordLibrary
+Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Add11 = 15 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Add9 = 14 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Augmented = 4 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Augmented7 = 17 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Diminished = 3 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Diminished7 = 8 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Dominant7 = 7 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Dominant7Flat5 = 18 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.HalfDim7 = 9 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Major = 1 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Major7 = 5 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Minor = 2 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Minor7 = 6 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.MinorMajor7 = 16 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Power = 12 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Quartal = 13 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Sus2 = 10 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Sus4 = 11 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordQuality.Unknown = 0 -> Celeritas.Core.ChordQuality
+Celeritas.Core.ChordSymbolAntlrParser
+Celeritas.Core.ChromaticInterval
+Celeritas.Core.ChromaticInterval.AbsSemitones.get -> int
+Celeritas.Core.ChromaticInterval.ChromaticInterval() -> void
+Celeritas.Core.ChromaticInterval.ChromaticInterval(int Semitones) -> void
+Celeritas.Core.ChromaticInterval.ClassSemitones.get -> int
+Celeritas.Core.ChromaticInterval.Direction.get -> int
+Celeritas.Core.ChromaticInterval.GenericNumber.get -> int
+Celeritas.Core.ChromaticInterval.Semitones.get -> int
+Celeritas.Core.ChromaticInterval.Semitones.init -> void
+Celeritas.Core.ChromaticInterval.SimpleName.get -> string!
+Celeritas.Core.ChromaticInterval.SimpleSemitones.get -> int
+Celeritas.Core.CircleDirection
+Celeritas.Core.CircleDirection.Clockwise = 0 -> Celeritas.Core.CircleDirection
+Celeritas.Core.CircleDirection.CounterClockwise = 1 -> Celeritas.Core.CircleDirection
+Celeritas.Core.CircleOfFifths
+Celeritas.Core.DiatonicChordType
+Celeritas.Core.DiatonicChordType.Seventh = 1 -> Celeritas.Core.DiatonicChordType
+Celeritas.Core.DiatonicChordType.Triad = 0 -> Celeritas.Core.DiatonicChordType
+Celeritas.Core.DynamicsDirective
+Celeritas.Core.DynamicsDirective.StartLevel.get -> string?
+Celeritas.Core.DynamicsDirective.StartLevel.init -> void
+Celeritas.Core.DynamicsDirective.TargetLevel.get -> string?
+Celeritas.Core.DynamicsDirective.TargetLevel.init -> void
+Celeritas.Core.DynamicsDirective.Type.get -> Celeritas.Core.DynamicsType
+Celeritas.Core.DynamicsDirective.Type.init -> void
+Celeritas.Core.DynamicsType
+Celeritas.Core.DynamicsType.Crescendo = 1 -> Celeritas.Core.DynamicsType
+Celeritas.Core.DynamicsType.Diminuendo = 2 -> Celeritas.Core.DynamicsType
+Celeritas.Core.DynamicsType.Static = 0 -> Celeritas.Core.DynamicsType
+Celeritas.Core.FiguredBass.FiguredBassOptions
+Celeritas.Core.FiguredBass.FiguredBassOptions.FiguredBassOptions() -> void
+Celeritas.Core.FiguredBass.FiguredBassOptions.Key.get -> Celeritas.Core.KeySignature
+Celeritas.Core.FiguredBass.FiguredBassOptions.Key.init -> void
+Celeritas.Core.FiguredBass.FiguredBassOptions.MaxPitch.get -> int
+Celeritas.Core.FiguredBass.FiguredBassOptions.MaxPitch.init -> void
+Celeritas.Core.FiguredBass.FiguredBassOptions.MinPitch.get -> int
+Celeritas.Core.FiguredBass.FiguredBassOptions.MinPitch.init -> void
+Celeritas.Core.FiguredBass.FiguredBassOptions.Style.get -> Celeritas.Core.FiguredBass.VoiceLeadingStyle
+Celeritas.Core.FiguredBass.FiguredBassOptions.Style.init -> void
+Celeritas.Core.FiguredBass.FiguredBassRealizer
+Celeritas.Core.FiguredBass.FiguredBassRealizer.FiguredBassRealizer(Celeritas.Core.FiguredBass.FiguredBassOptions? options = null) -> void
+Celeritas.Core.FiguredBass.FiguredBassRealizer.FiguredBassRealizer(Celeritas.Core.FiguredBass.FiguredBassRealizerOptions! options) -> void
+Celeritas.Core.FiguredBass.FiguredBassRealizer.Realize(Celeritas.Core.FiguredBass.FiguredBassSymbol![]! symbols) -> Celeritas.Core.NoteEvent[]!
+Celeritas.Core.FiguredBass.FiguredBassRealizer.RealizeSymbol(Celeritas.Core.FiguredBass.FiguredBassSymbol! symbol) -> Celeritas.Core.NoteEvent[]!
+Celeritas.Core.FiguredBass.FiguredBassRealizerOptions
+Celeritas.Core.FiguredBass.FiguredBassRealizerOptions.AllowVoiceCrossing.get -> bool
+Celeritas.Core.FiguredBass.FiguredBassRealizerOptions.AllowVoiceCrossing.init -> void
+Celeritas.Core.FiguredBass.FiguredBassRealizerOptions.FiguredBassRealizerOptions() -> void
+Celeritas.Core.FiguredBass.FiguredBassRealizerOptions.MaxVoiceMovement.get -> int?
+Celeritas.Core.FiguredBass.FiguredBassRealizerOptions.MaxVoiceMovement.init -> void
+Celeritas.Core.FiguredBass.FiguredBassSymbol
+Celeritas.Core.FiguredBass.FiguredBassSymbol.Accidentals.get -> System.Collections.Generic.Dictionary<int, char>?
+Celeritas.Core.FiguredBass.FiguredBassSymbol.Accidentals.init -> void
+Celeritas.Core.FiguredBass.FiguredBassSymbol.BassPitch.get -> int
+Celeritas.Core.FiguredBass.FiguredBassSymbol.BassPitch.init -> void
+Celeritas.Core.FiguredBass.FiguredBassSymbol.Duration.get -> Celeritas.Core.Rational
+Celeritas.Core.FiguredBass.FiguredBassSymbol.Duration.init -> void
+Celeritas.Core.FiguredBass.FiguredBassSymbol.FiguredBassSymbol() -> void
+Celeritas.Core.FiguredBass.FiguredBassSymbol.Figures.get -> int[]!
+Celeritas.Core.FiguredBass.FiguredBassSymbol.Figures.init -> void
+Celeritas.Core.FiguredBass.FiguredBassSymbol.Time.get -> Celeritas.Core.Rational
+Celeritas.Core.FiguredBass.FiguredBassSymbol.Time.init -> void
+Celeritas.Core.FiguredBass.VoiceLeadingStyle
+Celeritas.Core.FiguredBass.VoiceLeadingStyle.Free = 2 -> Celeritas.Core.FiguredBass.VoiceLeadingStyle
+Celeritas.Core.FiguredBass.VoiceLeadingStyle.Smooth = 0 -> Celeritas.Core.FiguredBass.VoiceLeadingStyle
+Celeritas.Core.FiguredBass.VoiceLeadingStyle.Strict = 1 -> Celeritas.Core.FiguredBass.VoiceLeadingStyle
+Celeritas.Core.FunctionalChord
+Celeritas.Core.FunctionalChord.FunctionalChord() -> void
+Celeritas.Core.FunctionalChord.FunctionalChord(Celeritas.Core.KeySignature Key, Celeritas.Core.RomanNumeralChord Roman) -> void
+Celeritas.Core.FunctionalChord.Key.get -> Celeritas.Core.KeySignature
+Celeritas.Core.FunctionalChord.Key.init -> void
+Celeritas.Core.FunctionalChord.PitchClassMask.get -> ushort
+Celeritas.Core.FunctionalChord.Roman.get -> Celeritas.Core.RomanNumeralChord
+Celeritas.Core.FunctionalChord.Roman.init -> void
+Celeritas.Core.FunctionalChord.RomanNumeral.get -> string!
+Celeritas.Core.FunctionalChord.Root.get -> Celeritas.Core.PitchClass
+Celeritas.Core.FunctionalChord.RootName(bool preferSharps = true) -> string!
+Celeritas.Core.FunctionalChord.RootPitchClass.get -> byte
+Celeritas.Core.FunctionalChord.Symbol(bool preferSharps = true) -> string!
+Celeritas.Core.FunctionalProgressions
+Celeritas.Core.HarmonicFunction
+Celeritas.Core.HarmonicFunction.Chromatic = 4 -> Celeritas.Core.HarmonicFunction
+Celeritas.Core.HarmonicFunction.Dominant = 2 -> Celeritas.Core.HarmonicFunction
+Celeritas.Core.HarmonicFunction.PreDominant = 3 -> Celeritas.Core.HarmonicFunction
+Celeritas.Core.HarmonicFunction.Subdominant = 1 -> Celeritas.Core.HarmonicFunction
+Celeritas.Core.HarmonicFunction.Tonic = 0 -> Celeritas.Core.HarmonicFunction
+Celeritas.Core.Harmonization.ChordAssignment
+Celeritas.Core.Harmonization.ChordAssignment.Chord.get -> Celeritas.Core.ChordInfo
+Celeritas.Core.Harmonization.ChordAssignment.Chord.init -> void
+Celeritas.Core.Harmonization.ChordAssignment.ChordAssignment() -> void
+Celeritas.Core.Harmonization.ChordAssignment.ChordAssignment(Celeritas.Core.Rational Start, Celeritas.Core.Rational End, Celeritas.Core.ChordInfo Chord, int[]! Pitches) -> void
+Celeritas.Core.Harmonization.ChordAssignment.End.get -> Celeritas.Core.Rational
+Celeritas.Core.Harmonization.ChordAssignment.End.init -> void
+Celeritas.Core.Harmonization.ChordAssignment.Pitches.get -> int[]!
+Celeritas.Core.Harmonization.ChordAssignment.Pitches.init -> void
+Celeritas.Core.Harmonization.ChordAssignment.Start.get -> Celeritas.Core.Rational
+Celeritas.Core.Harmonization.ChordAssignment.Start.init -> void
+Celeritas.Core.Harmonization.ChordCandidate
+Celeritas.Core.Harmonization.ChordCandidate.BaseCost.get -> float
+Celeritas.Core.Harmonization.ChordCandidate.BaseCost.init -> void
+Celeritas.Core.Harmonization.ChordCandidate.Chord.get -> Celeritas.Core.ChordInfo
+Celeritas.Core.Harmonization.ChordCandidate.Chord.init -> void
+Celeritas.Core.Harmonization.ChordCandidate.ChordCandidate() -> void
+Celeritas.Core.Harmonization.ChordCandidate.ChordCandidate(Celeritas.Core.ChordInfo Chord, int[]! Pitches, float BaseCost) -> void
+Celeritas.Core.Harmonization.ChordCandidate.Pitches.get -> int[]!
+Celeritas.Core.Harmonization.ChordCandidate.Pitches.init -> void
+Celeritas.Core.Harmonization.DefaultChordCandidateProvider
+Celeritas.Core.Harmonization.DefaultChordCandidateProvider.DefaultChordCandidateProvider() -> void
+Celeritas.Core.Harmonization.DefaultChordCandidateProvider.GetCandidates(int[]! melodyPitches, Celeritas.Core.KeySignature key, Celeritas.Core.Harmonization.HarmonizationContext? context = null) -> System.Collections.Generic.IEnumerable<Celeritas.Core.Harmonization.ChordCandidate>!
+Celeritas.Core.Harmonization.DefaultHarmonicRhythmStrategy
+Celeritas.Core.Harmonization.DefaultHarmonicRhythmStrategy.DefaultHarmonicRhythmStrategy(Celeritas.Core.Rational? beatDuration = null) -> void
+Celeritas.Core.Harmonization.DefaultHarmonicRhythmStrategy.Segment(System.ReadOnlySpan<Celeritas.Core.NoteEvent> melody) -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Harmonization.MelodySlice>!
+Celeritas.Core.Harmonization.DefaultTransitionScorer
+Celeritas.Core.Harmonization.DefaultTransitionScorer.DefaultTransitionScorer() -> void
+Celeritas.Core.Harmonization.DefaultTransitionScorer.ScoreFit(Celeritas.Core.Harmonization.ChordCandidate chord, System.ReadOnlySpan<int> melodyPitches, bool isStrongBeat) -> float
+Celeritas.Core.Harmonization.DefaultTransitionScorer.ScoreTransition(Celeritas.Core.Harmonization.ChordCandidate from, Celeritas.Core.Harmonization.ChordCandidate to, Celeritas.Core.KeySignature key) -> float
+Celeritas.Core.Harmonization.HarmonizationContext
+Celeritas.Core.Harmonization.HarmonizationContext.HarmonizationContext() -> void
+Celeritas.Core.Harmonization.HarmonizationContext.StepIndex.get -> int
+Celeritas.Core.Harmonization.HarmonizationContext.StepIndex.set -> void
+Celeritas.Core.Harmonization.HarmonizationResult
+Celeritas.Core.Harmonization.HarmonizationResult.Chords.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Harmonization.ChordAssignment>!
+Celeritas.Core.Harmonization.HarmonizationResult.Chords.init -> void
+Celeritas.Core.Harmonization.HarmonizationResult.GetSymbols() -> System.Collections.Generic.IEnumerable<string!>!
+Celeritas.Core.Harmonization.HarmonizationResult.HarmonizationResult() -> void
+Celeritas.Core.Harmonization.HarmonizationResult.Key.get -> Celeritas.Core.KeySignature
+Celeritas.Core.Harmonization.HarmonizationResult.Key.init -> void
+Celeritas.Core.Harmonization.HarmonizationResult.TotalCost.get -> float
+Celeritas.Core.Harmonization.HarmonizationResult.TotalCost.init -> void
+Celeritas.Core.Harmonization.IChordCandidateProvider
+Celeritas.Core.Harmonization.IChordCandidateProvider.GetCandidates(int[]! melodyPitches, Celeritas.Core.KeySignature key, Celeritas.Core.Harmonization.HarmonizationContext? context = null) -> System.Collections.Generic.IEnumerable<Celeritas.Core.Harmonization.ChordCandidate>!
+Celeritas.Core.Harmonization.IHarmonicRhythmStrategy
+Celeritas.Core.Harmonization.IHarmonicRhythmStrategy.Segment(System.ReadOnlySpan<Celeritas.Core.NoteEvent> melody) -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Harmonization.MelodySlice>!
+Celeritas.Core.Harmonization.IMelodyFitScorer
+Celeritas.Core.Harmonization.IMelodyFitScorer.ScoreFit(Celeritas.Core.Harmonization.ChordCandidate chord, System.ReadOnlySpan<int> melodyPitches, bool isStrongBeat) -> float
+Celeritas.Core.Harmonization.ITransitionScorer
+Celeritas.Core.Harmonization.ITransitionScorer.ScoreTransition(Celeritas.Core.Harmonization.ChordCandidate from, Celeritas.Core.Harmonization.ChordCandidate to, Celeritas.Core.KeySignature key) -> float
+Celeritas.Core.Harmonization.MelodyHarmonizer
+Celeritas.Core.Harmonization.MelodyHarmonizer.Harmonize(Celeritas.Core.NoteBuffer! buffer) -> Celeritas.Core.Harmonization.HarmonizationResult!
+Celeritas.Core.Harmonization.MelodyHarmonizer.Harmonize(Celeritas.Core.NoteBuffer! buffer, Celeritas.Core.KeySignature key) -> Celeritas.Core.Harmonization.HarmonizationResult!
+Celeritas.Core.Harmonization.MelodyHarmonizer.Harmonize(Celeritas.Core.NoteEvent[]! melody) -> Celeritas.Core.Harmonization.HarmonizationResult!
+Celeritas.Core.Harmonization.MelodyHarmonizer.Harmonize(Celeritas.Core.NoteEvent[]! melody, Celeritas.Core.KeySignature key) -> Celeritas.Core.Harmonization.HarmonizationResult!
+Celeritas.Core.Harmonization.MelodyHarmonizer.Harmonize(System.ReadOnlySpan<Celeritas.Core.NoteEvent> melody) -> Celeritas.Core.Harmonization.HarmonizationResult!
+Celeritas.Core.Harmonization.MelodyHarmonizer.Harmonize(System.ReadOnlySpan<Celeritas.Core.NoteEvent> melody, Celeritas.Core.KeySignature key) -> Celeritas.Core.Harmonization.HarmonizationResult!
+Celeritas.Core.Harmonization.MelodyHarmonizer.MelodyHarmonizer() -> void
+Celeritas.Core.Harmonization.MelodyHarmonizer.MelodyHarmonizer(Celeritas.Core.Harmonization.IChordCandidateProvider! candidateProvider, Celeritas.Core.Harmonization.ITransitionScorer! transitionScorer, Celeritas.Core.Harmonization.IMelodyFitScorer! fitScorer, Celeritas.Core.Harmonization.IHarmonicRhythmStrategy! rhythmStrategy) -> void
+Celeritas.Core.Harmonization.MelodySlice
+Celeritas.Core.Harmonization.MelodySlice.End.get -> Celeritas.Core.Rational
+Celeritas.Core.Harmonization.MelodySlice.End.init -> void
+Celeritas.Core.Harmonization.MelodySlice.IsStrongBeat.get -> bool
+Celeritas.Core.Harmonization.MelodySlice.IsStrongBeat.init -> void
+Celeritas.Core.Harmonization.MelodySlice.MelodySlice() -> void
+Celeritas.Core.Harmonization.MelodySlice.MelodySlice(Celeritas.Core.Rational Start, Celeritas.Core.Rational End, int[]! Pitches, bool IsStrongBeat) -> void
+Celeritas.Core.Harmonization.MelodySlice.Pitches.get -> int[]!
+Celeritas.Core.Harmonization.MelodySlice.Pitches.init -> void
+Celeritas.Core.Harmonization.MelodySlice.Start.get -> Celeritas.Core.Rational
+Celeritas.Core.Harmonization.MelodySlice.Start.init -> void
+Celeritas.Core.KeyAnalyzer
+Celeritas.Core.KeySignature
+Celeritas.Core.KeySignature.GetDominantKey() -> Celeritas.Core.KeySignature
+Celeritas.Core.KeySignature.GetParallelKey() -> Celeritas.Core.KeySignature
+Celeritas.Core.KeySignature.GetRelativeKey() -> Celeritas.Core.KeySignature
+Celeritas.Core.KeySignature.GetScale() -> int[]!
+Celeritas.Core.KeySignature.GetScaleDegreePitchClass(Celeritas.Core.ScaleDegree degree) -> byte
+Celeritas.Core.KeySignature.GetScaleMask() -> ushort
+Celeritas.Core.KeySignature.GetSubdominantKey() -> Celeritas.Core.KeySignature
+Celeritas.Core.KeySignature.KeySignature() -> void
+Celeritas.Core.KeySignature.KeySignature(byte root, bool isMajor) -> void
+Celeritas.Core.KeySignature.KeySignature(string! rootName, bool isMajor) -> void
+Celeritas.Core.Midi.MidiEvents
+Celeritas.Core.Midi.MidiExportOptions
+Celeritas.Core.Midi.MidiExportOptions.Bpm.get -> int
+Celeritas.Core.Midi.MidiExportOptions.Bpm.init -> void
+Celeritas.Core.Midi.MidiExportOptions.Channel.get -> int
+Celeritas.Core.Midi.MidiExportOptions.Channel.init -> void
+Celeritas.Core.Midi.MidiExportOptions.DefaultVelocity.get -> byte
+Celeritas.Core.Midi.MidiExportOptions.DefaultVelocity.init -> void
+Celeritas.Core.Midi.MidiExportOptions.MidiExportOptions(int TicksPerQuarterNote = 480, int Bpm = 120, int Channel = 0, byte DefaultVelocity = 100) -> void
+Celeritas.Core.Midi.MidiExportOptions.TicksPerQuarterNote.get -> int
+Celeritas.Core.Midi.MidiExportOptions.TicksPerQuarterNote.init -> void
+Celeritas.Core.Midi.MidiFileExtensions
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!)
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).AddTrack(Celeritas.Core.NoteEvent[]! notes, string? name = null, Celeritas.Core.Midi.MidiExportOptions? options = null) -> Melanchall.DryWetMidi.Core.TrackChunk!
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).Clone() -> Melanchall.DryWetMidi.Core.MidiFile!
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).GetStatistics() -> Celeritas.Core.Midi.MidiFileStatistics!
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).Merge(Melanchall.DryWetMidi.Core.MidiFile! other) -> Melanchall.DryWetMidi.Core.MidiFile!
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).Merge(params Melanchall.DryWetMidi.Core.MidiFile![]! others) -> Melanchall.DryWetMidi.Core.MidiFile!
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).MergeToSingleTrack(Melanchall.DryWetMidi.Core.MidiFile! other) -> Melanchall.DryWetMidi.Core.MidiFile!
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).MergeToSingleTrack(params Melanchall.DryWetMidi.Core.MidiFile![]! others) -> Melanchall.DryWetMidi.Core.MidiFile!
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).Save(string! path) -> void
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).SetTempo(int bpm) -> void
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).Split(Celeritas.Core.Midi.MidiSplitMode mode) -> System.Collections.Generic.IReadOnlyList<Melanchall.DryWetMidi.Core.MidiFile!>!
+Celeritas.Core.Midi.MidiFileStatistics
+Celeritas.Core.Midi.MidiFileStatistics.Channels.get -> System.Collections.Generic.IReadOnlyList<int>!
+Celeritas.Core.Midi.MidiFileStatistics.Channels.init -> void
+Celeritas.Core.Midi.MidiFileStatistics.MaxNoteNumber.get -> int?
+Celeritas.Core.Midi.MidiFileStatistics.MaxNoteNumber.init -> void
+Celeritas.Core.Midi.MidiFileStatistics.MidiFileStatistics(int TrackCount, int NoteCount, long TotalTicks, Celeritas.Core.Rational TotalDuration, int? MinNoteNumber, int? MaxNoteNumber, System.Collections.Generic.IReadOnlyList<int>! Channels) -> void
+Celeritas.Core.Midi.MidiFileStatistics.MinNoteNumber.get -> int?
+Celeritas.Core.Midi.MidiFileStatistics.MinNoteNumber.init -> void
+Celeritas.Core.Midi.MidiFileStatistics.NoteCount.get -> int
+Celeritas.Core.Midi.MidiFileStatistics.NoteCount.init -> void
+Celeritas.Core.Midi.MidiFileStatistics.TotalDuration.get -> Celeritas.Core.Rational
+Celeritas.Core.Midi.MidiFileStatistics.TotalDuration.init -> void
+Celeritas.Core.Midi.MidiFileStatistics.TotalTicks.get -> long
+Celeritas.Core.Midi.MidiFileStatistics.TotalTicks.init -> void
+Celeritas.Core.Midi.MidiFileStatistics.TrackCount.get -> int
+Celeritas.Core.Midi.MidiFileStatistics.TrackCount.init -> void
+Celeritas.Core.Midi.MidiImportOptions
+Celeritas.Core.Midi.MidiImportOptions.Channel.get -> int?
+Celeritas.Core.Midi.MidiImportOptions.Channel.init -> void
+Celeritas.Core.Midi.MidiImportOptions.MaxNotes.get -> int?
+Celeritas.Core.Midi.MidiImportOptions.MaxNotes.init -> void
+Celeritas.Core.Midi.MidiImportOptions.MidiImportOptions(int? Channel = null, int? MaxNotes = null, bool SortByOffset = true) -> void
+Celeritas.Core.Midi.MidiImportOptions.SortByOffset.get -> bool
+Celeritas.Core.Midi.MidiImportOptions.SortByOffset.init -> void
+Celeritas.Core.Midi.MidiIo
+Celeritas.Core.Midi.MidiMergeMode
+Celeritas.Core.Midi.MidiMergeMode.AppendTracks = 0 -> Celeritas.Core.Midi.MidiMergeMode
+Celeritas.Core.Midi.MidiMergeMode.SingleTrack = 1 -> Celeritas.Core.Midi.MidiMergeMode
+Celeritas.Core.Midi.MidiSplitMode
+Celeritas.Core.Midi.MidiSplitMode.Channel = 1 -> Celeritas.Core.Midi.MidiSplitMode
+Celeritas.Core.Midi.MidiSplitMode.Track = 0 -> Celeritas.Core.Midi.MidiSplitMode
+Celeritas.Core.Midi.TempoChange
+Celeritas.Core.Midi.TempoChange.BeatsPerMinute.get -> int
+Celeritas.Core.Midi.TempoChange.BeatsPerMinute.init -> void
+Celeritas.Core.Midi.TempoChange.Offset.get -> Celeritas.Core.Rational
+Celeritas.Core.Midi.TempoChange.Offset.init -> void
+Celeritas.Core.Midi.TempoChange.TempoChange(Celeritas.Core.Rational Offset, int BeatsPerMinute) -> void
+Celeritas.Core.Midi.TimeSignatureChange
+Celeritas.Core.Midi.TimeSignatureChange.Denominator.get -> int
+Celeritas.Core.Midi.TimeSignatureChange.Denominator.init -> void
+Celeritas.Core.Midi.TimeSignatureChange.Numerator.get -> int
+Celeritas.Core.Midi.TimeSignatureChange.Numerator.init -> void
+Celeritas.Core.Midi.TimeSignatureChange.Offset.get -> Celeritas.Core.Rational
+Celeritas.Core.Midi.TimeSignatureChange.Offset.init -> void
+Celeritas.Core.Midi.TimeSignatureChange.TimeSignatureChange(Celeritas.Core.Rational Offset, int Numerator, int Denominator) -> void
+Celeritas.Core.MinorDominantStyle
+Celeritas.Core.MinorDominantStyle.Harmonic = 1 -> Celeritas.Core.MinorDominantStyle
+Celeritas.Core.MinorDominantStyle.Natural = 0 -> Celeritas.Core.MinorDominantStyle
+Celeritas.Core.MusicMath
+Celeritas.Core.MusicNotation
+Celeritas.Core.MusicNotationAntlrParser
+Celeritas.Core.NotationDirective
+Celeritas.Core.NotationDirective.Time.get -> Celeritas.Core.Rational
+Celeritas.Core.NotationDirective.Time.init -> void
+Celeritas.Core.NoteArithmeticExtensions
+Celeritas.Core.NoteArithmeticExtensions.extension(int)
+Celeritas.Core.NoteArithmeticExtensions.extension(int).IntervalTo(int toMidiPitch) -> Celeritas.Core.ChromaticInterval
+Celeritas.Core.NoteArithmeticExtensions.extension(int).PitchClass() -> Celeritas.Core.PitchClass
+Celeritas.Core.NoteArithmeticExtensions.extension(int).ToSpnNote() -> Celeritas.Core.SpnNote
+Celeritas.Core.NoteArithmeticExtensions.extension(int).Transpose(Celeritas.Core.ChromaticInterval interval) -> int
+Celeritas.Core.NoteBuffer
+Celeritas.Core.NoteBuffer.Add(in Celeritas.Core.NoteEvent note) -> void
+Celeritas.Core.NoteBuffer.AddNote(int pitch, Celeritas.Core.Rational offset, Celeritas.Core.Rational duration, float velocity = 0.8) -> void
+Celeritas.Core.NoteBuffer.AddRange(System.ReadOnlySpan<Celeritas.Core.NoteEvent> notes) -> void
+Celeritas.Core.NoteBuffer.Capacity.get -> int
+Celeritas.Core.NoteBuffer.Clear() -> void
+Celeritas.Core.NoteBuffer.Count.get -> int
+Celeritas.Core.NoteBuffer.Dispose() -> void
+Celeritas.Core.NoteBuffer.Get(int index) -> Celeritas.Core.NoteEvent
+Celeritas.Core.NoteBuffer.GetChords() -> System.Collections.Generic.List<(Celeritas.Core.Rational Time, ushort Mask)>!
+Celeritas.Core.NoteBuffer.GetChords(System.Span<(Celeritas.Core.Rational Time, ushort Mask)> output) -> int
+Celeritas.Core.NoteBuffer.GetDuration(int index) -> Celeritas.Core.Rational
+Celeritas.Core.NoteBuffer.GetOffset(int index) -> Celeritas.Core.Rational
+Celeritas.Core.NoteBuffer.GetVelocity(int index) -> float
+Celeritas.Core.NoteBuffer.NoteBuffer(int capacity) -> void
+Celeritas.Core.NoteBuffer.PitchAt(int index) -> int
+Celeritas.Core.NoteBuffer.Pitches.get -> System.Span<int>
+Celeritas.Core.NoteBuffer.PitchesReadOnly.get -> System.ReadOnlySpan<int>
+Celeritas.Core.NoteBuffer.PitchReadOnlySpan.get -> System.ReadOnlySpan<int>
+Celeritas.Core.NoteBuffer.PitchSpan.get -> System.Span<int>
+Celeritas.Core.NoteBuffer.SetPitch(int index, int value) -> void
+Celeritas.Core.NoteBuffer.Sort() -> void
+Celeritas.Core.NoteBuffer.Velocities.get -> System.Span<float>
+Celeritas.Core.NoteBuffer.VelocitiesReadOnly.get -> System.ReadOnlySpan<float>
+Celeritas.Core.NoteBuffer.VelocityReadOnlySpan.get -> System.ReadOnlySpan<float>
+Celeritas.Core.NoteBuffer.VelocitySpan.get -> System.Span<float>
+Celeritas.Core.NoteEvent
+Celeritas.Core.NoteEvent.NoteEvent() -> void
+Celeritas.Core.NoteEvent.NoteEvent(int pitch, Celeritas.Core.Rational offset, Celeritas.Core.Rational duration, float velocity = 0.8) -> void
+Celeritas.Core.Orchestration.InstrumentRange
+Celeritas.Core.Orchestration.InstrumentRange.Contains(int pitch) -> bool
+Celeritas.Core.Orchestration.InstrumentRange.InstrumentRange() -> void
+Celeritas.Core.Orchestration.InstrumentRange.InstrumentRange(int MinPitch, int MaxPitch) -> void
+Celeritas.Core.Orchestration.InstrumentRange.MaxPitch.get -> int
+Celeritas.Core.Orchestration.InstrumentRange.MaxPitch.init -> void
+Celeritas.Core.Orchestration.InstrumentRange.MinPitch.get -> int
+Celeritas.Core.Orchestration.InstrumentRange.MinPitch.init -> void
+Celeritas.Core.Orchestration.OrchestratedPart
+Celeritas.Core.Orchestration.OrchestratedPart.Definition.get -> Celeritas.Core.Orchestration.OrchestrationPartDefinition
+Celeritas.Core.Orchestration.OrchestratedPart.Definition.init -> void
+Celeritas.Core.Orchestration.OrchestratedPart.Notes.get -> Celeritas.Core.NoteEvent[]!
+Celeritas.Core.Orchestration.OrchestratedPart.Notes.init -> void
+Celeritas.Core.Orchestration.OrchestratedPart.OrchestratedPart() -> void
+Celeritas.Core.Orchestration.OrchestrationMapper
+Celeritas.Core.Orchestration.OrchestrationOptions
+Celeritas.Core.Orchestration.OrchestrationOptions.Bass.get -> Celeritas.Core.Orchestration.OrchestrationPartDefinition
+Celeritas.Core.Orchestration.OrchestrationOptions.Bass.init -> void
+Celeritas.Core.Orchestration.OrchestrationOptions.Harmony.get -> Celeritas.Core.Orchestration.OrchestrationPartDefinition
+Celeritas.Core.Orchestration.OrchestrationOptions.Harmony.init -> void
+Celeritas.Core.Orchestration.OrchestrationOptions.OrchestrationOptions() -> void
+Celeritas.Core.Orchestration.OrchestrationOptions.OrchestrationOptions(int SplitPitch, Celeritas.Core.Orchestration.OrchestrationPartDefinition Bass, Celeritas.Core.Orchestration.OrchestrationPartDefinition Harmony) -> void
+Celeritas.Core.Orchestration.OrchestrationOptions.SplitPitch.get -> int
+Celeritas.Core.Orchestration.OrchestrationOptions.SplitPitch.init -> void
+Celeritas.Core.Orchestration.OrchestrationPartDefinition
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.Kind.get -> Celeritas.Core.Orchestration.OrchestrationPartKind
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.Kind.init -> void
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.Name.get -> string!
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.Name.init -> void
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.OrchestrationPartDefinition() -> void
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.OrchestrationPartDefinition(Celeritas.Core.Orchestration.OrchestrationPartKind Kind, string! Name, Celeritas.Core.Orchestration.InstrumentRange Range) -> void
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.Range.get -> Celeritas.Core.Orchestration.InstrumentRange
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.Range.init -> void
+Celeritas.Core.Orchestration.OrchestrationPartKind
+Celeritas.Core.Orchestration.OrchestrationPartKind.Bass = 0 -> Celeritas.Core.Orchestration.OrchestrationPartKind
+Celeritas.Core.Orchestration.OrchestrationPartKind.Harmony = 1 -> Celeritas.Core.Orchestration.OrchestrationPartKind
+Celeritas.Core.Orchestration.OrchestrationResult
+Celeritas.Core.Orchestration.OrchestrationResult.Bass.get -> Celeritas.Core.Orchestration.OrchestratedPart!
+Celeritas.Core.Orchestration.OrchestrationResult.Bass.init -> void
+Celeritas.Core.Orchestration.OrchestrationResult.Harmony.get -> Celeritas.Core.Orchestration.OrchestratedPart!
+Celeritas.Core.Orchestration.OrchestrationResult.Harmony.init -> void
+Celeritas.Core.Orchestration.OrchestrationResult.OrchestrationResult() -> void
+Celeritas.Core.Orchestration.OrchestrationResult.Parts.get -> System.Collections.Generic.IEnumerable<Celeritas.Core.Orchestration.OrchestratedPart!>!
+Celeritas.Core.Ornamentation.Appoggiatura
+Celeritas.Core.Ornamentation.Appoggiatura.Appoggiatura() -> void
+Celeritas.Core.Ornamentation.Appoggiatura.Direction.get -> int
+Celeritas.Core.Ornamentation.Appoggiatura.Direction.init -> void
+Celeritas.Core.Ornamentation.Appoggiatura.Interval.get -> int
+Celeritas.Core.Ornamentation.Appoggiatura.Interval.init -> void
+Celeritas.Core.Ornamentation.Appoggiatura.Type.get -> Celeritas.Core.Ornamentation.AppogiaturaType
+Celeritas.Core.Ornamentation.Appoggiatura.Type.init -> void
+Celeritas.Core.Ornamentation.AppogiaturaType
+Celeritas.Core.Ornamentation.AppogiaturaType.Long = 0 -> Celeritas.Core.Ornamentation.AppogiaturaType
+Celeritas.Core.Ornamentation.AppogiaturaType.Short = 1 -> Celeritas.Core.Ornamentation.AppogiaturaType
+Celeritas.Core.Ornamentation.Articulation
+Celeritas.Core.Ornamentation.Articulation.Articulation() -> void
+Celeritas.Core.Ornamentation.Articulation.DurationMultiplier.get -> float
+Celeritas.Core.Ornamentation.Articulation.DurationMultiplier.init -> void
+Celeritas.Core.Ornamentation.Articulation.Type.get -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.Articulation.Type.init -> void
+Celeritas.Core.Ornamentation.Articulation.VelocityMultiplier.get -> float
+Celeritas.Core.Ornamentation.Articulation.VelocityMultiplier.init -> void
+Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Accent = 4 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Fermata = 9 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Legato = 6 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Marcato = 5 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Normal = 0 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Portato = 7 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Sforzando = 8 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Staccatissimo = 2 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Staccato = 1 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.ArticulationType.Tenuto = 3 -> Celeritas.Core.Ornamentation.ArticulationType
+Celeritas.Core.Ornamentation.Glissando
+Celeritas.Core.Ornamentation.Glissando.Chromatic.get -> bool
+Celeritas.Core.Ornamentation.Glissando.Chromatic.init -> void
+Celeritas.Core.Ornamentation.Glissando.Glissando() -> void
+Celeritas.Core.Ornamentation.Glissando.IsAbsolute.get -> bool
+Celeritas.Core.Ornamentation.Glissando.IsAbsolute.init -> void
+Celeritas.Core.Ornamentation.Glissando.Steps.get -> int
+Celeritas.Core.Ornamentation.Glissando.Steps.init -> void
+Celeritas.Core.Ornamentation.Glissando.TargetPitch.get -> int
+Celeritas.Core.Ornamentation.Glissando.TargetPitch.init -> void
+Celeritas.Core.Ornamentation.GraceNote
+Celeritas.Core.Ornamentation.GraceNote.DurationRatio.get -> Celeritas.Core.Rational
+Celeritas.Core.Ornamentation.GraceNote.DurationRatio.init -> void
+Celeritas.Core.Ornamentation.GraceNote.GraceNote() -> void
+Celeritas.Core.Ornamentation.GraceNote.Intervals.get -> int[]!
+Celeritas.Core.Ornamentation.GraceNote.Intervals.init -> void
+Celeritas.Core.Ornamentation.GraceNote.Type.get -> Celeritas.Core.Ornamentation.GraceNoteType
+Celeritas.Core.Ornamentation.GraceNote.Type.init -> void
+Celeritas.Core.Ornamentation.GraceNoteType
+Celeritas.Core.Ornamentation.GraceNoteType.Acciaccatura = 0 -> Celeritas.Core.Ornamentation.GraceNoteType
+Celeritas.Core.Ornamentation.GraceNoteType.Appoggiatura = 1 -> Celeritas.Core.Ornamentation.GraceNoteType
+Celeritas.Core.Ornamentation.GraceNoteType.Multiple = 2 -> Celeritas.Core.Ornamentation.GraceNoteType
+Celeritas.Core.Ornamentation.Mordent
+Celeritas.Core.Ornamentation.Mordent.Alternations.get -> int
+Celeritas.Core.Ornamentation.Mordent.Alternations.init -> void
+Celeritas.Core.Ornamentation.Mordent.Interval.get -> int
+Celeritas.Core.Ornamentation.Mordent.Interval.init -> void
+Celeritas.Core.Ornamentation.Mordent.Mordent() -> void
+Celeritas.Core.Ornamentation.Mordent.Type.get -> Celeritas.Core.Ornamentation.MordentType
+Celeritas.Core.Ornamentation.Mordent.Type.init -> void
+Celeritas.Core.Ornamentation.MordentType
+Celeritas.Core.Ornamentation.MordentType.Lower = 1 -> Celeritas.Core.Ornamentation.MordentType
+Celeritas.Core.Ornamentation.MordentType.Upper = 0 -> Celeritas.Core.Ornamentation.MordentType
+Celeritas.Core.Ornamentation.Ornament
+Celeritas.Core.Ornamentation.Ornament.BaseNote.get -> Celeritas.Core.NoteEvent
+Celeritas.Core.Ornamentation.Ornament.BaseNote.init -> void
+Celeritas.Core.Ornamentation.Ornament.Ornament() -> void
+Celeritas.Core.Ornamentation.OrnamentApplier
+Celeritas.Core.Ornamentation.Trill
+Celeritas.Core.Ornamentation.Trill.EndWithTurn.get -> bool
+Celeritas.Core.Ornamentation.Trill.EndWithTurn.init -> void
+Celeritas.Core.Ornamentation.Trill.HasTurnEnding.get -> bool
+Celeritas.Core.Ornamentation.Trill.HasTurnEnding.init -> void
+Celeritas.Core.Ornamentation.Trill.Interval.get -> int
+Celeritas.Core.Ornamentation.Trill.Interval.init -> void
+Celeritas.Core.Ornamentation.Trill.Speed.get -> int
+Celeritas.Core.Ornamentation.Trill.Speed.init -> void
+Celeritas.Core.Ornamentation.Trill.StartWithUpper.get -> bool
+Celeritas.Core.Ornamentation.Trill.StartWithUpper.init -> void
+Celeritas.Core.Ornamentation.Trill.Trill() -> void
+Celeritas.Core.Ornamentation.Turn
+Celeritas.Core.Ornamentation.Turn.Anticipation.get -> bool
+Celeritas.Core.Ornamentation.Turn.Anticipation.init -> void
+Celeritas.Core.Ornamentation.Turn.LowerInterval.get -> int
+Celeritas.Core.Ornamentation.Turn.LowerInterval.init -> void
+Celeritas.Core.Ornamentation.Turn.Turn() -> void
+Celeritas.Core.Ornamentation.Turn.Type.get -> Celeritas.Core.Ornamentation.TurnType
+Celeritas.Core.Ornamentation.Turn.Type.init -> void
+Celeritas.Core.Ornamentation.Turn.UpperInterval.get -> int
+Celeritas.Core.Ornamentation.Turn.UpperInterval.init -> void
+Celeritas.Core.Ornamentation.TurnType
+Celeritas.Core.Ornamentation.TurnType.Inverted = 1 -> Celeritas.Core.Ornamentation.TurnType
+Celeritas.Core.Ornamentation.TurnType.Normal = 0 -> Celeritas.Core.Ornamentation.TurnType
+Celeritas.Core.ParseResult
+Celeritas.Core.ParseResult.Directives.get -> Celeritas.Core.NotationDirective![]!
+Celeritas.Core.ParseResult.Directives.init -> void
+Celeritas.Core.ParseResult.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Celeritas.Core.ParseResult.Errors.init -> void
+Celeritas.Core.ParseResult.Notes.get -> Celeritas.Core.NoteEvent[]!
+Celeritas.Core.ParseResult.Notes.init -> void
+Celeritas.Core.ParseResult.ParseResult(Celeritas.Core.NoteEvent[]! Notes, Celeritas.Core.Analysis.TimeSignature? TimeSignature, Celeritas.Core.NotationDirective![]! Directives, System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
+Celeritas.Core.ParseResult.TimeSignature.get -> Celeritas.Core.Analysis.TimeSignature?
+Celeritas.Core.ParseResult.TimeSignature.init -> void
+Celeritas.Core.PartDirective
+Celeritas.Core.PartDirective.Name.get -> string!
+Celeritas.Core.PartDirective.Name.init -> void
+Celeritas.Core.PitchClass
+Celeritas.Core.PitchClass.IntervalTo(Celeritas.Core.PitchClass to) -> Celeritas.Core.ChromaticInterval
+Celeritas.Core.PitchClass.Name.get -> string!
+Celeritas.Core.PitchClass.PitchClass() -> void
+Celeritas.Core.PitchClass.PitchClass(int value) -> void
+Celeritas.Core.PitchClass.SignedIntervalTo(Celeritas.Core.PitchClass to) -> Celeritas.Core.ChromaticInterval
+Celeritas.Core.PitchClass.ToName(bool preferSharps = true) -> string!
+Celeritas.Core.PitchClass.Transpose(Celeritas.Core.ChromaticInterval interval) -> Celeritas.Core.PitchClass
+Celeritas.Core.PitchClass.Transpose(int semitones) -> Celeritas.Core.PitchClass
+Celeritas.Core.PitchClass.Value.get -> byte
+Celeritas.Core.Rational
+Celeritas.Core.Rational.CompareTo(Celeritas.Core.Rational other) -> int
+Celeritas.Core.Rational.Denominator.get -> long
+Celeritas.Core.Rational.Numerator.get -> long
+Celeritas.Core.Rational.Rational() -> void
+Celeritas.Core.Rational.Rational(long numerator, long denominator) -> void
+Celeritas.Core.Rational.ToDouble() -> double
+Celeritas.Core.RomanNumeralChord
+Celeritas.Core.RomanNumeralChord.GetPitchClasses(Celeritas.Core.KeySignature key) -> byte[]!
+Celeritas.Core.RomanNumeralChord.GetPitchClassMask(Celeritas.Core.KeySignature key) -> ushort
+Celeritas.Core.RomanNumeralChord.GetRootPitchClass(Celeritas.Core.KeySignature key) -> byte
+Celeritas.Core.RomanNumeralChord.RomanNumeralChord() -> void
+Celeritas.Core.RomanNumeralChord.RomanNumeralChord(Celeritas.Core.ScaleDegree degree, Celeritas.Core.ChordQuality quality, Celeritas.Core.HarmonicFunction function) -> void
+Celeritas.Core.RomanNumeralChord.ToRomanNumeral() -> string!
+Celeritas.Core.RomanNumeralChord.WritePitchClasses(Celeritas.Core.KeySignature key, System.Span<byte> destination) -> int
+Celeritas.Core.ScaleDegree
+Celeritas.Core.ScaleDegree.I = 0 -> Celeritas.Core.ScaleDegree
+Celeritas.Core.ScaleDegree.Ii = 2 -> Celeritas.Core.ScaleDegree
+Celeritas.Core.ScaleDegree.Iii = 4 -> Celeritas.Core.ScaleDegree
+Celeritas.Core.ScaleDegree.Iv = 5 -> Celeritas.Core.ScaleDegree
+Celeritas.Core.ScaleDegree.V = 7 -> Celeritas.Core.ScaleDegree
+Celeritas.Core.ScaleDegree.Vi = 9 -> Celeritas.Core.ScaleDegree
+Celeritas.Core.ScaleDegree.Vii = 11 -> Celeritas.Core.ScaleDegree
+Celeritas.Core.SecondaryDominant
+Celeritas.Core.SecondaryDominant.Key.get -> Celeritas.Core.KeySignature
+Celeritas.Core.SecondaryDominant.Key.init -> void
+Celeritas.Core.SecondaryDominant.RomanNumeral.get -> string!
+Celeritas.Core.SecondaryDominant.Root.get -> Celeritas.Core.PitchClass
+Celeritas.Core.SecondaryDominant.SecondaryDominant() -> void
+Celeritas.Core.SecondaryDominant.SecondaryDominant(Celeritas.Core.KeySignature Key, Celeritas.Core.ScaleDegree TargetDegree, Celeritas.Core.DiatonicChordType Type) -> void
+Celeritas.Core.SecondaryDominant.Symbol(bool preferSharps = true) -> string!
+Celeritas.Core.SecondaryDominant.TargetDegree.get -> Celeritas.Core.ScaleDegree
+Celeritas.Core.SecondaryDominant.TargetDegree.init -> void
+Celeritas.Core.SecondaryDominant.TargetRoot.get -> Celeritas.Core.PitchClass
+Celeritas.Core.SecondaryDominant.Type.get -> Celeritas.Core.DiatonicChordType
+Celeritas.Core.SecondaryDominant.Type.init -> void
+Celeritas.Core.SectionDirective
+Celeritas.Core.SectionDirective.Label.get -> string!
+Celeritas.Core.SectionDirective.Label.init -> void
+Celeritas.Core.Simd.IPitchTransformer
+Celeritas.Core.Simd.IPitchTransformer.Transpose(int* pitches, int count, int semitones) -> void
+Celeritas.Core.Simd.PitchTransformerFactory
+Celeritas.Core.Simd.SimdInfo
+Celeritas.Core.Simd.SimdInstructionSet
+Celeritas.Core.Simd.SimdInstructionSet.Avx2 = 2 -> Celeritas.Core.Simd.SimdInstructionSet
+Celeritas.Core.Simd.SimdInstructionSet.Avx512F = 4 -> Celeritas.Core.Simd.SimdInstructionSet
+Celeritas.Core.Simd.SimdInstructionSet.Neon = 8 -> Celeritas.Core.Simd.SimdInstructionSet
+Celeritas.Core.Simd.SimdInstructionSet.None = 0 -> Celeritas.Core.Simd.SimdInstructionSet
+Celeritas.Core.Simd.SimdInstructionSet.Sse2 = 1 -> Celeritas.Core.Simd.SimdInstructionSet
+Celeritas.Core.Simd.SimdInstructionSet.WasmSimd = 16 -> Celeritas.Core.Simd.SimdInstructionSet
+Celeritas.Core.SpnNote
+Celeritas.Core.SpnNote.MidiPitch.get -> int
+Celeritas.Core.SpnNote.Octave.get -> int
+Celeritas.Core.SpnNote.Octave.init -> void
+Celeritas.Core.SpnNote.PitchClass.get -> Celeritas.Core.PitchClass
+Celeritas.Core.SpnNote.PitchClass.init -> void
+Celeritas.Core.SpnNote.SpnNote() -> void
+Celeritas.Core.SpnNote.SpnNote(Celeritas.Core.PitchClass PitchClass, int Octave) -> void
+Celeritas.Core.SpnNote.ToNotation(bool preferSharps = true) -> string!
+Celeritas.Core.TempoBpmDirective
+Celeritas.Core.TempoBpmDirective.Bpm.get -> int
+Celeritas.Core.TempoBpmDirective.Bpm.init -> void
+Celeritas.Core.TempoBpmDirective.RampDuration.get -> Celeritas.Core.Rational?
+Celeritas.Core.TempoBpmDirective.RampDuration.init -> void
+Celeritas.Core.TempoBpmDirective.TargetBpm.get -> int?
+Celeritas.Core.TempoBpmDirective.TargetBpm.init -> void
+Celeritas.Core.TempoCharacterDirective
+Celeritas.Core.TempoCharacterDirective.Character.get -> string!
+Celeritas.Core.TempoCharacterDirective.Character.init -> void
+Celeritas.Core.VoiceLeading.Voice
+Celeritas.Core.VoiceLeading.Voice.Alto = 2 -> Celeritas.Core.VoiceLeading.Voice
+Celeritas.Core.VoiceLeading.Voice.Bass = 0 -> Celeritas.Core.VoiceLeading.Voice
+Celeritas.Core.VoiceLeading.Voice.Soprano = 3 -> Celeritas.Core.VoiceLeading.Voice
+Celeritas.Core.VoiceLeading.Voice.Tenor = 1 -> Celeritas.Core.VoiceLeading.Voice
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.HasViolation(Celeritas.Core.VoiceLeading.VoiceLeadingViolation v) -> bool
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.IsValid.get -> bool
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.Penalty.get -> float
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.Penalty.init -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.Violations.get -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.Violations.init -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.VoiceLeadingCheck() -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.VoiceLeadingCheck(Celeritas.Core.VoiceLeading.VoiceLeadingViolation Violations, float Penalty) -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingRules
+Celeritas.Core.VoiceLeading.VoiceLeadingSolution
+Celeritas.Core.VoiceLeading.VoiceLeadingSolution.IsValid.get -> bool
+Celeritas.Core.VoiceLeading.VoiceLeadingSolution.ToNoteBuffer(Celeritas.Core.Rational chordDuration) -> Celeritas.Core.NoteBuffer!
+Celeritas.Core.VoiceLeading.VoiceLeadingSolution.ToScore() -> string!
+Celeritas.Core.VoiceLeading.VoiceLeadingSolution.TotalCost.get -> float
+Celeritas.Core.VoiceLeading.VoiceLeadingSolution.VoiceLeadingSolution(Celeritas.Core.VoiceLeading.Voicing[]! voicings, float totalCost, System.Collections.Generic.IReadOnlyList<string!>! warnings) -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingSolution.Voicings.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.VoiceLeading.Voicing>!
+Celeritas.Core.VoiceLeading.VoiceLeadingSolution.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Celeritas.Core.VoiceLeading.VoiceLeadingSolver
+Celeritas.Core.VoiceLeading.VoiceLeadingSolver.Solve(System.Collections.Generic.IReadOnlyList<int[]!>! chordPitchClasses, int keyRoot = 0) -> Celeritas.Core.VoiceLeading.VoiceLeadingSolution!
+Celeritas.Core.VoiceLeading.VoiceLeadingSolver.SolveFromSymbols(System.Collections.Generic.IReadOnlyList<string!>! chordSymbols, int keyRoot = 0) -> Celeritas.Core.VoiceLeading.VoiceLeadingSolution!
+Celeritas.Core.VoiceLeading.VoiceLeadingSolver.VoiceLeadingSolver(Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions? options = null) -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.EnforceSpacing.get -> bool
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.EnforceSpacing.init -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.MaxTransitionCost.get -> float
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.MaxTransitionCost.init -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.ParallelOptions.get -> System.Threading.Tasks.ParallelOptions!
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.ParallelOptions.init -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.SmoothnessWeight.get -> float
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.SmoothnessWeight.init -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.StrictMode.get -> bool
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.StrictMode.init -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.VoiceLeadingSolverOptions() -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.AugmentedInterval = 64 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.DoubledLeadingTone = 2048 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.ExcessiveSpacing = 1024 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.HiddenFifths = 4 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.HiddenOctaves = 8 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.LargeLeap = 128 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.None = 0 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.ParallelFifths = 1 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.ParallelOctaves = 2 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.UnresolvedLeadingTone = 256 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.UnresolvedSeventh = 512 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.VoiceCrossing = 16 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceLeadingViolation.VoiceOverlap = 32 -> Celeritas.Core.VoiceLeading.VoiceLeadingViolation
+Celeritas.Core.VoiceLeading.VoiceRanges
+Celeritas.Core.VoiceLeading.Voicing
+Celeritas.Core.VoiceLeading.Voicing.Alto.get -> int
+Celeritas.Core.VoiceLeading.Voicing.Bass.get -> int
+Celeritas.Core.VoiceLeading.Voicing.Equals(Celeritas.Core.VoiceLeading.Voicing other) -> bool
+Celeritas.Core.VoiceLeading.Voicing.Soprano.get -> int
+Celeritas.Core.VoiceLeading.Voicing.Tenor.get -> int
+Celeritas.Core.VoiceLeading.Voicing.this[Celeritas.Core.VoiceLeading.Voice voice].get -> int
+Celeritas.Core.VoiceLeading.Voicing.ToPitches() -> int[]!
+Celeritas.Core.VoiceLeading.Voicing.Voicing() -> void
+Celeritas.Core.VoiceLeading.Voicing.Voicing(int bass, int tenor, int alto, int soprano) -> void
+const Celeritas.Core.KeyAnalyzer.MajorScaleMask = 2741 -> ushort
+const Celeritas.Core.KeyAnalyzer.MinorScaleMask = 1453 -> ushort
+const Celeritas.Core.MusicNotation.RestPitch = -1 -> int
+override Celeritas.Core.Analysis.KeyCorrelation.ToString() -> string!
+override Celeritas.Core.Analysis.KeyDetectionResult.ToString() -> string!
+override Celeritas.Core.Analysis.ModalKey.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.ModalKey.GetHashCode() -> int
+override Celeritas.Core.Analysis.ModalKey.ToString() -> string!
+override Celeritas.Core.Analysis.ModulationInfo.ToString() -> string!
+override Celeritas.Core.Analysis.RhythmPattern.ToString() -> string!
+override Celeritas.Core.Analysis.RhythmPrediction.ToString() -> string!
+override Celeritas.Core.Analysis.TimeSignature.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.TimeSignature.GetHashCode() -> int
+override Celeritas.Core.Analysis.TimeSignature.ToString() -> string!
+override Celeritas.Core.Analysis.VoiceInterval.ToString() -> string!
+override Celeritas.Core.Analysis.VoiceNote.ToString() -> string!
+override Celeritas.Core.ChordInfo.ToString() -> string!
+override Celeritas.Core.ChromaticInterval.ToString() -> string!
+override Celeritas.Core.DynamicsDirective.ToString() -> string!
+override Celeritas.Core.KeySignature.ToString() -> string!
+override Celeritas.Core.Midi.TempoChange.ToString() -> string!
+override Celeritas.Core.Midi.TimeSignatureChange.ToString() -> string!
+override Celeritas.Core.Ornamentation.Appoggiatura.Expand() -> Celeritas.Core.NoteEvent[]!
+override Celeritas.Core.Ornamentation.Articulation.Expand() -> Celeritas.Core.NoteEvent[]!
+override Celeritas.Core.Ornamentation.Glissando.Expand() -> Celeritas.Core.NoteEvent[]!
+override Celeritas.Core.Ornamentation.GraceNote.Expand() -> Celeritas.Core.NoteEvent[]!
+override Celeritas.Core.Ornamentation.Mordent.Expand() -> Celeritas.Core.NoteEvent[]!
+override Celeritas.Core.Ornamentation.Trill.Expand() -> Celeritas.Core.NoteEvent[]!
+override Celeritas.Core.Ornamentation.Turn.Expand() -> Celeritas.Core.NoteEvent[]!
+override Celeritas.Core.PartDirective.ToString() -> string!
+override Celeritas.Core.PitchClass.ToString() -> string!
+override Celeritas.Core.Rational.ToString() -> string!
+override Celeritas.Core.RomanNumeralChord.ToString() -> string!
+override Celeritas.Core.SectionDirective.ToString() -> string!
+override Celeritas.Core.SpnNote.ToString() -> string!
+override Celeritas.Core.TempoBpmDirective.ToString() -> string!
+override Celeritas.Core.TempoCharacterDirective.ToString() -> string!
+override Celeritas.Core.VoiceLeading.Voicing.Equals(object? obj) -> bool
+override Celeritas.Core.VoiceLeading.Voicing.GetHashCode() -> int
+override Celeritas.Core.VoiceLeading.Voicing.ToString() -> string!
+readonly Celeritas.Core.KeySignature.IsMajor -> bool
+readonly Celeritas.Core.KeySignature.Root -> byte
+readonly Celeritas.Core.NoteEvent.Duration -> Celeritas.Core.Rational
+readonly Celeritas.Core.NoteEvent.Offset -> Celeritas.Core.Rational
+readonly Celeritas.Core.NoteEvent.Pitch -> int
+readonly Celeritas.Core.NoteEvent.Velocity -> float
+readonly Celeritas.Core.RomanNumeralChord.Degree -> Celeritas.Core.ScaleDegree
+readonly Celeritas.Core.RomanNumeralChord.Function -> Celeritas.Core.HarmonicFunction
+readonly Celeritas.Core.RomanNumeralChord.IsValid -> bool
+readonly Celeritas.Core.RomanNumeralChord.Quality -> Celeritas.Core.ChordQuality
+static Celeritas.Core.Accompaniment.AccompanimentGenerator.Generate(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Accompaniment.HarmonicRhythmItem>! progression, Celeritas.Core.KeySignature key, Celeritas.Core.Accompaniment.AccompanimentOptions? options = null) -> Celeritas.Core.NoteEvent[]!
+static Celeritas.Core.Accompaniment.AccompanimentGenerator.Generate(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Harmonization.ChordAssignment>! chords, Celeritas.Core.Accompaniment.AccompanimentOptions? options = null) -> Celeritas.Core.NoteEvent[]!
+static Celeritas.Core.Accompaniment.AccompanimentOptions.Default.get -> Celeritas.Core.Accompaniment.AccompanimentOptions
+static Celeritas.Core.Analysis.ChordCharacterClassification.Unknown.get -> Celeritas.Core.Analysis.ChordCharacterClassification!
+static Celeritas.Core.Analysis.ChordCharacterClassifier.Classify(string! chordSymbol) -> Celeritas.Core.Analysis.ChordCharacterClassification!
+static Celeritas.Core.Analysis.FormAnalysisOptions.Default.get -> Celeritas.Core.Analysis.FormAnalysisOptions!
+static Celeritas.Core.Analysis.FormAnalyzer.Analyze(Celeritas.Core.NoteBuffer! buffer, Celeritas.Core.Analysis.FormAnalysisOptions? options = null) -> Celeritas.Core.Analysis.FormAnalysisResult!
+static Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.Default.get -> Celeritas.Core.Analysis.HarmonicColorAnalysisOptions!
+static Celeritas.Core.Analysis.HarmonicColorAnalyzer.Analyze(Celeritas.Core.NoteEvent[]! melody, (string! Chord, Celeritas.Core.Rational Start)[]! chordProgression, Celeritas.Core.KeySignature key, Celeritas.Core.Analysis.HarmonicColorAnalysisOptions? options = null) -> Celeritas.Core.Analysis.HarmonicColorAnalysisResult!
+static Celeritas.Core.Analysis.HarmonicColorAnalyzer.Analyze(System.ReadOnlySpan<Celeritas.Core.NoteEvent> melody, System.Collections.Generic.IReadOnlyList<(string! Chord, Celeritas.Core.Rational Start)>! chordProgression, Celeritas.Core.KeySignature key, Celeritas.Core.Analysis.HarmonicColorAnalysisOptions? options = null) -> Celeritas.Core.Analysis.HarmonicColorAnalysisResult!
+static Celeritas.Core.Analysis.HarmonicColorAnalyzer.Analyze(System.ReadOnlySpan<Celeritas.Core.NoteEvent> melody, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Harmonization.ChordAssignment>! chords, Celeritas.Core.KeySignature key, Celeritas.Core.Analysis.HarmonicColorAnalysisOptions? options = null) -> Celeritas.Core.Analysis.HarmonicColorAnalysisResult!
+static Celeritas.Core.Analysis.ImitationDetectionResult.None.get -> Celeritas.Core.Analysis.ImitationDetectionResult!
+static Celeritas.Core.Analysis.KeyProfiler.AnalyzeModulations(Celeritas.Core.NoteBuffer! buffer, Celeritas.Core.Rational windowSize, Celeritas.Core.Rational stepSize) -> Celeritas.Core.Analysis.KeyTrajectory!
+static Celeritas.Core.Analysis.KeyProfiler.ChordKeyFit(ushort chordMask, Celeritas.Core.KeySignature key) -> float
+static Celeritas.Core.Analysis.KeyProfiler.DetectFromBuffer(Celeritas.Core.NoteBuffer! buffer) -> Celeritas.Core.Analysis.KeyDetectionResult
+static Celeritas.Core.Analysis.KeyProfiler.DetectFromPitches(string! notation) -> Celeritas.Core.Analysis.KeyDetectionResult
+static Celeritas.Core.Analysis.KeyProfiler.DetectFromPitches(System.ReadOnlySpan<Celeritas.Core.NoteEvent> notes) -> Celeritas.Core.Analysis.KeyDetectionResult
+static Celeritas.Core.Analysis.KeyProfiler.DetectFromPitches(System.ReadOnlySpan<int> pitches) -> Celeritas.Core.Analysis.KeyDetectionResult
+static Celeritas.Core.Analysis.KeyProfiler.GetKeyProfile(int root, bool isMajor) -> System.ReadOnlySpan<float>
+static Celeritas.Core.Analysis.KeyRelationships.AreCloselyRelated(Celeritas.Core.KeySignature a, Celeritas.Core.KeySignature b) -> bool
+static Celeritas.Core.Analysis.KeyRelationships.CommonTones(Celeritas.Core.KeySignature a, Celeritas.Core.KeySignature b) -> int
+static Celeritas.Core.Analysis.KeyRelationships.Describe(Celeritas.Core.KeySignature from, Celeritas.Core.KeySignature to) -> string!
+static Celeritas.Core.Analysis.MelodyAnalyzer.Analyze(Celeritas.Core.NoteBuffer! buffer) -> Celeritas.Core.Analysis.MelodyAnalysisResult!
+static Celeritas.Core.Analysis.MelodyAnalyzer.Analyze(int[]! pitches, Celeritas.Core.Rational[]? times = null) -> Celeritas.Core.Analysis.MelodyAnalysisResult!
+static Celeritas.Core.Analysis.MelodyAnalyzer.ClassifyMotion(int absSemitones) -> Celeritas.Core.Analysis.MelodicMotionType
+static Celeritas.Core.Analysis.MelodyAnalyzer.GetIntervalName(int semitones) -> string!
+static Celeritas.Core.Analysis.ModalKey.FromKeySignature(Celeritas.Core.KeySignature key) -> Celeritas.Core.Analysis.ModalKey
+static Celeritas.Core.Analysis.ModalKey.operator !=(Celeritas.Core.Analysis.ModalKey left, Celeritas.Core.Analysis.ModalKey right) -> bool
+static Celeritas.Core.Analysis.ModalKey.operator ==(Celeritas.Core.Analysis.ModalKey left, Celeritas.Core.Analysis.ModalKey right) -> bool
+static Celeritas.Core.Analysis.ModalProgressions.Analyze(string![]! chordSymbols, int? rootHint = null) -> Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult!
+static Celeritas.Core.Analysis.ModalProgressions.DetectModalProgression(System.ReadOnlySpan<int> romanNumerals) -> (Celeritas.Core.Analysis.Mode mode, Celeritas.Core.Analysis.ModalProgression? match, float confidence)
+static Celeritas.Core.Analysis.ModalProgressions.GetProgressionsForMode(Celeritas.Core.Analysis.Mode mode) -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static Celeritas.Core.Analysis.ModeLibrary.ContainsPitch(Celeritas.Core.Analysis.ModalKey key, int pitchClass) -> bool
+static Celeritas.Core.Analysis.ModeLibrary.DetectMode(float[]! distribution) -> (Celeritas.Core.Analysis.ModalKey key, float confidence)
+static Celeritas.Core.Analysis.ModeLibrary.DetectModeWithRoot(float[]! distribution, int rootHint) -> (Celeritas.Core.Analysis.ModalKey key, float confidence)
+static Celeritas.Core.Analysis.ModeLibrary.DetectModeWithRoot(System.Collections.Generic.IEnumerable<Celeritas.Core.NoteEvent>! notes, int? rootHint = null) -> (Celeritas.Core.Analysis.ModalKey key, float confidence)
+static Celeritas.Core.Analysis.ModeLibrary.DetectModeWithRoot(System.Collections.Generic.IEnumerable<int>! pitchClasses, int rootHint) -> (Celeritas.Core.Analysis.ModalKey key, float confidence)
+static Celeritas.Core.Analysis.ModeLibrary.GetCharacteristicNotes(Celeritas.Core.Analysis.Mode mode) -> (int[]! characteristic, int[]! avoid)
+static Celeritas.Core.Analysis.ModeLibrary.GetDiatonicChordQualities(Celeritas.Core.Analysis.Mode mode) -> Celeritas.Core.ChordQuality[]!
+static Celeritas.Core.Analysis.ModeLibrary.GetIntervals(Celeritas.Core.Analysis.Mode mode) -> System.ReadOnlySpan<int>
+static Celeritas.Core.Analysis.ModeLibrary.GetScaleMask(Celeritas.Core.Analysis.ModalKey key) -> ushort
+static Celeritas.Core.Analysis.ModeLibrary.GetScaleNoteNames(Celeritas.Core.Analysis.ModalKey key) -> string![]!
+static Celeritas.Core.Analysis.ModeLibrary.GetScaleNotes(Celeritas.Core.Analysis.ModalKey key) -> int[]!
+static Celeritas.Core.Analysis.ModulationDetector.Analyze(Celeritas.Core.NoteBuffer! buffer, Celeritas.Core.KeySignature startKey) -> Celeritas.Core.Analysis.ModulationAnalysisResult!
+static Celeritas.Core.Analysis.ModulationDetector.Analyze(System.ReadOnlySpan<Celeritas.Core.NoteEvent> notes, Celeritas.Core.KeySignature startKey) -> Celeritas.Core.Analysis.ModulationAnalysisResult!
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.Analyze(Celeritas.Core.NoteBuffer! buffer) -> Celeritas.Core.Analysis.PitchClassSetAnalysisResult
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.Analyze(System.ReadOnlySpan<int> pitches) -> Celeritas.Core.Analysis.PitchClassSetAnalysisResult
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.Complement(int[]! pitchClasses) -> int[]!
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.GetIntervalVector(int[]! pitchClasses) -> int[]!
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.GetNormalOrder(int[]! pitchClasses) -> int[]!
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.GetPrimeForm(int[]! pitchClasses) -> int[]!
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.Invert(int[]! pitchClasses) -> int[]!
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.MaskToPitchClasses(ushort mask) -> int[]!
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.Similarity(int[]! set1, int[]! set2) -> double
+static Celeritas.Core.Analysis.PitchClassSetAnalyzer.Transpose(int[]! pitchClasses, int semitones) -> int[]!
+static Celeritas.Core.Analysis.PitchClassSetCatalog.Load(string! path) -> Celeritas.Core.Analysis.PitchClassSetCatalog!
+static Celeritas.Core.Analysis.PitchClassSetCatalog.LoadJson(string! json) -> Celeritas.Core.Analysis.PitchClassSetCatalog!
+static Celeritas.Core.Analysis.PitchClassSetCatalog.NormalizePrimeForm(int[]! primeForm) -> int[]!
+static Celeritas.Core.Analysis.PitchClassSetCatalog.PrimeFormKey(int[]! primeForm) -> string!
+static Celeritas.Core.Analysis.PolyphonyAnalyzer.Analyze(Celeritas.Core.NoteBuffer! buffer, int maxVoices = 4) -> Celeritas.Core.Analysis.PolyphonyAnalysisResult!
+static Celeritas.Core.Analysis.PolyphonyAnalyzer.CheckCounterpointRules(Celeritas.Core.NoteBuffer! buffer, int maxVoices = 4) -> Celeritas.Core.Analysis.CounterpointRulesCheckResult!
+static Celeritas.Core.Analysis.PolyphonyAnalyzer.CheckCounterpointRules(System.Collections.Generic.IEnumerable<Celeritas.Core.NoteEvent>! notes, int maxVoices = 4) -> Celeritas.Core.Analysis.CounterpointRulesCheckResult!
+static Celeritas.Core.Analysis.PolyphonyAnalyzer.DetectImitation(Celeritas.Core.NoteBuffer! buffer, int maxVoices = 4) -> Celeritas.Core.Analysis.ImitationDetectionResult!
+static Celeritas.Core.Analysis.PolyphonyAnalyzer.DetectImitation(System.Collections.Generic.IEnumerable<Celeritas.Core.NoteEvent>! notes, int maxVoices = 4) -> Celeritas.Core.Analysis.ImitationDetectionResult!
+static Celeritas.Core.Analysis.ProgressionAdvisor.Analyze(string![]! chordSymbols) -> Celeritas.Core.Analysis.ProgressionReport!
+static Celeritas.Core.Analysis.ProgressionAdvisor.AnalyzeFromSymbols(string![]! chordSymbols) -> Celeritas.Core.Analysis.ProgressionReport!
+static Celeritas.Core.Analysis.ProgressionAdvisor.DetectCadence(string![]! chordSymbols, Celeritas.Core.KeySignature? key = null) -> Celeritas.Core.Analysis.CadenceType
+static Celeritas.Core.Analysis.ProgressionAdvisor.GetInversion(int[]! pitches) -> int
+static Celeritas.Core.Analysis.ProgressionAdvisor.GetInversionName(int inversion) -> string!
+static Celeritas.Core.Analysis.ProgressionAdvisor.ParseChordSymbol(string! symbol) -> int[]!
+static Celeritas.Core.Analysis.ProgressionAdvisor.SuggestNext(string![]! chordSymbols, int maxSuggestions = 5) -> System.Collections.Generic.List<Celeritas.Core.Analysis.ChordSuggestion!>!
+static Celeritas.Core.Analysis.ProgressionReport.Generate(string![]! chordSymbols) -> Celeritas.Core.Analysis.ProgressionReport!
+static Celeritas.Core.Analysis.RhythmAnalyzer.Analyze(Celeritas.Core.NoteBuffer! buffer, Celeritas.Core.Analysis.TimeSignature? knownMeter = null) -> Celeritas.Core.Analysis.RhythmAnalysisResult!
+static Celeritas.Core.Analysis.RhythmAnalyzer.DetectMeter(Celeritas.Core.NoteBuffer! buffer) -> Celeritas.Core.Analysis.MeterDetectionResult!
+static Celeritas.Core.Analysis.RhythmAnalyzer.DetectMeter(System.Collections.Generic.IEnumerable<Celeritas.Core.NoteEvent>! notes) -> Celeritas.Core.Analysis.MeterDetectionResult!
+static Celeritas.Core.Analysis.RhythmAnalyzer.IdentifyPattern(Celeritas.Core.NoteBuffer! buffer) -> Celeritas.Core.Analysis.RhythmPatternMatch?
+static Celeritas.Core.Analysis.RhythmAnalyzer.IdentifyPattern(System.Collections.Generic.IEnumerable<Celeritas.Core.NoteEvent>! notes) -> Celeritas.Core.Analysis.RhythmPatternMatch?
+static Celeritas.Core.Analysis.RhythmModels.GetStyleModel(Celeritas.Core.Analysis.RhythmStyle style) -> Celeritas.Core.Analysis.RhythmPredictor!
+static Celeritas.Core.Analysis.RhythmModels.GetStyleModel(string! style) -> Celeritas.Core.Analysis.RhythmPredictor!
+static Celeritas.Core.Analysis.TimeSignature.Common.get -> Celeritas.Core.Analysis.TimeSignature
+static Celeritas.Core.Analysis.TimeSignature.Compound12.get -> Celeritas.Core.Analysis.TimeSignature
+static Celeritas.Core.Analysis.TimeSignature.Compound6.get -> Celeritas.Core.Analysis.TimeSignature
+static Celeritas.Core.Analysis.TimeSignature.Compound9.get -> Celeritas.Core.Analysis.TimeSignature
+static Celeritas.Core.Analysis.TimeSignature.CutTime.get -> Celeritas.Core.Analysis.TimeSignature
+static Celeritas.Core.Analysis.TimeSignature.operator !=(Celeritas.Core.Analysis.TimeSignature left, Celeritas.Core.Analysis.TimeSignature right) -> bool
+static Celeritas.Core.Analysis.TimeSignature.operator ==(Celeritas.Core.Analysis.TimeSignature left, Celeritas.Core.Analysis.TimeSignature right) -> bool
+static Celeritas.Core.Analysis.TimeSignature.Waltz.get -> Celeritas.Core.Analysis.TimeSignature
+static Celeritas.Core.Analysis.VoiceSeparator.Separate(Celeritas.Core.NoteBuffer! buffer, int maxVoices = 4) -> Celeritas.Core.Analysis.VoiceSeparationResult!
+static Celeritas.Core.Analysis.VoiceSeparator.Separate(Celeritas.Core.NoteBuffer! buffer, int maxVoices, Celeritas.Core.Analysis.VoiceSeparatorOptions! options) -> Celeritas.Core.Analysis.VoiceSeparationResult!
+static Celeritas.Core.Analysis.VoiceSeparator.SeparateIntoSatb(Celeritas.Core.NoteBuffer! buffer, Celeritas.Core.Analysis.VoiceSeparatorOptions? options = null) -> Celeritas.Core.Analysis.SatbSeparationResult!
+static Celeritas.Core.Analysis.VoiceSeparator.SeparateIntoSatb(System.Collections.Generic.IEnumerable<Celeritas.Core.NoteEvent>! notes, Celeritas.Core.Analysis.VoiceSeparatorOptions? options = null) -> Celeritas.Core.Analysis.SatbSeparationResult!
+static Celeritas.Core.ChordAnalyzer.GetMask(Celeritas.Core.NoteBuffer! buffer) -> ushort
+static Celeritas.Core.ChordAnalyzer.GetMask(int* pitches, int count) -> ushort
+static Celeritas.Core.ChordAnalyzer.GetMask(System.ReadOnlySpan<int> pitches) -> ushort
+static Celeritas.Core.ChordAnalyzer.Identify(Celeritas.Core.NoteBuffer! buffer) -> Celeritas.Core.ChordInfo
+static Celeritas.Core.ChordAnalyzer.Identify(string! notation) -> Celeritas.Core.ChordInfo
+static Celeritas.Core.ChordAnalyzer.Identify(System.ReadOnlySpan<Celeritas.Core.NoteEvent> notes) -> Celeritas.Core.ChordInfo
+static Celeritas.Core.ChordAnalyzer.Identify(System.ReadOnlySpan<int> pitches) -> Celeritas.Core.ChordInfo
+static Celeritas.Core.ChordLibrary.GetChord(ushort mask) -> Celeritas.Core.ChordInfo
+static Celeritas.Core.ChordLibrary.GetPitchClass(string! noteName) -> byte
+static Celeritas.Core.ChordLibrary.NoteNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Celeritas.Core.ChordLibrary.TryGetChord(ushort mask, out Celeritas.Core.ChordInfo chord) -> bool
+static Celeritas.Core.ChordSymbolAntlrParser.ParsePitches(string! input) -> int[]!
+static Celeritas.Core.ChordSymbolAntlrParser.TryParsePitches(string! input, out int[]! pitches) -> bool
+static Celeritas.Core.ChordSymbolAntlrParser.TryParsePitches(string! input, out int[]! pitches, out System.Collections.Generic.IReadOnlyList<string!>! errors) -> bool
+static Celeritas.Core.ChromaticInterval.operator -(Celeritas.Core.ChromaticInterval i) -> Celeritas.Core.ChromaticInterval
+static Celeritas.Core.CircleOfFifths.MajorChordSymbols(Celeritas.Core.PitchClass start, bool preferSharps = true, Celeritas.Core.CircleDirection direction = Celeritas.Core.CircleDirection.Clockwise) -> string![]!
+static Celeritas.Core.CircleOfFifths.MajorKeys(Celeritas.Core.PitchClass start, Celeritas.Core.CircleDirection direction = Celeritas.Core.CircleDirection.Clockwise) -> Celeritas.Core.KeySignature[]!
+static Celeritas.Core.CircleOfFifths.MajorWithRelativeMinors(Celeritas.Core.PitchClass start, bool preferSharps = true, Celeritas.Core.CircleDirection direction = Celeritas.Core.CircleDirection.Clockwise) -> (string! Major, string! RelativeMinor)[]!
+static Celeritas.Core.CircleOfFifths.MinorChordSymbols(Celeritas.Core.PitchClass start, bool preferSharps = true, Celeritas.Core.CircleDirection direction = Celeritas.Core.CircleDirection.Clockwise) -> string![]!
+static Celeritas.Core.CircleOfFifths.MinorKeys(Celeritas.Core.PitchClass start, Celeritas.Core.CircleDirection direction = Celeritas.Core.CircleDirection.Clockwise) -> Celeritas.Core.KeySignature[]!
+static Celeritas.Core.CircleOfFifths.NextFifth(Celeritas.Core.PitchClass pc) -> Celeritas.Core.PitchClass
+static Celeritas.Core.CircleOfFifths.NextFourth(Celeritas.Core.PitchClass pc) -> Celeritas.Core.PitchClass
+static Celeritas.Core.CircleOfFifths.PitchClasses(Celeritas.Core.PitchClass start, Celeritas.Core.CircleDirection direction = Celeritas.Core.CircleDirection.Clockwise) -> Celeritas.Core.PitchClass[]!
+static Celeritas.Core.CircleOfFifths.PrevFifth(Celeritas.Core.PitchClass pc) -> Celeritas.Core.PitchClass
+static Celeritas.Core.CircleOfFifths.PrevFourth(Celeritas.Core.PitchClass pc) -> Celeritas.Core.PitchClass
+static Celeritas.Core.FiguredBass.FiguredBassRealizer.ParseAccidentals(string! figuresStr) -> System.Collections.Generic.Dictionary<int, char>!
+static Celeritas.Core.FiguredBass.FiguredBassRealizer.ParseFigures(string! figuresStr) -> int[]!
+static Celeritas.Core.FunctionalProgressions.Circle(Celeritas.Core.KeySignature key, Celeritas.Core.DiatonicChordType type = Celeritas.Core.DiatonicChordType.Seventh, Celeritas.Core.MinorDominantStyle minorDominant = Celeritas.Core.MinorDominantStyle.Harmonic) -> Celeritas.Core.FunctionalChord[]!
+static Celeritas.Core.FunctionalProgressions.SecondaryDominants(Celeritas.Core.KeySignature key, Celeritas.Core.DiatonicChordType type = Celeritas.Core.DiatonicChordType.Seventh) -> Celeritas.Core.SecondaryDominant[]!
+static Celeritas.Core.FunctionalProgressions.SecondaryDominantTo(Celeritas.Core.KeySignature key, Celeritas.Core.ScaleDegree targetDegree, Celeritas.Core.DiatonicChordType type = Celeritas.Core.DiatonicChordType.Seventh) -> Celeritas.Core.SecondaryDominant
+static Celeritas.Core.FunctionalProgressions.ThreeSixTwoFiveOne(Celeritas.Core.KeySignature key, Celeritas.Core.DiatonicChordType type = Celeritas.Core.DiatonicChordType.Seventh, Celeritas.Core.MinorDominantStyle minorDominant = Celeritas.Core.MinorDominantStyle.Harmonic) -> Celeritas.Core.FunctionalChord[]!
+static Celeritas.Core.FunctionalProgressions.Turnaround(Celeritas.Core.KeySignature key, Celeritas.Core.DiatonicChordType type = Celeritas.Core.DiatonicChordType.Seventh, Celeritas.Core.MinorDominantStyle minorDominant = Celeritas.Core.MinorDominantStyle.Harmonic) -> Celeritas.Core.FunctionalChord[]!
+static Celeritas.Core.FunctionalProgressions.TwoFiveOne(Celeritas.Core.KeySignature key, Celeritas.Core.DiatonicChordType type = Celeritas.Core.DiatonicChordType.Seventh, Celeritas.Core.MinorDominantStyle minorDominant = Celeritas.Core.MinorDominantStyle.Harmonic) -> Celeritas.Core.FunctionalChord[]!
+static Celeritas.Core.KeyAnalyzer.Analyze(Celeritas.Core.NoteEvent[]! notes, Celeritas.Core.KeySignature key) -> Celeritas.Core.RomanNumeralChord
+static Celeritas.Core.KeyAnalyzer.Analyze(int[]! pitches, Celeritas.Core.KeySignature key) -> Celeritas.Core.RomanNumeralChord
+static Celeritas.Core.KeyAnalyzer.DetectKey(Celeritas.Core.NoteBuffer! buffer) -> Celeritas.Core.KeySignature
+static Celeritas.Core.KeyAnalyzer.DetectKey(string! notation) -> Celeritas.Core.KeySignature
+static Celeritas.Core.KeyAnalyzer.DetectKey(System.ReadOnlySpan<Celeritas.Core.NoteEvent> notes) -> Celeritas.Core.KeySignature
+static Celeritas.Core.KeyAnalyzer.GetScaleMask(int root, bool isMajor) -> ushort
+static Celeritas.Core.KeyAnalyzer.IdentifyKey(int[]! pitches) -> Celeritas.Core.KeySignature
+static Celeritas.Core.KeyAnalyzer.IdentifyKey(System.ReadOnlySpan<int> pitches) -> Celeritas.Core.KeySignature
+static Celeritas.Core.KeyAnalyzer.RotateLeft(ushort value, int shift) -> ushort
+static Celeritas.Core.KeyAnalyzer.RotateRight(ushort value, int shift) -> ushort
+static Celeritas.Core.Midi.MidiEvents.AddTempoChange(Melanchall.DryWetMidi.Core.TrackChunk! track, Celeritas.Core.Rational offset, int beatsPerMinute, int ticksPerQuarterNote) -> void
+static Celeritas.Core.Midi.MidiEvents.AddTimeSignatureChange(Melanchall.DryWetMidi.Core.TrackChunk! track, Celeritas.Core.Rational offset, int numerator, int denominator, int ticksPerQuarterNote) -> void
+static Celeritas.Core.Midi.MidiEvents.GetTempoChanges(string! path) -> System.Collections.Generic.List<Celeritas.Core.Midi.TempoChange!>!
+static Celeritas.Core.Midi.MidiEvents.GetTimeSignatureChanges(string! path) -> System.Collections.Generic.List<Celeritas.Core.Midi.TimeSignatureChange!>!
+static Celeritas.Core.Midi.MidiIo.Export(Celeritas.Core.NoteBuffer! buffer, string! path, Celeritas.Core.Midi.MidiExportOptions? options = null) -> void
+static Celeritas.Core.Midi.MidiIo.Export(Celeritas.Core.NoteBuffer! buffer, System.IO.Stream! stream, Celeritas.Core.Midi.MidiExportOptions? options = null) -> void
+static Celeritas.Core.Midi.MidiIo.Import(string! path, Celeritas.Core.Midi.MidiImportOptions? options = null) -> Celeritas.Core.NoteBuffer!
+static Celeritas.Core.Midi.MidiIo.Import(System.IO.Stream! stream, Celeritas.Core.Midi.MidiImportOptions? options = null) -> Celeritas.Core.NoteBuffer!
+static Celeritas.Core.MusicMath.MidiToNoteName(int midiPitch) -> string!
+static Celeritas.Core.MusicMath.NoteNameToMidi(string! noteName) -> int
+static Celeritas.Core.MusicMath.Quantize(Celeritas.Core.NoteBuffer! buffer, Celeritas.Core.Rational grid) -> void
+static Celeritas.Core.MusicMath.ScaleVelocity(Celeritas.Core.NoteBuffer! buffer, float factor) -> void
+static Celeritas.Core.MusicMath.Transpose(Celeritas.Core.NoteBuffer! buffer, int semitones) -> void
+static Celeritas.Core.MusicNotation.FormatDuration(Celeritas.Core.Rational duration, bool useDot = true, bool useLetters = false) -> string!
+static Celeritas.Core.MusicNotation.FormatNoteSequence(System.ReadOnlySpan<Celeritas.Core.NoteEvent> sequence, bool useDot = true, bool useLetters = false, bool groupChords = true) -> string!
+static Celeritas.Core.MusicNotation.FormatWithDirectives(System.ReadOnlySpan<Celeritas.Core.NoteEvent> notes, System.ReadOnlySpan<Celeritas.Core.NotationDirective!> directives, bool useDot = true, bool useLetters = false, bool groupChords = true) -> string!
+static Celeritas.Core.MusicNotation.Parse(string! input, bool validateMeasures = false) -> Celeritas.Core.NoteEvent[]!
+static Celeritas.Core.MusicNotation.ParseDuration(string! duration) -> Celeritas.Core.Rational
+static Celeritas.Core.MusicNotation.ParseKey(string! keyString) -> Celeritas.Core.KeySignature
+static Celeritas.Core.MusicNotation.ParseNote(string! notation) -> int
+static Celeritas.Core.MusicNotation.ToNotation(int midiPitch, bool preferSharps = true) -> string!
+static Celeritas.Core.MusicNotation.TryParseNote(System.ReadOnlySpan<char> notation, out int midi) -> bool
+static Celeritas.Core.MusicNotationAntlrParser.Parse(string! input, bool validateMeasures = false) -> Celeritas.Core.ParseResult!
+static Celeritas.Core.MusicNotationAntlrParser.ParseNotes(string! input, bool validateMeasures = false) -> Celeritas.Core.NoteEvent[]!
+static Celeritas.Core.NoteArithmeticExtensions.ToSpnNote(this string! notation) -> Celeritas.Core.SpnNote
+static Celeritas.Core.Orchestration.OrchestrationMapper.Map(Celeritas.Core.NoteEvent[]! notes, Celeritas.Core.Orchestration.OrchestrationOptions? options = null) -> Celeritas.Core.Orchestration.OrchestrationResult!
+static Celeritas.Core.Orchestration.OrchestrationOptions.Default.get -> Celeritas.Core.Orchestration.OrchestrationOptions
+static Celeritas.Core.Ornamentation.Articulation.FromType(Celeritas.Core.Ornamentation.ArticulationType type, Celeritas.Core.NoteEvent baseNote) -> Celeritas.Core.Ornamentation.Articulation!
+static Celeritas.Core.Ornamentation.OrnamentApplier.Apply(Celeritas.Core.NoteEvent[]! melody, System.Collections.Generic.IReadOnlyDictionary<int, Celeritas.Core.Ornamentation.Ornament!>! ornamentMap) -> Celeritas.Core.NoteEvent[]!
+static Celeritas.Core.Ornamentation.OrnamentApplier.Apply(System.ReadOnlySpan<Celeritas.Core.NoteEvent> melody, System.Collections.Generic.IReadOnlyDictionary<int, Celeritas.Core.Ornamentation.Ornament!>! ornamentMap) -> Celeritas.Core.NoteEvent[]!
+static Celeritas.Core.Ornamentation.OrnamentApplier.ApplyOrnaments(Celeritas.Core.NoteEvent[]! notes, Celeritas.Core.Ornamentation.Ornament![]! ornaments) -> Celeritas.Core.NoteEvent[]!
+static Celeritas.Core.Ornamentation.OrnamentApplier.CreateAppoggiatura(Celeritas.Core.NoteEvent baseNote, Celeritas.Core.Ornamentation.AppogiaturaType type = Celeritas.Core.Ornamentation.AppogiaturaType.Long, int interval = 2) -> Celeritas.Core.Ornamentation.Appoggiatura!
+static Celeritas.Core.Ornamentation.OrnamentApplier.CreateMordent(Celeritas.Core.NoteEvent baseNote, Celeritas.Core.Ornamentation.MordentType type = Celeritas.Core.Ornamentation.MordentType.Upper, int interval = 2, int alternations = 1) -> Celeritas.Core.Ornamentation.Mordent!
+static Celeritas.Core.Ornamentation.OrnamentApplier.CreateTrill(Celeritas.Core.NoteEvent baseNote, int interval = 2, int speed = 8, bool startWithUpper = false, bool endWithTurn = false) -> Celeritas.Core.Ornamentation.Trill!
+static Celeritas.Core.Ornamentation.OrnamentApplier.CreateTurn(Celeritas.Core.NoteEvent baseNote, Celeritas.Core.Ornamentation.TurnType type = Celeritas.Core.Ornamentation.TurnType.Normal, int upperInterval = 2, int lowerInterval = 2) -> Celeritas.Core.Ornamentation.Turn!
+static Celeritas.Core.PitchClass.A.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.Ab.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.ASharp.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.B.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.Bb.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.C.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.CSharp.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.D.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.Db.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.DSharp.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.E.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.Eb.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.F.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.FromMidi(int midiPitch) -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.FSharp.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.G.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.Gb.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.GSharp.get -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.operator +(Celeritas.Core.PitchClass pc, Celeritas.Core.ChromaticInterval interval) -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.operator +(Celeritas.Core.PitchClass pc, int semitones) -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.operator -(Celeritas.Core.PitchClass pc, Celeritas.Core.ChromaticInterval interval) -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.operator -(Celeritas.Core.PitchClass pc, int semitones) -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.operator -(Celeritas.Core.PitchClass to, Celeritas.Core.PitchClass from) -> Celeritas.Core.ChromaticInterval
+static Celeritas.Core.PitchClass.operator ^(Celeritas.Core.PitchClass from, Celeritas.Core.PitchClass to) -> Celeritas.Core.ChromaticInterval
+static Celeritas.Core.PitchClass.Parse(string! text) -> Celeritas.Core.PitchClass
+static Celeritas.Core.PitchClass.TryParse(System.ReadOnlySpan<char> text, out Celeritas.Core.PitchClass pitchClass) -> bool
+static Celeritas.Core.Rational.Eighth.get -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.Half.get -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.operator *(Celeritas.Core.Rational a, Celeritas.Core.Rational b) -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.operator *(Celeritas.Core.Rational a, long b) -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.operator +(Celeritas.Core.Rational a, Celeritas.Core.Rational b) -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.operator -(Celeritas.Core.Rational a) -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.operator -(Celeritas.Core.Rational a, Celeritas.Core.Rational b) -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.operator /(Celeritas.Core.Rational a, Celeritas.Core.Rational b) -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.operator /(Celeritas.Core.Rational a, long b) -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.operator <(Celeritas.Core.Rational a, Celeritas.Core.Rational b) -> bool
+static Celeritas.Core.Rational.operator <=(Celeritas.Core.Rational a, Celeritas.Core.Rational b) -> bool
+static Celeritas.Core.Rational.operator >(Celeritas.Core.Rational a, Celeritas.Core.Rational b) -> bool
+static Celeritas.Core.Rational.operator >=(Celeritas.Core.Rational a, Celeritas.Core.Rational b) -> bool
+static Celeritas.Core.Rational.Quarter.get -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.Sixteenth.get -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.Whole.get -> Celeritas.Core.Rational
+static Celeritas.Core.Rational.Zero.get -> Celeritas.Core.Rational
+static Celeritas.Core.RomanNumeralChord.Invalid.get -> Celeritas.Core.RomanNumeralChord
+static Celeritas.Core.Simd.SimdInfo.Detect() -> Celeritas.Core.Simd.SimdInstructionSet
+static Celeritas.Core.Simd.SimdInfo.GetBest() -> Celeritas.Core.Simd.SimdInstructionSet
+static Celeritas.Core.Simd.SimdInfo.GetDescription() -> string!
+static Celeritas.Core.Simd.SimdInfo.IsSupported(Celeritas.Core.Simd.SimdInstructionSet instructionSet) -> bool
+static Celeritas.Core.SpnNote.A(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.Ab(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.ASharp(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.B(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.Bb(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.C(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.CSharp(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.D(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.Db(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.DSharp(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.E(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.Eb(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.F(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.FromMidi(int midiPitch) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.FSharp(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.G(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.Gb(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.GSharp(int octave) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.operator +(Celeritas.Core.SpnNote note, Celeritas.Core.ChromaticInterval interval) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.operator -(Celeritas.Core.SpnNote note, Celeritas.Core.ChromaticInterval interval) -> Celeritas.Core.SpnNote
+static Celeritas.Core.SpnNote.operator -(Celeritas.Core.SpnNote to, Celeritas.Core.SpnNote from) -> Celeritas.Core.ChromaticInterval
+static Celeritas.Core.SpnNote.Parse(string! notation) -> Celeritas.Core.SpnNote
+static Celeritas.Core.VoiceLeading.VoiceLeadingRules.Check(Celeritas.Core.VoiceLeading.Voicing from, Celeritas.Core.VoiceLeading.Voicing to, int keyRoot = 0) -> Celeritas.Core.VoiceLeading.VoiceLeadingCheck
+static Celeritas.Core.VoiceLeading.VoiceLeadingRules.Score(Celeritas.Core.VoiceLeading.Voicing from, Celeritas.Core.VoiceLeading.Voicing to, int keyRoot = 0) -> float
+static Celeritas.Core.VoiceLeading.VoiceLeadingRules.ScoreSmoothness(Celeritas.Core.VoiceLeading.Voicing from, Celeritas.Core.VoiceLeading.Voicing to) -> float
+static Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.Default.get -> Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions!
+static Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.Relaxed.get -> Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions!
+static Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions.Strict.get -> Celeritas.Core.VoiceLeading.VoiceLeadingSolverOptions!
+static Celeritas.Core.VoiceLeading.VoiceRanges.GetRange(Celeritas.Core.VoiceLeading.Voice voice) -> (int Min, int Max)
+static Celeritas.Core.VoiceLeading.Voicing.operator !=(Celeritas.Core.VoiceLeading.Voicing a, Celeritas.Core.VoiceLeading.Voicing b) -> bool
+static Celeritas.Core.VoiceLeading.Voicing.operator ==(Celeritas.Core.VoiceLeading.Voicing a, Celeritas.Core.VoiceLeading.Voicing b) -> bool
+static readonly Celeritas.Core.Analysis.MelodyAnalyzer.IntervalNames -> System.Collections.Frozen.FrozenDictionary<int, string!>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.AeolianProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.DorianProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.HarmonicMinorProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.IonianProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.LocrianProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.LydianDominantProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.LydianProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.MelodicMinorProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.MixolydianProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.PhrygianDominantProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModalProgressions.PhrygianProgressions -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalProgression>!
+static readonly Celeritas.Core.Analysis.ModeLibrary.ModeCharacter -> System.Collections.Generic.Dictionary<Celeritas.Core.Analysis.Mode, string!>!
+static readonly Celeritas.Core.Analysis.RhythmAnalyzer.CommonPatterns -> Celeritas.Core.Analysis.RhythmPattern![]!
+static readonly Celeritas.Core.ChromaticInterval.MajorSecond -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.MajorSeventh -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.MajorSixth -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.MajorThird -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.MinorSecond -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.MinorSeventh -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.MinorSixth -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.MinorThird -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.Octave -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.PerfectFifth -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.PerfectFourth -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.Tritone -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.ChromaticInterval.Unison -> Celeritas.Core.ChromaticInterval
+static readonly Celeritas.Core.Simd.PitchTransformerFactory.Best -> Celeritas.Core.Simd.IPitchTransformer!
+static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Alto -> (int Min, int Max)
+static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Bass -> (int Min, int Max)
+static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Soprano -> (int Min, int Max)
+static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Tenor -> (int Min, int Max)
