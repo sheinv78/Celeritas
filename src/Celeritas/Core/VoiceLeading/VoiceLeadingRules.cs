@@ -42,6 +42,16 @@ public static class VoiceLeadingRules
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VoiceLeadingCheck Check(Voicing from, Voicing to, int keyRoot = 0)
+        => Check(from, to, keyRoot, GetChordalSeventhPitchClass(from));
+
+    /// <summary>
+    /// Overload for hot paths (e.g. the DP solver) that evaluate many 'to' candidates against
+    /// the same 'from': the chordal-seventh pitch class of 'from' depends only on 'from', so it
+    /// can be computed once per source voicing and reused instead of re-running chord
+    /// identification for every candidate. Pass the result of
+    /// <see cref="GetChordalSeventhPitchClass"/> for <paramref name="fromChordalSeventhPc"/>.
+    /// </summary>
+    internal static VoiceLeadingCheck Check(Voicing from, Voicing to, int keyRoot, int fromChordalSeventhPc)
     {
         var violations = VoiceLeadingViolation.None;
 
@@ -61,7 +71,7 @@ public static class VoiceLeadingRules
         violations |= CheckSpacing(to);
 
         // Check resolution rules (leading tone, seventh)
-        violations |= CheckResolutions(from, to, keyRoot);
+        violations |= CheckResolutions(from, to, keyRoot, fromChordalSeventhPc);
 
         // Check doubling
         violations |= CheckDoubling(to, keyRoot);
@@ -229,15 +239,13 @@ public static class VoiceLeadingRules
     /// Check resolution of tendency tones (leading tone, chordal seventh).
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static VoiceLeadingViolation CheckResolutions(Voicing from, Voicing to, int keyRoot)
+    private static VoiceLeadingViolation CheckResolutions(Voicing from, Voicing to, int keyRoot, int seventhPc)
     {
         var violations = VoiceLeadingViolation.None;
         var leadingTone = (keyRoot + 11) % 12; // 7th scale degree
 
-        // Identify the chordal seventh of the 'from' chord (if it is a seventh chord),
-        // so we can require it to resolve down by step.
-        var seventhPc = GetChordalSeventhPitchClass(from);
-
+        // seventhPc is the chordal seventh of the 'from' chord (or -1 if it is not a seventh
+        // chord), precomputed by the caller so it can be reused across many 'to' candidates.
         for (var v = 0; v < 4; v++)
         {
             var voice = (Voice)v;
@@ -278,9 +286,11 @@ public static class VoiceLeadingRules
 
     /// <summary>
     /// Returns the pitch class of the chordal seventh of the voicing's chord,
-    /// or -1 if the voicing is not recognized as a seventh chord.
+    /// or -1 if the voicing is not recognized as a seventh chord. Exposed for callers that
+    /// reuse it across many transitions from the same source voicing (see the
+    /// <see cref="Check(Voicing, Voicing, int, int)"/> overload).
     /// </summary>
-    private static int GetChordalSeventhPitchClass(Voicing voicing)
+    internal static int GetChordalSeventhPitchClass(Voicing voicing)
     {
         Span<int> pitches = [voicing.Bass, voicing.Tenor, voicing.Alto, voicing.Soprano];
         var info = ChordAnalyzer.Identify(pitches);
