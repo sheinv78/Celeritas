@@ -121,7 +121,10 @@ public static class MidiEvents
                 {
                     var offset = MidiIo.TicksToWholeNotes(currentTime, ticksPerQuarter);
                     var numerator = timeSignatureEvent.Numerator;
-                    var denominator = (int)Math.Pow(2, timeSignatureEvent.Denominator);
+                    // Already the actual denominator (4, 8, 16) — DryWetMidi decodes the
+                    // spec's log2 exponent for us. Raising 2 to it would report a real 4/4
+                    // file as 4/16.
+                    var denominator = (int)timeSignatureEvent.Denominator;
 
                     timeSignatureChanges.Add(new TimeSignatureChange(offset, numerator, denominator));
                 }
@@ -192,9 +195,15 @@ public static class MidiEvents
         {
             throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
         }
-        var denominatorLog2 = (byte)Math.Log2(denominator);
 
-        var timeSignatureEvent = new TimeSignatureEvent((byte)numerator, denominatorLog2);
+        // TimeSignatureEvent takes the *actual* denominator (4, 8, 16) and encodes the
+        // spec's log2 exponent itself. Passing a pre-computed log2 here double-encodes it:
+        // a requested 4/4 lands on disk as 4/2, and 6/8 fails outright because the
+        // resulting 3 is not a power of two. GetTimeSignatureChanges decodes symmetrically,
+        // so a round-trip through this library agrees with itself while the file is wrong
+        // for every other reader — which is why MidiEventsTimeSignatureEncodingTests asserts
+        // the raw bytes on disk rather than a round-trip.
+        var timeSignatureEvent = new TimeSignatureEvent((byte)numerator, (byte)denominator);
         InsertEventAtAbsoluteTicks(track, timeSignatureEvent, ticks);
     }
 

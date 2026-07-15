@@ -221,7 +221,10 @@ public static class KeyProfiler
         if (notes.Length == 0)
             return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0, AllCorrelations = [] };
 
-        Span<int> pitches = stackalloc int[notes.Length];
+        // The note count here is driven by the caller's string content, so it is unbounded.
+        Span<int> pitches = notes.Length <= StackAlloc.MaxInts
+            ? stackalloc int[notes.Length]
+            : new int[notes.Length];
         for (var i = 0; i < notes.Length; i++)
             pitches[i] = notes[i].Pitch;
 
@@ -236,7 +239,9 @@ public static class KeyProfiler
         if (notes.IsEmpty)
             return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0, AllCorrelations = [] };
 
-        Span<int> pitches = stackalloc int[notes.Length];
+        Span<int> pitches = notes.Length <= StackAlloc.MaxInts
+            ? stackalloc int[notes.Length]
+            : new int[notes.Length];
         for (var i = 0; i < notes.Length; i++)
             pitches[i] = notes[i].Pitch;
 

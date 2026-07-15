@@ -84,7 +84,9 @@ public static class KeyAnalyzer
         if (notes.IsEmpty)
             return RomanNumeralChord.Invalid;
 
-        Span<int> pitches = stackalloc int[notes.Length];
+        Span<int> pitches = notes.Length <= StackAlloc.MaxInts
+            ? stackalloc int[notes.Length]
+            : new int[notes.Length];
         for (var i = 0; i < notes.Length; i++)
             pitches[i] = notes[i].Pitch;
 
@@ -194,7 +196,10 @@ public static class KeyAnalyzer
         if (notes.Length == 0)
             return new KeySignature(0, true);
 
-        Span<int> pitches = stackalloc int[notes.Length];
+        // The note count here is driven by the caller's string content, so it is unbounded.
+        Span<int> pitches = notes.Length <= StackAlloc.MaxInts
+            ? stackalloc int[notes.Length]
+            : new int[notes.Length];
         for (var i = 0; i < notes.Length; i++)
             pitches[i] = notes[i].Pitch;
 
@@ -210,7 +215,9 @@ public static class KeyAnalyzer
         if (notes.IsEmpty)
             return new KeySignature(0, true);
 
-        Span<int> pitches = stackalloc int[notes.Length];
+        Span<int> pitches = notes.Length <= StackAlloc.MaxInts
+            ? stackalloc int[notes.Length]
+            : new int[notes.Length];
         for (var i = 0; i < notes.Length; i++)
             pitches[i] = notes[i].Pitch;
 

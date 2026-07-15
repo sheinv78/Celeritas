@@ -47,27 +47,70 @@ public sealed unsafe class NoteBuffer : IDisposable
     internal long* DurationsNumPtr { get; }
     internal long* DurationsDenPtr { get; }
 
+    // These six dereference the raw allocation with a caller-supplied index, so the
+    // bounds check is what stands between a bad index and native heap corruption — it
+    // is not optional. Checking against Count (not Capacity) also keeps callers out of
+    // allocated-but-unwritten slots, which would otherwise hand back fabricated notes
+    // built from uninitialized memory. The unsigned compare folds "negative" and
+    // "past the end" into one branch, and the throw lives in a cold NoInlining helper,
+    // so the inlined fast path stays a compare-and-fallthrough. Callers walking the
+    // whole buffer should prefer the Pitches / PitchesReadOnly spans above.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int PitchAt(int index) => PitchPtr[index];
+    public int PitchAt(int index)
+    {
+        ThrowIfDisposed();
+        if ((uint)index >= (uint)Count) ThrowIndexOutOfRange(index, Count);
+        return PitchPtr[index];
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetPitch(int index, int value) => PitchPtr[index] = value;
+    public void SetPitch(int index, int value)
+    {
+        ThrowIfDisposed();
+        if ((uint)index >= (uint)Count) ThrowIndexOutOfRange(index, Count);
+        PitchPtr[index] = value;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Rational GetOffset(int index) => new(OffsetsNumPtr[index], OffsetsDenPtr[index]);
+    public Rational GetOffset(int index)
+    {
+        ThrowIfDisposed();
+        if ((uint)index >= (uint)Count) ThrowIndexOutOfRange(index, Count);
+        return new(OffsetsNumPtr[index], OffsetsDenPtr[index]);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Rational GetDuration(int index) => new(DurationsNumPtr[index], DurationsDenPtr[index]);
+    public Rational GetDuration(int index)
+    {
+        ThrowIfDisposed();
+        if ((uint)index >= (uint)Count) ThrowIndexOutOfRange(index, Count);
+        return new(DurationsNumPtr[index], DurationsDenPtr[index]);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public float GetVelocity(int index) => VelocityPtr[index];
+    public float GetVelocity(int index)
+    {
+        ThrowIfDisposed();
+        if ((uint)index >= (uint)Count) ThrowIndexOutOfRange(index, Count);
+        return VelocityPtr[index];
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public NoteEvent Get(int index) => new(
-        PitchPtr[index],
-        new Rational(OffsetsNumPtr[index], OffsetsDenPtr[index]),
-        new Rational(DurationsNumPtr[index], DurationsDenPtr[index]),
-        VelocityPtr[index]);
+    public NoteEvent Get(int index)
+    {
+        ThrowIfDisposed();
+        if ((uint)index >= (uint)Count) ThrowIndexOutOfRange(index, Count);
+        return new(
+            PitchPtr[index],
+            new Rational(OffsetsNumPtr[index], OffsetsDenPtr[index]),
+            new Rational(DurationsNumPtr[index], DurationsDenPtr[index]),
+            VelocityPtr[index]);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowIndexOutOfRange(int index, int count) =>
+        throw new ArgumentOutOfRangeException(nameof(index), index,
+            $"Index must be in [0, {count}) — the buffer holds {count} note(s).");
 
     private bool _disposed;
 

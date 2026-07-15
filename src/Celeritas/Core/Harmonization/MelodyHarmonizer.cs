@@ -51,7 +51,9 @@ public sealed class MelodyHarmonizer
         }
 
         // Detect key from melody pitches
-        Span<int> pitches = stackalloc int[melody.Length];
+        Span<int> pitches = melody.Length <= StackAlloc.MaxInts
+            ? stackalloc int[melody.Length]
+            : new int[melody.Length];
         for (var i = 0; i < melody.Length; i++)
         {
             pitches[i] = melody[i].Pitch;
