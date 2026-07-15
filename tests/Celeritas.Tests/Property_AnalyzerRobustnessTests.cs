@@ -112,6 +112,58 @@ public class PropertyAnalyzerRobustnessTests
 
                 Assert.Equal(ChordAnalyzer.GetMask(t.pitches), ChordAnalyzer.GetMask(shifted));
                 Assert.Equal(KeyAnalyzer.IdentifyKey(t.pitches), KeyAnalyzer.IdentifyKey(shifted));
+                Assert.Equal(PitchClassSetAnalyzer.GetPrimeForm(t.pitches),
+                             PitchClassSetAnalyzer.GetPrimeForm(shifted));
+                Assert.Equal(PitchClassSetAnalyzer.GetIntervalVector(t.pitches),
+                             PitchClassSetAnalyzer.GetIntervalVector(shifted));
             });
+    }
+
+    /// <summary>
+    /// Set analysis is about a <em>set</em>, so the order it is written in cannot matter, and
+    /// writing a member twice cannot add anything.
+    /// </summary>
+    [Fact]
+    public void PitchClassSetAnalysis_IgnoresOrderAndDuplicates()
+    {
+        (from pitches in AnyPitches from seed in Gen.Int[0, 10_000] select (pitches, seed))
+            .Sample(t =>
+            {
+                // Deterministic shuffle — CsCheck replays by seed, so Random() would not reproduce.
+                var shuffled = t.pitches.OrderBy(p => (p * 2654435761L ^ t.seed) & 0xFFFF).ToArray();
+                var doubled = t.pitches.Concat(t.pitches).ToArray();
+
+                var baseline = PitchClassSetAnalyzer.GetNormalOrder(t.pitches);
+                Assert.Equal(baseline, PitchClassSetAnalyzer.GetNormalOrder(shuffled));
+                Assert.Equal(baseline, PitchClassSetAnalyzer.GetNormalOrder(doubled));
+
+                Assert.Equal(PitchClassSetAnalyzer.GetPrimeForm(t.pitches),
+                             PitchClassSetAnalyzer.GetPrimeForm(shuffled));
+                Assert.Equal(PitchClassSetAnalyzer.GetIntervalVector(t.pitches),
+                             PitchClassSetAnalyzer.GetIntervalVector(doubled));
+            });
+    }
+
+    /// <summary>
+    /// Nothing is more similar to a set than itself. Cosine similarity is undefined for the zero
+    /// vector, and a set of fewer than two pitch classes has one — it contains no intervals — so
+    /// Similarity([0], [0]) reported a set as completely different from itself.
+    /// </summary>
+    [Fact]
+    public void Similarity_IsReflexive()
+    {
+        AnyPitches.Sample(pitches =>
+        {
+            Assert.Equal(1.0, PitchClassSetAnalyzer.Similarity(pitches, pitches), 9);
+        });
+    }
+
+    [Fact]
+    public void Similarity_IsSymmetric()
+    {
+        (from a in AnyPitches from b in AnyPitches select (a, b))
+            .Sample(t => Assert.Equal(
+                PitchClassSetAnalyzer.Similarity(t.a, t.b),
+                PitchClassSetAnalyzer.Similarity(t.b, t.a), 9));
     }
 }

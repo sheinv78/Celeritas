@@ -75,17 +75,36 @@ public static class PitchClassSetAnalyzer
         return result;
     }
 
+    /// <summary>
+    /// Reduce arbitrary input to the pitch-class set the algorithms below assume: folded to
+    /// [0, 12), distinct, ascending.
+    /// </summary>
+    /// <remarks>
+    /// The algorithms in this file were written against <see cref="MaskToPitchClasses"/>'s output
+    /// and say so in their comments, but nothing enforced it, and they are public: callers pass
+    /// raw MIDI pitches, unsorted sets, duplicates. Nothing rejected that — the rotation search
+    /// simply ran on values that were not pitch classes and returned an answer of the right shape.
+    /// GetNormalOrder([4,0,7]) came back as [4,0,7], and GetPrimeForm([60,64,67]) disagreed with
+    /// GetPrimeForm([48,52,55]) — the same chord an octave apart.
+    ///
+    /// Routing through GetMask reuses the one implementation of this fold that is already
+    /// property-tested, rather than adding another hand-written copy.
+    /// </remarks>
+    private static int[] ToPitchClassSet(int[] pitches) =>
+        MaskToPitchClasses(ChordAnalyzer.GetMask(pitches));
+
     /// <exception cref="ArgumentNullException"><paramref name="pitchClasses"/> is <see langword="null"/>.</exception>
     public static int[] GetNormalOrder(int[] pitchClasses)
     {
         ArgumentNullException.ThrowIfNull(pitchClasses);
+
+        pitchClasses = ToPitchClassSet(pitchClasses);
 
         if (pitchClasses.Length <= 1)
         {
             return [.. pitchClasses];
         }
 
-        // Input is already sorted ascending (MaskToPitchClasses ensures this).
         var n = pitchClasses.Length;
 
         int[]? best = null;
@@ -136,6 +155,8 @@ public static class PitchClassSetAnalyzer
     {
         ArgumentNullException.ThrowIfNull(pitchClasses);
 
+        pitchClasses = ToPitchClassSet(pitchClasses);
+
         if (pitchClasses.Length <= 1)
         {
             return [.. pitchClasses];
@@ -155,6 +176,10 @@ public static class PitchClassSetAnalyzer
     public static int[] GetIntervalVector(int[] pitchClasses)
     {
         ArgumentNullException.ThrowIfNull(pitchClasses);
+
+        // Duplicates would each contribute their own intervals, so the same set written twice
+        // over would score as denser interval content than it has.
+        pitchClasses = ToPitchClassSet(pitchClasses);
 
         // Interval vector counts unordered pitch-class intervals 1..6.
         // Output order: <ic1, ic2, ic3, ic4, ic5, ic6>
@@ -286,6 +311,16 @@ public static class PitchClassSetAnalyzer
             dotProduct += iv1[i] * iv2[i];
             mag1 += iv1[i] * iv1[i];
             mag2 += iv2[i] * iv2[i];
+        }
+
+        // Cosine similarity is undefined for a zero vector, and a set of fewer than two pitch
+        // classes has one: it contains no intervals at all. Collapsing both cases to 0.0 answered
+        // "completely different" for two sets with identical interval content — Similarity([0],
+        // [0]) said a set was completely different from itself. Empty content matching empty
+        // content is a match; empty against non-empty is not.
+        if (mag1 == 0 && mag2 == 0)
+        {
+            return 1.0;
         }
 
         if (mag1 == 0 || mag2 == 0)
