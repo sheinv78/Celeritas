@@ -49,23 +49,36 @@ public static class OrchestrationMapper
 
     private static NoteEvent ClampToRange(NoteEvent note, InstrumentRange range)
     {
-        var pitch = note.Pitch;
+        // Shift by octaves while preserving pitch class — arithmetic rather than a loop.
+        //
+        // `while (pitch < range.MinPitch) pitch += 12;` was unbounded on caller input: against a
+        // MinPitch of int.MaxValue the climb ran to 2147483640, then overflowed unchecked, wrapped
+        // negative, and started again. No exception, no allocation — just a wedged thread. The
+        // range is validated now, so that particular input cannot arrive, but `default(...)` and
+        // `with { }` both bypass a record struct's constructor, so the arithmetic is what actually
+        // guarantees this returns.
+        //
+        // long, because `range.MinPitch - pitch` overflows int for a pitch near int.MinValue, and
+        // NoteEvent permits one: MusicMath.Transpose does not clamp, by documented design.
+        long pitch = note.Pitch;
+        long min = range.MinPitch;
+        long max = range.MaxPitch;
 
-        // Shift by octaves while preserving pitch class.
-        while (pitch < range.MinPitch)
-            pitch += 12;
-        while (pitch > range.MaxPitch)
-            pitch -= 12;
+        if (pitch < min)
+            pitch += 12 * ((min - pitch + 11) / 12);
+        if (pitch > max)
+            pitch -= 12 * ((pitch - max + 11) / 12);
 
-        // If still out of range (extremely narrow ranges), clamp.
-        if (pitch < range.MinPitch)
-            pitch = range.MinPitch;
-        if (pitch > range.MaxPitch)
-            pitch = range.MaxPitch;
+        // If still out of range (extremely narrow ranges), clamp. Gives up the pitch class, which
+        // is the honest answer when no octave of it fits between Min and Max.
+        if (pitch < min)
+            pitch = min;
+        if (pitch > max)
+            pitch = max;
 
         if (pitch == note.Pitch)
             return note;
 
-        return new NoteEvent(pitch, note.Offset, note.Duration, note.Velocity);
+        return new NoteEvent((int)pitch, note.Offset, note.Duration, note.Velocity);
     }
 }
