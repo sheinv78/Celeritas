@@ -226,6 +226,21 @@ public class RangeContractTests
         Assert.False(ModeLibrary.GetIntervals(Mode.Ionian).SequenceEqual(ModeLibrary.GetIntervals(Mode.Dorian)));
     }
 
+    /// <summary>
+    /// Removing the fallback means every defined Mode must have a row of its own: the guard turned
+    /// `[index] : [0]` into a bare `[index]`, so a Mode whose value runs past the table would now
+    /// throw where it used to quietly return Ionian. Enumerate them rather than trust the count.
+    /// </summary>
+    [Fact]
+    public void GetIntervals_ResolvesEveryDefinedMode()
+    {
+        foreach (var mode in Enum.GetValues<Mode>())
+        {
+            var intervals = ModeLibrary.GetIntervals(mode);
+            Assert.False(intervals.IsEmpty, $"{mode} has no intervals.");
+        }
+    }
+
     [Fact]
     public void ModalKey_RejectsUndefinedMode_AtConstruction()
     {
