@@ -3,7 +3,7 @@ namespace Celeritas.Core.FiguredBass;
 /// <summary>
 /// Realizes figured bass notation into actual chord voicings
 /// </summary>
-public class FiguredBassRealizer
+public sealed class FiguredBassRealizer
 {
     private readonly FiguredBassOptions _options;
 

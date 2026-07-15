@@ -1443,9 +1443,6 @@ Celeritas.Core.SecondaryDominant.Type.init -> void
 Celeritas.Core.SectionDirective
 Celeritas.Core.SectionDirective.Label.get -> string!
 Celeritas.Core.SectionDirective.Label.init -> void
-Celeritas.Core.Simd.IPitchTransformer
-Celeritas.Core.Simd.IPitchTransformer.Transpose(int* pitches, int count, int semitones) -> void
-Celeritas.Core.Simd.PitchTransformerFactory
 Celeritas.Core.Simd.SimdInfo
 Celeritas.Core.Simd.SimdInstructionSet
 Celeritas.Core.Simd.SimdInstructionSet.Avx2 = 2 -> Celeritas.Core.Simd.SimdInstructionSet
@@ -1862,7 +1859,6 @@ static readonly Celeritas.Core.ChromaticInterval.PerfectFifth -> Celeritas.Core.
 static readonly Celeritas.Core.ChromaticInterval.PerfectFourth -> Celeritas.Core.ChromaticInterval
 static readonly Celeritas.Core.ChromaticInterval.Tritone -> Celeritas.Core.ChromaticInterval
 static readonly Celeritas.Core.ChromaticInterval.Unison -> Celeritas.Core.ChromaticInterval
-static readonly Celeritas.Core.Simd.PitchTransformerFactory.Best -> Celeritas.Core.Simd.IPitchTransformer!
 static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Alto -> (int Min, int Max)
 static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Bass -> (int Min, int Max)
 static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Soprano -> (int Min, int Max)

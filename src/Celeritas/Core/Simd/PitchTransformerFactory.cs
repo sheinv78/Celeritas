@@ -5,7 +5,7 @@ using System.Numerics;
 
 namespace Celeritas.Core.Simd;
 
-public static class PitchTransformerFactory
+internal static class PitchTransformerFactory
 {
     /// <summary>
     /// The pitch transformer for the current machine, chosen once at startup:

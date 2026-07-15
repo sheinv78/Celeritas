@@ -5,7 +5,7 @@ namespace Celeritas.Core.Ornamentation;
 /// <summary>
 /// Trill ornament - rapid alternation between the main note and the note above
 /// </summary>
-public class Trill : Ornament
+public sealed class Trill : Ornament
 {
     /// <summary>
     /// Interval in semitones (default: 2 for whole tone, 1 for half tone)

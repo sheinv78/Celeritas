@@ -42,7 +42,7 @@ public enum ArticulationType
 /// <summary>
 /// Articulation modifier - affects duration and velocity without adding notes.
 /// </summary>
-public class Articulation : Ornament
+public sealed class Articulation : Ornament
 {
     /// <summary>
     /// Type of articulation.

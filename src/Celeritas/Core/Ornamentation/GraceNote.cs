@@ -21,7 +21,7 @@ public enum GraceNoteType
 /// <summary>
 /// Grace note ornament - decorative note(s) before the main note.
 /// </summary>
-public class GraceNote : Ornament
+public sealed class GraceNote : Ornament
 {
     /// <summary>
     /// Type of grace note.

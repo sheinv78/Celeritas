@@ -6,7 +6,7 @@ namespace Celeritas.Core.Ornamentation;
 /// <summary>
 /// Glissando - continuous pitch slide between two notes.
 /// </summary>
-public class Glissando : Ornament
+public sealed class Glissando : Ornament
 {
     /// <summary>
     /// Target pitch (absolute MIDI pitch or interval from base note).

@@ -64,7 +64,7 @@ public static class MusicNotationAntlrParser
 /// <summary>
 /// Result of parsing music notation.
 /// </summary>
-public record ParseResult(
+public sealed record ParseResult(
     NoteEvent[] Notes,
     TimeSignature? TimeSignature,
     NotationDirective[] Directives,

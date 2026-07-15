@@ -3,7 +3,7 @@ namespace Celeritas.Core.Ornamentation;
 /// <summary>
 /// Appoggiatura ornament - accented non-harmonic note that resolves by step
 /// </summary>
-public class Appoggiatura : Ornament
+public sealed class Appoggiatura : Ornament
 {
     /// <summary>
     /// Type of appoggiatura

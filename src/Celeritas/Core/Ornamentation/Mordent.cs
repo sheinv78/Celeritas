@@ -3,7 +3,7 @@ namespace Celeritas.Core.Ornamentation;
 /// <summary>
 /// Mordent ornament - brief alternation with upper or lower neighbor
 /// </summary>
-public class Mordent : Ornament
+public sealed class Mordent : Ornament
 {
     /// <summary>
     /// Type of mordent

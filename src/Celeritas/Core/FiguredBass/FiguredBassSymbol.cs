@@ -3,7 +3,7 @@ namespace Celeritas.Core.FiguredBass;
 /// <summary>
 /// Represents a figured bass symbol and its realization
 /// </summary>
-public class FiguredBassSymbol
+public sealed class FiguredBassSymbol
 {
     /// <summary>
     /// Bass note pitch

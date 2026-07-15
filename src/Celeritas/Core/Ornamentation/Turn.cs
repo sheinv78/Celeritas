@@ -3,7 +3,7 @@ namespace Celeritas.Core.Ornamentation;
 /// <summary>
 /// Turn ornament - upper neighbor, main note, lower neighbor, main note
 /// </summary>
-public class Turn : Ornament
+public sealed class Turn : Ornament
 {
     /// <summary>
     /// Type of turn

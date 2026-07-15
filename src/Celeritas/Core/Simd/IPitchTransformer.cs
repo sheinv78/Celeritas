@@ -3,7 +3,7 @@
 
 namespace Celeritas.Core.Simd;
 
-public interface IPitchTransformer
+internal interface IPitchTransformer
 {
     /// <summary>
     /// In-place transpose of MIDI pitches.

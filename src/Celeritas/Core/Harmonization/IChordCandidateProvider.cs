@@ -34,7 +34,7 @@ public readonly record struct ChordCandidate(
 /// <summary>
 /// Context passed between harmonization steps.
 /// </summary>
-public class HarmonizationContext
+public sealed class HarmonizationContext
 {
     public int StepIndex { get; set; }
 }

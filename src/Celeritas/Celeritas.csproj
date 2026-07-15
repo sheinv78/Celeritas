@@ -42,6 +42,9 @@
 
     <ItemGroup>
       <InternalsVisibleTo Include="Celeritas.Tests" />
+      <!-- The NativeAOT export layer for the Python bindings is part of this product and
+           drives the internal SIMD dispatch directly. -->
+      <InternalsVisibleTo Include="Celeritas.Native" />
     </ItemGroup>
 
     <ItemGroup>
