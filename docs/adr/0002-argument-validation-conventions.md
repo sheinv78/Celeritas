@@ -49,13 +49,47 @@ empty-input branch and was answered.
    tag.
 3. **Empty is not null.** An empty collection stays a legitimate input with a legitimate
    answer. This distinction is the whole point and is pinned by tests.
-4. **Out-of-range values throw `ArgumentOutOfRangeException`** and report the offending value.
+4. **Out-of-range values throw `ArgumentOutOfRangeException`** and report the offending value —
+   *unless the value is cyclic*, in which case it is folded. See below.
 5. **Guards live at the public boundary, not in hot paths.** Once a public method has
    established the invariant, internal helpers inherit it. Never add a guard inside a SIMD
    kernel or an O(n×m) inner loop.
 6. **Where a guard sits in an inlined accessor**, the throw goes in a cold
    `[MethodImpl(MethodImplOptions.NoInlining)]` helper, so the fast path stays a
    compare-and-fallthrough.
+
+### Cyclic values are folded, not rejected
+
+Pitch classes and semitone rotations are mod-12 by nature: root -1 *is* B, root 12 *is* C, and
+rotating right by -1 *is* rotating left by 1. Folding these is the domain's arithmetic, not
+leniency, and `KeyAnalyzer.GetScaleMask` already did it. So a value gets folded when
+out-of-range has a correct interpretation, and rejected when it does not:
+
+| | Rule | Examples |
+| --- | --- | --- |
+| **Cyclic** | fold with `((v % 12) + 12) % 12` | key root, `keyRoot`, rotation shift |
+| **Not cyclic** | throw `ArgumentOutOfRangeException` | `maxVoices`, `beatUnit`, MIDI pitch |
+
+The measurement is what forced this rule. Sibling functions had drifted apart, and the drift was
+invisible because both returned plausible answers:
+
+- `GetScaleMask(-1, isMajor: true)` folded to B major — correct.
+- `GetKeyProfile(12, isMajor: true)` indexed a flat majors-then-minors array and returned the
+  C **minor** profile: an out-of-range root silently overrode `isMajor`.
+- `VoiceLeadingRules.Check(from, to, keyRoot: 99)` reported a `DoubledLeadingTone` violation that
+  `keyRoot: -1` did not, for the same two voicings.
+- `RotateRight(mask, -1)` returned **0** — an empty scale. `shift %= 12` leaves a negative
+  negative, and C# masks a shift count to 5 bits rather than rejecting it, so both halves of the
+  rotation shifted clean off the mask.
+
+Two functions with the same `(int root, bool isMajor)` signature behaving differently is a worse
+trap than either choice on its own.
+
+### An existing clamp we kept
+
+`RhythmPredictor(int order)` does `_order = Math.Max(1, order)`. That is a deliberate, explicit
+clamp, and nothing it returns is wrong — an order of -5 is meaningless, and order 1 is the nearest
+thing that isn't. Rule 4 governs how to *reject* a value, not a ban on clamping, so this stays.
 
 ### Two deliberate exceptions
 

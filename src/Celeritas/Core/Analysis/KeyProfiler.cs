@@ -442,9 +442,17 @@ public static class KeyProfiler
     /// <summary>
     /// Get the key profile for visualization or advanced analysis.
     /// </summary>
+    /// <param name="root">Pitch class of the tonic, 0=C .. 11=B. Folded into that range, as in
+    /// <see cref="KeyAnalyzer.GetScaleMask"/>, so -1 is B and 12 is C.</param>
+    /// <param name="isMajor">Whether to return the major or the minor profile.</param>
     public static ReadOnlySpan<float> GetKeyProfile(int root, bool isMajor)
     {
-        var index = isMajor ? root : 12 + root;
+        // Fold before indexing, not after. The 24 profiles are a single array — majors then
+        // minors — so an unfolded root silently overrides isMajor rather than failing: root 12
+        // with isMajor:true landed on index 12 and returned the C *minor* profile, a well-formed
+        // answer in the mode the caller did not ask for.
+        var pitchClass = ((root % 12) + 12) % 12;
+        var index = isMajor ? pitchClass : 12 + pitchClass;
         return AllKeyProfiles[index];
     }
 

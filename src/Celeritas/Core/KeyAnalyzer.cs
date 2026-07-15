@@ -278,25 +278,41 @@ public static class KeyAnalyzer
     /// <summary>
     /// Cyclic right rotation (ROR) for 12-bit mask. Moves bit k to bit (k-shift) mod 12,
     /// i.e. transposes a pitch-class mask DOWN by <paramref name="shift"/> semitones.
+    /// A negative <paramref name="shift"/> rotates the other way, so
+    /// <c>RotateRight(v, -1) == RotateLeft(v, 1)</c>.
     /// To transpose a scale to a root, use <see cref="GetScaleMask"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ushort RotateRight(ushort value, int shift)
     {
-        shift %= 12;
+        shift = NormalizeShift(shift);
         return (ushort)(((value >> shift) | (value << (12 - shift))) & 0xFFF);
     }
 
     /// <summary>
     /// Cyclic left rotation for 12-bit mask. Moves bit k to bit (k+shift) mod 12,
     /// i.e. transposes a pitch-class mask UP by <paramref name="shift"/> semitones.
+    /// A negative <paramref name="shift"/> rotates the other way, so
+    /// <c>RotateLeft(v, -1) == RotateRight(v, 1)</c>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ushort RotateLeft(ushort value, int shift)
     {
-        shift %= 12;
+        shift = NormalizeShift(shift);
         return (ushort)(((value << shift) | (value >> (12 - shift))) & 0xFFF);
     }
+
+    /// <summary>
+    /// Fold an arbitrary semitone count into [0, 12), the way <see cref="GetScaleMask"/> folds a root.
+    /// </summary>
+    /// <remarks>
+    /// A bare <c>shift %= 12</c> leaves a negative shift negative, and C# then masks the shift count
+    /// of <c>&gt;&gt;</c>/<c>&lt;&lt;</c> to 5 bits rather than rejecting it — so both halves of the
+    /// rotation shifted past the end of the mask and OR'd to zero. A caller asking to transpose down
+    /// by one semitone silently got back an empty scale instead of a rotated one.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int NormalizeShift(int shift) => ((shift % 12) + 12) % 12;
 
     /// <summary>
     /// Population count (number of set bits) - Hamming weight

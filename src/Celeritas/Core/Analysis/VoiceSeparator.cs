@@ -170,6 +170,11 @@ public static class VoiceSeparator
         ArgumentNullException.ThrowIfNull(buffer);
         ArgumentNullException.ThrowIfNull(options);
 
+        // Every voice table below is sized by maxVoices, so a bad count does not fail here — it
+        // fails deep inside the assignment loop, as an IndexOutOfRangeException at zero or an
+        // OverflowException from `new int[-1]`, neither of which names the argument at fault.
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxVoices);
+
         if (buffer.Count == 0)
         {
             return new VoiceSeparationResult

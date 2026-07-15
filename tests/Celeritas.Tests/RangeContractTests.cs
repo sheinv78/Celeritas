@@ -1,0 +1,194 @@
+using Celeritas.Core;
+using Celeritas.Core.Analysis;
+using Celeritas.Core.VoiceLeading;
+
+namespace Celeritas.Tests;
+
+/// <summary>
+/// An out-of-range number must be folded or rejected — never quietly turned into a different
+/// question and answered.
+/// </summary>
+/// <remarks>
+/// Per <c>docs/adr/0002-argument-validation-conventions.md</c>, cyclic values (pitch classes,
+/// rotation shifts) are folded into [0, 12) because that is the domain's arithmetic; values with
+/// no meaningful out-of-range reading (counts, denominators, MIDI pitches) are rejected with
+/// <see cref="ArgumentOutOfRangeException"/>. These tests pin both halves, and in particular pin
+/// the answers that used to come back instead.
+/// </remarks>
+public class RangeContractTests
+{
+    private const ushort CMajor = 0b101010110101;
+
+    // --- Cyclic values: folded ---
+
+    [Fact]
+    public void Rotate_HandlesNegativeShift_InsteadOfEmptyingTheMask()
+    {
+        // `shift %= 12` left a negative shift negative, and C# masks a shift count to 5 bits
+        // rather than rejecting it, so both halves shifted off the mask and OR'd to zero:
+        // a request to transpose down by one semitone returned a scale with no notes in it.
+        Assert.NotEqual(0, KeyAnalyzer.RotateRight(CMajor, -1));
+        Assert.NotEqual(0, KeyAnalyzer.RotateLeft(CMajor, -1));
+        Assert.NotEqual(0, KeyAnalyzer.RotateRight(CMajor, int.MinValue));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5)]
+    [InlineData(11)]
+    public void Rotate_NegativeShift_IsTheOppositeRotation(int shift)
+    {
+        Assert.Equal(KeyAnalyzer.RotateLeft(CMajor, shift), KeyAnalyzer.RotateRight(CMajor, -shift));
+        Assert.Equal(KeyAnalyzer.RotateRight(CMajor, shift), KeyAnalyzer.RotateLeft(CMajor, -shift));
+    }
+
+    [Theory]
+    [InlineData(0, 12)]
+    [InlineData(11, -1)]
+    [InlineData(3, 99)]
+    [InlineData(3, -117)]
+    public void GetKeyProfile_FoldsRoot_LikeGetScaleMaskAlreadyDid(int inRange, int equivalent)
+    {
+        Assert.Equal(KeyProfiler.GetKeyProfile(inRange, true).ToArray(),
+                     KeyProfiler.GetKeyProfile(equivalent, true).ToArray());
+        Assert.Equal(KeyProfiler.GetKeyProfile(inRange, false).ToArray(),
+                     KeyProfiler.GetKeyProfile(equivalent, false).ToArray());
+    }
+
+    [Fact]
+    public void GetKeyProfile_OutOfRangeRoot_DoesNotOverrideIsMajor()
+    {
+        // The 24 profiles are one array, majors then minors. Root 12 with isMajor:true indexed
+        // straight into the minor half and returned the C minor profile — the caller's isMajor
+        // silently discarded, with a perfectly well-formed answer coming back.
+        var major = KeyProfiler.GetKeyProfile(0, isMajor: true).ToArray();
+        var minor = KeyProfiler.GetKeyProfile(0, isMajor: false).ToArray();
+        Assert.NotEqual(major, minor);
+
+        Assert.Equal(major, KeyProfiler.GetKeyProfile(12, isMajor: true).ToArray());
+        Assert.Equal(minor, KeyProfiler.GetKeyProfile(12, isMajor: false).ToArray());
+    }
+
+    [Fact]
+    public void DetectModeWithRoot_FoldsNegativeRootHint_InsteadOfWrappingItToByte255()
+    {
+        // `rootHint % 12` kept the sign and the (byte) cast then wrapped -1 to 255, which scores
+        // as pitch class 3: a hint of one semitone below C was answered in D#, with the
+        // confidence of a genuine detection.
+        var dist = new float[12];
+        foreach (var pc in new[] { 0, 2, 4, 5, 7, 9, 11 })
+        {
+            dist[pc] = 1f;
+        }
+
+        Assert.Equal(ModeLibrary.DetectModeWithRoot(dist, 11), ModeLibrary.DetectModeWithRoot(dist, -1));
+        Assert.Equal(ModeLibrary.DetectModeWithRoot(dist, 0), ModeLibrary.DetectModeWithRoot(dist, 12));
+    }
+
+    [Fact]
+    public void VoiceLeadingRules_FoldsKeyRoot()
+    {
+        var from = new Voicing(48, 60, 64, 67);
+        var to = new Voicing(50, 62, 65, 69);
+
+        Assert.Equal(VoiceLeadingRules.Check(from, to, 11), VoiceLeadingRules.Check(from, to, -1));
+        Assert.Equal(VoiceLeadingRules.Check(from, to, 3), VoiceLeadingRules.Check(from, to, 99));
+        Assert.Equal(VoiceLeadingRules.Score(from, to, 11), VoiceLeadingRules.Score(from, to, -1));
+    }
+
+    // --- Non-cyclic values: rejected ---
+
+    [Fact]
+    public void Voicing_RejectsPitchesOutsideMidiRange_InsteadOfTruncatingThem()
+    {
+        // Each voice is packed into 8 bits with `& 0xFF`, which truncates without complaint:
+        // 256 was stored as 0 and read back as C-1, 300 as G#2, -1 as 255. The voicing that came
+        // out was well-formed — just a different chord than the caller asked for.
+        Assert.Equal("bass", Assert.Throws<ArgumentOutOfRangeException>(() => new Voicing(256, 0, 0, 0)).ParamName);
+        Assert.Equal("bass", Assert.Throws<ArgumentOutOfRangeException>(() => new Voicing(300, 0, 0, 0)).ParamName);
+        Assert.Equal("bass", Assert.Throws<ArgumentOutOfRangeException>(() => new Voicing(-1, 0, 0, 0)).ParamName);
+        Assert.Equal("soprano", Assert.Throws<ArgumentOutOfRangeException>(() => new Voicing(0, 0, 0, 128)).ParamName);
+
+        var ok = new Voicing(0, 60, 64, 127);
+        Assert.Equal(0, ok.Bass);
+        Assert.Equal(127, ok.Soprano);
+    }
+
+    [Theory]
+    [InlineData(4, 0)]
+    [InlineData(0, 4)]
+    [InlineData(-4, 4)]
+    [InlineData(4, -4)]
+    public void TimeSignature_RejectsNonPositiveParts(int beatsPerMeasure, int beatUnit)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TimeSignature(beatsPerMeasure, beatUnit));
+    }
+
+    [Fact]
+    public void TimeSignature_StillAcceptsMetersMidiCannotEncode()
+    {
+        // MIDI stores log2 of the denominator, so it can only write powers of two. That is a
+        // constraint of the export path, not of the meter: 4/3 is representable and meaningful
+        // on paper, and this type is not where it should be refused.
+        var irrational = new TimeSignature(4, 3);
+        Assert.Equal(3, irrational.BeatUnit);
+        Assert.Equal(new Rational(4, 3), irrational.MeasureDuration);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(int.MinValue)]
+    public void VoiceSeparator_RejectsNonPositiveMaxVoices(int maxVoices)
+    {
+        using var buffer = TwoNotes();
+
+        // Every voice table is sized by maxVoices, so this used to fail deep in the assignment
+        // loop — IndexOutOfRangeException at zero, OverflowException from `new int[-1]` — with
+        // nothing naming the argument actually at fault.
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => VoiceSeparator.Separate(buffer, maxVoices));
+        Assert.Equal("maxVoices", ex.ParamName);
+    }
+
+    [Fact]
+    public void PolyphonyAnalyzer_RejectsNonPositiveMaxVoices()
+    {
+        using var buffer = TwoNotes();
+
+        Assert.Equal("maxVoices",
+            Assert.Throws<ArgumentOutOfRangeException>(() => PolyphonyAnalyzer.Analyze(buffer, 0)).ParamName);
+        Assert.Equal("maxVoices",
+            Assert.Throws<ArgumentOutOfRangeException>(() => PolyphonyAnalyzer.DetectImitation(buffer, -1)).ParamName);
+    }
+
+    [Fact]
+    public void VoiceSeparator_RejectsBadMaxVoices_EvenForAnEmptyBuffer()
+    {
+        // Arguments are checked before the input is answered: an empty buffer must not excuse a
+        // maxVoices of zero, or the guard is only as reliable as the caller's data.
+        using var empty = new NoteBuffer(4);
+        Assert.Throws<ArgumentOutOfRangeException>(() => VoiceSeparator.Separate(empty, 0));
+    }
+
+    [Fact]
+    public void ValidMaxVoices_StillWorks()
+    {
+        using var buffer = TwoNotes();
+
+        // maxVoices is headroom, not a quota: empty voices are dropped from the result, so two
+        // simultaneous notes come back as two voices no matter how much room was offered.
+        var roomy = VoiceSeparator.Separate(buffer, 4);
+        Assert.Equal(2, roomy.Voices.Count);
+        Assert.Equal(2, roomy.TotalNotes);
+
+        Assert.Single(VoiceSeparator.Separate(buffer, 1).Voices);
+    }
+
+    private static NoteBuffer TwoNotes()
+    {
+        var buffer = new NoteBuffer(8);
+        buffer.Add(new NoteEvent(60, Rational.Zero, Rational.Quarter));
+        buffer.Add(new NoteEvent(64, Rational.Zero, Rational.Quarter));
+        return buffer;
+    }
+}

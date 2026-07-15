@@ -1,18 +1,39 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Runtime.CompilerServices;
+
 namespace Celeritas.Core;
 
 /// <summary>
 /// Time signature / meter.
 /// </summary>
+/// <remarks>
+/// Both parts must be positive. <c>BeatUnit</c> is a denominator: at zero, <c>BeatDuration</c> and
+/// <c>MeasureDuration</c> are undefined, and the meter still prints and compares as if it were a
+/// real one ("4/0"). Note this only covers explicit construction — <c>default(TimeSignature)</c>
+/// bypasses these initializers and is 0/0, as it is for every C# struct.
+/// Whether a denominator is writable to a MIDI file is a stricter question, and belongs to the
+/// export path rather than here: MIDI stores log2 of the denominator, so it can only encode powers
+/// of two, while a meter like 4/3 is representable in this type and meaningful on paper.
+/// </remarks>
+/// <exception cref="ArgumentOutOfRangeException">
+/// <paramref name="beatsPerMeasure"/> or <paramref name="beatUnit"/> is not positive.
+/// </exception>
 public readonly struct TimeSignature(int beatsPerMeasure, int beatUnit) : IEquatable<TimeSignature>
 {
     /// <summary>Beats per measure (numerator).</summary>
-    public int BeatsPerMeasure { get; } = beatsPerMeasure;
+    public int BeatsPerMeasure { get; } = ThrowIfNotPositive(beatsPerMeasure);
 
     /// <summary>Beat unit as note value (4 = quarter, 8 = eighth, etc).</summary>
-    public int BeatUnit { get; } = beatUnit;
+    public int BeatUnit { get; } = ThrowIfNotPositive(beatUnit);
+
+    private static int ThrowIfNotPositive(int value,
+        [CallerArgumentExpression(nameof(value))] string? name = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value, name);
+        return value;
+    }
 
     /// <summary>Duration of one beat as a Rational.</summary>
     public Rational BeatDuration => new(1, BeatUnit);

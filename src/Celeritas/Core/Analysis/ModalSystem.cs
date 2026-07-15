@@ -362,7 +362,10 @@ public static class ModeLibrary
         if (distribution.Length != 12)
             throw new ArgumentException("Distribution must have 12 elements", nameof(distribution));
 
-        rootHint = rootHint % 12;
+        // A bare `% 12` keeps the sign, and the (byte) cast below then wraps it instead of
+        // failing: rootHint -1 became byte 255, which scores as pitch class 3. A caller hinting
+        // one semitone below C was answered in D#, with the confidence of a real detection.
+        rootHint = ((rootHint % 12) + 12) % 12;
         ModalKey bestKey = new((byte)rootHint, Mode.Ionian);
         float bestScore = float.MinValue;
 

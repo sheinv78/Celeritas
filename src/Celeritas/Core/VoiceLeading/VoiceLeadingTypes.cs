@@ -1,6 +1,8 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.Runtime.CompilerServices;
+
 namespace Celeritas.Core.VoiceLeading;
 
 /// <summary>
@@ -43,11 +45,31 @@ public readonly struct Voicing(int bass, int tenor, int alto, int soprano)
     : IEquatable<Voicing>
 {
     // Packed: Bass(8 bits) | Tenor(8 bits) | Alto(8 bits) | Soprano(8 bits)
-    private readonly uint _packed = (uint)(
-        (bass & 0xFF) |
-        ((tenor & 0xFF) << 8) |
-        ((alto & 0xFF) << 16) |
-        ((soprano & 0xFF) << 24));
+    private readonly uint _packed = Pack(bass, tenor, alto, soprano);
+
+    /// <exception cref="ArgumentOutOfRangeException">Any voice is outside the MIDI range [0, 127].</exception>
+    private static uint Pack(int bass, int tenor, int alto, int soprano)
+    {
+        // Each voice gets 8 bits, and `& 0xFF` truncates rather than complains: pitch 256 was
+        // stored as 0 and read back as C-1, pitch 300 as G#2, and -1 as 255. The voicing looked
+        // entirely plausible afterwards — it was simply a different chord than the caller built.
+        ThrowIfNotMidiPitch(bass);
+        ThrowIfNotMidiPitch(tenor);
+        ThrowIfNotMidiPitch(alto);
+        ThrowIfNotMidiPitch(soprano);
+
+        return (uint)(
+            (bass & 0xFF) |
+            ((tenor & 0xFF) << 8) |
+            ((alto & 0xFF) << 16) |
+            ((soprano & 0xFF) << 24));
+    }
+
+    private static void ThrowIfNotMidiPitch(int pitch, [CallerArgumentExpression(nameof(pitch))] string? name = null)
+    {
+        if ((uint)pitch > 127)
+            throw new ArgumentOutOfRangeException(name, pitch, "Voice pitch must be a MIDI pitch in [0, 127].");
+    }
 
     public int Bass => (int)(_packed & 0xFF);
     public int Tenor => (int)((_packed >> 8) & 0xFF);

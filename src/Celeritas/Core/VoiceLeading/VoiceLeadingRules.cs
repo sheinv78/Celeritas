@@ -40,9 +40,24 @@ public static class VoiceLeadingRules
     /// <summary>
     /// Check all voice leading rules between two consecutive voicings.
     /// </summary>
+    /// <param name="from">The voicing being left.</param>
+    /// <param name="to">The voicing being moved to.</param>
+    /// <param name="keyRoot">Pitch class of the tonic, 0=C .. 11=B. Folded into that range, as
+    /// elsewhere in the engine, so -1 is B and 12 is C.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VoiceLeadingCheck Check(Voicing from, Voicing to, int keyRoot = 0)
-        => Check(from, to, keyRoot, GetChordalSeventhPitchClass(from));
+        => Check(from, to, NormalizePitchClass(keyRoot), GetChordalSeventhPitchClass(from));
+
+    /// <summary>
+    /// Fold a pitch class into [0, 12). Applied at the public boundary only: the internal
+    /// overload below is called once per candidate by the DP solver and takes the folded value.
+    /// </summary>
+    /// <remarks>
+    /// An unfolded root does not fail here, it just answers differently — keyRoot 99 reported a
+    /// DoubledLeadingTone violation that keyRoot -1 did not, both for the same pair of voicings.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int NormalizePitchClass(int pitchClass) => ((pitchClass % 12) + 12) % 12;
 
     /// <summary>
     /// Overload for hot paths (e.g. the DP solver) that evaluate many 'to' candidates against
