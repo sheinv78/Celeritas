@@ -58,7 +58,7 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
     /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public VoiceLeadingSolution SolveFromSymbols(IReadOnlyList<string> chordSymbols, int keyRoot = 0)
     {
-        ArgumentNullException.ThrowIfNull(chordSymbols);
+        Guard.ThrowIfNullOrHasNullElement(chordSymbols, nameof(chordSymbols));
 
         var chords = new List<int[]>(chordSymbols.Count);
 

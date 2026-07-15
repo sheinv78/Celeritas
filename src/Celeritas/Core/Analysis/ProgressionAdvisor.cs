@@ -110,7 +110,7 @@ public static class ProgressionAdvisor
     /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public static CadenceType DetectCadence(string[] chordSymbols, KeySignature? key = null)
     {
-        ArgumentNullException.ThrowIfNull(chordSymbols);
+        Guard.ThrowIfNullOrHasNullElement(chordSymbols, nameof(chordSymbols));
 
         if (chordSymbols.Length < 2)
         {
@@ -189,7 +189,7 @@ public static class ProgressionAdvisor
     /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public static List<ChordSuggestion> SuggestNext(string[] chordSymbols, int maxSuggestions = 5)
     {
-        ArgumentNullException.ThrowIfNull(chordSymbols);
+        Guard.ThrowIfNullOrHasNullElement(chordSymbols, nameof(chordSymbols));
 
         if (chordSymbols.Length == 0)
         {
@@ -363,7 +363,7 @@ public static class ProgressionAdvisor
     /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public static ProgressionReport Analyze(string[] chordSymbols)
     {
-        ArgumentNullException.ThrowIfNull(chordSymbols);
+        Guard.ThrowIfNullOrHasNullElement(chordSymbols, nameof(chordSymbols));
 
         if (chordSymbols.Length == 0)
         {

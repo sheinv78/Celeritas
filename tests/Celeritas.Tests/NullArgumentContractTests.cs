@@ -3,6 +3,7 @@ using Celeritas.Core.Analysis;
 using Celeritas.Core.FiguredBass;
 using Celeritas.Core.Harmonization;
 using Celeritas.Core.Ornamentation;
+using Celeritas.Core.VoiceLeading;
 using Celeritas.Core.Midi;
 using Melanchall.DryWetMidi.Core;
 
@@ -123,6 +124,47 @@ public class NullArgumentContractTests
 
         // Enumerable.ToList() throws, but blames its own "source" parameter.
         AssertRejects("notes", () => ModeLibrary.DetectModeWithRoot((IEnumerable<NoteEvent>)null!));
+    }
+
+    /// <summary>
+    /// A null <em>element</em> is a caller bug too, and the exception must name the array the
+    /// caller passed rather than a variable inside the loop that tripped over it.
+    /// </summary>
+    [Fact]
+    public void ChordSymbolArrays_RejectNullElements_NamingTheArray()
+    {
+        string[] withNull = ["C", null!, "G"];
+
+        // Each of these forwards elements to ParseChordSymbol, whose own guard reports
+        // ParamName "symbol" — a parameter the caller of DetectCadence never passed.
+        foreach (var act in new Action[]
+        {
+            () => ProgressionAdvisor.DetectCadence(withNull),
+            () => ProgressionAdvisor.SuggestNext(withNull),
+            () => ProgressionAdvisor.Analyze(withNull),
+            () => ProgressionAdvisor.AnalyzeFromSymbols(withNull),
+            () => ProgressionReport.Generate(withNull),
+            () => ModalProgressions.Analyze(withNull),
+            () => new VoiceLeadingSolver().SolveFromSymbols(withNull),
+        })
+        {
+            var ex = Assert.Throws<ArgumentNullException>(act);
+            Assert.Equal("chordSymbols", ex.ParamName);
+            Assert.Contains("index 1", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// The counterpart: a string that is merely not a chord is bad <em>data</em>, and is skipped
+    /// as it always was. Only the null element is bad <em>code</em>.
+    /// </summary>
+    [Fact]
+    public void ChordSymbolArrays_StillTolerateUnparsableElements()
+    {
+        string[] withGarbage = ["C", "xyz", "G"];
+
+        Assert.Equal(CadenceType.Half, ProgressionAdvisor.DetectCadence(withGarbage));
+        Assert.NotNull(ProgressionAdvisor.Analyze(withGarbage));
     }
 
     [Fact]

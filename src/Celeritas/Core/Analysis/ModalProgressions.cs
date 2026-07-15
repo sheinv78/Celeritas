@@ -250,7 +250,7 @@ public static class ModalProgressions
     /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public static ModalProgressionAnalysisResult Analyze(string[] chordSymbols, int? rootHint = null)
     {
-        ArgumentNullException.ThrowIfNull(chordSymbols);
+        Guard.ThrowIfNullOrHasNullElement(chordSymbols, nameof(chordSymbols));
 
         if (chordSymbols.Length == 0)
         {
