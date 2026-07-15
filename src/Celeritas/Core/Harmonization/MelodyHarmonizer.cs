@@ -219,10 +219,24 @@ public sealed class MelodyHarmonizer
     /// <summary>
     /// Harmonize from a NoteEvent array (convenience overload).
     /// </summary>
-    public HarmonizationResult Harmonize(NoteEvent[] melody) => Harmonize(melody.AsSpan());
+    /// <exception cref="ArgumentNullException"><paramref name="melody"/> is <see langword="null"/>.</exception>
+    public HarmonizationResult Harmonize(NoteEvent[] melody)
+    {
+        // AsSpan() turns null into an empty span rather than throwing, which the span
+        // overload then answers with a well-formed "C major, cost 0, no chords" result —
+        // a null melody reported as successfully harmonized, indistinguishable from a
+        // legitimately empty one.
+        ArgumentNullException.ThrowIfNull(melody);
+        return Harmonize(melody.AsSpan());
+    }
 
     /// <summary>
     /// Harmonize from a NoteEvent array with a specified key (convenience overload).
     /// </summary>
-    public HarmonizationResult Harmonize(NoteEvent[] melody, KeySignature key) => Harmonize(melody.AsSpan(), key);
+    /// <exception cref="ArgumentNullException"><paramref name="melody"/> is <see langword="null"/>.</exception>
+    public HarmonizationResult Harmonize(NoteEvent[] melody, KeySignature key)
+    {
+        ArgumentNullException.ThrowIfNull(melody);
+        return Harmonize(melody.AsSpan(), key);
+    }
 }

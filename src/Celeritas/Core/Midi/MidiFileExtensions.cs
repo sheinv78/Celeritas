@@ -49,8 +49,12 @@ public static class MidiFileExtensions
         }
 
         public TrackChunk AddTrack(NoteEvent[] notes, string? name = null, MidiExportOptions? options = null)
-            =>
-                file.AddTrack(notes.AsSpan(), name, options);
+        {
+            // AsSpan() maps null to an empty span, so an unguarded null would quietly add an
+            // empty named track — the file gets written, just without the music.
+            ArgumentNullException.ThrowIfNull(notes);
+            return file.AddTrack(notes.AsSpan(), name, options);
+        }
 
         private TrackChunk AddTrack(ReadOnlySpan<NoteEvent> notes, string? name = null, MidiExportOptions? options = null)
         {

@@ -72,8 +72,16 @@ public static class KeyAnalyzer
     /// <summary>
     /// Analyze chord in the context of a key signature (array overload)
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="pitches"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static RomanNumeralChord Analyze(int[] pitches, KeySignature key) => Analyze(new ReadOnlySpan<int>(pitches), key);
+    public static RomanNumeralChord Analyze(int[] pitches, KeySignature key)
+    {
+        // Guard before the span conversion, not after: new ReadOnlySpan<int>(null) is legal
+        // and yields an *empty* span rather than throwing, so an unguarded null would reach
+        // the empty-input branch and be answered as if the caller had passed no notes.
+        ArgumentNullException.ThrowIfNull(pitches);
+        return Analyze(new ReadOnlySpan<int>(pitches), key);
+    }
 
     /// <summary>
     /// Analyze chord in the context of a key signature (NoteEvent array overload)
@@ -96,8 +104,15 @@ public static class KeyAnalyzer
     /// <summary>
     /// Analyze chord in the context of a key signature (NoteEvent array overload)
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static RomanNumeralChord Analyze(NoteEvent[] notes, KeySignature key) => Analyze(notes.AsSpan(), key);
+    public static RomanNumeralChord Analyze(NoteEvent[] notes, KeySignature key)
+    {
+        // AsSpan() is null-safe and returns an empty span, so null would be answered
+        // as RomanNumeralChord.Invalid rather than reported as the mistake it is.
+        ArgumentNullException.ThrowIfNull(notes);
+        return Analyze(notes.AsSpan(), key);
+    }
 
     private static RomanNumeralChord AnalyzeInMajorKey(int interval, ChordQuality quality)
     {
@@ -183,8 +198,14 @@ public static class KeyAnalyzer
     /// <summary>
     /// Identify key signature from a collection of pitches (array overload)
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="pitches"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static KeySignature IdentifyKey(int[] pitches) => IdentifyKey(new ReadOnlySpan<int>(pitches));
+    public static KeySignature IdentifyKey(int[] pitches)
+    {
+        // Without this, null becomes an empty span and is reported as C major.
+        ArgumentNullException.ThrowIfNull(pitches);
+        return IdentifyKey(new ReadOnlySpan<int>(pitches));
+    }
 
     /// <summary>
     /// Identify key signature from a human-readable notation string.

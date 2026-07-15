@@ -8,8 +8,11 @@ public static class OrnamentApplier
     /// <summary>
     /// Apply ornaments to a melody by note index (as used in examples).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="ornamentMap"/> is <see langword="null"/>.</exception>
     public static NoteEvent[] Apply(ReadOnlySpan<NoteEvent> melody, IReadOnlyDictionary<int, Ornament> ornamentMap)
     {
+        ArgumentNullException.ThrowIfNull(ornamentMap);
+
         if (melody.Length == 0 || ornamentMap.Count == 0)
             return melody.ToArray();
 
@@ -35,8 +38,16 @@ public static class OrnamentApplier
     /// <summary>
     /// Apply ornaments to a melody by note index (as used in examples).
     /// </summary>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="melody"/> or <paramref name="ornamentMap"/> is <see langword="null"/>.
+    /// </exception>
     public static NoteEvent[] Apply(NoteEvent[] melody, IReadOnlyDictionary<int, Ornament> ornamentMap)
-        => Apply(melody.AsSpan(), ornamentMap);
+    {
+        // Without this, AsSpan() maps null to an empty span and the caller gets back an
+        // empty array as though the melody genuinely had no notes.
+        ArgumentNullException.ThrowIfNull(melody);
+        return Apply(melody.AsSpan(), ornamentMap);
+    }
 
     private static Ornament RebaseOrnament(Ornament ornament, NoteEvent baseNote)
     {
