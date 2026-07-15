@@ -196,7 +196,9 @@ public static class KeyProfiler
     }
 
     /// <summary>
-    /// Detect key from an array of MIDI pitches.
+    /// Detect key from an array of MIDI pitches. Pitches outside the MIDI range are folded to
+    /// their pitch class rather than skipped: the engine produces them itself, and a key is a
+    /// question about pitch classes.
     /// </summary>
     public static KeyDetectionResult DetectFromPitches(ReadOnlySpan<int> pitches)
     {
@@ -205,10 +207,11 @@ public static class KeyProfiler
 
         foreach (var pitch in pitches)
         {
-            if (pitch is >= 0 and < 128)
-            {
-                distribution[pitch % 12]++;
-            }
+            // Dropping out-of-range pitches instead of folding them meant a melody transposed
+            // below zero — which MusicMath.Transpose does without clamping, by documented design —
+            // contributed nothing at all, and an entirely out-of-range one was answered as C major
+            // at 0% confidence rather than in the key it plainly was.
+            distribution[((pitch % 12) + 12) % 12]++;
         }
 
         return Detect(distribution);
@@ -267,7 +270,10 @@ public static class KeyProfiler
         for (var i = 0; i < buffer.Count; i++)
         {
             var note = buffer.Get(i);
-            var pitchClass = note.Pitch % 12;
+            // Fold: `%` keeps the sign in C#, so a pitch below zero indexed backwards out of the
+            // distribution. Its sibling DetectFromPitches guards this same loop and its cousin
+            // ChordAnalyzer.GetMask folds it — one distribution, computed three ways.
+            var pitchClass = ((note.Pitch % 12) + 12) % 12;
             // Weight by duration (longer notes are more important for key)
             var weight = (float)note.Duration.ToDouble();
             distribution[pitchClass] += weight;

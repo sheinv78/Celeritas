@@ -450,12 +450,14 @@ public static class ModeLibrary
         if (noteList.Count == 0)
             throw new ArgumentException("Notes collection is empty", nameof(notes));
 
-        var root = rootHint ?? (noteList[0].Pitch % 12);
+        // Both folds matter: `%` keeps the sign, so a pitch below zero gave a negative root and
+        // indexed backwards out of the distribution.
+        var root = rootHint ?? (((noteList[0].Pitch % 12) + 12) % 12);
         var distribution = new float[12];
 
         foreach (var note in noteList)
         {
-            distribution[note.Pitch % 12] += 1f;
+            distribution[((note.Pitch % 12) + 12) % 12] += 1f;
         }
 
         return DetectModeWithRoot(distribution, root);

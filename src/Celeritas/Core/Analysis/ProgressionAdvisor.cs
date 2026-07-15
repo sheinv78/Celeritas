@@ -729,8 +729,9 @@ public static class ProgressionAdvisor
         var usesAltered = alteredForThis.Count > 0;
         var alteredStr = usesAltered ? string.Join("; ", alteredForThis.Select(a => a.note)) : null;
 
-        // Get note names
-        var noteNames = pitches.Select(p => NoteNames[p % 12]).Distinct().ToArray();
+        // Get note names. Fold rather than `p % 12`, which keeps the sign for a pitch below zero
+        // and indexes backwards out of NoteNames.
+        var noteNames = pitches.Select(p => NoteNames[((p % 12) + 12) % 12]).Distinct().ToArray();
 
         // Borrowed (modal mixture): not diatonic to the key, but diatonic to the
         // parallel mode. (KeyAnalyzer returns Invalid — never HarmonicFunction.Chromatic —
