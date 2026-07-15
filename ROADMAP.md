@@ -53,8 +53,11 @@ Celeritas already covers most of the symbolic-music core, all under test:
   points.
 - Broaden property-based tests (CsCheck) and fuzzing (MIDI already fuzzed) for edge cases:
   empty inputs, extreme magnitudes, malformed data.
-- **Decide target frameworks:** net10 only, or multi-target net8 (LTS) for adoption reach
-  — weighed against conditional SIMD APIs.
+- ~~**Decide target frameworks.**~~ **Decided: `net10.0` only** — see
+  [ADR 0001](docs/adr/0001-target-framework-strategy.md). Multi-targeting net8 was measured,
+  not estimated (it builds and passes 543/543 unchanged), but .NET 8 leaves support on
+  2026-11-10, and staying net8-clean would fence off the newest SIMD APIs for an engine
+  whose differentiator is SIMD.
 
 ### 0.11 — Documentation & DX
 
