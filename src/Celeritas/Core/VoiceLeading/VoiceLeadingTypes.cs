@@ -4,9 +4,9 @@
 namespace Celeritas.Core.VoiceLeading;
 
 /// <summary>
-/// Voice in a chord voicing (SATB: Soprano, Alto, Tenor, Bass).
+/// A voice part in a chord voicing (SATB: Soprano, Alto, Tenor, Bass).
 /// </summary>
-public enum Voice
+public enum VoicePart
 {
     Bass = 0,
     Tenor = 1,
@@ -25,12 +25,12 @@ public static class VoiceRanges
     public static readonly (int Min, int Max) Alto = (55, 74);      // G3 - D5
     public static readonly (int Min, int Max) Soprano = (60, 81);   // C4 - A5
 
-    public static (int Min, int Max) GetRange(Voice voice) => voice switch
+    public static (int Min, int Max) GetRange(VoicePart voice) => voice switch
     {
-        Voice.Bass => Bass,
-        Voice.Tenor => Tenor,
-        Voice.Alto => Alto,
-        Voice.Soprano => Soprano,
+        VoicePart.Bass => Bass,
+        VoicePart.Tenor => Tenor,
+        VoicePart.Alto => Alto,
+        VoicePart.Soprano => Soprano,
         _ => (0, 127)
     };
 }
@@ -54,12 +54,12 @@ public readonly struct Voicing(int bass, int tenor, int alto, int soprano)
     public int Alto => (int)((_packed >> 16) & 0xFF);
     public int Soprano => (int)((_packed >> 24) & 0xFF);
 
-    public int this[Voice voice] => voice switch
+    public int this[VoicePart voice] => voice switch
     {
-        Voice.Bass => Bass,
-        Voice.Tenor => Tenor,
-        Voice.Alto => Alto,
-        Voice.Soprano => Soprano,
+        VoicePart.Bass => Bass,
+        VoicePart.Tenor => Tenor,
+        VoicePart.Alto => Alto,
+        VoicePart.Soprano => Soprano,
         _ => 0
     };
 
@@ -97,11 +97,11 @@ public enum VoiceLeadingViolation : ushort
 
     // Voice crossing and overlap
     VoiceCrossing = 1 << 4,       // Voices cross each other
-    VoiceOverlap = 1 << 5,        // Voice moves past previous position of adjacent voice
+    VoiceOverlap = 1 << 5,        // VoicePart moves past previous position of adjacent voice
 
     // Melodic violations
-    AugmentedInterval = 1 << 6,   // Voice moves by augmented interval
-    LargeLeap = 1 << 7,           // Voice moves by more than an octave
+    AugmentedInterval = 1 << 6,   // VoicePart moves by augmented interval
+    LargeLeap = 1 << 7,           // VoicePart moves by more than an octave
 
     // Resolution violations
     UnresolvedLeadingTone = 1 << 8,   // Leading tone doesn't resolve up

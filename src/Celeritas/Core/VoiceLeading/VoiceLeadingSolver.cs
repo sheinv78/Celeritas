@@ -386,7 +386,7 @@ public sealed class VoiceLeadingSolution(Voicing[] voicings, float totalCost, IR
             return "No valid solution found.";
 
         var sb = new StringBuilder();
-        sb.AppendLine("SATB Voice Leading:");
+        sb.AppendLine("SATB VoicePart Leading:");
         sb.AppendLine("═══════════════════════════════════════");
         sb.AppendLine();
 

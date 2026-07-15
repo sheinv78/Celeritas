@@ -173,9 +173,9 @@ public sealed class RhythmPredictor
     /// <summary>
     /// Get model statistics.
     /// </summary>
-    public RhythmModelStats GetStats()
+    public RhythmModelStatistics GetStats()
     {
-        return new RhythmModelStats
+        return new RhythmModelStatistics
         {
             Order = _order,
             UniqueContexts = _transitions.Count,
@@ -319,7 +319,7 @@ public sealed class RhythmAlternative
 /// <summary>
 /// Statistics about the rhythm model.
 /// </summary>
-public sealed class RhythmModelStats
+public sealed class RhythmModelStatistics
 {
     public int Order { get; init; }
     public int UniqueContexts { get; init; }

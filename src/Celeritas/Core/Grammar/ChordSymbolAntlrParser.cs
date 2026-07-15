@@ -9,8 +9,10 @@ namespace Celeritas.Core;
 /// <summary>
 /// ANTLR-based chord symbol parser.
 /// Supports: root note + accidentals, qualities, extensions, alterations, add/omit, slash bass, and simple polychords.
+/// Implementation detail behind <see cref="Analysis.ProgressionAdvisor.ParseChordSymbol"/> and
+/// <c>ProgressionAdvisor.TryParseChordSymbol</c>, which are the public entry points.
 /// </summary>
-public static class ChordSymbolAntlrParser
+internal static class ChordSymbolAntlrParser
 {
     /// <summary>
     /// Parse a chord symbol into MIDI pitches (octave 4 root = C4/60).

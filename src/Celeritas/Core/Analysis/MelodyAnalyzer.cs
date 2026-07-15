@@ -82,7 +82,7 @@ public sealed class Motif
 /// <summary>
 /// Statistics about interval distribution.
 /// </summary>
-public sealed class MelodicIntervalStats
+public sealed class MelodicIntervalStatistics
 {
     public required int TotalIntervals { get; init; }
     public required double AverageInterval { get; init; }
@@ -106,7 +106,7 @@ public sealed class MelodyAnalysisResult
     public required int Ambitus { get; init; } // range in semitones
     public required string AmbitusDescription { get; init; }
     public required IReadOnlyList<MelodicInterval> Intervals { get; init; }
-    public required MelodicIntervalStats Statistics { get; init; }
+    public required MelodicIntervalStatistics Statistics { get; init; }
     public required IReadOnlyList<Motif> Motifs { get; init; }
     public required double Conjunctness { get; init; } // 0-1, how stepwise
     public required double Complexity { get; init; } // 0-1, variety of intervals
@@ -355,11 +355,11 @@ public static class MelodyAnalyzer
         return $"{rangeDesc} range: {lowNote} to {highNote} ({intervalDesc})";
     }
 
-    private static MelodicIntervalStats CalculateStatistics(List<MelodicInterval> intervals)
+    private static MelodicIntervalStatistics CalculateStatistics(List<MelodicInterval> intervals)
     {
         if (intervals.Count == 0)
         {
-            return new MelodicIntervalStats
+            return new MelodicIntervalStatistics
             {
                 TotalIntervals = 0,
                 AverageInterval = 0,
@@ -387,7 +387,7 @@ public static class MelodyAnalyzer
         var reps = motionHist.GetValueOrDefault(MelodicMotionType.Repetition, 0);
         var leaps = total - steps - reps;
 
-        return new MelodicIntervalStats
+        return new MelodicIntervalStatistics
         {
             TotalIntervals = total,
             AverageInterval = intervals.Average(i => Math.Abs(i.Semitones)),
@@ -496,7 +496,7 @@ public static class MelodyAnalyzer
         double conjunctness,
         double complexity,
         int ambitus,
-        MelodicIntervalStats stats)
+        MelodicIntervalStatistics stats)
     {
         var parts = new List<string>();
 
@@ -558,7 +558,7 @@ public static class MelodyAnalyzer
         Ambitus = 0,
         AmbitusDescription = "No range",
         Intervals = [],
-        Statistics = new MelodicIntervalStats
+        Statistics = new MelodicIntervalStatistics
         {
             TotalIntervals = 0,
             AverageInterval = 0,

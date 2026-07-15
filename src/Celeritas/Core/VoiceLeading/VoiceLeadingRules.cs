@@ -91,9 +91,9 @@ public static class VoiceLeadingRules
         var violations = VoiceLeadingViolation.None;
 
         // Check all 6 voice pairs: (B,T), (B,A), (B,S), (T,A), (T,S), (A,S)
-        Span<(Voice, Voice)> pairs = [(Voice.Bass, Voice.Tenor), (Voice.Bass, Voice.Alto),
-            (Voice.Bass, Voice.Soprano), (Voice.Tenor, Voice.Alto),
-            (Voice.Tenor, Voice.Soprano), (Voice.Alto, Voice.Soprano)];
+        Span<(VoicePart, VoicePart)> pairs = [(VoicePart.Bass, VoicePart.Tenor), (VoicePart.Bass, VoicePart.Alto),
+            (VoicePart.Bass, VoicePart.Soprano), (VoicePart.Tenor, VoicePart.Alto),
+            (VoicePart.Tenor, VoicePart.Soprano), (VoicePart.Alto, VoicePart.Soprano)];
 
         foreach (var (v1, v2) in pairs)
         {
@@ -198,7 +198,7 @@ public static class VoiceLeadingRules
 
         for (var v = 0; v < 4; v++)
         {
-            var voice = (Voice)v;
+            var voice = (VoicePart)v;
             var interval = Math.Abs(to[voice] - from[voice]);
 
             // Large leap (> octave)
@@ -248,7 +248,7 @@ public static class VoiceLeadingRules
         // chord), precomputed by the caller so it can be reused across many 'to' candidates.
         for (var v = 0; v < 4; v++)
         {
-            var voice = (Voice)v;
+            var voice = (VoicePart)v;
             var fromPitch = from[voice];
             var toPitch = to[voice];
             var fromPitchClass = fromPitch % 12;
@@ -261,7 +261,7 @@ public static class VoiceLeadingRules
                 if (resolution != 1 && resolution != -11) // Allow octave displacement
                 {
                     // Only flag if it's an outer voice or if it doesn't resolve at all
-                    if (voice == Voice.Soprano || voice == Voice.Bass || Math.Abs(resolution) > 2)
+                    if (voice == VoicePart.Soprano || voice == VoicePart.Bass || Math.Abs(resolution) > 2)
                     {
                         violations |= VoiceLeadingViolation.UnresolvedLeadingTone;
                     }

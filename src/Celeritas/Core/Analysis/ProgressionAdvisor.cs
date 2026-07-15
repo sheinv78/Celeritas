@@ -31,6 +31,21 @@ public static class ProgressionAdvisor
     }
 
     /// <summary>
+    /// Try to parse a chord symbol into MIDI pitches. Unlike <see cref="ParseChordSymbol"/>,
+    /// which yields an empty array for anything it cannot parse, this reports success
+    /// explicitly so callers can tell "unparsable" apart from "parsed to nothing".
+    /// </summary>
+    public static bool TryParseChordSymbol(string symbol, out int[] pitches) =>
+        ChordSymbolAntlrParser.TryParsePitches(symbol, out pitches);
+
+    /// <summary>
+    /// Try to parse a chord symbol into MIDI pitches, also returning the parse errors
+    /// encountered. Useful for surfacing why a symbol was rejected.
+    /// </summary>
+    public static bool TryParseChordSymbol(string symbol, out int[] pitches, out IReadOnlyList<string> errors) =>
+        ChordSymbolAntlrParser.TryParsePitches(symbol, out pitches, out errors);
+
+    /// <summary>
     /// Get the inversion of a chord based on the bass note.
     /// </summary>
     public static int GetInversion(int[] pitches)
