@@ -1,6 +1,7 @@
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
 using Ornamentation = Celeritas.Core.Ornamentation;
+using Celeritas.Core.Midi;
 using Celeritas.Core.VoiceLeading;
 
 namespace Celeritas.Tests;
@@ -208,6 +209,11 @@ public class RangeContractTests
         AssertRejects("style", () => RhythmModels.GetStyleModel((RhythmStyle)9999));
         AssertRejects("type", () => Ornamentation.Articulation.FromType(
             (Ornamentation.ArticulationType)9999, new NoteEvent(60, Rational.Zero, Rational.Quarter)));
+
+        // Already correct before #19 — its default arm threw rather than answering. Pinned because
+        // the reflection probe could not reach it: Split extends MidiFile, which the probe had no
+        // way to construct, so it was skipped and this contract rested on nobody having checked.
+        AssertRejects("mode", () => new Melanchall.DryWetMidi.Core.MidiFile().Split((MidiSplitMode)9999));
     }
 
     /// <summary>
