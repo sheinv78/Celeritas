@@ -350,8 +350,12 @@ public static class RhythmModels
     /// <summary>
     /// Get a pre-trained model for a style.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="style"/> is not a defined <see cref="RhythmStyle"/> value.</exception>
     public static RhythmPredictor GetStyleModel(RhythmStyle style)
     {
+        if (!Enum.IsDefined(style))
+            throw new ArgumentOutOfRangeException(nameof(style), style, "Not a defined RhythmStyle value.");
+
         return style switch
         {
             RhythmStyle.Classical => GetStyleModel("classical"),

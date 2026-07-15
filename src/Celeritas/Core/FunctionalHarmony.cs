@@ -77,8 +77,15 @@ public static class FunctionalProgressions
         ScaleDegree.I
     ];
 
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="DiatonicChordType"/> value.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="minorDominant"/> is not a defined <see cref="MinorDominantStyle"/> value.</exception>
     public static FunctionalChord[] Circle(KeySignature key, DiatonicChordType type = DiatonicChordType.Seventh, MinorDominantStyle minorDominant = MinorDominantStyle.Harmonic)
     {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined DiatonicChordType value.");
+        if (!Enum.IsDefined(minorDominant))
+            throw new ArgumentOutOfRangeException(nameof(minorDominant), minorDominant, "Not a defined MinorDominantStyle value.");
+
         var result = new FunctionalChord[CircleDegrees.Length];
         for (var i = 0; i < CircleDegrees.Length; i++)
         {
@@ -88,8 +95,15 @@ public static class FunctionalProgressions
         return result;
     }
 
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="DiatonicChordType"/> value.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="minorDominant"/> is not a defined <see cref="MinorDominantStyle"/> value.</exception>
     public static FunctionalChord[] TwoFiveOne(KeySignature key, DiatonicChordType type = DiatonicChordType.Seventh, MinorDominantStyle minorDominant = MinorDominantStyle.Harmonic)
     {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined DiatonicChordType value.");
+        if (!Enum.IsDefined(minorDominant))
+            throw new ArgumentOutOfRangeException(nameof(minorDominant), minorDominant, "Not a defined MinorDominantStyle value.");
+
         var degrees = new[] { ScaleDegree.Ii, ScaleDegree.V, ScaleDegree.I };
         var result = new FunctionalChord[degrees.Length];
         for (var i = 0; i < degrees.Length; i++)
@@ -104,8 +118,15 @@ public static class FunctionalProgressions
     /// Common turnaround: I → vi → ii → V → I.
     /// In minor: i → VI → ii° → V → i.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="DiatonicChordType"/> value.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="minorDominant"/> is not a defined <see cref="MinorDominantStyle"/> value.</exception>
     public static FunctionalChord[] Turnaround(KeySignature key, DiatonicChordType type = DiatonicChordType.Seventh, MinorDominantStyle minorDominant = MinorDominantStyle.Harmonic)
     {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined DiatonicChordType value.");
+        if (!Enum.IsDefined(minorDominant))
+            throw new ArgumentOutOfRangeException(nameof(minorDominant), minorDominant, "Not a defined MinorDominantStyle value.");
+
         var degrees = new[] { ScaleDegree.I, ScaleDegree.Vi, ScaleDegree.Ii, ScaleDegree.V, ScaleDegree.I };
         var result = new FunctionalChord[degrees.Length];
         for (var i = 0; i < degrees.Length; i++)
@@ -120,8 +141,15 @@ public static class FunctionalProgressions
     /// Common extended cadence: iii → vi → ii → V → I.
     /// In minor: III → VI → ii°/iiø → V → i (depending on <paramref name="minorDominant"/>).
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="DiatonicChordType"/> value.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="minorDominant"/> is not a defined <see cref="MinorDominantStyle"/> value.</exception>
     public static FunctionalChord[] ThreeSixTwoFiveOne(KeySignature key, DiatonicChordType type = DiatonicChordType.Seventh, MinorDominantStyle minorDominant = MinorDominantStyle.Harmonic)
     {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined DiatonicChordType value.");
+        if (!Enum.IsDefined(minorDominant))
+            throw new ArgumentOutOfRangeException(nameof(minorDominant), minorDominant, "Not a defined MinorDominantStyle value.");
+
         var degrees = new[] { ScaleDegree.Iii, ScaleDegree.Vi, ScaleDegree.Ii, ScaleDegree.V, ScaleDegree.I };
         var result = new FunctionalChord[degrees.Length];
         for (var i = 0; i < degrees.Length; i++)
@@ -136,16 +164,27 @@ public static class FunctionalProgressions
     /// Secondary dominant leading to a diatonic scale degree.
     /// Example in C major: SecondaryDominantTo(ii) => A7 (V7/ii)
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="targetDegree"/> is not a defined <see cref="ScaleDegree"/> value.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="DiatonicChordType"/> value.</exception>
     public static SecondaryDominant SecondaryDominantTo(KeySignature key, ScaleDegree targetDegree, DiatonicChordType type = DiatonicChordType.Seventh)
     {
+        if (!Enum.IsDefined(targetDegree))
+            throw new ArgumentOutOfRangeException(nameof(targetDegree), targetDegree, "Not a defined ScaleDegree value.");
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined DiatonicChordType value.");
+
         return new SecondaryDominant(key, targetDegree, type);
     }
 
     /// <summary>
     /// Common set of secondary dominants: V/(ii, iii, IV, V, vi).
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="DiatonicChordType"/> value.</exception>
     public static SecondaryDominant[] SecondaryDominants(KeySignature key, DiatonicChordType type = DiatonicChordType.Seventh)
     {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined DiatonicChordType value.");
+
         var targets = new[] { ScaleDegree.Ii, ScaleDegree.Iii, ScaleDegree.Iv, ScaleDegree.V, ScaleDegree.Vi };
         var result = new SecondaryDominant[targets.Length];
         for (var i = 0; i < targets.Length; i++)

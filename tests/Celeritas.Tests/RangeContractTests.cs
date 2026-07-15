@@ -1,5 +1,6 @@
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
+using Ornamentation = Celeritas.Core.Ornamentation;
 using Celeritas.Core.VoiceLeading;
 
 namespace Celeritas.Tests;
@@ -183,6 +184,83 @@ public class RangeContractTests
 
         Assert.Single(VoiceSeparator.Separate(buffer, 1).Voices);
     }
+
+    // --- Enums: rejected unless defined ---
+
+    /// <summary>
+    /// C# will cast any number to an enum, so these calls compile. Before the guards, 29 of the 30
+    /// public methods taking an enum answered one — a <c>switch</c> with a <c>default:</c> arm, or
+    /// a bounds test missing one end, quietly turned an undefined value into somebody's answer.
+    /// </summary>
+    [Fact]
+    public void UndefinedEnumValues_AreRejected_NotAnswered()
+    {
+        var cMajor = new KeySignature(0, true);
+
+        // Returned a well-formed SecondaryDominant whose roman numeral printed as "V7/9999".
+        AssertRejects("targetDegree", () => FunctionalProgressions.SecondaryDominantTo(cMajor, (ScaleDegree)9999));
+
+        AssertRejects("degree", () => cMajor.GetScaleDegreePitchClass((ScaleDegree)9999)); // was: 0, i.e. C
+        AssertRejects("voice", () => VoiceRanges.GetRange((VoicePart)9999));               // was: (0, 127)
+        AssertRejects("mode", () => ModeLibrary.GetCharacteristicNotes((Mode)9999));
+        AssertRejects("mode", () => ModalProgressions.GetProgressionsForMode((Mode)9999));
+        AssertRejects("direction", () => CircleOfFifths.MajorKeys(PitchClass.C, (CircleDirection)9999));
+        AssertRejects("style", () => RhythmModels.GetStyleModel((RhythmStyle)9999));
+        AssertRejects("type", () => Ornamentation.Articulation.FromType(
+            (Ornamentation.ArticulationType)9999, new NoteEvent(60, Rational.Zero, Rational.Quarter)));
+    }
+
+    /// <summary>
+    /// GetIntervals returns a <c>ReadOnlySpan&lt;int&gt;</c>, which reflection cannot box — so the
+    /// probe that found the other 29 sites could not see this one at all. It needs a hand-written
+    /// test precisely because the automated sweep was blind to it.
+    /// </summary>
+    [Fact]
+    public void GetIntervals_RejectsUndefinedMode_AtBothEnds()
+    {
+        // The old bounds test had one end: `index < ModeIntervals.Length ? [index] : [0]`. So 9999
+        // came back as the Ionian intervals, and -1 sailed past the test into ModeIntervals[-1].
+        Assert.Throws<ArgumentOutOfRangeException>(() => ModeLibrary.GetIntervals((Mode)9999));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ModeLibrary.GetIntervals((Mode)(-1)));
+
+        Assert.False(ModeLibrary.GetIntervals(Mode.Ionian).SequenceEqual(ModeLibrary.GetIntervals(Mode.Dorian)));
+    }
+
+    [Fact]
+    public void ModalKey_RejectsUndefinedMode_AtConstruction()
+    {
+        // Guarded here rather than at each consumer: GetScaleMask and friends read the mode out of
+        // the key, so their own guard would blame a parameter named "mode" for a caller who only
+        // ever passed a "key".
+        Assert.Equal("mode", Assert.Throws<ArgumentOutOfRangeException>(() => new ModalKey(0, (Mode)9999)).ParamName);
+        Assert.Equal(Mode.Dorian, new ModalKey(0, Mode.Dorian).Mode);
+    }
+
+    /// <summary>
+    /// [Flags] enums are exempt: arbitrary bit combinations are what the type is for, so
+    /// Enum.IsDefined would reject legitimate values. Answering "no" to an unknown bit is correct.
+    /// </summary>
+    [Fact]
+    public void FlagsEnums_AreNotValidated_TheyAreBitTests()
+    {
+        var check = new VoiceLeadingCheck(VoiceLeadingViolation.ParallelFifths, 100f);
+        Assert.True(check.HasViolation(VoiceLeadingViolation.ParallelFifths));
+
+        // An undefined bit is simply absent — not an error. The defined flags stop at 1 << 11.
+        Assert.False(check.HasViolation((VoiceLeadingViolation)(1 << 14)));
+
+        // And an undefined *combination* is answered by overlap, which is the whole point of the
+        // type: 9999 is odd, so it carries bit 0, which is ParallelFifths. Enum.IsDefined would
+        // reject this and every legitimate combination below with it.
+        Assert.True(check.HasViolation((VoiceLeadingViolation)9999));
+
+        var combined = VoiceLeadingViolation.ParallelFifths | VoiceLeadingViolation.VoiceCrossing;
+        Assert.True(new VoiceLeadingCheck(combined, 0f).HasViolation(VoiceLeadingViolation.VoiceCrossing));
+        Assert.False(Enum.IsDefined(combined));
+    }
+
+    private static void AssertRejects(string expectedParamName, Action act) =>
+        Assert.Equal(expectedParamName, Assert.Throws<ArgumentOutOfRangeException>(act).ParamName);
 
     private static NoteBuffer TwoNotes()
     {

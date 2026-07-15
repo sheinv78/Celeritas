@@ -85,6 +85,31 @@ invisible because both returned plausible answers:
 Two functions with the same `(int root, bool isMajor)` signature behaving differently is a worse
 trap than either choice on its own.
 
+### Enums are values too
+
+C# lets any number be cast to an enum, so `(Mode)9999` is a legal call that the compiler will
+not stop. Probing every public method that takes an enum with `9999` found **29 of 30 answered**:
+
+- `FunctionalProgressions.SecondaryDominantTo((ScaleDegree)9999)` returned a well-formed
+  `SecondaryDominant` whose roman numeral printed as **`"V7/9999"`**.
+- `KeySignature.GetScaleDegreePitchClass((ScaleDegree)9999)` returned **0** — C.
+- `VoiceRanges.GetRange((VoicePart)9999)` returned **(0, 127)** — the whole MIDI range as a
+  voice's range.
+- `ModeLibrary.GetIntervals((Mode)9999)` returned the **Ionian** intervals, via a bounds check
+  that tested only the upper end: `index < ModeIntervals.Length ? ModeIntervals[index] :
+  ModeIntervals[0]`. The same expression indexes `[-1]` for a negative cast.
+
+The mechanism is the familiar one — a `switch` with a `default:` arm, or a bounds test with one
+end missing, turns an undefined value into somebody's answer.
+
+So: **a non-flags enum parameter is checked with `Enum.IsDefined` at the public boundary** and
+rejected with `ArgumentOutOfRangeException`. An enum is not cyclic; `(Mode)9999` has no correct
+reading, so rule 4 applies rather than the folding rule above.
+
+`[Flags]` enums are exempt — arbitrary bit combinations are the point of the type, and
+`Enum.IsDefined` rejects legitimate ones. That covers `SimdInstructionSet` and
+`VoiceLeadingViolation`, whose `False` for an unknown bit is already the right answer.
+
 ### An existing clamp we kept
 
 `RhythmPredictor(int order)` does `_order = Math.Max(1, order)`. That is a deliberate, explicit

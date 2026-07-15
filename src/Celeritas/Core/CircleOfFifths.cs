@@ -25,8 +25,12 @@ public static class CircleOfFifths
     /// Clockwise: C → G → D → ...
     /// CounterClockwise: C → F → Bb → ...
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined <see cref="CircleDirection"/> value.</exception>
     public static PitchClass[] PitchClasses(PitchClass start, CircleDirection direction = CircleDirection.Clockwise)
     {
+        if (!Enum.IsDefined(direction))
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, "Not a defined CircleDirection value.");
+
         var step = direction == CircleDirection.Clockwise ? PerfectFifth : PerfectFourth;
 
         var result = new PitchClass[12];
@@ -49,8 +53,12 @@ public static class CircleOfFifths
 
     public static PitchClass PrevFourth(PitchClass pc) => pc - PerfectFourth;
 
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined <see cref="CircleDirection"/> value.</exception>
     public static KeySignature[] MajorKeys(PitchClass start, CircleDirection direction = CircleDirection.Clockwise)
     {
+        if (!Enum.IsDefined(direction))
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, "Not a defined CircleDirection value.");
+
         var pcs = PitchClasses(start, direction);
         var keys = new KeySignature[pcs.Length];
         for (var i = 0; i < pcs.Length; i++)
@@ -60,8 +68,12 @@ public static class CircleOfFifths
         return keys;
     }
 
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined <see cref="CircleDirection"/> value.</exception>
     public static KeySignature[] MinorKeys(PitchClass start, CircleDirection direction = CircleDirection.Clockwise)
     {
+        if (!Enum.IsDefined(direction))
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, "Not a defined CircleDirection value.");
+
         var pcs = PitchClasses(start, direction);
         var keys = new KeySignature[pcs.Length];
         for (var i = 0; i < pcs.Length; i++)
@@ -75,8 +87,12 @@ public static class CircleOfFifths
     /// Major triad chord symbols (pitch-class root) along the circle.
     /// Example (start=C): C, G, D, A, ...
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined <see cref="CircleDirection"/> value.</exception>
     public static string[] MajorChordSymbols(PitchClass start, bool preferSharps = true, CircleDirection direction = CircleDirection.Clockwise)
     {
+        if (!Enum.IsDefined(direction))
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, "Not a defined CircleDirection value.");
+
         var pcs = PitchClasses(start, direction);
         var symbols = new string[pcs.Length];
         for (var i = 0; i < pcs.Length; i++)
@@ -90,8 +106,12 @@ public static class CircleOfFifths
     /// Minor triad chord symbols (pitch-class root) along the circle.
     /// Example (start=A): Am, Em, Bm, F#m, ...
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined <see cref="CircleDirection"/> value.</exception>
     public static string[] MinorChordSymbols(PitchClass start, bool preferSharps = true, CircleDirection direction = CircleDirection.Clockwise)
     {
+        if (!Enum.IsDefined(direction))
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, "Not a defined CircleDirection value.");
+
         var pcs = PitchClasses(start, direction);
         var symbols = new string[pcs.Length];
         for (var i = 0; i < pcs.Length; i++)
@@ -105,8 +125,12 @@ public static class CircleOfFifths
     /// Returns pairs (Major, relative minor) along the major circle.
     /// Example: (C, Am), (G, Em), ...
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined <see cref="CircleDirection"/> value.</exception>
     public static (string Major, string RelativeMinor)[] MajorWithRelativeMinors(PitchClass start, bool preferSharps = true, CircleDirection direction = CircleDirection.Clockwise)
     {
+        if (!Enum.IsDefined(direction))
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, "Not a defined CircleDirection value.");
+
         var majors = PitchClasses(start, direction);
         var pairs = new (string Major, string RelativeMinor)[majors.Length];
 

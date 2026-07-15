@@ -67,8 +67,12 @@ public readonly record struct KeySignature
     /// Returns the pitch class (0-11) for a diatonic scale degree in this key.
     /// Uses major or natural minor.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="degree"/> is not a defined <see cref="ScaleDegree"/> value.</exception>
     public byte GetScaleDegreePitchClass(ScaleDegree degree)
     {
+        if (!Enum.IsDefined(degree))
+            throw new ArgumentOutOfRangeException(nameof(degree), degree, "Not a defined ScaleDegree value.");
+
         return (byte)((Root + GetScaleDegreeOffset(degree)) % 12);
     }
 

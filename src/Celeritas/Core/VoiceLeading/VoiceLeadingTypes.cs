@@ -27,14 +27,21 @@ public static class VoiceRanges
     public static readonly (int Min, int Max) Alto = (55, 74);      // G3 - D5
     public static readonly (int Min, int Max) Soprano = (60, 81);   // C4 - A5
 
-    public static (int Min, int Max) GetRange(VoicePart voice) => voice switch
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="voice"/> is not a defined <see cref="VoicePart"/> value.</exception>
+    public static (int Min, int Max) GetRange(VoicePart voice)
     {
-        VoicePart.Bass => Bass,
-        VoicePart.Tenor => Tenor,
-        VoicePart.Alto => Alto,
-        VoicePart.Soprano => Soprano,
-        _ => (0, 127)
-    };
+        if (!Enum.IsDefined(voice))
+            throw new ArgumentOutOfRangeException(nameof(voice), voice, "Not a defined VoicePart value.");
+
+        return voice switch
+        {
+            VoicePart.Bass => Bass,
+            VoicePart.Tenor => Tenor,
+            VoicePart.Alto => Alto,
+            VoicePart.Soprano => Soprano,
+            _ => (0, 127)
+        };
+    }
 }
 
 /// <summary>

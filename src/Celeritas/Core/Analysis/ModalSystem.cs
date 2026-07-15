@@ -71,13 +71,30 @@ public enum Mode
 /// <summary>
 /// Extended key signature with modal information.
 /// </summary>
+/// <remarks>
+/// Validated on construction rather than at each consumer. ModeLibrary.GetIntervals and friends
+/// take a ModalKey and guard the mode they read out of it, which would blame a parameter named
+/// "mode" for a caller who only ever passed a "key". Rejecting it here puts the blame where the
+/// bad value entered.
+/// </remarks>
+/// <exception cref="ArgumentOutOfRangeException">
+/// <paramref name="mode"/> is not a defined <see cref="Analysis.Mode"/> value.
+/// </exception>
 public readonly struct ModalKey(byte root, Mode mode) : IEquatable<ModalKey>
 {
     /// <summary>Root note (0-11, where 0=C).</summary>
     public byte Root { get; } = (byte)(root % 12);
 
     /// <summary>The mode/scale type.</summary>
-    public Mode Mode { get; } = mode;
+    public Mode Mode { get; } = ThrowIfNotDefined(mode);
+
+    private static Mode ThrowIfNotDefined(Mode mode)
+    {
+        if (!Enum.IsDefined(mode))
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Not a defined Mode value.");
+
+        return mode;
+    }
 
     /// <summary>
     /// Convert from simple KeySignature.
@@ -211,12 +228,15 @@ public static class ModeLibrary
     /// <summary>
     /// Get intervals for a mode.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="Mode"/> value.</exception>
     public static ReadOnlySpan<int> GetIntervals(Mode mode)
     {
-        var index = (int)mode;
-        return index < ModeIntervals.Length
-            ? ModeIntervals[index]
-            : ModeIntervals[0];
+        // The previous bounds test checked only the upper end, so an undefined mode fell back to
+        // Ionian and a negative cast such as (Mode)(-1) reached ModeIntervals[-1]. Do not restore it.
+        if (!Enum.IsDefined(mode))
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Not a defined Mode value.");
+
+        return ModeIntervals[(int)mode];
     }
 
     /// <summary>
@@ -260,8 +280,12 @@ public static class ModeLibrary
     /// Get the characteristic/avoid notes for a mode.
     /// Characteristic notes distinguish this mode from parallel major/minor.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="Mode"/> value.</exception>
     public static (int[] characteristic, int[] avoid) GetCharacteristicNotes(Mode mode)
     {
+        if (!Enum.IsDefined(mode))
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Not a defined Mode value.");
+
         return mode switch
         {
             Mode.Dorian => ([9], []),           // Raised 6th vs natural minor
@@ -474,8 +498,12 @@ public static class ModeLibrary
     /// <summary>
     /// Get common chord types built on each scale degree for a mode.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="Mode"/> value.</exception>
     public static ChordQuality[] GetDiatonicChordQualities(Mode mode)
     {
+        if (!Enum.IsDefined(mode))
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Not a defined Mode value.");
+
         return mode switch
         {
             Mode.Ionian => [ChordQuality.Major, ChordQuality.Minor, ChordQuality.Minor,

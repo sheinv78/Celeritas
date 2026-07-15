@@ -13,20 +13,27 @@ public static class ModalProgressions
     /// <summary>
     /// Get characteristic progressions for a given mode.
     /// </summary>
-    public static IReadOnlyList<ModalProgression> GetProgressionsForMode(Mode mode) => mode switch
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="Mode"/> value.</exception>
+    public static IReadOnlyList<ModalProgression> GetProgressionsForMode(Mode mode)
     {
-        Mode.Dorian => DorianProgressions,
-        Mode.Phrygian => PhrygianProgressions,
-        Mode.Lydian => LydianProgressions,
-        Mode.Mixolydian => MixolydianProgressions,
-        Mode.Aeolian => AeolianProgressions,
-        Mode.Locrian => LocrianProgressions,
-        Mode.HarmonicMinor => HarmonicMinorProgressions,
-        Mode.MelodicMinor => MelodicMinorProgressions,
-        Mode.PhrygianDominant => PhrygianDominantProgressions,
-        Mode.LydianDominant => LydianDominantProgressions,
-        _ => IonianProgressions // Default to major
-    };
+        if (!Enum.IsDefined(mode))
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Not a defined Mode value.");
+
+        return mode switch
+        {
+            Mode.Dorian => DorianProgressions,
+            Mode.Phrygian => PhrygianProgressions,
+            Mode.Lydian => LydianProgressions,
+            Mode.Mixolydian => MixolydianProgressions,
+            Mode.Aeolian => AeolianProgressions,
+            Mode.Locrian => LocrianProgressions,
+            Mode.HarmonicMinor => HarmonicMinorProgressions,
+            Mode.MelodicMinor => MelodicMinorProgressions,
+            Mode.PhrygianDominant => PhrygianDominantProgressions,
+            Mode.LydianDominant => LydianDominantProgressions,
+            _ => IonianProgressions // Default to major
+        };
+    }
 
     /// <summary>
     /// Ionian (Major) progressions.

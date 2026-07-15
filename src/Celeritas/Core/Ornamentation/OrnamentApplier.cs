@@ -178,9 +178,13 @@ public static class OrnamentApplier
     /// <summary>
     /// Create a mordent ornament
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="MordentType"/> value.</exception>
     public static Mordent CreateMordent(NoteEvent baseNote, MordentType type = MordentType.Upper,
         int interval = 2, int alternations = 1)
     {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined MordentType value.");
+
         return new Mordent
         {
             BaseNote = baseNote,
@@ -193,9 +197,13 @@ public static class OrnamentApplier
     /// <summary>
     /// Create a turn ornament
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="TurnType"/> value.</exception>
     public static Turn CreateTurn(NoteEvent baseNote, TurnType type = TurnType.Normal,
         int upperInterval = 2, int lowerInterval = 2)
     {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined TurnType value.");
+
         return new Turn
         {
             BaseNote = baseNote,
@@ -208,9 +216,13 @@ public static class OrnamentApplier
     /// <summary>
     /// Create an appoggiatura ornament
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="AppogiaturaType"/> value.</exception>
     public static Appoggiatura CreateAppoggiatura(NoteEvent baseNote,
         AppogiaturaType type = AppogiaturaType.Long, int interval = 2)
     {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined AppogiaturaType value.");
+
         return new Appoggiatura
         {
             BaseNote = baseNote,

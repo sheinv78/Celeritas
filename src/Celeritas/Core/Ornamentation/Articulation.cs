@@ -70,8 +70,12 @@ public sealed class Articulation : Ornament
     /// <summary>
     /// Create articulation from type with standard modifiers.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not a defined <see cref="ArticulationType"/> value.</exception>
     public static Articulation FromType(ArticulationType type, NoteEvent baseNote)
     {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentOutOfRangeException(nameof(type), type, "Not a defined ArticulationType value.");
+
         return type switch
         {
             ArticulationType.Staccato => new Articulation
