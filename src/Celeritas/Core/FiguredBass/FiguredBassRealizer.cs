@@ -23,8 +23,11 @@ public sealed class FiguredBassRealizer
     /// <summary>
     /// Realize a sequence of figured bass symbols into chord voicings
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="symbols"/> is <see langword="null"/>.</exception>
     public NoteEvent[] Realize(FiguredBassSymbol[] symbols)
     {
+        ArgumentNullException.ThrowIfNull(symbols);
+
         var result = new List<NoteEvent>();
 
         int[]? previousUpperVoices = null;
@@ -204,8 +207,11 @@ public sealed class FiguredBassRealizer
     /// <summary>
     /// Realize a single figured bass symbol
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="symbol"/> is <see langword="null"/>.</exception>
     public NoteEvent[] RealizeSymbol(FiguredBassSymbol symbol)
     {
+        ArgumentNullException.ThrowIfNull(symbol);
+
         var intervals = NormalizeFigures(symbol.Figures);
         var notes = new List<NoteEvent>
         {
@@ -344,8 +350,13 @@ public sealed class FiguredBassRealizer
     /// Parse figured bass notation string (e.g., "6", "7", "6/5", "#3/#5").
     /// Accidental prefixes are tolerated here (use <see cref="ParseAccidentals"/> to read them).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="figuresStr"/> is <see langword="null"/>.</exception>
     public static int[] ParseFigures(string figuresStr)
     {
+        // IsNullOrWhiteSpace() accepts null, so null returned an empty int[] — indistinguishable
+        // from an unfigured bass, which realizes as a plain root-position triad.
+        ArgumentNullException.ThrowIfNull(figuresStr);
+
         if (string.IsNullOrWhiteSpace(figuresStr))
         {
             return [];
@@ -368,8 +379,11 @@ public sealed class FiguredBassRealizer
     /// <summary>
     /// Parse accidentals from figured bass string (e.g., "#3", "b7", "#3/#5")
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="figuresStr"/> is <see langword="null"/>.</exception>
     public static Dictionary<int, char> ParseAccidentals(string figuresStr)
     {
+        ArgumentNullException.ThrowIfNull(figuresStr);
+
         var accidentals = new Dictionary<int, char>();
 
         for (var i = 0; i < figuresStr.Length; i++)

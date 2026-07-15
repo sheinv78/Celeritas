@@ -15,8 +15,11 @@ public static class AccompanimentGenerator
     /// Generate accompaniment from a harmonization output (chord assignments).
     /// Uses the provided chord pitches (voicing) and adds a bass line.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chords"/> is <see langword="null"/>.</exception>
     public static NoteEvent[] Generate(IReadOnlyList<ChordAssignment> chords, AccompanimentOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(chords);
+
         var opt = options ?? AccompanimentOptions.Default;
         if (chords.Count == 0)
             return [];
@@ -94,11 +97,14 @@ public static class AccompanimentGenerator
     /// Generate accompaniment from a roman-numeral progression.
     /// Chords are spelled in the provided key.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="progression"/> is <see langword="null"/>.</exception>
     public static NoteEvent[] Generate(
         IReadOnlyList<HarmonicRhythmItem> progression,
         KeySignature key,
         AccompanimentOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(progression);
+
         var opt = options ?? AccompanimentOptions.Default;
         if (progression.Count == 0)
             return [];

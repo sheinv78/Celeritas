@@ -141,8 +141,11 @@ public static class MelodyAnalyzer
     /// <summary>
     /// Analyze a melody from a NoteBuffer.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static MelodyAnalysisResult Analyze(NoteBuffer buffer)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         if (buffer.Count == 0)
         {
             return EmptyResult();
@@ -166,8 +169,11 @@ public static class MelodyAnalyzer
     /// <summary>
     /// Analyze a melody from pitch array.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="pitches"/> is <see langword="null"/>.</exception>
     public static MelodyAnalysisResult Analyze(int[] pitches, Rational[]? times = null)
     {
+        ArgumentNullException.ThrowIfNull(pitches);
+
         if (pitches.Length == 0)
         {
             return EmptyResult();

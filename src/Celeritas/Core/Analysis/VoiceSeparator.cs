@@ -84,14 +84,18 @@ public static class VoiceSeparator
     /// <summary>
     /// Separate notes into voices using pitch-proximity algorithm.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static VoiceSeparationResult Separate(NoteBuffer buffer, int maxVoices = 4)
         => Separate(buffer, maxVoices, DefaultOptions);
 
     /// <summary>
     /// Convenience SATB separation: returns exactly 4 voices named Soprano/Alto/Tenor/Bass.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
     public static SatbSeparationResult SeparateIntoSatb(IEnumerable<NoteEvent> notes, VoiceSeparatorOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(notes);
+
         var arr = notes as NoteEvent[] ?? notes.ToArray();
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
@@ -101,8 +105,11 @@ public static class VoiceSeparator
     /// <summary>
     /// Convenience SATB separation: returns exactly 4 voices named Soprano/Alto/Tenor/Bass.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static SatbSeparationResult SeparateIntoSatb(NoteBuffer buffer, VoiceSeparatorOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         var res = Separate(buffer, maxVoices: 4, options ?? DefaultOptions);
 
         // Map detected voices to SATB labels by pitch register (not by list position:
@@ -157,8 +164,12 @@ public static class VoiceSeparator
     /// <summary>
     /// Separate notes into voices with custom options.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
     public static VoiceSeparationResult Separate(NoteBuffer buffer, int maxVoices, VoiceSeparatorOptions options)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+        ArgumentNullException.ThrowIfNull(options);
+
         if (buffer.Count == 0)
         {
             return new VoiceSeparationResult

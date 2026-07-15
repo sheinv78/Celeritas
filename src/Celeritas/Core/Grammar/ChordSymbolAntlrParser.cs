@@ -19,8 +19,14 @@ internal static class ChordSymbolAntlrParser
     /// For slash chords, bass is placed at octave 3 (C3/48).
     /// For polychords ("C|G"), subsequent layers are placed one octave higher.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="input"/> is <see langword="null"/>.</exception>
     public static int[] ParsePitches(string input)
     {
+        // Guard here rather than leaning on TryParsePitches: it reports null as an ordinary
+        // parse failure, which would surface as ArgumentException — the wrong exception for
+        // a missing argument, and one a caller cannot tell apart from a malformed symbol.
+        ArgumentNullException.ThrowIfNull(input);
+
         if (!TryParsePitches(input, out var pitches, out var errors))
             throw new ArgumentException($"Parse errors: {string.Join("; ", errors)}");
 
@@ -35,6 +41,14 @@ internal static class ChordSymbolAntlrParser
     public static bool TryParsePitches(string input, out int[] pitches, out IReadOnlyList<string> errors)
     {
         pitches = [];
+
+        // Null is unparsable input, not an empty chord: report failure the way
+        // int.TryParse(null, out _) does, rather than claiming a successful parse.
+        if (input is null)
+        {
+            errors = ["Input is null."];
+            return false;
+        }
 
         if (string.IsNullOrWhiteSpace(input))
         {

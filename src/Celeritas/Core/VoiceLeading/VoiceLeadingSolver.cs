@@ -24,8 +24,11 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
     /// Solve voice leading for a progression of chords.
     /// Returns optimal SATB voicings for each chord.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chordPitchClasses"/> is <see langword="null"/>.</exception>
     public VoiceLeadingSolution Solve(IReadOnlyList<int[]> chordPitchClasses, int keyRoot = 0)
     {
+        ArgumentNullException.ThrowIfNull(chordPitchClasses);
+
         if (chordPitchClasses.Count == 0)
             return new VoiceLeadingSolution([], 0, []);
 
@@ -52,8 +55,11 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
     /// <summary>
     /// Solve voice leading from chord symbols.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public VoiceLeadingSolution SolveFromSymbols(IReadOnlyList<string> chordSymbols, int keyRoot = 0)
     {
+        ArgumentNullException.ThrowIfNull(chordSymbols);
+
         var chords = new List<int[]>(chordSymbols.Count);
 
         foreach (var symbol in chordSymbols)

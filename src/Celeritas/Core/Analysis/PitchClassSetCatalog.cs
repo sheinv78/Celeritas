@@ -68,8 +68,11 @@ public sealed class PitchClassSetCatalog
         return new PitchClassSetCatalog(dict);
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="primeForm"/> is <see langword="null"/>.</exception>
     public bool TryGetByPrimeForm(int[] primeForm, out PitchClassSetCatalogEntry? entry)
     {
+        ArgumentNullException.ThrowIfNull(primeForm);
+
         entry = null;
         if (primeForm.Length == 0)
         {
@@ -86,11 +89,18 @@ public sealed class PitchClassSetCatalog
         return false;
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="primeForm"/> is <see langword="null"/>.</exception>
     public static string PrimeFormKey(int[] primeForm)
-        => string.Join(",", primeForm.Select(v => ((v % 12) + 12) % 12));
+    {
+        ArgumentNullException.ThrowIfNull(primeForm);
+        return string.Join(",", primeForm.Select(v => ((v % 12) + 12) % 12));
+    }
 
+    /// <exception cref="ArgumentNullException"><paramref name="primeForm"/> is <see langword="null"/>.</exception>
     public static int[] NormalizePrimeForm(int[] primeForm)
     {
+        ArgumentNullException.ThrowIfNull(primeForm);
+
         var result = new int[primeForm.Length];
         for (var i = 0; i < primeForm.Length; i++)
         {

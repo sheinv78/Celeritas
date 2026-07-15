@@ -8,8 +8,11 @@ namespace Celeritas.Core.Orchestration;
 /// </summary>
 public static class OrchestrationMapper
 {
+    /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
     public static OrchestrationResult Map(NoteEvent[] notes, OrchestrationOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(notes);
+
         var opt = options ?? OrchestrationOptions.Default;
         if (notes.Length == 0)
         {

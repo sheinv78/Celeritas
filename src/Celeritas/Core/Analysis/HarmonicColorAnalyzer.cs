@@ -15,12 +15,15 @@ public static class HarmonicColorAnalyzer
     /// <summary>
     /// Analyze melody + chord assignments in a known key.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chords"/> is <see langword="null"/>.</exception>
     public static HarmonicColorAnalysisResult Analyze(
         ReadOnlySpan<NoteEvent> melody,
         IReadOnlyList<ChordAssignment> chords,
         KeySignature key,
         HarmonicColorAnalysisOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(chords);
+
         options ??= HarmonicColorAnalysisOptions.Default;
 
         var baseKey = ModalKey.FromKeySignature(key);
@@ -45,12 +48,15 @@ public static class HarmonicColorAnalyzer
     /// Each tuple is (ChordSymbol, StartTime). End times are inferred from the next chord,
     /// and the last chord defaults to a duration of 1 whole note.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chordProgression"/> is <see langword="null"/>.</exception>
     public static HarmonicColorAnalysisResult Analyze(
         ReadOnlySpan<NoteEvent> melody,
         IReadOnlyList<(string Chord, Rational Start)> chordProgression,
         KeySignature key,
         HarmonicColorAnalysisOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(chordProgression);
+
         if (chordProgression.Count == 0)
             return Analyze(melody, Array.Empty<ChordAssignment>(), key, options);
 
@@ -61,12 +67,19 @@ public static class HarmonicColorAnalyzer
     /// <summary>
     /// Analyze melody + a tuple-based chord progression (as used in examples).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="melody"/> or <paramref name="chordProgression"/> is <see langword="null"/>.</exception>
     public static HarmonicColorAnalysisResult Analyze(
         NoteEvent[] melody,
         (string Chord, Rational Start)[] chordProgression,
         KeySignature key,
         HarmonicColorAnalysisOptions? options = null)
-        => Analyze(melody.AsSpan(), chordProgression, key, options);
+    {
+        // AsSpan() is null-safe and returns an empty span, so a null melody would be analyzed
+        // as an empty one and answered "C Minor ... Mostly diatonic and stable."
+        ArgumentNullException.ThrowIfNull(melody);
+        ArgumentNullException.ThrowIfNull(chordProgression);
+        return Analyze(melody.AsSpan(), chordProgression, key, options);
+    }
 
     private static ChordAssignment[] BuildChordAssignments(IReadOnlyList<(string Chord, Rational Start)> chordProgression)
     {

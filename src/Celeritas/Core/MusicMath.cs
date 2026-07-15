@@ -20,16 +20,25 @@ public static unsafe class MusicMath
     /// <summary>
     /// Convert note name to MIDI pitch (e.g., "C4" -> 60).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="noteName"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int NoteNameToMidi(string noteName) => MusicNotation.ParseNote(noteName);
+    public static int NoteNameToMidi(string noteName)
+    {
+        // ParseNote throws too, but blames its own parameter — a caller of this method
+        // would be told to go look for a "notation" argument it never passed.
+        ArgumentNullException.ThrowIfNull(noteName);
+        return MusicNotation.ParseNote(noteName);
+    }
 
     /// <summary>
     /// Adds <paramref name="semitones"/> to every pitch. Results are NOT clamped to the MIDI
     /// 0-127 range; callers that need valid MIDI pitches must clamp afterwards.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void Transpose(NoteBuffer buffer, int semitones)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
         buffer.ThrowIfDisposed();
         // Single virtual call per operation (not per iteration);
         // inside - fully vectorized loop.
@@ -41,8 +50,10 @@ public static unsafe class MusicMath
     /// SIMD scaling of velocity, using a portable <see cref="Vector{T}"/> loop that the JIT
     /// widens to the platform's widest vector unit.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static void ScaleVelocity(NoteBuffer buffer, float factor)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
         buffer.ThrowIfDisposed();
 
         var velocities = buffer.VelocityPtr;
@@ -69,8 +80,10 @@ public static unsafe class MusicMath
     /// <summary>
     /// Quantize note start times to a grid (round to nearest grid step, half-way cases round up).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static void Quantize(NoteBuffer buffer, Rational grid)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
         buffer.ThrowIfDisposed();
         if (grid.Numerator <= 0)
             throw new ArgumentOutOfRangeException(nameof(grid), grid, "Quantization grid must be positive");

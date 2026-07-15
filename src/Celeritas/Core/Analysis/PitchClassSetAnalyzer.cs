@@ -25,8 +25,13 @@ public readonly record struct PitchClassSetAnalysisResult(
 /// </summary>
 public static class PitchClassSetAnalyzer
 {
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static PitchClassSetAnalysisResult Analyze(NoteBuffer buffer) => Analyze(buffer.PitchesReadOnly);
+    public static PitchClassSetAnalysisResult Analyze(NoteBuffer buffer)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        return Analyze(buffer.PitchesReadOnly);
+    }
 
     public static PitchClassSetAnalysisResult Analyze(ReadOnlySpan<int> pitches)
     {
@@ -70,8 +75,11 @@ public static class PitchClassSetAnalyzer
         return result;
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="pitchClasses"/> is <see langword="null"/>.</exception>
     public static int[] GetNormalOrder(int[] pitchClasses)
     {
+        ArgumentNullException.ThrowIfNull(pitchClasses);
+
         if (pitchClasses.Length <= 1)
         {
             return [.. pitchClasses];
@@ -123,8 +131,11 @@ public static class PitchClassSetAnalyzer
         return best ?? [.. pitchClasses];
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="pitchClasses"/> is <see langword="null"/>.</exception>
     public static int[] GetPrimeForm(int[] pitchClasses)
     {
+        ArgumentNullException.ThrowIfNull(pitchClasses);
+
         if (pitchClasses.Length <= 1)
         {
             return [.. pitchClasses];
@@ -140,8 +151,11 @@ public static class PitchClassSetAnalyzer
         return CompareLex(primeA, primeB) <= 0 ? primeA : primeB;
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="pitchClasses"/> is <see langword="null"/>.</exception>
     public static int[] GetIntervalVector(int[] pitchClasses)
     {
+        ArgumentNullException.ThrowIfNull(pitchClasses);
+
         // Interval vector counts unordered pitch-class intervals 1..6.
         // Output order: <ic1, ic2, ic3, ic4, ic5, ic6>
         var n = pitchClasses.Length;
@@ -174,8 +188,11 @@ public static class PitchClassSetAnalyzer
         return iv;
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="pitchClasses"/> is <see langword="null"/>.</exception>
     public static int[] Transpose(int[] pitchClasses, int semitones)
     {
+        ArgumentNullException.ThrowIfNull(pitchClasses);
+
         if (pitchClasses.Length == 0)
         {
             return [];
@@ -197,8 +214,11 @@ public static class PitchClassSetAnalyzer
         return result;
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="pitchClasses"/> is <see langword="null"/>.</exception>
     public static int[] Invert(int[] pitchClasses)
     {
+        ArgumentNullException.ThrowIfNull(pitchClasses);
+
         if (pitchClasses.Length == 0)
         {
             return [];
@@ -223,8 +243,11 @@ public static class PitchClassSetAnalyzer
     /// <summary>
     /// Gets the complement of a pitch class set (all pitch classes NOT in the set).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="pitchClasses"/> is <see langword="null"/>.</exception>
     public static int[] Complement(int[] pitchClasses)
     {
+        ArgumentNullException.ThrowIfNull(pitchClasses);
+
         if (pitchClasses.Length == 0)
         {
             return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -244,8 +267,12 @@ public static class PitchClassSetAnalyzer
     /// Calculates similarity between two pitch class sets using interval vector comparison.
     /// Returns a value from 0.0 (completely different) to 1.0 (identical interval content).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="set1"/> or <paramref name="set2"/> is <see langword="null"/>.</exception>
     public static double Similarity(int[] set1, int[] set2)
     {
+        ArgumentNullException.ThrowIfNull(set1);
+        ArgumentNullException.ThrowIfNull(set2);
+
         var iv1 = GetIntervalVector(set1);
         var iv2 = GetIntervalVector(set2);
 

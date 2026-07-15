@@ -75,9 +75,13 @@ public sealed record FormAnalysisResult(
 /// </summary>
 public static class FormAnalyzer
 {
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static FormAnalysisResult Analyze(NoteBuffer buffer, FormAnalysisOptions? options = null)
-        => Analyze(buffer, buffer.Count, options);
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        return Analyze(buffer, buffer.Count, options);
+    }
 
     private static FormAnalysisResult Analyze(NoteBuffer buffer, int count, FormAnalysisOptions? options)
     {

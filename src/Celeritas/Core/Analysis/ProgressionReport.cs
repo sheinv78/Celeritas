@@ -103,7 +103,12 @@ public sealed class ProgressionReport
     /// <summary>
     /// Convenience factory matching the examples.
     /// </summary>
-    public static ProgressionReport Generate(string[] chordSymbols) => ProgressionAdvisor.Analyze(chordSymbols);
+    /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
+    public static ProgressionReport Generate(string[] chordSymbols)
+    {
+        ArgumentNullException.ThrowIfNull(chordSymbols);
+        return ProgressionAdvisor.Analyze(chordSymbols);
+    }
 
     /// <summary>Generate a formatted text report</summary>
     public string ToFormattedReport()

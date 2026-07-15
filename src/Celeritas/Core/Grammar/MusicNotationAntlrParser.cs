@@ -20,8 +20,13 @@ public static class MusicNotationAntlrParser
     /// <param name="input">Music notation string</param>
     /// <param name="validateMeasures">Validate measure durations against time signature</param>
     /// <returns>Parsed result with notes and metadata</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="input"/> is <see langword="null"/>.</exception>
     public static ParseResult Parse(string input, bool validateMeasures = false)
     {
+        // IsNullOrWhiteSpace below treats null as blank, so null used to come back as an
+        // empty ParseResult — the same answer a blank string legitimately gets.
+        ArgumentNullException.ThrowIfNull(input);
+
         if (string.IsNullOrWhiteSpace(input))
             return new ParseResult([], null, [], []);
 
@@ -55,8 +60,11 @@ public static class MusicNotationAntlrParser
     /// <summary>
     /// Parse music notation string into note events (simple overload).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="input"/> is <see langword="null"/>.</exception>
     public static NoteEvent[] ParseNotes(string input, bool validateMeasures = false)
     {
+        // null used to come back as an empty NoteEvent[] via Parse's IsNullOrWhiteSpace check.
+        ArgumentNullException.ThrowIfNull(input);
         return Parse(input, validateMeasures).Notes;
     }
 }

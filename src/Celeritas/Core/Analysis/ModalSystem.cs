@@ -280,8 +280,11 @@ public static class ModeLibrary
     /// <summary>
     /// Detect the most likely mode from a pitch class distribution.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="distribution"/> is <see langword="null"/>.</exception>
     public static (ModalKey key, float confidence) DetectMode(float[] distribution)
     {
+        ArgumentNullException.ThrowIfNull(distribution);
+
         if (distribution.Length != 12)
             throw new ArgumentException("Distribution must have 12 elements", nameof(distribution));
 
@@ -351,8 +354,11 @@ public static class ModeLibrary
     /// Detect mode with a hint about which note is the root.
     /// More accurate when the first note of a melody/scale is provided.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="distribution"/> is <see langword="null"/>.</exception>
     public static (ModalKey key, float confidence) DetectModeWithRoot(float[] distribution, int rootHint)
     {
+        ArgumentNullException.ThrowIfNull(distribution);
+
         if (distribution.Length != 12)
             throw new ArgumentException("Distribution must have 12 elements", nameof(distribution));
 
@@ -389,8 +395,11 @@ public static class ModeLibrary
     /// </summary>
     /// <param name="pitchClasses">Collection of pitch classes (0-11).</param>
     /// <param name="rootHint">Hint for the root note (pitch class).</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pitchClasses"/> is <see langword="null"/>.</exception>
     public static (ModalKey key, float confidence) DetectModeWithRoot(IEnumerable<int> pitchClasses, int rootHint)
     {
+        ArgumentNullException.ThrowIfNull(pitchClasses);
+
         var distribution = new float[12];
         foreach (var pc in pitchClasses)
         {
@@ -404,8 +413,12 @@ public static class ModeLibrary
     /// </summary>
     /// <param name="notes">Collection of note events.</param>
     /// <param name="rootHint">Hint for the root note (pitch class). If null, uses first note's pitch class.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
     public static (ModalKey key, float confidence) DetectModeWithRoot(IEnumerable<NoteEvent> notes, int? rootHint = null)
     {
+        // ToList() throws on null, but names its own "source" parameter instead of this one.
+        ArgumentNullException.ThrowIfNull(notes);
+
         var noteList = notes.ToList();
         if (noteList.Count == 0)
             throw new ArgumentException("Notes collection is empty", nameof(notes));

@@ -185,8 +185,11 @@ public static class KeyProfiler
     /// <summary>
     /// Detect key from a NoteBuffer (extracts pitch class distribution automatically).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static KeyDetectionResult DetectFromBuffer(NoteBuffer buffer)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         Span<float> distribution = stackalloc float[12];
         ExtractPitchClassDistribution(buffer, distribution);
         return Detect(distribution);
@@ -215,8 +218,13 @@ public static class KeyProfiler
     /// Detect key from a human-readable notation string.
     /// Example: "C4 D4 E4 F4 G4 A4 B4"
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="notation"/> is <see langword="null"/>.</exception>
     public static KeyDetectionResult DetectFromPitches(string notation)
     {
+        // Parse treats null like blank text and hands back no notes, so an unguarded null
+        // would reach the empty-input branch and be answered as C Major at 0% confidence.
+        ArgumentNullException.ThrowIfNull(notation);
+
         var notes = MusicNotation.Parse(notation);
         if (notes.Length == 0)
             return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0, AllCorrelations = [] };
@@ -465,11 +473,15 @@ public static class KeyProfiler
     /// Analyze key changes over time using a sliding window.
     /// Returns key "trajectory" through the piece.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="stepSize"/> is not positive.</exception>
     public static KeyTrajectory AnalyzeModulations(
         NoteBuffer buffer,
         Rational windowSize,
         Rational stepSize)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         if (stepSize <= Rational.Zero)
             throw new ArgumentOutOfRangeException(nameof(stepSize), stepSize, "Step size must be positive");
 

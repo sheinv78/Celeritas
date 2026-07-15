@@ -94,8 +94,12 @@ public static class MusicNotation
     /// <param name="input">Music notation string</param>
     /// <param name="validateMeasures">Validate measure durations against time signature</param>
     /// <returns>Array of note events with timing information</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="input"/> is <see langword="null"/>.</exception>
     public static NoteEvent[] Parse(string input, bool validateMeasures = false)
     {
+        // string.IsNullOrWhiteSpace downstream treats null as blank, so null used to come back
+        // as an empty NoteEvent[] — the same answer a blank string legitimately gets.
+        ArgumentNullException.ThrowIfNull(input);
         return MusicNotationAntlrParser.ParseNotes(input, validateMeasures);
     }
 
@@ -105,8 +109,11 @@ public static class MusicNotation
     ///           w/whole, h/half, q/quarter, e/eighth, s/16th
     ///           Dotted: 4. (dotted quarter = 3/8), 2. (dotted half = 3/4)
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="duration"/> is <see langword="null"/>.</exception>
     public static Rational ParseDuration(string duration)
     {
+        ArgumentNullException.ThrowIfNull(duration);
+
         var isDotted = duration.EndsWith('.');
         var baseDuration = isDotted ? duration[..^1] : duration;
 
@@ -489,8 +496,15 @@ public static class MusicNotation
     /// Parse key signature from various formats
     /// Supports: "C", "Cm", "C minor", "c", "C#", "C# major", "Db minor"
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="keyString"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="keyString"/> is blank or is not a key signature.</exception>
     public static KeySignature ParseKey(string keyString)
     {
+        // IsNullOrWhiteSpace would otherwise catch null and report it as "cannot be empty",
+        // which is both the wrong exception type and a wrong description: null is a missing
+        // argument, not a blank one.
+        ArgumentNullException.ThrowIfNull(keyString);
+
         if (string.IsNullOrWhiteSpace(keyString))
         {
             throw new ArgumentException("Key signature cannot be empty", nameof(keyString));

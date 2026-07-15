@@ -20,8 +20,13 @@ public static class ProgressionAdvisor
     /// Parse a chord symbol into MIDI pitches (octave 4 = middle C).
     /// Supports: C, Am, G7, Dmaj7, F#m7, Bbdim, Csus4, C/E (slash chords), etc.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="symbol"/> is <see langword="null"/>.</exception>
     public static int[] ParseChordSymbol(string symbol)
     {
+        // IsNullOrWhiteSpace below is null-safe, so null used to fall into the empty branch
+        // and come back as an empty array — indistinguishable from an unparsable symbol.
+        ArgumentNullException.ThrowIfNull(symbol);
+
         if (string.IsNullOrWhiteSpace(symbol))
             return [];
 
@@ -48,8 +53,11 @@ public static class ProgressionAdvisor
     /// <summary>
     /// Get the inversion of a chord based on the bass note.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="pitches"/> is <see langword="null"/>.</exception>
     public static int GetInversion(int[] pitches)
     {
+        ArgumentNullException.ThrowIfNull(pitches);
+
         if (pitches.Length < 2)
         {
             return 0;
@@ -99,8 +107,11 @@ public static class ProgressionAdvisor
     /// Detect the type of cadence formed by the last two chords in a progression.
     /// Returns the cadence type and description.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public static CadenceType DetectCadence(string[] chordSymbols, KeySignature? key = null)
     {
+        ArgumentNullException.ThrowIfNull(chordSymbols);
+
         if (chordSymbols.Length < 2)
         {
             return CadenceType.None;
@@ -175,8 +186,11 @@ public static class ProgressionAdvisor
     /// Suggest the next chord(s) that would sound good after the given progression.
     /// Returns a list of suggestions with reasoning and quality scores.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public static List<ChordSuggestion> SuggestNext(string[] chordSymbols, int maxSuggestions = 5)
     {
+        ArgumentNullException.ThrowIfNull(chordSymbols);
+
         if (chordSymbols.Length == 0)
         {
             // No progression - suggest basic major chords
@@ -346,8 +360,11 @@ public static class ProgressionAdvisor
     /// <summary>
     /// Analyze a chord progression from symbols and generate a detailed report.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public static ProgressionReport Analyze(string[] chordSymbols)
     {
+        ArgumentNullException.ThrowIfNull(chordSymbols);
+
         if (chordSymbols.Length == 0)
         {
             return EmptyReport();
@@ -581,7 +598,12 @@ public static class ProgressionAdvisor
     /// <summary>
     /// Backward/compat alias used by some examples.
     /// </summary>
-    public static ProgressionReport AnalyzeFromSymbols(string[] chordSymbols) => Analyze(chordSymbols);
+    /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
+    public static ProgressionReport AnalyzeFromSymbols(string[] chordSymbols)
+    {
+        ArgumentNullException.ThrowIfNull(chordSymbols);
+        return Analyze(chordSymbols);
+    }
 
     private static float Clamp01(float x) => x < 0 ? 0 : x > 1 ? 1 : x;
 

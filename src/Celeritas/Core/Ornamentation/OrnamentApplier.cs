@@ -116,8 +116,16 @@ public static class OrnamentApplier
     /// (Offset, Pitch) of its BaseNote, so multiple ornaments may share an offset
     /// (e.g. on different notes of a chord). Ornaments that match no note are ignored.
     /// </summary>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="notes"/> or <paramref name="ornaments"/> is <see langword="null"/>.
+    /// </exception>
     public static NoteEvent[] ApplyOrnaments(NoteEvent[] notes, Ornament[] ornaments)
     {
+        // With nothing to apply, the early return below hands `notes` straight back, so a null
+        // melody came out as a null result rather than as a rejected argument.
+        ArgumentNullException.ThrowIfNull(notes);
+        ArgumentNullException.ThrowIfNull(ornaments);
+
         if (ornaments.Length == 0)
             return notes;
 

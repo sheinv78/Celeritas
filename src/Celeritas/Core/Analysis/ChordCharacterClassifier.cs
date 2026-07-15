@@ -9,8 +9,13 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 public static class ChordCharacterClassifier
 {
+    /// <exception cref="ArgumentNullException"><paramref name="chordSymbol"/> is <see langword="null"/>.</exception>
     public static ChordCharacterClassification Classify(string chordSymbol)
     {
+        // Null used to reach the IsNullOrWhiteSpace branch and come back as Unknown; the guard
+        // also stays outside the try below, whose blanket catch would swallow the throw.
+        ArgumentNullException.ThrowIfNull(chordSymbol);
+
         if (string.IsNullOrWhiteSpace(chordSymbol))
             return ChordCharacterClassification.Unknown;
 

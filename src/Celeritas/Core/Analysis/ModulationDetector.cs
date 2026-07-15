@@ -65,8 +65,11 @@ public static class ModulationDetector
     /// <summary>
     /// Analyze a note buffer for modulations starting from a known key.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static ModulationAnalysisResult Analyze(NoteBuffer buffer, KeySignature startKey)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         var notes = new NoteEvent[buffer.Count];
         for (int i = 0; i < buffer.Count; i++)
         {

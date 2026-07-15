@@ -210,8 +210,11 @@ public static class PolyphonyAnalyzer
     /// <summary>
     /// Convenience wrapper used by examples: checks basic counterpoint issues and returns counts.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
     public static CounterpointRulesCheckResult CheckCounterpointRules(IEnumerable<NoteEvent> notes, int maxVoices = 4)
     {
+        ArgumentNullException.ThrowIfNull(notes);
+
         var arr = notes as NoteEvent[] ?? [.. notes];
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
@@ -221,8 +224,11 @@ public static class PolyphonyAnalyzer
     /// <summary>
     /// Convenience wrapper used by examples: checks basic counterpoint issues and returns counts.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static CounterpointRulesCheckResult CheckCounterpointRules(NoteBuffer buffer, int maxVoices = 4)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         var analysis = Analyze(buffer, maxVoices);
         var violations = analysis.Violations;
 
@@ -247,8 +253,11 @@ public static class PolyphonyAnalyzer
     /// <summary>
     /// Detect simple imitation (canon-like) between voices.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
     public static ImitationDetectionResult DetectImitation(IEnumerable<NoteEvent> notes, int maxVoices = 4)
     {
+        ArgumentNullException.ThrowIfNull(notes);
+
         var arr = notes as NoteEvent[] ?? [.. notes];
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
@@ -258,8 +267,11 @@ public static class PolyphonyAnalyzer
     /// <summary>
     /// Detect simple imitation (canon-like) between voices.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static ImitationDetectionResult DetectImitation(NoteBuffer buffer, int maxVoices = 4)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         var voices = VoiceSeparator.Separate(buffer, maxVoices);
         if (voices.Voices.Count < 2)
         {
@@ -325,8 +337,11 @@ public static class PolyphonyAnalyzer
     /// <summary>
     /// Perform complete polyphony analysis on a NoteBuffer.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static PolyphonyAnalysisResult Analyze(NoteBuffer buffer, int maxVoices = 4)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         // First, separate voices
         var voices = VoiceSeparator.Separate(buffer, maxVoices);
 

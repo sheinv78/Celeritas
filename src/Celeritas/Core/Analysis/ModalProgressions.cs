@@ -247,8 +247,11 @@ public static class ModalProgressions
     /// Detects the most likely mode (Ionian/Dorian/Phrygian/Mixolydian/etc.),
     /// matches a characteristic modal progression, and flags modal mixture (borrowed chords).
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public static ModalProgressionAnalysisResult Analyze(string[] chordSymbols, int? rootHint = null)
     {
+        ArgumentNullException.ThrowIfNull(chordSymbols);
+
         if (chordSymbols.Length == 0)
         {
             var emptyKey = new ModalKey(0, Mode.Ionian);

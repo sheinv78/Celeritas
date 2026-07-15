@@ -37,10 +37,23 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
 
     private static readonly int[] MinorScaleDegrees = [0, 2, 3, 5, 7, 8, 10];
 
+    /// <exception cref="ArgumentNullException"><paramref name="melodyPitches"/> is <see langword="null"/>.</exception>
     public IEnumerable<ChordCandidate> GetCandidates(
         int[] melodyPitches,
         KeySignature key,
         HarmonizationContext? context = null)
+    {
+        // Kept separate from the iterator body below so this throws on the call rather than on
+        // the first MoveNext(). Folding it back into a yield-return method would defer the
+        // guard, handing a null caller a well-formed enumerable that only throws once enumerated.
+        ArgumentNullException.ThrowIfNull(melodyPitches);
+        return GetCandidatesIterator(melodyPitches, key, context);
+    }
+
+    private static IEnumerable<ChordCandidate> GetCandidatesIterator(
+        int[] melodyPitches,
+        KeySignature key,
+        HarmonizationContext? context)
     {
         if (melodyPitches.Length == 0)
         {

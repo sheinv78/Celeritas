@@ -191,8 +191,11 @@ public sealed class MelodyHarmonizer
     /// <summary>
     /// Harmonize from a NoteBuffer.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public HarmonizationResult Harmonize(NoteBuffer buffer)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         var notes = new NoteEvent[buffer.Count];
         for (var i = 0; i < buffer.Count; i++)
         {
@@ -205,8 +208,11 @@ public sealed class MelodyHarmonizer
     /// <summary>
     /// Harmonize from a NoteBuffer with a specified key.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public HarmonizationResult Harmonize(NoteBuffer buffer, KeySignature key)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         var notes = new NoteEvent[buffer.Count];
         for (var i = 0; i < buffer.Count; i++)
         {

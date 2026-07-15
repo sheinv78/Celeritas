@@ -248,8 +248,15 @@ public static class KeyAnalyzer
     /// <summary>
     /// Alias for IdentifyKey for more intuitive API.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="notation"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static KeySignature DetectKey(string notation) => IdentifyKey(notation);
+    public static KeySignature DetectKey(string notation)
+    {
+        // null used to parse to zero notes and be answered as C major. The guard belongs on
+        // this public entry point so the exception names `notation`, not Parse's own `input`.
+        ArgumentNullException.ThrowIfNull(notation);
+        return IdentifyKey(notation);
+    }
 
     /// <summary>
     /// Alias for IdentifyKey for more intuitive API.
@@ -260,8 +267,13 @@ public static class KeyAnalyzer
     /// <summary>
     /// Alias for IdentifyKey for more intuitive API.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static KeySignature DetectKey(NoteBuffer buffer) => IdentifyKey(buffer.PitchSpan);
+    public static KeySignature DetectKey(NoteBuffer buffer)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        return IdentifyKey(buffer.PitchSpan);
+    }
 
     /// <summary>
     /// Cyclic right rotation (ROR) for 12-bit mask. Moves bit k to bit (k-shift) mod 12,

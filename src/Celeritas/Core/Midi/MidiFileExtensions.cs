@@ -164,6 +164,7 @@ public static class MidiFileExtensions
         public MidiFile Merge(params MidiFile[] others)
         {
             ArgumentNullException.ThrowIfNull(file);
+            ArgumentNullException.ThrowIfNull(others);
             var sources = new List<MidiFile>(1 + others.Length) { file };
             foreach (var other in others)
             {
@@ -189,6 +190,7 @@ public static class MidiFileExtensions
         public MidiFile MergeToSingleTrack(params MidiFile[] others)
         {
             ArgumentNullException.ThrowIfNull(file);
+            ArgumentNullException.ThrowIfNull(others);
             var sources = new List<MidiFile>(1 + others.Length) { file };
             foreach (var other in others)
             {

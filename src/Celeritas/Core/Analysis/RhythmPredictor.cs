@@ -41,8 +41,11 @@ public sealed class RhythmPredictor
     /// <summary>
     /// Train the predictor on a sequence of durations.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="durations"/> is <see langword="null"/>.</exception>
     public void Train(IReadOnlyList<Rational> durations)
     {
+        ArgumentNullException.ThrowIfNull(durations);
+
         if (durations.Count <= _order)
         {
             return;
@@ -67,8 +70,11 @@ public sealed class RhythmPredictor
     /// <summary>
     /// Train from a NoteBuffer.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public void Train(NoteBuffer buffer)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         var durations = new List<Rational>();
         for (int i = 0; i < buffer.Count; i++)
         {
@@ -80,8 +86,11 @@ public sealed class RhythmPredictor
     /// <summary>
     /// Predict the next duration given recent context.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="recentDurations"/> is <see langword="null"/>.</exception>
     public RhythmPrediction Predict(IReadOnlyList<Rational> recentDurations)
     {
+        ArgumentNullException.ThrowIfNull(recentDurations);
+
         if (recentDurations.Count < _order)
         {
             return new RhythmPrediction
@@ -118,8 +127,11 @@ public sealed class RhythmPredictor
     /// <summary>
     /// Generate a rhythm sequence.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="seed"/> is <see langword="null"/>.</exception>
     public List<Rational> Generate(IReadOnlyList<Rational> seed, int length)
     {
+        ArgumentNullException.ThrowIfNull(seed);
+
         var result = seed.ToList();
 
         for (int i = 0; i < length; i++)
@@ -134,8 +146,11 @@ public sealed class RhythmPredictor
     /// <summary>
     /// Generate a complete measure.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="seed"/> is <see langword="null"/>.</exception>
     public List<Rational> GenerateMeasure(IReadOnlyList<Rational> seed, TimeSignature meter)
     {
+        ArgumentNullException.ThrowIfNull(seed);
+
         var result = new List<Rational>();
         var target = meter.MeasureDuration;
         var current = Rational.Zero;
@@ -351,8 +366,11 @@ public static class RhythmModels
     /// <summary>
     /// Get a pre-trained model for a style.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="style"/> is <see langword="null"/>.</exception>
     public static RhythmPredictor GetStyleModel(string style)
     {
+        ArgumentNullException.ThrowIfNull(style);
+
         var predictor = new RhythmPredictor(order: 2, seed: 42);
 
         var durations = style.ToLowerInvariant() switch

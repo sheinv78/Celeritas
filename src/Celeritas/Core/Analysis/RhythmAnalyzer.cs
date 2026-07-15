@@ -235,8 +235,11 @@ public static class RhythmAnalyzer
     /// <summary>
     /// Detect the most likely time signature from a sequence of notes.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static MeterDetectionResult DetectMeter(NoteBuffer buffer)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         if (buffer.Count == 0)
         {
             return new MeterDetectionResult
@@ -262,8 +265,11 @@ public static class RhythmAnalyzer
     /// <summary>
     /// Detect the most likely time signature from a sequence of note events.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
     public static MeterDetectionResult DetectMeter(IEnumerable<NoteEvent> notes)
     {
+        ArgumentNullException.ThrowIfNull(notes);
+
         var arr = notes as NoteEvent[] ?? notes.ToArray();
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
@@ -274,8 +280,11 @@ public static class RhythmAnalyzer
     /// Identify rhythmic pattern in a sequence of notes.
     /// Returns the best matching pattern with quality score.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static RhythmPatternMatch? IdentifyPattern(NoteBuffer buffer)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         if (buffer.Count == 0)
             return null;
 
@@ -294,8 +303,11 @@ public static class RhythmAnalyzer
     /// Identify rhythmic pattern in a sequence of note events.
     /// Returns the best matching pattern with quality score.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
     public static RhythmPatternMatch? IdentifyPattern(IEnumerable<NoteEvent> notes)
     {
+        ArgumentNullException.ThrowIfNull(notes);
+
         var arr = notes as NoteEvent[] ?? notes.ToArray();
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
@@ -305,8 +317,11 @@ public static class RhythmAnalyzer
     /// <summary>
     /// Analyze rhythm of a note buffer.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static RhythmAnalysisResult Analyze(NoteBuffer buffer, TimeSignature? knownMeter = null)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+
         if (buffer.Count == 0)
         {
             return EmptyResult();

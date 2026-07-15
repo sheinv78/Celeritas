@@ -83,8 +83,13 @@ public static unsafe class ChordAnalyzer
     }
 
     // Safe version for NoteBuffer without requiring unsafe context
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ushort GetMask(NoteBuffer buffer) => GetMask(buffer.PitchSpan);
+    public static ushort GetMask(NoteBuffer buffer)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        return GetMask(buffer.PitchSpan);
+    }
 
     // Unsafe version for extreme cases
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -118,15 +123,25 @@ public static unsafe class ChordAnalyzer
         return info;
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ChordInfo Identify(NoteBuffer buffer) => Identify(buffer.PitchSpan);
+    public static ChordInfo Identify(NoteBuffer buffer)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        return Identify(buffer.PitchSpan);
+    }
 
     /// <summary>
     /// Identify chord from a human-readable notation string.
     /// Examples: "C4 E4 G4" -> C major, "D4 F4 A4 C5" -> Dm7
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="notation"/> is <see langword="null"/>.</exception>
     public static ChordInfo Identify(string notation)
     {
+        // null used to parse to zero notes and be answered as the empty-mask chord, which
+        // prints as "C Unknown" — indistinguishable from a legitimately empty input.
+        ArgumentNullException.ThrowIfNull(notation);
+
         var notes = MusicNotation.Parse(notation);
         if (notes.Length == 0)
             return ChordLibrary.GetChord(0);
