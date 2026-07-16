@@ -52,21 +52,39 @@ public readonly record struct Section(
     public int PhraseCount => EndPhraseIndex - StartPhraseIndex + 1;
 }
 
-public sealed record FormAnalysisResult(
-    IReadOnlyList<Phrase> Phrases,
-    IReadOnlyList<Period> Periods,
-    Rational TotalLength,
-    IReadOnlyList<CadenceInfo> Cadences,
-    IReadOnlyList<Section> Sections,
-    string FormLabel)
+public sealed record FormAnalysisResult
 {
-    /// <summary>Backward-compatible constructor without sections.</summary>
-    public FormAnalysisResult(
-        IReadOnlyList<Phrase> Phrases,
-        IReadOnlyList<Period> Periods,
-        Rational TotalLength,
-        IReadOnlyList<CadenceInfo> Cadences)
-        : this(Phrases, Periods, TotalLength, Cadences, [], "") { }
+    // Produced by FormAnalyzer; not constructible by consumers (#18 API freeze).
+    internal FormAnalysisResult(
+        IReadOnlyList<Phrase> phrases,
+        IReadOnlyList<Period> periods,
+        Rational totalLength,
+        IReadOnlyList<CadenceInfo> cadences,
+        IReadOnlyList<Section> sections,
+        string formLabel)
+    {
+        Phrases = phrases;
+        Periods = periods;
+        TotalLength = totalLength;
+        Cadences = cadences;
+        Sections = sections;
+        FormLabel = formLabel;
+    }
+
+    /// <summary>Overload without sections (older shape).</summary>
+    internal FormAnalysisResult(
+        IReadOnlyList<Phrase> phrases,
+        IReadOnlyList<Period> periods,
+        Rational totalLength,
+        IReadOnlyList<CadenceInfo> cadences)
+        : this(phrases, periods, totalLength, cadences, [], "") { }
+
+    public IReadOnlyList<Phrase> Phrases { get; init; }
+    public IReadOnlyList<Period> Periods { get; init; }
+    public Rational TotalLength { get; init; }
+    public IReadOnlyList<CadenceInfo> Cadences { get; init; }
+    public IReadOnlyList<Section> Sections { get; init; }
+    public string FormLabel { get; init; }
 }
 
 /// <summary>

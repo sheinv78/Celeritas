@@ -246,11 +246,22 @@ public static class ModalProgressions
     /// <summary>
     /// A chord that does not fully belong to the detected mode scale.
     /// </summary>
-    public sealed record ModalMixtureChord(
-        int Position,
-        string Symbol,
-        int RootPitchClass,
-        IReadOnlyList<int> OutOfScalePitchClasses);
+    public sealed record ModalMixtureChord
+    {
+        // Produced by analysis; not constructible by consumers (#18 API freeze).
+        internal ModalMixtureChord(int position, string symbol, int rootPitchClass, IReadOnlyList<int> outOfScalePitchClasses)
+        {
+            Position = position;
+            Symbol = symbol;
+            RootPitchClass = rootPitchClass;
+            OutOfScalePitchClasses = outOfScalePitchClasses;
+        }
+
+        public int Position { get; init; }
+        public string Symbol { get; init; }
+        public int RootPitchClass { get; init; }
+        public IReadOnlyList<int> OutOfScalePitchClasses { get; init; }
+    }
 
     /// <summary>
     /// Analyze a chord progression in a modal context.
@@ -383,10 +394,10 @@ public static class ModalProgressions
             if (outOfScale.Count > 0)
             {
                 borrowed.Add(new ModalMixtureChord(
-                    Position: i,
-                    Symbol: chordSymbols[i],
-                    RootPitchClass: chordRootPitchClasses[i],
-                    OutOfScalePitchClasses: outOfScale));
+                    position: i,
+                    symbol: chordSymbols[i],
+                    rootPitchClass: chordRootPitchClasses[i],
+                    outOfScalePitchClasses: outOfScale));
             }
         }
 

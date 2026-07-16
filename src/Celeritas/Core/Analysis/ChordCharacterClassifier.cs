@@ -85,28 +85,44 @@ public static class ChordCharacterClassifier
         };
 
         return new ChordCharacterClassification(
-            Mood: character.ToString(),
-            Stability: stability,
-            Brightness: brightness,
-            Character: character,
-            Quality: quality);
+            mood: character.ToString(),
+            stability: stability,
+            brightness: brightness,
+            character: character,
+            quality: quality);
     }
 }
 
 /// <summary>
 /// Example-friendly chord character descriptor.
 /// </summary>
-public sealed record ChordCharacterClassification(
-    string Mood,
-    float Stability,
-    float Brightness,
-    ChordCharacter Character,
-    ChordQuality Quality)
+public sealed record ChordCharacterClassification
 {
+    // Produced by ChordCharacterClassifier; not constructible by consumers (#18 API freeze).
+    internal ChordCharacterClassification(
+        string mood,
+        float stability,
+        float brightness,
+        ChordCharacter character,
+        ChordQuality quality)
+    {
+        Mood = mood;
+        Stability = stability;
+        Brightness = brightness;
+        Character = character;
+        Quality = quality;
+    }
+
+    public string Mood { get; init; }
+    public float Stability { get; init; }
+    public float Brightness { get; init; }
+    public ChordCharacter Character { get; init; }
+    public ChordQuality Quality { get; init; }
+
     public static ChordCharacterClassification Unknown { get; } = new(
-        Mood: "Unknown",
-        Stability: 0.5f,
-        Brightness: 0.5f,
-        Character: ChordCharacter.Stable,
-        Quality: ChordQuality.Unknown);
+        "Unknown",
+        0.5f,
+        0.5f,
+        ChordCharacter.Stable,
+        ChordQuality.Unknown);
 }

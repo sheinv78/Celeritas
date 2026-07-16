@@ -72,12 +72,26 @@ public static class MusicNotationAntlrParser
 /// <summary>
 /// Result of parsing music notation.
 /// </summary>
-public sealed record ParseResult(
-    NoteEvent[] Notes,
-    TimeSignature? TimeSignature,
-    NotationDirective[] Directives,
-    IReadOnlyList<string> Errors
-);
+public sealed record ParseResult
+{
+    // Produced by the parser; not constructible by consumers (#18 API freeze).
+    internal ParseResult(
+        NoteEvent[] notes,
+        TimeSignature? timeSignature,
+        NotationDirective[] directives,
+        IReadOnlyList<string> errors)
+    {
+        Notes = notes;
+        TimeSignature = timeSignature;
+        Directives = directives;
+        Errors = errors;
+    }
+
+    public NoteEvent[] Notes { get; init; }
+    public TimeSignature? TimeSignature { get; init; }
+    public NotationDirective[] Directives { get; init; }
+    public IReadOnlyList<string> Errors { get; init; }
+}
 
 /// <summary>
 /// ANTLR lexer error listener.

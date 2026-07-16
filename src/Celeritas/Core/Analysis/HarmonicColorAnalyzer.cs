@@ -37,10 +37,10 @@ public static class HarmonicColorAnalyzer
         var modalTurns = AnalyzeModalTurns(chords, baseKey, options);
 
         return new HarmonicColorAnalysisResult(
-            Key: key,
-            ChromaticNotes: chromatic,
-            ModalTurns: modalTurns,
-            MelodicHarmony: melodicHarmony);
+            key: key,
+            chromaticNotes: chromatic,
+            modalTurns: modalTurns,
+            melodicHarmony: melodicHarmony);
     }
 
     /// <summary>
@@ -491,12 +491,26 @@ public sealed record HarmonicColorAnalysisOptions(
 /// <summary>
 /// Combined analysis result.
 /// </summary>
-public sealed record HarmonicColorAnalysisResult(
-    KeySignature Key,
-    IReadOnlyList<ChromaticPitchEvent> ChromaticNotes,
-    IReadOnlyList<ModalTurnEvent> ModalTurns,
-    IReadOnlyList<MelodicHarmonyEvent> MelodicHarmony)
+public sealed record HarmonicColorAnalysisResult
 {
+    // Produced by HarmonicColorAnalyzer; not constructible by consumers (#18 API freeze).
+    internal HarmonicColorAnalysisResult(
+        KeySignature key,
+        IReadOnlyList<ChromaticPitchEvent> chromaticNotes,
+        IReadOnlyList<ModalTurnEvent> modalTurns,
+        IReadOnlyList<MelodicHarmonyEvent> melodicHarmony)
+    {
+        Key = key;
+        ChromaticNotes = chromaticNotes;
+        ModalTurns = modalTurns;
+        MelodicHarmony = melodicHarmony;
+    }
+
+    public KeySignature Key { get; init; }
+    public IReadOnlyList<ChromaticPitchEvent> ChromaticNotes { get; init; }
+    public IReadOnlyList<ModalTurnEvent> ModalTurns { get; init; }
+    public IReadOnlyList<MelodicHarmonyEvent> MelodicHarmony { get; init; }
+
     /// <summary>
     /// A heuristic 0..10 score describing how "colorful" the harmony feels,
     /// based on chromatic notes, non-chord tones, and modal turns.

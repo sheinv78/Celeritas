@@ -101,7 +101,6 @@ Celeritas.Core.Analysis.ChordCharacterClassification.Brightness.get -> float
 Celeritas.Core.Analysis.ChordCharacterClassification.Brightness.init -> void
 Celeritas.Core.Analysis.ChordCharacterClassification.Character.get -> Celeritas.Core.Analysis.ChordCharacter
 Celeritas.Core.Analysis.ChordCharacterClassification.Character.init -> void
-Celeritas.Core.Analysis.ChordCharacterClassification.ChordCharacterClassification(string! Mood, float Stability, float Brightness, Celeritas.Core.Analysis.ChordCharacter Character, Celeritas.Core.ChordQuality Quality) -> void
 Celeritas.Core.Analysis.ChordCharacterClassification.Mood.get -> string!
 Celeritas.Core.Analysis.ChordCharacterClassification.Mood.init -> void
 Celeritas.Core.Analysis.ChordCharacterClassification.Quality.get -> Celeritas.Core.ChordQuality
@@ -176,8 +175,6 @@ Celeritas.Core.Analysis.FormAnalysisOptions.SectionSimilarityThreshold.init -> v
 Celeritas.Core.Analysis.FormAnalysisResult
 Celeritas.Core.Analysis.FormAnalysisResult.Cadences.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.CadenceInfo>!
 Celeritas.Core.Analysis.FormAnalysisResult.Cadences.init -> void
-Celeritas.Core.Analysis.FormAnalysisResult.FormAnalysisResult(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Phrase>! Phrases, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Period>! Periods, Celeritas.Core.Rational TotalLength, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.CadenceInfo>! Cadences) -> void
-Celeritas.Core.Analysis.FormAnalysisResult.FormAnalysisResult(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Phrase>! Phrases, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Period>! Periods, Celeritas.Core.Rational TotalLength, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.CadenceInfo>! Cadences, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Section>! Sections, string! FormLabel) -> void
 Celeritas.Core.Analysis.FormAnalysisResult.FormLabel.get -> string!
 Celeritas.Core.Analysis.FormAnalysisResult.FormLabel.init -> void
 Celeritas.Core.Analysis.FormAnalysisResult.Periods.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Period>!
@@ -208,7 +205,6 @@ Celeritas.Core.Analysis.HarmonicColorAnalysisResult.ChromaticNotes.get -> System
 Celeritas.Core.Analysis.HarmonicColorAnalysisResult.ChromaticNotes.init -> void
 Celeritas.Core.Analysis.HarmonicColorAnalysisResult.ColorfulnessRating.get -> double
 Celeritas.Core.Analysis.HarmonicColorAnalysisResult.Description.get -> string!
-Celeritas.Core.Analysis.HarmonicColorAnalysisResult.HarmonicColorAnalysisResult(Celeritas.Core.KeySignature Key, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ChromaticPitchEvent>! ChromaticNotes, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModalTurnEvent>! ModalTurns, System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.MelodicHarmonyEvent>! MelodicHarmony) -> void
 Celeritas.Core.Analysis.HarmonicColorAnalysisResult.Key.get -> Celeritas.Core.KeySignature
 Celeritas.Core.Analysis.HarmonicColorAnalysisResult.Key.init -> void
 Celeritas.Core.Analysis.HarmonicColorAnalysisResult.MelodicHarmony.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.MelodicHarmonyEvent>!
@@ -397,7 +393,6 @@ Celeritas.Core.Analysis.ModalProgression.Name.get -> string!
 Celeritas.Core.Analysis.ModalProgression.Name.init -> void
 Celeritas.Core.Analysis.ModalProgressions
 Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord
-Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.ModalMixtureChord(int Position, string! Symbol, int RootPitchClass, System.Collections.Generic.IReadOnlyList<int>! OutOfScalePitchClasses) -> void
 Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.OutOfScalePitchClasses.get -> System.Collections.Generic.IReadOnlyList<int>!
 Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.OutOfScalePitchClasses.init -> void
 Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.Position.get -> int
@@ -1129,7 +1124,6 @@ Celeritas.Core.Midi.MidiFileStatistics.Channels.get -> System.Collections.Generi
 Celeritas.Core.Midi.MidiFileStatistics.Channels.init -> void
 Celeritas.Core.Midi.MidiFileStatistics.MaxNoteNumber.get -> int?
 Celeritas.Core.Midi.MidiFileStatistics.MaxNoteNumber.init -> void
-Celeritas.Core.Midi.MidiFileStatistics.MidiFileStatistics(int TrackCount, int NoteCount, long TotalTicks, Celeritas.Core.Rational TotalDuration, int? MinNoteNumber, int? MaxNoteNumber, System.Collections.Generic.IReadOnlyList<int>! Channels) -> void
 Celeritas.Core.Midi.MidiFileStatistics.MinNoteNumber.get -> int?
 Celeritas.Core.Midi.MidiFileStatistics.MinNoteNumber.init -> void
 Celeritas.Core.Midi.MidiFileStatistics.NoteCount.get -> int
@@ -1160,7 +1154,6 @@ Celeritas.Core.Midi.TempoChange.BeatsPerMinute.get -> int
 Celeritas.Core.Midi.TempoChange.BeatsPerMinute.init -> void
 Celeritas.Core.Midi.TempoChange.Offset.get -> Celeritas.Core.Rational
 Celeritas.Core.Midi.TempoChange.Offset.init -> void
-Celeritas.Core.Midi.TempoChange.TempoChange(Celeritas.Core.Rational Offset, int BeatsPerMinute) -> void
 Celeritas.Core.Midi.TimeSignatureChange
 Celeritas.Core.Midi.TimeSignatureChange.Denominator.get -> int
 Celeritas.Core.Midi.TimeSignatureChange.Denominator.init -> void
@@ -1168,7 +1161,6 @@ Celeritas.Core.Midi.TimeSignatureChange.Numerator.get -> int
 Celeritas.Core.Midi.TimeSignatureChange.Numerator.init -> void
 Celeritas.Core.Midi.TimeSignatureChange.Offset.get -> Celeritas.Core.Rational
 Celeritas.Core.Midi.TimeSignatureChange.Offset.init -> void
-Celeritas.Core.Midi.TimeSignatureChange.TimeSignatureChange(Celeritas.Core.Rational Offset, int Numerator, int Denominator) -> void
 Celeritas.Core.MinorDominantStyle
 Celeritas.Core.MinorDominantStyle.Harmonic = 1 -> Celeritas.Core.MinorDominantStyle
 Celeritas.Core.MinorDominantStyle.Natural = 0 -> Celeritas.Core.MinorDominantStyle
@@ -1354,7 +1346,6 @@ Celeritas.Core.ParseResult.Errors.get -> System.Collections.Generic.IReadOnlyLis
 Celeritas.Core.ParseResult.Errors.init -> void
 Celeritas.Core.ParseResult.Notes.get -> Celeritas.Core.NoteEvent[]!
 Celeritas.Core.ParseResult.Notes.init -> void
-Celeritas.Core.ParseResult.ParseResult(Celeritas.Core.NoteEvent[]! Notes, Celeritas.Core.TimeSignature? TimeSignature, Celeritas.Core.NotationDirective![]! Directives, System.Collections.Generic.IReadOnlyList<string!>! Errors) -> void
 Celeritas.Core.ParseResult.TimeSignature.get -> Celeritas.Core.TimeSignature?
 Celeritas.Core.ParseResult.TimeSignature.init -> void
 Celeritas.Core.PartDirective

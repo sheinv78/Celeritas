@@ -27,14 +27,35 @@ public enum MidiMergeMode
     SingleTrack
 }
 
-public sealed record MidiFileStatistics(
-    int TrackCount,
-    int NoteCount,
-    long TotalTicks,
-    Rational TotalDuration, // in whole-note units (one 4/4 measure = 1)
-    int? MinNoteNumber,
-    int? MaxNoteNumber,
-    IReadOnlyList<int> Channels);
+public sealed record MidiFileStatistics
+{
+    // Produced by MIDI analysis; not constructible by consumers (#18 API freeze).
+    internal MidiFileStatistics(
+        int trackCount,
+        int noteCount,
+        long totalTicks,
+        Rational totalDuration,
+        int? minNoteNumber,
+        int? maxNoteNumber,
+        IReadOnlyList<int> channels)
+    {
+        TrackCount = trackCount;
+        NoteCount = noteCount;
+        TotalTicks = totalTicks;
+        TotalDuration = totalDuration;
+        MinNoteNumber = minNoteNumber;
+        MaxNoteNumber = maxNoteNumber;
+        Channels = channels;
+    }
+
+    public int TrackCount { get; init; }
+    public int NoteCount { get; init; }
+    public long TotalTicks { get; init; }
+    public Rational TotalDuration { get; init; } // in whole-note units (one 4/4 measure = 1)
+    public int? MinNoteNumber { get; init; }
+    public int? MaxNoteNumber { get; init; }
+    public IReadOnlyList<int> Channels { get; init; }
+}
 
 public static class MidiFileExtensions
 {
@@ -277,13 +298,13 @@ public static class MidiFileExtensions
             var totalDuration = MidiIo.TicksToWholeNotes(totalTicks, ticksPerQuarter);
 
             return new MidiFileStatistics(
-                TrackCount: trackCount,
-                NoteCount: noteCount,
-                TotalTicks: totalTicks,
-                TotalDuration: totalDuration,
-                MinNoteNumber: minNoteNumber,
-                MaxNoteNumber: maxNoteNumber,
-                Channels: channels.OrderBy(c => c).ToArray());
+                trackCount: trackCount,
+                noteCount: noteCount,
+                totalTicks: totalTicks,
+                totalDuration: totalDuration,
+                minNoteNumber: minNoteNumber,
+                maxNoteNumber: maxNoteNumber,
+                channels: channels.OrderBy(c => c).ToArray());
         }
     }
 

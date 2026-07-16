@@ -8,21 +8,38 @@ namespace Celeritas.Core.Midi;
 /// <summary>
 /// Represents a tempo change event in a MIDI file.
 /// </summary>
-public sealed record TempoChange(
-    Rational Offset,
-    int BeatsPerMinute)
+public sealed record TempoChange
 {
+    // Read from a MIDI file; not constructible by consumers (#18 API freeze).
+    internal TempoChange(Rational offset, int beatsPerMinute)
+    {
+        Offset = offset;
+        BeatsPerMinute = beatsPerMinute;
+    }
+
+    public Rational Offset { get; init; }
+    public int BeatsPerMinute { get; init; }
+
     public override string ToString() => $"Tempo {BeatsPerMinute} BPM at {Offset}";
 }
 
 /// <summary>
 /// Represents a time signature change event in a MIDI file.
 /// </summary>
-public sealed record TimeSignatureChange(
-    Rational Offset,
-    int Numerator,
-    int Denominator)
+public sealed record TimeSignatureChange
 {
+    // Read from a MIDI file; not constructible by consumers (#18 API freeze).
+    internal TimeSignatureChange(Rational offset, int numerator, int denominator)
+    {
+        Offset = offset;
+        Numerator = numerator;
+        Denominator = denominator;
+    }
+
+    public Rational Offset { get; init; }
+    public int Numerator { get; init; }
+    public int Denominator { get; init; }
+
     public override string ToString() => $"Time Signature {Numerator}/{Denominator} at {Offset}";
 }
 
