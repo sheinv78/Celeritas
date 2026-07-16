@@ -25,6 +25,9 @@ public sealed class ChordSuggestion(string chord, string reason, float score)
 /// </summary>
 public sealed class ProgressionReport
 {
+    // Produced by ProgressionAdvisor; not constructible by consumers (#18 API freeze).
+    internal ProgressionReport() { }
+
     /// <summary>Detected key signature</summary>
     public required KeySignature Key { get; init; }
 

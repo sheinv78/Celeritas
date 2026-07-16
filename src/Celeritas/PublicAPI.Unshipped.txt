@@ -366,7 +366,6 @@ Celeritas.Core.Analysis.MelodyAnalysisResult.Intervals.get -> System.Collections
 Celeritas.Core.Analysis.MelodyAnalysisResult.Intervals.init -> void
 Celeritas.Core.Analysis.MelodyAnalysisResult.LowestPitch.get -> int
 Celeritas.Core.Analysis.MelodyAnalysisResult.LowestPitch.init -> void
-Celeritas.Core.Analysis.MelodyAnalysisResult.MelodyAnalysisResult() -> void
 Celeritas.Core.Analysis.MelodyAnalysisResult.Motifs.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.Motif!>!
 Celeritas.Core.Analysis.MelodyAnalysisResult.Motifs.init -> void
 Celeritas.Core.Analysis.MelodyAnalysisResult.Statistics.get -> Celeritas.Core.Analysis.MelodicIntervalStatistics!
@@ -423,7 +422,6 @@ Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.Detecte
 Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.HasModalMixture.get -> bool
 Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.MatchedProgression.get -> Celeritas.Core.Analysis.ModalProgression?
 Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.MatchedProgression.init -> void
-Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.ModalProgressionAnalysisResult() -> void
 Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.ModeConfidence.get -> float
 Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.ModeConfidence.init -> void
 Celeritas.Core.Analysis.ModalProgressions.ModalProgressionAnalysisResult.ProgressionConfidence.get -> float
@@ -466,7 +464,6 @@ Celeritas.Core.Analysis.ModulationAnalysisResult
 Celeritas.Core.Analysis.ModulationAnalysisResult.EndKey.get -> Celeritas.Core.KeySignature
 Celeritas.Core.Analysis.ModulationAnalysisResult.EndKey.init -> void
 Celeritas.Core.Analysis.ModulationAnalysisResult.KeyCount.get -> int
-Celeritas.Core.Analysis.ModulationAnalysisResult.ModulationAnalysisResult() -> void
 Celeritas.Core.Analysis.ModulationAnalysisResult.Modulations.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.ModulationEvent!>!
 Celeritas.Core.Analysis.ModulationAnalysisResult.Modulations.init -> void
 Celeritas.Core.Analysis.ModulationAnalysisResult.StartKey.get -> Celeritas.Core.KeySignature
@@ -667,7 +664,6 @@ Celeritas.Core.Analysis.ProgressionReport.ParallelOctaves.get -> int
 Celeritas.Core.Analysis.ProgressionReport.ParallelOctaves.init -> void
 Celeritas.Core.Analysis.ProgressionReport.Pattern.get -> string!
 Celeritas.Core.Analysis.ProgressionReport.Pattern.init -> void
-Celeritas.Core.Analysis.ProgressionReport.ProgressionReport() -> void
 Celeritas.Core.Analysis.ProgressionReport.QualityRating.get -> string!
 Celeritas.Core.Analysis.ProgressionReport.QualityRating.init -> void
 Celeritas.Core.Analysis.ProgressionReport.SecondaryDominants.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Analysis.SecondaryDominantInfo!>!
@@ -771,7 +767,6 @@ Celeritas.Core.Analysis.RhythmPrediction.ContextFound.get -> bool
 Celeritas.Core.Analysis.RhythmPrediction.ContextFound.init -> void
 Celeritas.Core.Analysis.RhythmPrediction.MostLikely.get -> Celeritas.Core.Rational
 Celeritas.Core.Analysis.RhythmPrediction.MostLikely.init -> void
-Celeritas.Core.Analysis.RhythmPrediction.RhythmPrediction() -> void
 Celeritas.Core.Analysis.RhythmPredictor
 Celeritas.Core.Analysis.RhythmPredictor.Generate(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Rational>! seed, int length) -> System.Collections.Generic.List<Celeritas.Core.Rational>!
 Celeritas.Core.Analysis.RhythmPredictor.GenerateMeasure(System.Collections.Generic.IReadOnlyList<Celeritas.Core.Rational>! seed, Celeritas.Core.TimeSignature meter) -> System.Collections.Generic.List<Celeritas.Core.Rational>!
@@ -1076,7 +1071,6 @@ Celeritas.Core.Harmonization.HarmonizationResult
 Celeritas.Core.Harmonization.HarmonizationResult.Chords.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Harmonization.ChordAssignment>!
 Celeritas.Core.Harmonization.HarmonizationResult.Chords.init -> void
 Celeritas.Core.Harmonization.HarmonizationResult.GetSymbols() -> System.Collections.Generic.IEnumerable<string!>!
-Celeritas.Core.Harmonization.HarmonizationResult.HarmonizationResult() -> void
 Celeritas.Core.Harmonization.HarmonizationResult.Key.get -> Celeritas.Core.KeySignature
 Celeritas.Core.Harmonization.HarmonizationResult.Key.init -> void
 Celeritas.Core.Harmonization.HarmonizationResult.TotalCost.get -> float
@@ -1274,7 +1268,6 @@ Celeritas.Core.Orchestration.OrchestrationResult.Bass.get -> Celeritas.Core.Orch
 Celeritas.Core.Orchestration.OrchestrationResult.Bass.init -> void
 Celeritas.Core.Orchestration.OrchestrationResult.Harmony.get -> Celeritas.Core.Orchestration.OrchestratedPart!
 Celeritas.Core.Orchestration.OrchestrationResult.Harmony.init -> void
-Celeritas.Core.Orchestration.OrchestrationResult.OrchestrationResult() -> void
 Celeritas.Core.Orchestration.OrchestrationResult.Parts.get -> System.Collections.Generic.IEnumerable<Celeritas.Core.Orchestration.OrchestratedPart!>!
 Celeritas.Core.Ornamentation.Appoggiatura
 Celeritas.Core.Ornamentation.Appoggiatura.Appoggiatura() -> void

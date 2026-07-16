@@ -8,6 +8,9 @@ namespace Celeritas.Core.Harmonization;
 /// </summary>
 public sealed class HarmonizationResult
 {
+    // Produced by the harmonizer; not constructible by consumers (#18 API freeze).
+    internal HarmonizationResult() { }
+
     /// <summary>
     /// The detected or specified key.
     /// </summary>

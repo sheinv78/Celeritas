@@ -310,6 +310,9 @@ public sealed class RhythmPredictor
 /// </summary>
 public sealed class RhythmPrediction
 {
+    // Produced by RhythmPredictor; not constructible by consumers (#18 API freeze).
+    internal RhythmPrediction() { }
+
     public required Rational MostLikely { get; init; }
     public required float Confidence { get; init; }
     public required IReadOnlyList<RhythmAlternative> Alternatives { get; init; }

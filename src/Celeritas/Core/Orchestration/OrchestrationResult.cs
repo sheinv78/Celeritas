@@ -5,6 +5,9 @@ namespace Celeritas.Core.Orchestration;
 
 public sealed class OrchestrationResult
 {
+    // Produced by the orchestration pipeline; not constructible by consumers (#18 API freeze).
+    internal OrchestrationResult() { }
+
     public required OrchestratedPart Bass { get; init; }
     public required OrchestratedPart Harmony { get; init; }
 

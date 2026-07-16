@@ -230,6 +230,9 @@ public static class ModalProgressions
     /// </summary>
     public sealed class ModalProgressionAnalysisResult
     {
+        // Produced by ModalProgressions.Analyze; not constructible by consumers (#18 API freeze).
+        internal ModalProgressionAnalysisResult() { }
+
         public required ModalKey DetectedKey { get; init; }
         public required float ModeConfidence { get; init; }
         public required ModalProgression? MatchedProgression { get; init; }

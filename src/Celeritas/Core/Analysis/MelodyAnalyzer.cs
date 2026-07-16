@@ -104,6 +104,9 @@ public sealed class MelodicIntervalStatistics
 /// </summary>
 public sealed class MelodyAnalysisResult
 {
+    // Produced by MelodyAnalyzer; not constructible by consumers (#18 API freeze).
+    internal MelodyAnalysisResult() { }
+
     public required MelodicContour Contour { get; init; }
     public required string ContourDescription { get; init; }
     public required int LowestPitch { get; init; }

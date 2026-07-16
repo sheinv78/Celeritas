@@ -38,6 +38,9 @@ public sealed class ModulationEvent
 /// </summary>
 public sealed class ModulationAnalysisResult
 {
+    // Produced by ModulationDetector; not constructible by consumers (#18 API freeze).
+    internal ModulationAnalysisResult() { }
+
     /// <summary>Starting key signature.</summary>
     public required KeySignature StartKey { get; init; }
 
