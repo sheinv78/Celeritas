@@ -41,3 +41,9 @@ htmlcov/
 bindings/python/celeritas/native/*.dll
 bindings/python/celeritas/native/*.so
 bindings/python/celeritas/native/*.dylib
+
+# DocFX generated output
+docs/_site/
+docs/api/*.yml
+docs/api/.manifest
+docs/**/.docfxignore

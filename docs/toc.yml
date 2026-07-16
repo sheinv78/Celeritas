@@ -1,0 +1,6 @@
+- name: Home
+  href: index.md
+- name: API Reference
+  href: api/
+- name: Cookbook
+  href: COOKBOOK.md
