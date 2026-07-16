@@ -97,6 +97,21 @@ public class PropertyPitchClassSetTests
     }
 
     [Fact]
+    public void TransposeAndInvert_AlwaysReturnValidPitchClasses()
+    {
+        // Includes negatives and out-of-octave values: the output must still be pitch classes in
+        // [0, 12). Transpose used not to fold a negative input element — Transpose([-1], 0) came
+        // back as [-1], not a pitch class — while Invert did fold. Both are checked here.
+        var anyInts = Gen.Int[-50, 50].Array[1, 8];
+
+        (from set in anyInts from n in Semitones select (set, n)).Sample(t =>
+        {
+            Assert.All(PitchClassSetAnalyzer.Transpose(t.set, t.n), pc => Assert.InRange(pc, 0, 11));
+            Assert.All(PitchClassSetAnalyzer.Invert(t.set), pc => Assert.InRange(pc, 0, 11));
+        });
+    }
+
+    [Fact]
     public void NormalOrder_IsIdempotent()
     {
         PitchClasses.Sample(set =>
