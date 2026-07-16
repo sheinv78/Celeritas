@@ -52,20 +52,33 @@ public static class MidiIo
         UnknownChunkIdPolicy = UnknownChunkIdPolicy.Skip,
     };
 
-    public static NoteBuffer Import(Stream stream, MidiImportOptions? options = null)
+    /// <summary>
+    /// Read a MIDI stream with the hardened settings above, surfacing a malformed file as
+    /// <see cref="InvalidDataException"/> rather than a library-internal <see cref="MidiException"/>.
+    /// </summary>
+    /// <remarks>
+    /// The single door every reader in this assembly goes through, so the DoS defenses and the
+    /// exception contract cannot drift apart between entry points — which is exactly how
+    /// <see cref="MidiEvents"/> ended up reading untrusted files on default settings.
+    /// </remarks>
+    internal static MidiFile ReadHardened(Stream stream)
     {
-        options ??= new MidiImportOptions();
-
-        MidiFile midiFile;
         try
         {
-            midiFile = MidiFile.Read(stream, HardenedReadingSettings);
+            return MidiFile.Read(stream, HardenedReadingSettings);
         }
         catch (MidiException ex)
         {
             // Surface library-internal exception types as a clean, documented contract.
             throw new InvalidDataException("The MIDI stream is malformed or corrupt.", ex);
         }
+    }
+
+    public static NoteBuffer Import(Stream stream, MidiImportOptions? options = null)
+    {
+        options ??= new MidiImportOptions();
+
+        var midiFile = ReadHardened(stream);
 
         if (midiFile.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
         {

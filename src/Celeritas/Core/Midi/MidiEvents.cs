@@ -45,7 +45,7 @@ public static class MidiEvents
     /// </summary>
     private static List<TempoChange> GetTempoChanges(Stream stream)
     {
-        var midiFile = MidiFile.Read(stream);
+        var midiFile = MidiIo.ReadHardened(stream);
         if (midiFile.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
         {
             throw new NotSupportedException("Only ticks-per-quarter-note MIDI files are supported.");
@@ -95,7 +95,7 @@ public static class MidiEvents
     /// </summary>
     private static List<TimeSignatureChange> GetTimeSignatureChanges(Stream stream)
     {
-        var midiFile = MidiFile.Read(stream);
+        var midiFile = MidiIo.ReadHardened(stream);
         if (midiFile.TimeDivision is not TicksPerQuarterNoteTimeDivision tpq)
         {
             throw new NotSupportedException("Only ticks-per-quarter-note MIDI files are supported.");
