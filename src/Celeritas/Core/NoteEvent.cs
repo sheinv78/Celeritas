@@ -12,10 +12,21 @@ namespace Celeritas.Core;
 /// and by <c>MidiIo</c>.
 /// </para>
 /// </summary>
+/// <param name="pitch">MIDI pitch number (middle C = 60).</param>
+/// <param name="offset">Start time, in whole-note units, from the start of the buffer.</param>
+/// <param name="duration">Sounding length, in whole-note units.</param>
+/// <param name="velocity">Normalized loudness in the range 0..1 (default 0.8).</param>
 public readonly struct NoteEvent(int pitch, Rational offset, Rational duration, float velocity = 0.8f)
 {
+    /// <summary>MIDI pitch number (middle C = 60).</summary>
     public readonly int Pitch = pitch;
+
+    /// <summary>Start time, in whole-note units, from the start of the buffer.</summary>
     public readonly Rational Offset = offset;
+
+    /// <summary>Sounding length, in whole-note units.</summary>
     public readonly Rational Duration = duration;
+
+    /// <summary>Normalized loudness in the range 0..1.</summary>
     public readonly float Velocity = velocity;
 }
