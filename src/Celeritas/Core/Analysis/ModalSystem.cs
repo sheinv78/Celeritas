@@ -312,6 +312,9 @@ public static class ModeLibrary
         if (distribution.Length != 12)
             throw new ArgumentException("Distribution must have 12 elements", nameof(distribution));
 
+        if (!HasWeight(distribution))
+            return (new ModalKey(0, Mode.Ionian), 0f);
+
         ModalKey bestKey = new(0, Mode.Ionian);
         float bestScore = float.MinValue;
 
@@ -390,6 +393,9 @@ public static class ModeLibrary
         // failing: rootHint -1 became byte 255, which scores as pitch class 3. A caller hinting
         // one semitone below C was answered in D#, with the confidence of a real detection.
         rootHint = ((rootHint % 12) + 12) % 12;
+
+        if (!HasWeight(distribution))
+            return (new ModalKey((byte)rootHint, Mode.Ionian), 0f);
         ModalKey bestKey = new((byte)rootHint, Mode.Ionian);
         float bestScore = float.MinValue;
 
@@ -461,6 +467,30 @@ public static class ModeLibrary
         }
 
         return DetectModeWithRoot(distribution, root);
+    }
+
+    /// <summary>
+    /// Whether a distribution carries any positive weight to detect a mode from.
+    /// </summary>
+    /// <remarks>
+    /// An empty distribution is not merely inconclusive — it is actively misreported. Every mode
+    /// ties at a structural score of 0 (see the <c>total == 0</c> guard in ScoreAgainstMode), and
+    /// then the prominent-root (+0.15) and common-mode (+0.05) tie-breakers lift the winner to
+    /// ~0.2, which the confidence formula turns into 0.6. So the caller was told "C Ionian, 60%
+    /// confident" about silence. KeyProfiler.Detect reports zero confidence in exactly this case
+    /// ("when the best correlation is not positive the ratio is meaningless"); this agrees with it.
+    /// The bar is a positive sum, not a nonzero one, so a distribution that cancels to zero — or is
+    /// entirely non-positive — is caught too, rather than dividing by it further down.
+    /// </remarks>
+    private static bool HasWeight(float[] distribution)
+    {
+        float total = 0f;
+        foreach (var weight in distribution)
+        {
+            total += weight;
+        }
+
+        return total > 0f;
     }
 
     private static float ScoreAgainstMode(float[] distribution, ModalKey key)
