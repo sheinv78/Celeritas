@@ -68,6 +68,11 @@ public readonly record struct MelodicInterval(
 public sealed class Motif
 {
     public required int[] IntervalPattern { get; init; }
+
+    /// <summary>
+    /// Onset of each occurrence's first note. When the melody was analyzed without timing, these
+    /// are sequential note positions (index <c>i</c> as <c>i/1</c>) rather than musical times.
+    /// </summary>
     public required IReadOnlyList<Rational> Occurrences { get; init; }
     public required int Length { get; init; }
     public required double Significance { get; init; } // 0-1, based on frequency and length
@@ -167,12 +172,25 @@ public static class MelodyAnalyzer
     }
 
     /// <summary>
-    /// Analyze a melody from pitch array.
+    /// Analyze a melody from pitch array. When <paramref name="times"/> is supplied, each note's
+    /// onset is used for <see cref="Motif.Occurrences"/>; otherwise occurrences are reported as
+    /// sequential note positions (index <c>i</c> as <c>i/1</c>), since no timing is known.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="pitches"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="times"/> is non-null and its length differs from <paramref name="pitches"/>.
+    /// </exception>
     public static MelodyAnalysisResult Analyze(int[] pitches, Rational[]? times = null)
     {
         ArgumentNullException.ThrowIfNull(pitches);
+
+        // A times array of the wrong length was silently accepted before, because times was never
+        // read past this point — Analyze(3 pitches, 1 time) "succeeded". If a caller supplies
+        // timing, it has to line up with the notes it times.
+        if (times is not null && times.Length != pitches.Length)
+            throw new ArgumentException(
+                $"times length ({times.Length}) must match pitches length ({pitches.Length}).",
+                nameof(times));
 
         if (pitches.Length == 0)
         {
@@ -214,8 +232,9 @@ public static class MelodyAnalyzer
         var ambitus = highest - lowest;
         var ambitusDesc = DescribeAmbitus(ambitus, lowest, highest);
 
-        // Detect motifs
-        var motifs = DetectMotifs(intervals.Select(i => i.Semitones).ToArray());
+        // Detect motifs. times lines up with pitches (and so with the note each interval starts
+        // on), so an occurrence at interval index i is reported at that note's onset, times[i].
+        var motifs = DetectMotifs(intervals.Select(i => i.Semitones).ToArray(), times);
 
         // Calculate conjunctness (how stepwise the melody is)
         var conjunctness = stats.TotalIntervals > 0
@@ -406,7 +425,7 @@ public static class MelodyAnalyzer
         };
     }
 
-    private static List<Motif> DetectMotifs(int[] intervals, int minLength = 2, int maxLength = 6)
+    private static List<Motif> DetectMotifs(int[] intervals, Rational[] noteTimes, int minLength = 2, int maxLength = 6)
     {
         if (intervals.Length < minLength * 2)
         {
@@ -460,7 +479,12 @@ public static class MelodyAnalyzer
                     motifs.Add(new Motif
                     {
                         IntervalPattern = pattern,
-                        Occurrences = occurrences.Select(i => new Rational(i, 1)).ToList(),
+                        // occurrences are interval indices; the pattern starting at interval index
+                        // i begins on note i, whose onset is noteTimes[i]. Previously these indices
+                        // were wrapped straight into Rational — index 3 surfaced as 3/1, three
+                        // whole notes — so the real onsets extracted by Analyze(NoteBuffer) were
+                        // discarded and replaced with the note's position in the sequence.
+                        Occurrences = occurrences.Select(i => noteTimes[i]).ToList(),
                         Length = len,
                         Significance = significance
                     });
