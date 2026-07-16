@@ -1166,7 +1166,6 @@ Celeritas.Core.MinorDominantStyle.Harmonic = 1 -> Celeritas.Core.MinorDominantSt
 Celeritas.Core.MinorDominantStyle.Natural = 0 -> Celeritas.Core.MinorDominantStyle
 Celeritas.Core.MusicMath
 Celeritas.Core.MusicNotation
-Celeritas.Core.MusicNotationAntlrParser
 Celeritas.Core.NotationDirective
 Celeritas.Core.NotationDirective.Time.get -> Celeritas.Core.Rational
 Celeritas.Core.NotationDirective.Time.init -> void
@@ -1694,12 +1693,11 @@ static Celeritas.Core.MusicNotation.FormatNoteSequence(System.ReadOnlySpan<Celer
 static Celeritas.Core.MusicNotation.FormatWithDirectives(System.ReadOnlySpan<Celeritas.Core.NoteEvent> notes, System.ReadOnlySpan<Celeritas.Core.NotationDirective!> directives, bool useDot = true, bool useLetters = false, bool groupChords = true) -> string!
 static Celeritas.Core.MusicNotation.Parse(string! input, bool validateMeasures = false) -> Celeritas.Core.NoteEvent[]!
 static Celeritas.Core.MusicNotation.ParseDuration(string! duration) -> Celeritas.Core.Rational
+static Celeritas.Core.MusicNotation.ParseFull(string! input, bool validateMeasures = false) -> Celeritas.Core.ParseResult!
 static Celeritas.Core.MusicNotation.ParseKey(string! keyString) -> Celeritas.Core.KeySignature
 static Celeritas.Core.MusicNotation.ParseNote(string! notation) -> int
 static Celeritas.Core.MusicNotation.ToNotation(int midiPitch, bool preferSharps = true) -> string!
 static Celeritas.Core.MusicNotation.TryParseNote(System.ReadOnlySpan<char> notation, out int midi) -> bool
-static Celeritas.Core.MusicNotationAntlrParser.Parse(string! input, bool validateMeasures = false) -> Celeritas.Core.ParseResult!
-static Celeritas.Core.MusicNotationAntlrParser.ParseNotes(string! input, bool validateMeasures = false) -> Celeritas.Core.NoteEvent[]!
 static Celeritas.Core.NoteArithmeticExtensions.ToSpnNote(this string! notation) -> Celeritas.Core.SpnNote
 static Celeritas.Core.Orchestration.OrchestrationMapper.Map(Celeritas.Core.NoteEvent[]! notes, Celeritas.Core.Orchestration.OrchestrationOptions? options = null) -> Celeritas.Core.Orchestration.OrchestrationResult!
 static Celeritas.Core.Orchestration.OrchestrationOptions.Default.get -> Celeritas.Core.Orchestration.OrchestrationOptions

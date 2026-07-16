@@ -104,6 +104,21 @@ public static class MusicNotation
     }
 
     /// <summary>
+    /// Parse music notation into a full result: notes plus directives (tempo, dynamics,
+    /// sections, parts), the leading time signature, and any parse errors. Use this when you
+    /// need more than the note events <see cref="Parse(string, bool)"/> returns.
+    /// </summary>
+    /// <param name="input">Music notation string</param>
+    /// <param name="validateMeasures">Validate measure durations against time signature</param>
+    /// <returns>The parsed notes together with directives, time signature, and errors.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="input"/> is <see langword="null"/>.</exception>
+    public static ParseResult ParseFull(string input, bool validateMeasures = false)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        return MusicNotationAntlrParser.Parse(input, validateMeasures);
+    }
+
+    /// <summary>
     /// Parse duration string
     /// Supports: 1 (whole), 2 (half), 4 (quarter), 8 (eighth), 16 (16th)
     ///           w/whole, h/half, q/quarter, e/eighth, s/16th

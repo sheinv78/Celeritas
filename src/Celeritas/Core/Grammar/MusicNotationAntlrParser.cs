@@ -12,7 +12,9 @@ namespace Celeritas.Core;
 /// ANTLR-based music notation parser.
 /// Supports: notes, chords, rests, ties, time signatures, measures, polyphony.
 /// </summary>
-public static class MusicNotationAntlrParser
+// Implementation detail behind MusicNotation.Parse / MusicNotation.ParseFull; the ANTLR-based
+// parser is not part of the public surface (#18). Tests reach it via InternalsVisibleTo.
+internal static class MusicNotationAntlrParser
 {
     /// <summary>
     /// Parse music notation string into note events.

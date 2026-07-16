@@ -4,6 +4,26 @@ namespace Celeritas.Tests;
 
 public class MusicNotationTests
 {
+    // ParseFull is the public entry point for the rich parse result (directives, time signature,
+    // errors); MusicNotationAntlrParser is now internal (#18). This exercises the public surface.
+    [Fact]
+    public void ParseFull_ReturnsNotesDirectivesAndTimeSignature()
+    {
+        var result = MusicNotation.ParseFull("3/4: @bpm 120 C4/4 E4/4 G4/4");
+
+        Assert.NotEmpty(result.Notes);
+        Assert.NotNull(result.TimeSignature);
+        Assert.Equal(3, result.TimeSignature!.Value.BeatsPerMeasure);
+        Assert.Contains(result.Directives, d => d.ToString().Contains("120"));
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void ParseFull_NullInput_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => MusicNotation.ParseFull(null!));
+    }
+
     [Theory]
     [InlineData("C4", 60)]
     [InlineData("C#4", 61)]
