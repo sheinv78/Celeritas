@@ -113,7 +113,7 @@ public static unsafe class ChordAnalyzer
                 if (p < bass) bass = p;
             }
 
-            var bassPc = ((bass % 12) + 12) % 12;
+            var bassPc = PitchMath.Fold(bass);
             if (bassPc == (info.RootPitchClass + 7) % 12)
                 return new ChordInfo((byte)bassPc, ChordQuality.Sus4);
             if (bassPc == (info.RootPitchClass + 2) % 12)

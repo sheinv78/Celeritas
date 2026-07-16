@@ -211,7 +211,7 @@ public static class KeyProfiler
             // below zero — which MusicMath.Transpose does without clamping, by documented design —
             // contributed nothing at all, and an entirely out-of-range one was answered as C major
             // at 0% confidence rather than in the key it plainly was.
-            distribution[((pitch % 12) + 12) % 12]++;
+            distribution[PitchMath.Fold(pitch)]++;
         }
 
         return Detect(distribution);
@@ -273,7 +273,7 @@ public static class KeyProfiler
             // Fold: `%` keeps the sign in C#, so a pitch below zero indexed backwards out of the
             // distribution. Its sibling DetectFromPitches guards this same loop and its cousin
             // ChordAnalyzer.GetMask folds it — one distribution, computed three ways.
-            var pitchClass = ((note.Pitch % 12) + 12) % 12;
+            var pitchClass = PitchMath.Fold(note.Pitch);
             // Weight by duration (longer notes are more important for key)
             var weight = (float)note.Duration.ToDouble();
             distribution[pitchClass] += weight;
@@ -457,7 +457,7 @@ public static class KeyProfiler
         // minors — so an unfolded root silently overrides isMajor rather than failing: root 12
         // with isMajor:true landed on index 12 and returned the C *minor* profile, a well-formed
         // answer in the mode the caller did not ask for.
-        var pitchClass = ((root % 12) + 12) % 12;
+        var pitchClass = PitchMath.Fold(root);
         var index = isMajor ? pitchClass : 12 + pitchClass;
         return AllKeyProfiles[index];
     }

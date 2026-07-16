@@ -244,7 +244,7 @@ public static class PitchClassSetAnalyzer
         {
             // Fold the input element too, as Invert does: `%` keeps the sign, so a negative pitch
             // class came out negative — Transpose([-1], 0) returned [-1], not a pitch class at all.
-            var pc = ((pitchClasses[i] % 12) + 12) % 12;
+            var pc = PitchMath.Fold(pitchClasses[i]);
             result[i] = (pc + semitones) % 12;
         }
 
@@ -265,12 +265,7 @@ public static class PitchClassSetAnalyzer
         var result = new int[pitchClasses.Length];
         for (var i = 0; i < pitchClasses.Length; i++)
         {
-            var pc = pitchClasses[i] % 12;
-            if (pc < 0)
-            {
-                pc += 12;
-            }
-
+            var pc = PitchMath.Fold(pitchClasses[i]);
             result[i] = (12 - pc) % 12;
         }
 

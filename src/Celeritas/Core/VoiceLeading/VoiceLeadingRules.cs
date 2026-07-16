@@ -57,7 +57,7 @@ public static class VoiceLeadingRules
     /// DoubledLeadingTone violation that keyRoot -1 did not, both for the same pair of voicings.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int NormalizePitchClass(int pitchClass) => ((pitchClass % 12) + 12) % 12;
+    private static int NormalizePitchClass(int pitchClass) => PitchMath.Fold(pitchClass);
 
     /// <summary>
     /// Overload for hot paths (e.g. the DP solver) that evaluate many 'to' candidates against

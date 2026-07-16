@@ -3,7 +3,7 @@ using BenchmarkDotNet.Running;
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
 
-BenchmarkRunner.Run<CeleritasBenchmarks>();
+BenchmarkRunner.Run<CeleritasBenchmarks>(args: args);
 
 [MemoryDiagnoser]
 [SimpleJob(warmupCount: 3, iterationCount: 5)]

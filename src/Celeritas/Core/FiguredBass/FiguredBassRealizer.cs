@@ -74,7 +74,7 @@ public sealed class FiguredBassRealizer
         for (var i = 0; i < intervals.Length; i++)
         {
             var pitch = CalculatePitch(symbol.BassPitch, intervals[i], symbol.Accidentals);
-            targetPitchClasses[i] = ((pitch % 12) + 12) % 12;
+            targetPitchClasses[i] = PitchMath.Fold(pitch);
         }
 
         // If voice count changes, reset voice leading.
@@ -289,7 +289,7 @@ public sealed class FiguredBassRealizer
             return 0;
 
         var scale = _options.Key.GetScale(); // 7 ascending pitch classes of the key
-        var bassPc = ((bassPitch % 12) + 12) % 12;
+        var bassPc = PitchMath.Fold(bassPitch);
         var idx = Array.IndexOf(scale, bassPc);
 
         if (idx < 0)

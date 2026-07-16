@@ -283,7 +283,7 @@ public static class AccompanimentGenerator
 
     private static int PitchClassToMidiAtOrAbove(byte pitchClass, int minMidi)
     {
-        var basePc = ((minMidi % 12) + 12) % 12;
+        var basePc = PitchMath.Fold(minMidi);
         var delta = (pitchClass - basePc + 12) % 12;
         return minMidi + delta;
     }

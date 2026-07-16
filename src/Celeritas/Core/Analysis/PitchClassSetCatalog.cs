@@ -93,7 +93,7 @@ public sealed class PitchClassSetCatalog
     public static string PrimeFormKey(int[] primeForm)
     {
         ArgumentNullException.ThrowIfNull(primeForm);
-        return string.Join(",", primeForm.Select(v => ((v % 12) + 12) % 12));
+        return string.Join(",", primeForm.Select(PitchMath.Fold));
     }
 
     /// <exception cref="ArgumentNullException"><paramref name="primeForm"/> is <see langword="null"/>.</exception>

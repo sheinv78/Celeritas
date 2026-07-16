@@ -38,7 +38,7 @@ public static class KeyAnalyzer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ushort GetScaleMask(int root, bool isMajor)
     {
-        var index = ((root % 12) + 12) % 12;
+        var index = PitchMath.Fold(root);
         return isMajor ? MajorScaleMasksByRoot[index] : MinorScaleMasksByRoot[index];
     }
 

@@ -731,7 +731,7 @@ public static class ProgressionAdvisor
 
         // Get note names. Fold rather than `p % 12`, which keeps the sign for a pitch below zero
         // and indexes backwards out of NoteNames.
-        var noteNames = pitches.Select(p => NoteNames[((p % 12) + 12) % 12]).Distinct().ToArray();
+        var noteNames = pitches.Select(p => NoteNames[PitchMath.Fold(p)]).Distinct().ToArray();
 
         // Borrowed (modal mixture): not diatonic to the key, but diatonic to the
         // parallel mode. (KeyAnalyzer returns Invalid — never HarmonicFunction.Chromatic —

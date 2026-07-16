@@ -294,14 +294,14 @@ public static class ModalProgressions
             var chord = ChordLibrary.GetChord(mask);
             var rootPc = chord.Quality != ChordQuality.Unknown
                 ? chord.RootPitchClass
-                : ((pitches[0] % 12) + 12) % 12;
+                : PitchMath.Fold(pitches[0]);
 
             chordRootPitchClasses.Add(rootPc);
 
             var pcsSet = new HashSet<int>();
             foreach (var p in pitches)
             {
-                var pc = ((p % 12) + 12) % 12;
+                var pc = PitchMath.Fold(p);
                 if (pcsSet.Add(pc))
                 {
                     distribution[pc] += 1f;
