@@ -165,6 +165,9 @@ public sealed record PolyphonyAnalysisResult
 /// </summary>
 public sealed class MotionStatistics
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal MotionStatistics() { }
+
     public int Parallel { get; init; }
     public int Similar { get; init; }
     public int Contrary { get; init; }
@@ -184,6 +187,9 @@ public sealed class MotionStatistics
 /// </summary>
 public sealed class IntervalStatistics
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal IntervalStatistics() { }
+
     public int[] IntervalCounts { get; } = new int[12];
 
     public int PerfectConsonances { get; init; }

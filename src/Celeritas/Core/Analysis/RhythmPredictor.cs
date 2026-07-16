@@ -330,6 +330,9 @@ public sealed class RhythmPrediction
 /// </summary>
 public sealed class RhythmAlternative
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal RhythmAlternative() { }
+
     public required Rational Duration { get; init; }
     public required float Probability { get; init; }
 }
@@ -339,6 +342,9 @@ public sealed class RhythmAlternative
 /// </summary>
 public sealed class RhythmModelStatistics
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal RhythmModelStatistics() { }
+
     public int Order { get; init; }
     public int UniqueContexts { get; init; }
     public int TotalTransitions { get; init; }

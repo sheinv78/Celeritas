@@ -67,6 +67,9 @@ public readonly record struct MelodicInterval(
 /// </summary>
 public sealed class Motif
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal Motif() { }
+
     public required int[] IntervalPattern { get; init; }
 
     /// <summary>
@@ -89,6 +92,9 @@ public sealed class Motif
 /// </summary>
 public sealed class MelodicIntervalStatistics
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal MelodicIntervalStatistics() { }
+
     public required int TotalIntervals { get; init; }
     public required double AverageInterval { get; init; }
     public required int LargestLeap { get; init; }

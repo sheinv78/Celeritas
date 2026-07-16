@@ -37,6 +37,9 @@ public enum ModulationType
 /// </summary>
 public sealed class ModulationInfo
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal ModulationInfo() { }
+
     /// <summary>Position in the progression (0-based)</summary>
     public required int Position { get; init; }
 

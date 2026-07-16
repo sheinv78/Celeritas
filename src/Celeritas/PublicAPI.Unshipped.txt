@@ -34,7 +34,6 @@ Celeritas.Core.Analysis.BeatStrength.Strong = 0 -> Celeritas.Core.Analysis.BeatS
 Celeritas.Core.Analysis.BeatStrength.Subdivision = 3 -> Celeritas.Core.Analysis.BeatStrength
 Celeritas.Core.Analysis.BeatStrength.Weak = 2 -> Celeritas.Core.Analysis.BeatStrength
 Celeritas.Core.Analysis.BorrowedChordInfo
-Celeritas.Core.Analysis.BorrowedChordInfo.BorrowedChordInfo() -> void
 Celeritas.Core.Analysis.BorrowedChordInfo.Chord.get -> string!
 Celeritas.Core.Analysis.BorrowedChordInfo.Chord.init -> void
 Celeritas.Core.Analysis.BorrowedChordInfo.Position.get -> int
@@ -68,7 +67,6 @@ Celeritas.Core.Analysis.ChordAnalysisDetail.AlteredNotes.get -> string?
 Celeritas.Core.Analysis.ChordAnalysisDetail.AlteredNotes.init -> void
 Celeritas.Core.Analysis.ChordAnalysisDetail.Character.get -> Celeritas.Core.Analysis.ChordCharacter
 Celeritas.Core.Analysis.ChordAnalysisDetail.Character.init -> void
-Celeritas.Core.Analysis.ChordAnalysisDetail.ChordAnalysisDetail() -> void
 Celeritas.Core.Analysis.ChordAnalysisDetail.Description.get -> string!
 Celeritas.Core.Analysis.ChordAnalysisDetail.Description.init -> void
 Celeritas.Core.Analysis.ChordAnalysisDetail.Function.get -> string!
@@ -114,7 +112,6 @@ Celeritas.Core.Analysis.ChordCharacterClassifier
 Celeritas.Core.Analysis.ChordSuggestion
 Celeritas.Core.Analysis.ChordSuggestion.Chord.get -> string!
 Celeritas.Core.Analysis.ChordSuggestion.Chord.init -> void
-Celeritas.Core.Analysis.ChordSuggestion.ChordSuggestion(string! chord, string! reason, float score) -> void
 Celeritas.Core.Analysis.ChordSuggestion.Reason.get -> string!
 Celeritas.Core.Analysis.ChordSuggestion.Reason.init -> void
 Celeritas.Core.Analysis.ChordSuggestion.Score.get -> float
@@ -241,7 +238,6 @@ Celeritas.Core.Analysis.IntervalStatistics.DissonanceRatio.get -> float
 Celeritas.Core.Analysis.IntervalStatistics.ImperfectConsonances.get -> int
 Celeritas.Core.Analysis.IntervalStatistics.ImperfectConsonances.init -> void
 Celeritas.Core.Analysis.IntervalStatistics.IntervalCounts.get -> int[]!
-Celeritas.Core.Analysis.IntervalStatistics.IntervalStatistics() -> void
 Celeritas.Core.Analysis.IntervalStatistics.MildDissonances.get -> int
 Celeritas.Core.Analysis.IntervalStatistics.MildDissonances.init -> void
 Celeritas.Core.Analysis.IntervalStatistics.PerfectConsonances.get -> int
@@ -329,7 +325,6 @@ Celeritas.Core.Analysis.MelodicIntervalStatistics.LargestLeap.get -> int
 Celeritas.Core.Analysis.MelodicIntervalStatistics.LargestLeap.init -> void
 Celeritas.Core.Analysis.MelodicIntervalStatistics.LeapPercent.get -> double
 Celeritas.Core.Analysis.MelodicIntervalStatistics.LeapPercent.init -> void
-Celeritas.Core.Analysis.MelodicIntervalStatistics.MelodicIntervalStatistics() -> void
 Celeritas.Core.Analysis.MelodicIntervalStatistics.MotionHistogram.get -> System.Collections.Generic.IReadOnlyDictionary<Celeritas.Core.Analysis.MelodicMotionType, int>!
 Celeritas.Core.Analysis.MelodicIntervalStatistics.MotionHistogram.init -> void
 Celeritas.Core.Analysis.MelodicIntervalStatistics.RepetitionPercent.get -> double
@@ -479,7 +474,6 @@ Celeritas.Core.Analysis.ModulationEvent.Duration.get -> Celeritas.Core.Rational?
 Celeritas.Core.Analysis.ModulationEvent.Duration.init -> void
 Celeritas.Core.Analysis.ModulationEvent.FromKey.get -> Celeritas.Core.KeySignature
 Celeritas.Core.Analysis.ModulationEvent.FromKey.init -> void
-Celeritas.Core.Analysis.ModulationEvent.ModulationEvent() -> void
 Celeritas.Core.Analysis.ModulationEvent.Offset.get -> Celeritas.Core.Rational
 Celeritas.Core.Analysis.ModulationEvent.Offset.init -> void
 Celeritas.Core.Analysis.ModulationEvent.PivotChord.get -> (Celeritas.Core.RomanNumeralChord? FromContext, Celeritas.Core.RomanNumeralChord? ToContext)?
@@ -497,7 +491,6 @@ Celeritas.Core.Analysis.ModulationInfo.FromKey.get -> Celeritas.Core.KeySignatur
 Celeritas.Core.Analysis.ModulationInfo.FromKey.init -> void
 Celeritas.Core.Analysis.ModulationInfo.KeyRelationship.get -> string!
 Celeritas.Core.Analysis.ModulationInfo.KeyRelationship.init -> void
-Celeritas.Core.Analysis.ModulationInfo.ModulationInfo() -> void
 Celeritas.Core.Analysis.ModulationInfo.PivotAnalysis.get -> string?
 Celeritas.Core.Analysis.ModulationInfo.PivotAnalysis.init -> void
 Celeritas.Core.Analysis.ModulationInfo.PivotChord.get -> string?
@@ -521,7 +514,6 @@ Celeritas.Core.Analysis.Motif.IntervalPattern.get -> int[]!
 Celeritas.Core.Analysis.Motif.IntervalPattern.init -> void
 Celeritas.Core.Analysis.Motif.Length.get -> int
 Celeritas.Core.Analysis.Motif.Length.init -> void
-Celeritas.Core.Analysis.Motif.Motif() -> void
 Celeritas.Core.Analysis.Motif.Occurrences.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.Rational>!
 Celeritas.Core.Analysis.Motif.Occurrences.init -> void
 Celeritas.Core.Analysis.Motif.PatternDescription.get -> string!
@@ -531,7 +523,6 @@ Celeritas.Core.Analysis.MotionStatistics
 Celeritas.Core.Analysis.MotionStatistics.Contrary.get -> int
 Celeritas.Core.Analysis.MotionStatistics.Contrary.init -> void
 Celeritas.Core.Analysis.MotionStatistics.ContraryPercent.get -> float
-Celeritas.Core.Analysis.MotionStatistics.MotionStatistics() -> void
 Celeritas.Core.Analysis.MotionStatistics.Oblique.get -> int
 Celeritas.Core.Analysis.MotionStatistics.Oblique.init -> void
 Celeritas.Core.Analysis.MotionStatistics.ObliquePercent.get -> float
@@ -685,7 +676,6 @@ Celeritas.Core.Analysis.RhythmAlternative.Duration.get -> Celeritas.Core.Rationa
 Celeritas.Core.Analysis.RhythmAlternative.Duration.init -> void
 Celeritas.Core.Analysis.RhythmAlternative.Probability.get -> float
 Celeritas.Core.Analysis.RhythmAlternative.Probability.init -> void
-Celeritas.Core.Analysis.RhythmAlternative.RhythmAlternative() -> void
 Celeritas.Core.Analysis.RhythmAnalysisResult
 Celeritas.Core.Analysis.RhythmAnalysisResult.Density.get -> float
 Celeritas.Core.Analysis.RhythmAnalysisResult.Density.init -> void
@@ -731,7 +721,6 @@ Celeritas.Core.Analysis.RhythmModelStatistics.MostCommonDurations.get -> System.
 Celeritas.Core.Analysis.RhythmModelStatistics.MostCommonDurations.init -> void
 Celeritas.Core.Analysis.RhythmModelStatistics.Order.get -> int
 Celeritas.Core.Analysis.RhythmModelStatistics.Order.init -> void
-Celeritas.Core.Analysis.RhythmModelStatistics.RhythmModelStatistics() -> void
 Celeritas.Core.Analysis.RhythmModelStatistics.TotalTransitions.get -> int
 Celeritas.Core.Analysis.RhythmModelStatistics.TotalTransitions.init -> void
 Celeritas.Core.Analysis.RhythmModelStatistics.UniqueContexts.get -> int
@@ -816,7 +805,6 @@ Celeritas.Core.Analysis.SecondaryDominantInfo.Chord.get -> string!
 Celeritas.Core.Analysis.SecondaryDominantInfo.Chord.init -> void
 Celeritas.Core.Analysis.SecondaryDominantInfo.Position.get -> int
 Celeritas.Core.Analysis.SecondaryDominantInfo.Position.init -> void
-Celeritas.Core.Analysis.SecondaryDominantInfo.SecondaryDominantInfo() -> void
 Celeritas.Core.Analysis.SecondaryDominantInfo.Target.get -> string!
 Celeritas.Core.Analysis.SecondaryDominantInfo.Target.init -> void
 Celeritas.Core.Analysis.SecondaryDominantInfo.TargetDegree.get -> string?
@@ -846,7 +834,6 @@ Celeritas.Core.Analysis.Voice.Name.get -> string!
 Celeritas.Core.Analysis.Voice.Name.init -> void
 Celeritas.Core.Analysis.Voice.Notes.get -> System.Collections.Generic.List<Celeritas.Core.Analysis.VoiceNote>!
 Celeritas.Core.Analysis.Voice.Range.get -> (int Min, int Max)
-Celeritas.Core.Analysis.Voice.Voice() -> void
 Celeritas.Core.Analysis.VoiceInterval
 Celeritas.Core.Analysis.VoiceInterval.Interval.get -> int
 Celeritas.Core.Analysis.VoiceInterval.Pitch1.get -> int
@@ -1239,7 +1226,6 @@ Celeritas.Core.Orchestration.OrchestratedPart.Definition.get -> Celeritas.Core.O
 Celeritas.Core.Orchestration.OrchestratedPart.Definition.init -> void
 Celeritas.Core.Orchestration.OrchestratedPart.Notes.get -> Celeritas.Core.NoteEvent[]!
 Celeritas.Core.Orchestration.OrchestratedPart.Notes.init -> void
-Celeritas.Core.Orchestration.OrchestratedPart.OrchestratedPart() -> void
 Celeritas.Core.Orchestration.OrchestrationMapper
 Celeritas.Core.Orchestration.OrchestrationOptions
 Celeritas.Core.Orchestration.OrchestrationOptions.Bass.get -> Celeritas.Core.Orchestration.OrchestrationPartDefinition

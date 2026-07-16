@@ -8,6 +8,9 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 public sealed class Voice
 {
+    // Produced by voice separation; not constructible by consumers (#18 API freeze).
+    internal Voice() { }
+
     /// <summary>Voice index (0 = highest/soprano, increasing = lower voices).</summary>
     public int Index { get; init; }
 

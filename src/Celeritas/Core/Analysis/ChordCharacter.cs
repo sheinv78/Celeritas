@@ -27,6 +27,9 @@ public enum ChordCharacter
 /// </summary>
 public sealed class ChordAnalysisDetail
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal ChordAnalysisDetail() { }
+
     /// <summary>Chord symbol (e.g., "Gm", "D#maj7")</summary>
     public required string Symbol { get; init; }
 

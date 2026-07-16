@@ -23,6 +23,9 @@ public sealed class OrchestrationResult
 
 public sealed class OrchestratedPart
 {
+    // Produced by orchestration; not constructible by consumers (#18 API freeze).
+    internal OrchestratedPart() { }
+
     public required OrchestrationPartDefinition Definition { get; init; }
     public required NoteEvent[] Notes { get; init; }
 }

@@ -8,16 +8,24 @@ namespace Celeritas.Core.Analysis;
 /// <summary>
 /// A suggested chord that could follow a progression.
 /// </summary>
-public sealed class ChordSuggestion(string chord, string reason, float score)
+public sealed class ChordSuggestion
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal ChordSuggestion(string chord, string reason, float score)
+    {
+        Chord = chord;
+        Reason = reason;
+        Score = score;
+    }
+
     /// <summary>Chord symbol (e.g., "Cmaj7", "Dm")</summary>
-    public string Chord { get; init; } = chord;
+    public string Chord { get; init; }
 
     /// <summary>Reason why this chord is suggested</summary>
-    public string Reason { get; init; } = reason;
+    public string Reason { get; init; }
 
     /// <summary>Quality score (0-1) indicating how well it fits</summary>
-    public float Score { get; init; } = score;
+    public float Score { get; init; }
 }
 
 /// <summary>
@@ -185,6 +193,9 @@ public sealed class ProgressionReport
 /// </summary>
 public sealed class SecondaryDominantInfo
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal SecondaryDominantInfo() { }
+
     public required string Chord { get; init; }
     public required string Target { get; init; }
     public string? TargetDegree { get; init; }
@@ -196,6 +207,9 @@ public sealed class SecondaryDominantInfo
 /// </summary>
 public sealed class BorrowedChordInfo
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal BorrowedChordInfo() { }
+
     public required string Chord { get; init; }
     public required string SourceKey { get; init; }
     public int Position { get; init; }

@@ -8,6 +8,9 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 public sealed class ModulationEvent
 {
+    // Produced by analysis; not constructible by consumers (#18 API freeze).
+    internal ModulationEvent() { }
+
     /// <summary>Starting offset of the modulation.</summary>
     public required Rational Offset { get; init; }
 
