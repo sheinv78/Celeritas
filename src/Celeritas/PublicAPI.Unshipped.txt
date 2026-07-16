@@ -270,7 +270,6 @@ Celeritas.Core.Analysis.KeyProfiler
 Celeritas.Core.Analysis.KeyRelationships
 Celeritas.Core.Analysis.KeyTrajectory
 Celeritas.Core.Analysis.KeyTrajectory.DetectModulations() -> System.Collections.Generic.IEnumerable<(Celeritas.Core.Rational Position, Celeritas.Core.KeySignature FromKey, Celeritas.Core.KeySignature ToKey)>!
-Celeritas.Core.Analysis.KeyTrajectory.KeyTrajectory(System.Collections.Generic.List<(Celeritas.Core.Rational, Celeritas.Core.Analysis.KeyDetectionResult)>! points) -> void
 Celeritas.Core.Analysis.MelodicContour
 Celeritas.Core.Analysis.MelodicContour.Arch = 2 -> Celeritas.Core.Analysis.MelodicContour
 Celeritas.Core.Analysis.MelodicContour.Ascending = 0 -> Celeritas.Core.Analysis.MelodicContour
@@ -1477,7 +1476,6 @@ Celeritas.Core.VoiceLeading.VoiceLeadingSolution.IsValid.get -> bool
 Celeritas.Core.VoiceLeading.VoiceLeadingSolution.ToNoteBuffer(Celeritas.Core.Rational chordDuration) -> Celeritas.Core.NoteBuffer!
 Celeritas.Core.VoiceLeading.VoiceLeadingSolution.ToScore() -> string!
 Celeritas.Core.VoiceLeading.VoiceLeadingSolution.TotalCost.get -> float
-Celeritas.Core.VoiceLeading.VoiceLeadingSolution.VoiceLeadingSolution(Celeritas.Core.VoiceLeading.Voicing[]! voicings, float totalCost, System.Collections.Generic.IReadOnlyList<string!>! warnings) -> void
 Celeritas.Core.VoiceLeading.VoiceLeadingSolution.Voicings.get -> System.Collections.Generic.IReadOnlyList<Celeritas.Core.VoiceLeading.Voicing>!
 Celeritas.Core.VoiceLeading.VoiceLeadingSolution.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Celeritas.Core.VoiceLeading.VoiceLeadingSolver

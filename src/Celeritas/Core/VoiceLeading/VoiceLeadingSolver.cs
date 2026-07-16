@@ -376,11 +376,19 @@ public sealed class VoiceLeadingSolverOptions
 /// <summary>
 /// Result of voice leading solver.
 /// </summary>
-public sealed class VoiceLeadingSolution(Voicing[] voicings, float totalCost, IReadOnlyList<string> warnings)
+public sealed class VoiceLeadingSolution
 {
-    public IReadOnlyList<Voicing> Voicings { get; } = voicings;
-    public float TotalCost { get; } = totalCost;
-    public IReadOnlyList<string> Warnings { get; } = warnings;
+    // Produced by VoiceLeadingSolver; not constructible by consumers (#18 API freeze).
+    internal VoiceLeadingSolution(Voicing[] voicings, float totalCost, IReadOnlyList<string> warnings)
+    {
+        Voicings = voicings;
+        TotalCost = totalCost;
+        Warnings = warnings;
+    }
+
+    public IReadOnlyList<Voicing> Voicings { get; }
+    public float TotalCost { get; }
+    public IReadOnlyList<string> Warnings { get; }
     public bool IsValid => TotalCost < float.MaxValue && Voicings.Count > 0;
 
     /// <summary>

@@ -580,9 +580,15 @@ public readonly record struct KeyCorrelation(KeySignature Key, float Correlation
 /// <summary>
 /// Key changes over time in a piece.
 /// </summary>
-public sealed class KeyTrajectory(List<(Rational, KeyDetectionResult)> points)
+public sealed class KeyTrajectory
 {
-    private IReadOnlyList<(Rational Position, KeyDetectionResult Result)> Points { get; } = points;
+    // Produced by key-trajectory analysis; not constructible by consumers (#18 API freeze).
+    internal KeyTrajectory(List<(Rational, KeyDetectionResult)> points)
+    {
+        Points = points;
+    }
+
+    private IReadOnlyList<(Rational Position, KeyDetectionResult Result)> Points { get; }
 
     /// <summary>
     /// Detect modulation points (where key changes significantly).
