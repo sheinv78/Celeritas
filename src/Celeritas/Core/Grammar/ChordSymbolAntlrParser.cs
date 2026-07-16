@@ -50,10 +50,15 @@ internal static class ChordSymbolAntlrParser
             return false;
         }
 
+        // Blank is unparsable input, not an empty chord — the same call as null, one line up.
+        // Reporting it as a *successful* parse of zero pitches defeated the one thing this Try*
+        // overload exists to do: let a caller tell "not a chord" apart from "parsed to nothing".
+        // On `true` with an empty array, a caller still had to test pitches.Length — exactly the
+        // check the bool was meant to replace.
         if (string.IsNullOrWhiteSpace(input))
         {
-            errors = [];
-            return true;
+            errors = ["Input is blank."];
+            return false;
         }
 
         input = NormalizeAccidentals(input);

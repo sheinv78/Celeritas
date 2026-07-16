@@ -211,6 +211,50 @@ public class NullArgumentContractTests
         Assert.NotEmpty(errors);
     }
 
+    /// <summary>
+    /// Blank input is unparsable too, and used to report the opposite: <c>TryParseChordSymbol("")</c>
+    /// returned <see langword="true"/> with an empty array — indistinguishable, on the bool, from a
+    /// real chord, and on the output, from an unparsable one. A caller trusting the <c>true</c>
+    /// still had to test <c>pitches.Length</c>, which is the check the Try* API exists to remove.
+    /// </summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("\t")]
+    public void TryParseChordSymbol_ReportsFailureForBlank(string blank)
+    {
+        Assert.False(ProgressionAdvisor.TryParseChordSymbol(blank, out var pitches));
+        Assert.Empty(pitches);
+
+        Assert.False(ProgressionAdvisor.TryParseChordSymbol(blank, out _, out var errors));
+        Assert.NotEmpty(errors);
+    }
+
+    /// <summary>
+    /// The whole point of the overload: a real chord succeeds, garbage fails, and the two are told
+    /// apart by the return value rather than by inspecting the output.
+    /// </summary>
+    [Fact]
+    public void TryParseChordSymbol_SeparatesParsableFromUnparsable()
+    {
+        Assert.True(ProgressionAdvisor.TryParseChordSymbol("C", out var chord));
+        Assert.NotEmpty(chord);
+
+        Assert.False(ProgressionAdvisor.TryParseChordSymbol("xyz", out _));
+    }
+
+    /// <summary>
+    /// <see cref="ProgressionAdvisor.ParseChordSymbol"/> keeps its own, different contract —
+    /// "an empty array for anything it cannot parse" — so blank stays [] there, not an exception.
+    /// The two overloads are honest in different ways, not inconsistent.
+    /// </summary>
+    [Fact]
+    public void ParseChordSymbol_StillReturnsEmptyForBlank()
+    {
+        Assert.Empty(ProgressionAdvisor.ParseChordSymbol(""));
+        Assert.Empty(ProgressionAdvisor.ParseChordSymbol("   "));
+    }
+
     // The empty-input behavior these guards are distinguished from must stay intact.
 
     [Fact]
