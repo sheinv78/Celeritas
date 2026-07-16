@@ -157,9 +157,19 @@ public static class PitchClassSetAnalyzer
 
         pitchClasses = ToPitchClassSet(pitchClasses);
 
-        if (pitchClasses.Length <= 1)
+        if (pitchClasses.Length == 0)
         {
-            return [.. pitchClasses];
+            return [];
+        }
+
+        // Prime form is transposed to begin on 0, so a single pitch class is [0] — not the pitch
+        // class itself. Returning `pitchClasses` here made GetPrimeForm([1]) == [1], which broke
+        // both the "starts at 0" rule and transposition/inversion invariance (the whole point of a
+        // prime form) for every one-note set. Property tests caught it; the example-based tests,
+        // which all used triads, never did.
+        if (pitchClasses.Length == 1)
+        {
+            return [0];
         }
 
         var normal = GetNormalOrder(pitchClasses);
