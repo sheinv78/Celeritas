@@ -8,35 +8,54 @@ using System.Runtime.InteropServices;
 
 namespace Celeritas.Core;
 
+/// <summary>
+/// A fixed-capacity, native-memory buffer of notes stored as a structure of arrays
+/// (pitch, offset, duration, velocity). Offsets and durations are in whole-note units.
+/// Must be disposed to release the unmanaged allocation.
+/// </summary>
 public sealed unsafe class NoteBuffer : IDisposable
 {
+    /// <summary>Maximum number of notes the buffer can hold.</summary>
     public int Capacity { get; }
+    /// <summary>Number of notes currently stored.</summary>
     public int Count { get; private set; }
 
     // Data arrays (SoA - Structure of Arrays)
 
     // Safe windows into the underlying arrays
+    /// <summary>Writable span over the stored MIDI pitches (length <see cref="Count"/>).</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
     public Span<int> Pitches
     {
         get { ThrowIfDisposed(); return new(PitchPtr, Count); }
     }
+    /// <summary>Read-only span over the stored MIDI pitches (length <see cref="Count"/>).</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
     public ReadOnlySpan<int> PitchesReadOnly
     {
         get { ThrowIfDisposed(); return new(PitchPtr, Count); }
     }
+    /// <summary>Writable span over the stored velocities (length <see cref="Count"/>).</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
     public Span<float> Velocities
     {
         get { ThrowIfDisposed(); return new(VelocityPtr, Count); }
     }
+    /// <summary>Read-only span over the stored velocities (length <see cref="Count"/>).</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
     public ReadOnlySpan<float> VelocitiesReadOnly
     {
         get { ThrowIfDisposed(); return new(VelocityPtr, Count); }
     }
 
     // Back-compat aliases (public surface can change; these are convenience)
+    /// <summary>Alias for <see cref="Pitches"/>.</summary>
     public Span<int> PitchSpan => Pitches;
+    /// <summary>Alias for <see cref="PitchesReadOnly"/>.</summary>
     public ReadOnlySpan<int> PitchReadOnlySpan => PitchesReadOnly;
+    /// <summary>Alias for <see cref="Velocities"/>.</summary>
     public Span<float> VelocitySpan => Velocities;
+    /// <summary>Alias for <see cref="VelocitiesReadOnly"/>.</summary>
     public ReadOnlySpan<float> VelocityReadOnlySpan => VelocitiesReadOnly;
 
     // Internal accessors for SIMD/math kernels
@@ -55,6 +74,9 @@ public sealed unsafe class NoteBuffer : IDisposable
     // "past the end" into one branch, and the throw lives in a cold NoInlining helper,
     // so the inlined fast path stays a compare-and-fallthrough. Callers walking the
     // whole buffer should prefer the Pitches / PitchesReadOnly spans above.
+    /// <summary>Returns the MIDI pitch at <paramref name="index"/>.</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is outside [0, <see cref="Count"/>).</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int PitchAt(int index)
     {
@@ -63,6 +85,9 @@ public sealed unsafe class NoteBuffer : IDisposable
         return PitchPtr[index];
     }
 
+    /// <summary>Sets the MIDI pitch at <paramref name="index"/> to <paramref name="value"/>.</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is outside [0, <see cref="Count"/>).</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPitch(int index, int value)
     {
@@ -71,6 +96,9 @@ public sealed unsafe class NoteBuffer : IDisposable
         PitchPtr[index] = value;
     }
 
+    /// <summary>Returns the start offset (whole-note units) of the note at <paramref name="index"/>.</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is outside [0, <see cref="Count"/>).</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Rational GetOffset(int index)
     {
@@ -79,6 +107,9 @@ public sealed unsafe class NoteBuffer : IDisposable
         return new(OffsetsNumPtr[index], OffsetsDenPtr[index]);
     }
 
+    /// <summary>Returns the duration (whole-note units) of the note at <paramref name="index"/>.</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is outside [0, <see cref="Count"/>).</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Rational GetDuration(int index)
     {
@@ -87,6 +118,9 @@ public sealed unsafe class NoteBuffer : IDisposable
         return new(DurationsNumPtr[index], DurationsDenPtr[index]);
     }
 
+    /// <summary>Returns the velocity of the note at <paramref name="index"/>.</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is outside [0, <see cref="Count"/>).</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public float GetVelocity(int index)
     {
@@ -95,6 +129,9 @@ public sealed unsafe class NoteBuffer : IDisposable
         return VelocityPtr[index];
     }
 
+    /// <summary>Returns the full note event (pitch, offset, duration, velocity) at <paramref name="index"/>.</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is outside [0, <see cref="Count"/>).</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public NoteEvent Get(int index)
     {
@@ -114,6 +151,9 @@ public sealed unsafe class NoteBuffer : IDisposable
 
     private bool _disposed;
 
+    /// <summary>Allocates a buffer that can hold up to <paramref name="capacity"/> notes.</summary>
+    /// <param name="capacity">Maximum number of notes; must be positive.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is not positive.</exception>
     public NoteBuffer(int capacity)
     {
         if (capacity <= 0)
@@ -137,6 +177,13 @@ public sealed unsafe class NoteBuffer : IDisposable
             throw new ObjectDisposedException(nameof(NoteBuffer));
     }
 
+    /// <summary>Appends a note to the buffer.</summary>
+    /// <param name="pitch">MIDI pitch number.</param>
+    /// <param name="offset">Start offset in whole-note units.</param>
+    /// <param name="duration">Duration in whole-note units.</param>
+    /// <param name="velocity">Velocity (default 0.8).</param>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">The buffer is at capacity.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddNote(int pitch, Rational offset, Rational duration, float velocity = 0.8f)
     {
@@ -153,9 +200,15 @@ public sealed unsafe class NoteBuffer : IDisposable
         Count = idx + 1;
     }
 
+    /// <summary>Appends a note event to the buffer.</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">The buffer is at capacity.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add(in NoteEvent note) => AddNote(note.Pitch, note.Offset, note.Duration, note.Velocity);
 
+    /// <summary>Appends a batch of note events to the buffer.</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">The notes would exceed the buffer's capacity.</exception>
     public void AddRange(ReadOnlySpan<NoteEvent> notes)
     {
         ThrowIfDisposed();
@@ -177,6 +230,8 @@ public sealed unsafe class NoteBuffer : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear() => Count = 0;
 
+    /// <summary>Sorts the notes in place by ascending start offset (stable on ties).</summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
     public void Sort()
     {
         ThrowIfDisposed();
@@ -365,12 +420,14 @@ public sealed unsafe class NoteBuffer : IDisposable
         _disposed = true;
     }
 
+    /// <summary>Releases the buffer's unmanaged memory.</summary>
     public void Dispose()
     {
         ReleaseUnmanagedResources();
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>Releases the unmanaged pitch buffer if <see cref="Dispose"/> was not called.</summary>
     ~NoteBuffer()
     {
         ReleaseUnmanagedResources();

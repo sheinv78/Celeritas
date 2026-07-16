@@ -10,6 +10,10 @@ namespace Celeritas.Core.Harmonization;
 /// </summary>
 public sealed class DefaultTransitionScorer : ITransitionScorer, IMelodyFitScorer
 {
+    /// <summary>
+    /// Scores the cost of moving from one chord to another: rewards strong root motion,
+    /// functional T-PD-D-T flow, and common tones; penalizes regressive motion. Lower is better.
+    /// </summary>
     public float ScoreTransition(ChordCandidate from, ChordCandidate to, KeySignature key)
     {
         var cost = 0f;
@@ -57,6 +61,10 @@ public sealed class DefaultTransitionScorer : ITransitionScorer, IMelodyFitScore
         return Math.Max(0, cost);
     }
 
+    /// <summary>
+    /// Scores how well a chord fits the melody pitches, penalizing non-chord tones more heavily
+    /// on strong beats. Lower is better.
+    /// </summary>
     public float ScoreFit(ChordCandidate chord, ReadOnlySpan<int> melodyPitches, bool isStrongBeat)
     {
         var cost = chord.BaseCost;

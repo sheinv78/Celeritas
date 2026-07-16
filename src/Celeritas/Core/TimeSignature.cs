@@ -20,6 +20,8 @@ namespace Celeritas.Core;
 /// <exception cref="ArgumentOutOfRangeException">
 /// <paramref name="beatsPerMeasure"/> or <paramref name="beatUnit"/> is not positive.
 /// </exception>
+/// <param name="beatsPerMeasure">Beats per measure (numerator); must be positive.</param>
+/// <param name="beatUnit">Beat unit note value (denominator: 4 = quarter, 8 = eighth); must be positive.</param>
 public readonly struct TimeSignature(int beatsPerMeasure, int beatUnit) : IEquatable<TimeSignature>
 {
     /// <summary>Beats per measure (numerator).</summary>
@@ -41,12 +43,17 @@ public readonly struct TimeSignature(int beatsPerMeasure, int beatUnit) : IEquat
     /// <summary>Duration of one measure.</summary>
     public Rational MeasureDuration => new(BeatsPerMeasure, BeatUnit);
 
-    /// <summary>Common time signatures.</summary>
+    /// <summary>Common time, 4/4.</summary>
     public static TimeSignature Common => new(4, 4);
+    /// <summary>Cut time, 2/2.</summary>
     public static TimeSignature CutTime => new(2, 2);
+    /// <summary>Waltz meter, 3/4.</summary>
     public static TimeSignature Waltz => new(3, 4);
+    /// <summary>Compound duple, 6/8.</summary>
     public static TimeSignature Compound6 => new(6, 8);
+    /// <summary>Compound triple, 9/8.</summary>
     public static TimeSignature Compound9 => new(9, 8);
+    /// <summary>Compound quadruple, 12/8.</summary>
     public static TimeSignature Compound12 => new(12, 8);
 
     /// <summary>Is this a compound meter (beats subdivide into 3)?</summary>
@@ -64,11 +71,17 @@ public readonly struct TimeSignature(int beatsPerMeasure, int beatUnit) : IEquat
         _ => 1
     };
 
+    /// <summary>Returns the meter as "beats/unit" (e.g. "4/4").</summary>
     public override string ToString() => $"{BeatsPerMeasure}/{BeatUnit}";
 
+    /// <summary>Indicates whether this meter equals <paramref name="other"/> (same numerator and denominator).</summary>
     public bool Equals(TimeSignature other) => BeatsPerMeasure == other.BeatsPerMeasure && BeatUnit == other.BeatUnit;
+    /// <summary>Indicates whether <paramref name="obj"/> is an equal <see cref="TimeSignature"/>.</summary>
     public override bool Equals(object? obj) => obj is TimeSignature other && Equals(other);
+    /// <summary>Returns a hash code combining numerator and denominator.</summary>
     public override int GetHashCode() => HashCode.Combine(BeatsPerMeasure, BeatUnit);
+    /// <summary>Indicates whether two time signatures are equal.</summary>
     public static bool operator ==(TimeSignature left, TimeSignature right) => left.Equals(right);
+    /// <summary>Indicates whether two time signatures differ.</summary>
     public static bool operator !=(TimeSignature left, TimeSignature right) => !left.Equals(right);
 }

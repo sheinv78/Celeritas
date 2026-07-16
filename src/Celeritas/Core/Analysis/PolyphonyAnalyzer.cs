@@ -47,13 +47,28 @@ public enum IntervalQuality
 /// </summary>
 public readonly struct VoiceInterval
 {
+    /// <summary>Index of the first (upper) voice.</summary>
     public int Voice1 { get; init; }
+
+    /// <summary>Index of the second (lower) voice.</summary>
     public int Voice2 { get; init; }
+
+    /// <summary>Time offset of the interval, in whole-note units.</summary>
     public Rational Time { get; init; }
+
+    /// <summary>MIDI pitch of the first voice (middle C = 60).</summary>
     public int Pitch1 { get; init; }
+
+    /// <summary>MIDI pitch of the second voice (middle C = 60).</summary>
     public int Pitch2 { get; init; }
+
+    /// <summary>Interval class in semitones reduced to 0-11 (octave-equivalent).</summary>
     public int Interval => Math.Abs(Pitch1 - Pitch2) % 12;
+
+    /// <summary>Absolute distance between the two pitches in semitones, not octave-reduced.</summary>
     public int RawInterval => Math.Abs(Pitch1 - Pitch2);
+
+    /// <summary>Consonance/dissonance classification of the interval class.</summary>
     public IntervalQuality Quality => ClassifyInterval(Interval);
 
     private static IntervalQuality ClassifyInterval(int semitones) => semitones switch
@@ -73,6 +88,7 @@ public readonly struct VoiceInterval
         _ => IntervalQuality.PerfectConsonance       // Octave+
     };
 
+    /// <summary>Returns the interval name (e.g. <c>P5</c>) followed by its quality.</summary>
     public override string ToString()
     {
         var intervalName = Interval switch
@@ -100,13 +116,28 @@ public readonly struct VoiceInterval
 /// </summary>
 public readonly struct VoiceMotion
 {
+    /// <summary>Index of the first voice.</summary>
     public int Voice1 { get; init; }
+
+    /// <summary>Index of the second voice.</summary>
     public int Voice2 { get; init; }
+
+    /// <summary>Time offset of the starting interval, in whole-note units.</summary>
     public Rational FromTime { get; init; }
+
+    /// <summary>Signed semitones moved by the first voice (positive = up).</summary>
     public int Voice1Motion { get; init; }  // Semitones moved (+/-)
+
+    /// <summary>Signed semitones moved by the second voice (positive = up).</summary>
     public int Voice2Motion { get; init; }
+
+    /// <summary>Classification of the relative motion between the two voices.</summary>
     public MotionType Type { get; init; }
+
+    /// <summary>Interval between the voices before the motion.</summary>
     public VoiceInterval FromInterval { get; init; }
+
+    /// <summary>Interval between the voices after the motion.</summary>
     public VoiceInterval ToInterval { get; init; }
 
     /// <summary>Check if this is hidden 5ths/octaves (similar motion to perfect interval).</summary>
@@ -120,11 +151,22 @@ public readonly struct VoiceMotion
 /// </summary>
 public sealed record CounterpointViolation
 {
+    /// <summary>Kind of violation (e.g. <c>Parallel Fifths</c>, <c>Large Leap</c>).</summary>
     public required string Type { get; init; }
+
+    /// <summary>Human-readable description of the violation.</summary>
     public required string Description { get; init; }
+
+    /// <summary>Time offset where the violation occurs, in whole-note units.</summary>
     public required Rational Time { get; init; }
+
+    /// <summary>Index of the first voice involved.</summary>
     public required int Voice1 { get; init; }
+
+    /// <summary>Index of the second voice involved.</summary>
     public required int Voice2 { get; init; }
+
+    /// <summary>Severity label: <c>Error</c>, <c>Warning</c>, or <c>Style</c>.</summary>
     public required string Severity { get; init; } // "Error", "Warning", "Style"
 }
 
@@ -133,6 +175,7 @@ public sealed record CounterpointViolation
 /// </summary>
 public sealed record PolyphonyAnalysisResult
 {
+    /// <summary>Result of separating the input into individual voices.</summary>
     public required VoiceSeparationResult Voices { get; init; }
 
     /// <summary>Intervals at each time point.</summary>
@@ -168,17 +211,34 @@ public sealed class MotionStatistics
     // Produced by analysis; not constructible by consumers (#18 API freeze).
     internal MotionStatistics() { }
 
+    /// <summary>Number of parallel-motion transitions.</summary>
     public int Parallel { get; init; }
+
+    /// <summary>Number of similar-motion transitions.</summary>
     public int Similar { get; init; }
+
+    /// <summary>Number of contrary-motion transitions.</summary>
     public int Contrary { get; init; }
+
+    /// <summary>Number of oblique-motion transitions.</summary>
     public int Oblique { get; init; }
+
+    /// <summary>Number of static (no-movement) transitions.</summary>
     public int Static { get; init; }
 
+    /// <summary>Total number of motion transitions counted.</summary>
     public int Total => Parallel + Similar + Contrary + Oblique + Static;
 
+    /// <summary>Percentage of transitions that are parallel motion.</summary>
     public float ParallelPercent => Total > 0 ? Parallel * 100f / Total : 0;
+
+    /// <summary>Percentage of transitions that are similar motion.</summary>
     public float SimilarPercent => Total > 0 ? Similar * 100f / Total : 0;
+
+    /// <summary>Percentage of transitions that are contrary motion.</summary>
     public float ContraryPercent => Total > 0 ? Contrary * 100f / Total : 0;
+
+    /// <summary>Percentage of transitions that are oblique motion.</summary>
     public float ObliquePercent => Total > 0 ? Oblique * 100f / Total : 0;
 }
 
@@ -190,19 +250,30 @@ public sealed class IntervalStatistics
     // Produced by analysis; not constructible by consumers (#18 API freeze).
     internal IntervalStatistics() { }
 
+    /// <summary>Occurrence count for each interval class (index 0-11 = semitones mod 12).</summary>
     public int[] IntervalCounts { get; } = new int[12];
 
+    /// <summary>Number of perfect-consonance intervals (unison, fifth, octave, fourth).</summary>
     public int PerfectConsonances { get; init; }
+
+    /// <summary>Number of imperfect-consonance intervals (thirds and sixths).</summary>
     public int ImperfectConsonances { get; init; }
+
+    /// <summary>Number of mild-dissonance intervals (major second, minor seventh).</summary>
     public int MildDissonances { get; init; }
+
+    /// <summary>Number of sharp-dissonance intervals (minor second, major seventh, tritone).</summary>
     public int SharpDissonances { get; init; }
 
+    /// <summary>Total number of classified intervals.</summary>
     public int Total => PerfectConsonances + ImperfectConsonances + MildDissonances + SharpDissonances;
 
+    /// <summary>Percentage of intervals that are consonant (perfect + imperfect); 100 when none.</summary>
     public float ConsonanceRatio => Total > 0
         ? (PerfectConsonances + ImperfectConsonances) * 100f / Total
         : 100f;
 
+    /// <summary>Percentage of intervals that are dissonant (mild + sharp); 0 when none.</summary>
     public float DissonanceRatio => Total > 0
         ? (MildDissonances + SharpDissonances) * 100f / Total
         : 0f;
@@ -808,25 +879,54 @@ public static class PolyphonyAnalyzer
     }
 }
 
+/// <summary>
+/// Summary counts from a basic counterpoint rules check.
+/// </summary>
 public sealed record CounterpointRulesCheckResult
 {
+    /// <summary>Number of parallel-fifth motions detected.</summary>
     public required int ParallelFifths { get; init; }
+
+    /// <summary>Number of parallel-octave/unison motions detected.</summary>
     public required int ParallelOctaves { get; init; }
+
+    /// <summary>Number of hidden (direct) perfect-interval motions detected.</summary>
     public required int HiddenParallels { get; init; }
+
+    /// <summary>Number of voice-crossing occurrences detected.</summary>
     public required int VoiceCrossing { get; init; }
+
+    /// <summary>Number of voice-spacing violations detected.</summary>
     public required int SpacingViolations { get; init; }
+
+    /// <summary>Overall quality score in the range 0-1.</summary>
     public required float QualityScore { get; init; }
+
+    /// <summary>Full list of counterpoint violations underlying the counts.</summary>
     public required IReadOnlyList<CounterpointViolation> Violations { get; init; }
 }
 
+/// <summary>
+/// Result of detecting imitation (canon-like repetition) between voices.
+/// </summary>
 public sealed record ImitationDetectionResult
 {
+    /// <summary>Whether imitation was detected.</summary>
     public required bool HasImitation { get; init; }
+
+    /// <summary>Kind of imitation (e.g. <c>Canon</c>); empty when none.</summary>
     public string Type { get; init; } = "";
+
+    /// <summary>Transposition interval in semitones between the imitating voices.</summary>
     public int Interval { get; init; }
+
+    /// <summary>Time delay between the leading and following voice, in whole-note units.</summary>
     public Rational TimeDelay { get; init; }
+
+    /// <summary>One-based indices of the voices involved in the imitation.</summary>
     public IReadOnlyList<int> VoicesInvolved { get; init; } = [];
 
+    /// <summary>Shared instance representing no detected imitation.</summary>
     public static ImitationDetectionResult None => new()
     {
         HasImitation = false,

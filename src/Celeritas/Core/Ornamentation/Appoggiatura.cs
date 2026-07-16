@@ -21,6 +21,7 @@ public sealed class Appoggiatura : Ornament
     /// </summary>
     public int Direction { get; init; } = 0;
 
+    /// <summary>Expands into two notes: the appoggiatura then the resolved main note.</summary>
     public override NoteEvent[] Expand()
     {
         var signedInterval = Direction == 0

@@ -8,10 +8,15 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 public enum RhythmStyle
 {
+    /// <summary>Classical style: quarter/eighth patterns.</summary>
     Classical,
+    /// <summary>Jazz style: swung, syncopated patterns.</summary>
     Jazz,
+    /// <summary>Rock style: driving eighths with quarter accents.</summary>
     Rock,
+    /// <summary>Latin style: tresillo and clave patterns.</summary>
     Latin,
+    /// <summary>Waltz style: 3/4 patterns.</summary>
     Waltz
 }
 
@@ -313,11 +318,16 @@ public sealed class RhythmPrediction
     // Produced by RhythmPredictor; not constructible by consumers (#18 API freeze).
     internal RhythmPrediction() { }
 
+    /// <summary>Most probable next duration (whole-note units).</summary>
     public required Rational MostLikely { get; init; }
+    /// <summary>Probability of the most likely duration in 0-1 (scaled down for fallback contexts).</summary>
     public required float Confidence { get; init; }
+    /// <summary>Up to four next-most-likely durations with their probabilities.</summary>
     public required IReadOnlyList<RhythmAlternative> Alternatives { get; init; }
+    /// <summary>Whether a matching context was found in the model (<see langword="false"/> when defaulted).</summary>
     public required bool ContextFound { get; init; }
 
+    /// <summary>Formats the prediction and its alternatives as a human-readable string.</summary>
     public override string ToString()
     {
         var alts = string.Join(", ", Alternatives.Select(a => $"{a.Duration} ({(int)Math.Round(a.Probability * 100)}%)"));
@@ -333,7 +343,9 @@ public sealed class RhythmAlternative
     // Produced by analysis; not constructible by consumers (#18 API freeze).
     internal RhythmAlternative() { }
 
+    /// <summary>The alternative duration (whole-note units).</summary>
     public required Rational Duration { get; init; }
+    /// <summary>Probability of this duration in 0-1.</summary>
     public required float Probability { get; init; }
 }
 
@@ -345,9 +357,13 @@ public sealed class RhythmModelStatistics
     // Produced by analysis; not constructible by consumers (#18 API freeze).
     internal RhythmModelStatistics() { }
 
+    /// <summary>Markov chain order of the model.</summary>
     public int Order { get; init; }
+    /// <summary>Number of distinct contexts observed.</summary>
     public int UniqueContexts { get; init; }
+    /// <summary>Total transition count across all contexts.</summary>
     public int TotalTransitions { get; init; }
+    /// <summary>The five most frequent durations, most common first.</summary>
     public IReadOnlyList<Rational> MostCommonDurations { get; init; } = [];
 }
 

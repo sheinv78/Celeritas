@@ -12,7 +12,10 @@ namespace Celeritas.Core;
 public static class KeyAnalyzer
 {
     // Scale masks for quick degree identification
+    /// <summary>12-bit pitch-class mask of the C major scale (bits 0,2,4,5,7,9,11).</summary>
     public const ushort MajorScaleMask = 0b101010110101; // C D E F G A B = bits 0,2,4,5,7,9,11
+
+    /// <summary>12-bit pitch-class mask of the C natural-minor scale (bits 0,2,3,5,7,8,10).</summary>
     public const ushort MinorScaleMask = 0b010110101101; // C D Eb F G Ab Bb = bits 0,2,3,5,7,8,10
 
     private static readonly ushort[] MajorScaleMasksByRoot;

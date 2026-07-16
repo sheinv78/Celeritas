@@ -67,6 +67,7 @@ public sealed class ModulationInfo
     /// <summary>Relationship between keys (e.g., "relative major", "dominant key")</summary>
     public required string KeyRelationship { get; init; }
 
+    /// <summary>Returns a readable form such as "PivotChord: C Major → G Major at position 5".</summary>
     public override string ToString() =>
         $"{Type}: {FromKey} → {ToKey} at position {Position + 1}";
 }

@@ -9,19 +9,36 @@ using MidiException = Melanchall.DryWetMidi.Common.MidiException;
 
 namespace Celeritas.Core.Midi;
 
+/// <summary>
+/// Options controlling MIDI import into a <see cref="NoteBuffer"/>.
+/// </summary>
+/// <param name="Channel">If set, keep only notes on this MIDI channel.</param>
+/// <param name="MaxNotes">If set, stop after importing this many notes.</param>
+/// <param name="SortByOffset">Whether to sort the imported notes by offset.</param>
 public sealed record MidiImportOptions(
     int? Channel = null,
     int? MaxNotes = null,
     bool SortByOffset = true);
 
+/// <summary>
+/// Options controlling MIDI export from a <see cref="NoteBuffer"/>.
+/// </summary>
+/// <param name="TicksPerQuarterNote">Ticks-per-quarter-note time division, in [1, 32767].</param>
+/// <param name="Bpm">Tempo in beats per minute written as a set-tempo event.</param>
+/// <param name="Channel">MIDI channel for the exported notes, in [0, 15].</param>
+/// <param name="DefaultVelocity">Velocity substituted when a note's velocity rounds to zero.</param>
 public sealed record MidiExportOptions(
     int TicksPerQuarterNote = 480,
     int Bpm = 120,
     int Channel = 0,
     byte DefaultVelocity = 100);
 
+/// <summary>
+/// Reads and writes MIDI files, converting between MIDI ticks and whole-note time units.
+/// </summary>
 public static class MidiIo
 {
+    /// <summary>Imports notes from the MIDI file at <paramref name="path"/>.</summary>
     public static NoteBuffer Import(string path, MidiImportOptions? options = null)
     {
         using var stream = File.OpenRead(path);
@@ -74,6 +91,9 @@ public static class MidiIo
         }
     }
 
+    /// <summary>Imports notes from a MIDI <paramref name="stream"/> using hardened reading settings.</summary>
+    /// <exception cref="InvalidDataException">The stream is malformed or corrupt.</exception>
+    /// <exception cref="NotSupportedException">The file does not use ticks-per-quarter-note time division.</exception>
     public static NoteBuffer Import(Stream stream, MidiImportOptions? options = null)
     {
         options ??= new MidiImportOptions();
@@ -137,12 +157,16 @@ public static class MidiIo
         }
     }
 
+    /// <summary>Exports <paramref name="buffer"/> to a MIDI file at <paramref name="path"/>.</summary>
     public static void Export(NoteBuffer buffer, string path, MidiExportOptions? options = null)
     {
         using var stream = File.Create(path);
         Export(buffer, stream, options);
     }
 
+    /// <summary>Writes <paramref name="buffer"/> as a single-track MIDI file to <paramref name="stream"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">An option (ticks-per-quarter-note, channel, or BPM) is out of range.</exception>
+    /// <exception cref="ArgumentException">A note has a negative offset, which MIDI cannot represent.</exception>
     public static void Export(NoteBuffer buffer, Stream stream, MidiExportOptions? options = null)
     {
         options ??= new MidiExportOptions();

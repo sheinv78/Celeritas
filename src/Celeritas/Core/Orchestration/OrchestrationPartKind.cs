@@ -3,8 +3,14 @@
 
 namespace Celeritas.Core.Orchestration;
 
+/// <summary>
+/// Role of a part in an orchestration.
+/// </summary>
 public enum OrchestrationPartKind : byte
 {
+    /// <summary>Bass part.</summary>
     Bass,
+
+    /// <summary>Harmony (accompaniment) part.</summary>
     Harmony
 }

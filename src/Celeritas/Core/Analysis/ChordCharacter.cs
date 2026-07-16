@@ -8,17 +8,40 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 public enum ChordCharacter
 {
+    /// <summary>Tonic, at rest ("home").</summary>
     Stable,         // Tonic, home
+
+    /// <summary>Major with extensions.</summary>
     Warm,           // Major with extensions
+
+    /// <summary>Maj7 / add9 colors.</summary>
     Dreamy,         // Maj7, add9
+
+    /// <summary>Minor.</summary>
     Melancholic,    // Minor
+
+    /// <summary>Dominant or diminished.</summary>
     Tense,          // Dominant, diminished
+
+    /// <summary>Major dominant in a minor key.</summary>
     Heroic,         // Major dominant in minor key
+
+    /// <summary>Minor with flat 5, or diminished.</summary>
     Dark,           // Minor with b5, diminished
+
+    /// <summary>Sus chords; unresolved.</summary>
     Suspended,      // Sus chords - unresolved
+
+    /// <summary>Major triads.</summary>
     Bright,         // Major triads
+
+    /// <summary>Augmented or altered dominants.</summary>
     Mysterious,     // Augmented, altered dominants
+
+    /// <summary>Power chords.</summary>
     Powerful,       // Power chords
+
+    /// <summary>Quartal or non-functional harmony.</summary>
     Modal           // Quartal, non-functional
 }
 

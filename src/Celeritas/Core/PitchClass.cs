@@ -8,10 +8,15 @@ namespace Celeritas.Core;
 /// </summary>
 public readonly record struct PitchClass
 {
+    /// <summary>The pitch-class value, 0..11 (C…B).</summary>
     public byte Value { get; }
 
+    /// <summary>Sharp-preferring note name for this pitch class (e.g. "C#").</summary>
     public string Name => ToName(preferSharps: true);
 
+    /// <summary>Note name for this pitch class.</summary>
+    /// <param name="preferSharps">When <see langword="true"/>, spell black keys with sharps (C#); otherwise flats (Db).</param>
+    /// <returns>The one- or two-character note name.</returns>
     public string ToName(bool preferSharps = true) => Value switch
     {
         0 => "C",
@@ -29,29 +34,51 @@ public readonly record struct PitchClass
         _ => "?"
     };
 
+    /// <summary>Pitch class C (0).</summary>
     public static PitchClass C => new(0);
+    /// <summary>Pitch class C# (1).</summary>
     public static PitchClass CSharp => new(1);
+    /// <summary>Pitch class Db (1).</summary>
     public static PitchClass Db => new(1);
+    /// <summary>Pitch class D (2).</summary>
     public static PitchClass D => new(2);
+    /// <summary>Pitch class D# (3).</summary>
     public static PitchClass DSharp => new(3);
+    /// <summary>Pitch class Eb (3).</summary>
     public static PitchClass Eb => new(3);
+    /// <summary>Pitch class E (4).</summary>
     public static PitchClass E => new(4);
+    /// <summary>Pitch class F (5).</summary>
     public static PitchClass F => new(5);
+    /// <summary>Pitch class F# (6).</summary>
     public static PitchClass FSharp => new(6);
+    /// <summary>Pitch class Gb (6).</summary>
     public static PitchClass Gb => new(6);
+    /// <summary>Pitch class G (7).</summary>
     public static PitchClass G => new(7);
+    /// <summary>Pitch class G# (8).</summary>
     public static PitchClass GSharp => new(8);
+    /// <summary>Pitch class Ab (8).</summary>
     public static PitchClass Ab => new(8);
+    /// <summary>Pitch class A (9).</summary>
     public static PitchClass A => new(9);
+    /// <summary>Pitch class A# (10).</summary>
     public static PitchClass ASharp => new(10);
+    /// <summary>Pitch class Bb (10).</summary>
     public static PitchClass Bb => new(10);
+    /// <summary>Pitch class B (11).</summary>
     public static PitchClass B => new(11);
 
+    /// <summary>Creates a pitch class from an integer, reduced modulo 12 (negatives wrap up).</summary>
+    /// <param name="value">Any integer; folded into 0..11.</param>
     public PitchClass(int value)
     {
         Value = Normalize(value);
     }
 
+    /// <summary>Pitch class of a MIDI pitch (its remainder modulo 12).</summary>
+    /// <param name="midiPitch">MIDI pitch number, 0..127.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="midiPitch"/> is outside 0..127.</exception>
     public static PitchClass FromMidi(int midiPitch)
     {
         return (uint)midiPitch switch
@@ -61,6 +88,11 @@ public readonly record struct PitchClass
         };
     }
 
+    /// <summary>Parses a pitch-class name such as "C", "F#", or "Bb".</summary>
+    /// <param name="text">The pitch-class text to parse.</param>
+    /// <returns>The parsed pitch class.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="text"/> is not a valid pitch class.</exception>
     public static PitchClass Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -73,6 +105,10 @@ public readonly record struct PitchClass
         return pitchClass;
     }
 
+    /// <summary>Attempts to parse a pitch-class name such as "C", "F#", or "Bb".</summary>
+    /// <param name="text">The pitch-class text to parse.</param>
+    /// <param name="pitchClass">On success, the parsed pitch class; otherwise <see langword="default"/>.</param>
+    /// <returns><see langword="true"/> if parsing succeeded; otherwise <see langword="false"/>.</returns>
     public static bool TryParse(ReadOnlySpan<char> text, out PitchClass pitchClass)
     {
         if (!MusicNotation.TryParsePitchClass(text, out var pc, out _))
@@ -106,16 +142,22 @@ public readonly record struct PitchClass
         };
     }
 
+    /// <summary>Transposes this pitch class by <paramref name="semitones"/> (result wraps modulo 12).</summary>
     public PitchClass Transpose(int semitones) => new(Value + semitones);
 
+    /// <summary>Transposes this pitch class by <paramref name="interval"/> (result wraps modulo 12).</summary>
     public PitchClass Transpose(ChromaticInterval interval) => new(Value + interval.Semitones);
 
+    /// <summary>Transposes <paramref name="pc"/> up by <paramref name="semitones"/> (wraps modulo 12).</summary>
     public static PitchClass operator +(PitchClass pc, int semitones) => pc.Transpose(semitones);
 
+    /// <summary>Transposes <paramref name="pc"/> down by <paramref name="semitones"/> (wraps modulo 12).</summary>
     public static PitchClass operator -(PitchClass pc, int semitones) => pc.Transpose(-semitones);
 
+    /// <summary>Transposes <paramref name="pc"/> up by <paramref name="interval"/> (wraps modulo 12).</summary>
     public static PitchClass operator +(PitchClass pc, ChromaticInterval interval) => pc.Transpose(interval);
 
+    /// <summary>Transposes <paramref name="pc"/> down by <paramref name="interval"/> (wraps modulo 12).</summary>
     public static PitchClass operator -(PitchClass pc, ChromaticInterval interval) => pc.Transpose(-interval.Semitones);
 
     /// <summary>
@@ -129,6 +171,7 @@ public readonly record struct PitchClass
     [Obsolete("Use SignedIntervalTo(). The ^ operator is non-obvious.")]
     public static ChromaticInterval operator ^(PitchClass from, PitchClass to) => from.SignedIntervalTo(to);
 
+    /// <summary>Returns the sharp-preferring note name.</summary>
     public override string ToString() => Name;
 
     private static byte Normalize(int value)

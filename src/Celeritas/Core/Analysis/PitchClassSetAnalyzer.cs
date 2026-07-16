@@ -5,6 +5,15 @@ using System.Runtime.CompilerServices;
 
 namespace Celeritas.Core.Analysis;
 
+/// <summary>
+/// Result of pitch-class set analysis: normal order, prime form, and interval vector (Forte set theory).
+/// </summary>
+/// <param name="Mask">12-bit pitch-class membership mask (bit <c>pc</c> set = that pitch class is present).</param>
+/// <param name="Cardinality">Number of distinct pitch classes in the set.</param>
+/// <param name="PitchClasses">Distinct pitch classes (0-11), ascending.</param>
+/// <param name="NormalOrder">The set's normal order.</param>
+/// <param name="PrimeForm">Prime form, transposed to begin on 0.</param>
+/// <param name="IntervalVector">Interval-class vector &lt;ic1..ic6&gt;.</param>
 public readonly record struct PitchClassSetAnalysisResult(
     ushort Mask,
     int Cardinality,
@@ -13,9 +22,16 @@ public readonly record struct PitchClassSetAnalysisResult(
     int[] PrimeForm,
     int[] IntervalVector)
 {
+    /// <summary>Pitch classes formatted as <c>{a,b,c}</c>.</summary>
     public string PitchClassesText => "{" + string.Join(",", PitchClasses) + "}";
+
+    /// <summary>Normal order formatted as <c>{a,b,c}</c>.</summary>
     public string NormalOrderText => "{" + string.Join(",", NormalOrder) + "}";
+
+    /// <summary>Prime form formatted as <c>{a,b,c}</c>.</summary>
     public string PrimeFormText => "{" + string.Join(",", PrimeForm) + "}";
+
+    /// <summary>Interval vector formatted as <c>&lt;a,b,c,d,e,f&gt;</c>.</summary>
     public string IntervalVectorText => "<" + string.Join(",", IntervalVector) + ">";
 }
 
@@ -33,6 +49,9 @@ public static class PitchClassSetAnalyzer
         return Analyze(buffer.PitchesReadOnly);
     }
 
+    /// <summary>
+    /// Analyze a pitch-class set from raw pitches (folded to pitch classes 0-11, deduplicated).
+    /// </summary>
     public static PitchClassSetAnalysisResult Analyze(ReadOnlySpan<int> pitches)
     {
         var mask = ChordAnalyzer.GetMask(pitches);
@@ -46,6 +65,9 @@ public static class PitchClassSetAnalyzer
         return new PitchClassSetAnalysisResult(mask, cardinality, pitchClasses, normalOrder, primeForm, intervalVector);
     }
 
+    /// <summary>
+    /// Expand a 12-bit pitch-class mask into an ascending array of pitch classes (0-11).
+    /// </summary>
     public static int[] MaskToPitchClasses(ushort mask)
     {
         if (mask == 0)

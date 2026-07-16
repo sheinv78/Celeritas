@@ -34,10 +34,11 @@
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
 
-        <!-- XML documentation: ship docs with the package, but don't fail the build
-             on missing XML comments (CS1591) — the codebase has partial doc coverage. -->
+        <!-- XML documentation: ship docs with the package and gate on completeness.
+             Every public member carries an XML doc; CS1591 is left as a warning so
+             TreatWarningsAsErrors fails the build (and CI) on any new undocumented
+             public API. -->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

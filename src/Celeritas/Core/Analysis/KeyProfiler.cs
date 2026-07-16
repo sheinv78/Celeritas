@@ -550,6 +550,9 @@ public static class KeyProfiler
 /// <summary>
 /// Result of key detection analysis.
 /// </summary>
+/// <param name="Key">The most likely key.</param>
+/// <param name="Confidence">Confidence in the detection, from 0 to 1.</param>
+/// <param name="AllCorrelations">All 24 key correlations, sorted most likely first.</param>
 public readonly record struct KeyDetectionResult(
     KeySignature Key,
     float Confidence,
@@ -558,6 +561,7 @@ public readonly record struct KeyDetectionResult(
     /// <summary>Top N most likely keys</summary>
     public IEnumerable<KeyCorrelation> TopKeys(int n) => AllCorrelations.Take(n);
 
+    /// <summary>Returns the detected key and confidence percentage (e.g. "C Major (confidence: 82%)").</summary>
     public override string ToString()
     {
         var keyName = ChordLibrary.NoteNames[Key.Root] + (Key.IsMajor ? " Major" : " Minor");
@@ -568,8 +572,11 @@ public readonly record struct KeyDetectionResult(
 /// <summary>
 /// Correlation of input with a specific key profile.
 /// </summary>
+/// <param name="Key">The key whose profile was correlated.</param>
+/// <param name="Correlation">The correlation score for that key.</param>
 public readonly record struct KeyCorrelation(KeySignature Key, float Correlation)
 {
+    /// <summary>Returns the key name and correlation score (e.g. "C Major: 0.812").</summary>
     public override string ToString()
     {
         var keyName = ChordLibrary.NoteNames[Key.Root] + (Key.IsMajor ? " Major" : " Minor");

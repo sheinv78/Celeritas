@@ -477,11 +477,15 @@ public static class HarmonicColorAnalyzer
 /// <summary>
 /// Options controlling modal turn detection thresholds.
 /// </summary>
+/// <param name="ModalTurnWindowChords">Sliding window size, in chords, for modal-turn detection.</param>
+/// <param name="MinModalTurnCoverage">Minimum scale coverage (0..1) required to report a modal turn.</param>
+/// <param name="MinModalTurnImprovement">Minimum coverage gain over the base mode required to report a modal turn.</param>
 public sealed record HarmonicColorAnalysisOptions(
     int ModalTurnWindowChords,
     double MinModalTurnCoverage,
     double MinModalTurnImprovement)
 {
+    /// <summary>Default thresholds (window 4 chords, coverage 0.85, improvement 0.12).</summary>
     public static HarmonicColorAnalysisOptions Default { get; } = new(
         ModalTurnWindowChords: 4,
         MinModalTurnCoverage: 0.85,
@@ -506,9 +510,16 @@ public sealed record HarmonicColorAnalysisResult
         MelodicHarmony = melodicHarmony;
     }
 
+    /// <summary>The key the melody and chords were analyzed in.</summary>
     public KeySignature Key { get; init; }
+
+    /// <summary>Melody pitches falling outside the key's diatonic scale.</summary>
     public IReadOnlyList<ChromaticPitchEvent> ChromaticNotes { get; init; }
+
+    /// <summary>Detected segments better explained by a borrowed mode.</summary>
     public IReadOnlyList<ModalTurnEvent> ModalTurns { get; init; }
+
+    /// <summary>Per-note classification against the current chord slice.</summary>
     public IReadOnlyList<MelodicHarmonyEvent> MelodicHarmony { get; init; }
 
     /// <summary>
@@ -578,6 +589,11 @@ public sealed record HarmonicColorAnalysisResult
 /// <summary>
 /// A pitch outside the diatonic scale of the analyzed key.
 /// </summary>
+/// <param name="Offset">Onset time in whole-note units.</param>
+/// <param name="Pitch">MIDI pitch number (middle C = 60).</param>
+/// <param name="PitchClass">Pitch class (0-11).</param>
+/// <param name="NoteName">Note name of the pitch class.</param>
+/// <param name="Alteration">Alteration label relative to the tonic (e.g. <c>b6</c>, <c>#4</c>).</param>
 public readonly record struct ChromaticPitchEvent(
     Rational Offset,
     int Pitch,
@@ -588,6 +604,11 @@ public readonly record struct ChromaticPitchEvent(
 /// <summary>
 /// A detected segment where a different mode explains the pitch material better than the base key mode.
 /// </summary>
+/// <param name="StartChordIndex">Index of the first chord in the segment.</param>
+/// <param name="EndChordIndex">Index of the last chord in the segment.</param>
+/// <param name="Mode">The mode that best explains the segment.</param>
+/// <param name="Confidence">Coverage improvement over the base mode.</param>
+/// <param name="OutOfKeyPitchClasses">Pitch classes used that lie outside the base key.</param>
 public readonly record struct ModalTurnEvent(
     int StartChordIndex,
     int EndChordIndex,
@@ -600,18 +621,40 @@ public readonly record struct ModalTurnEvent(
 /// </summary>
 public enum MelodicHarmonyEventType
 {
+    /// <summary>Note belongs to the current chord.</summary>
     ChordTone = 0,
+
+    /// <summary>Stepwise connective tone between two chord tones moving in one direction.</summary>
     PassingTone = 1,
+
+    /// <summary>Steps away from a chord tone and returns to it.</summary>
     NeighborTone = 2,
+
+    /// <summary>Accented non-chord tone on a chord change that resolves by step.</summary>
     Appoggiatura = 3,
+
+    /// <summary>Tone held into a new chord that then resolves down by step.</summary>
     Suspension = 4,
+
+    /// <summary>Non-chord tone not matching a more specific category.</summary>
     OtherNonChordTone = 5,
+
+    /// <summary>Not classified (e.g. no chord context).</summary>
     Unclassified = 6
 }
 
 /// <summary>
 /// One melody note analyzed against the current chord slice.
 /// </summary>
+/// <param name="Offset">Onset time in whole-note units.</param>
+/// <param name="Pitch">MIDI pitch number (middle C = 60).</param>
+/// <param name="PitchClass">Pitch class (0-11).</param>
+/// <param name="ChordStart">Start time of the chord slice, in whole-note units.</param>
+/// <param name="ChordEnd">End time of the chord slice, in whole-note units.</param>
+/// <param name="ChordMask">12-bit pitch-class mask of the chord slice.</param>
+/// <param name="IsChordTone">Whether the note is a member of the chord.</param>
+/// <param name="Type">Classification of the note.</param>
+/// <param name="Description">Human-readable description of the classification.</param>
 public readonly record struct MelodicHarmonyEvent(
     Rational Offset,
     int Pitch,

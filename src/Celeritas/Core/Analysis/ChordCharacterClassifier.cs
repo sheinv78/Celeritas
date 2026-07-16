@@ -113,12 +113,22 @@ public sealed record ChordCharacterClassification
         Quality = quality;
     }
 
+    /// <summary>Character name as text (e.g. <c>Bright</c>).</summary>
     public string Mood { get; init; }
+
+    /// <summary>Perceived stability, 0..1.</summary>
     public float Stability { get; init; }
+
+    /// <summary>Perceived brightness, 0..1.</summary>
     public float Brightness { get; init; }
+
+    /// <summary>Coarse emotional character.</summary>
     public ChordCharacter Character { get; init; }
+
+    /// <summary>The underlying chord quality.</summary>
     public ChordQuality Quality { get; init; }
 
+    /// <summary>Fallback classification for blank or unparsable chord symbols.</summary>
     public static ChordCharacterClassification Unknown { get; } = new(
         "Unknown",
         0.5f,

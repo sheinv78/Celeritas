@@ -42,6 +42,7 @@ public sealed class GraceNote : Ornament
     /// </summary>
     public Rational DurationRatio { get; init; } = new(1, 32);
 
+    /// <summary>Expands into the grace note(s) followed by the shortened main note.</summary>
     public override NoteEvent[] Expand()
     {
         if (Intervals.Length == 0)

@@ -25,6 +25,7 @@ public sealed class Turn : Ornament
     /// </summary>
     public bool Anticipation { get; init; } = false;
 
+    /// <summary>Expands into four equal notes tracing the turn around the main note.</summary>
     public override NoteEvent[] Expand()
     {
         var upperPitch = BaseNote.Pitch + UpperInterval;

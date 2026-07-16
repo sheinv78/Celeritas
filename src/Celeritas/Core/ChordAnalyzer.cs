@@ -5,6 +5,10 @@ using System.Runtime.CompilerServices;
 
 namespace Celeritas.Core;
 
+/// <summary>
+/// Identifies chords from sets of pitches, and computes 12-bit pitch-class masks
+/// (bit <c>n</c> set means pitch class <c>n</c> is present).
+/// </summary>
 public static unsafe class ChordAnalyzer
 {
     // Precomputed lookup: (pitch % 12) -> bit mask
@@ -20,6 +24,9 @@ public static unsafe class ChordAnalyzer
         }
     }
 
+    /// <summary>Computes the 12-bit pitch-class mask of the given MIDI pitches.</summary>
+    /// <param name="pitches">MIDI pitches (any integers; reduced modulo 12).</param>
+    /// <returns>A mask where bit <c>n</c> is set when pitch class <c>n</c> is present.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static ushort GetMask(ReadOnlySpan<int> pitches)
     {
@@ -92,10 +99,17 @@ public static unsafe class ChordAnalyzer
     }
 
     // Unsafe version for extreme cases
+    /// <summary>Computes the 12-bit pitch-class mask from a raw pointer to <paramref name="count"/> MIDI pitches.</summary>
+    /// <param name="pitches">Pointer to the pitch array.</param>
+    /// <param name="count">Number of pitches to read.</param>
+    /// <returns>A mask where bit <c>n</c> is set when pitch class <c>n</c> is present.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ushort GetMask(int* pitches, int count) =>
         GetMask(new ReadOnlySpan<int>(pitches, count));
 
+    /// <summary>Identifies the chord formed by the given MIDI pitches (lowest pitch treated as bass).</summary>
+    /// <param name="pitches">MIDI pitches; the minimum is used as the bass for sus/quartal disambiguation.</param>
+    /// <returns>The identified chord's root and quality.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChordInfo Identify(ReadOnlySpan<int> pitches)
     {

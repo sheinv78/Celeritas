@@ -26,6 +26,9 @@ public interface IChordCandidateProvider
 /// A chord candidate with an associated base cost.
 /// Lower cost = more likely to be chosen.
 /// </summary>
+/// <param name="Chord">The candidate chord.</param>
+/// <param name="Pitches">MIDI pitches of the chord tones.</param>
+/// <param name="BaseCost">Intrinsic cost of the candidate before contextual scoring.</param>
 public readonly record struct ChordCandidate(
     ChordInfo Chord,
     int[] Pitches,
@@ -36,5 +39,6 @@ public readonly record struct ChordCandidate(
 /// </summary>
 public sealed class HarmonizationContext
 {
+    /// <summary>Zero-based index of the current harmonization step.</summary>
     public int StepIndex { get; set; }
 }

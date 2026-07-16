@@ -233,13 +233,20 @@ public static class ModalProgressions
         // Produced by ModalProgressions.Analyze; not constructible by consumers (#18 API freeze).
         internal ModalProgressionAnalysisResult() { }
 
+        /// <summary>The detected modal key (root and mode).</summary>
         public required ModalKey DetectedKey { get; init; }
+        /// <summary>Margin between the best-fitting mode and the runner-up on the detected root (a modest value, not a probability).</summary>
         public required float ModeConfidence { get; init; }
+        /// <summary>Best-matching characteristic progression for the detected mode, or <see langword="null"/> if none matched.</summary>
         public required ModalProgression? MatchedProgression { get; init; }
+        /// <summary>Fraction of the matched progression's degrees that line up, in 0-1.</summary>
         public required float ProgressionConfidence { get; init; }
+        /// <summary>Scale degree (1-7) of each chord's root in the detected mode; 0 for chords outside the scale or unparsable.</summary>
         public required IReadOnlyList<int> Degrees { get; init; }
+        /// <summary>Chords containing pitch classes outside the detected mode's scale (modal mixture).</summary>
         public required IReadOnlyList<ModalMixtureChord> BorrowedChords { get; init; }
 
+        /// <summary>Whether any borrowed (out-of-scale) chords were found.</summary>
         public bool HasModalMixture => BorrowedChords.Count > 0;
     }
 
@@ -257,9 +264,13 @@ public static class ModalProgressions
             OutOfScalePitchClasses = outOfScalePitchClasses;
         }
 
+        /// <summary>Index of the chord within the analyzed progression.</summary>
         public int Position { get; init; }
+        /// <summary>The chord symbol as supplied.</summary>
         public string Symbol { get; init; }
+        /// <summary>Root pitch class (0-11), or -1 if unparsable.</summary>
         public int RootPitchClass { get; init; }
+        /// <summary>Pitch classes in the chord that fall outside the detected mode's scale.</summary>
         public IReadOnlyList<int> OutOfScalePitchClasses { get; init; }
     }
 

@@ -59,6 +59,7 @@ public sealed class Articulation : Ornament
     /// </summary>
     public float VelocityMultiplier { get; init; } = 1.0f;
 
+    /// <summary>Expands into the single base note with duration and velocity scaled by the multipliers.</summary>
     public override NoteEvent[] Expand()
     {
         var duration = BaseNote.Duration * new Rational((int)(DurationMultiplier * 100), 100);

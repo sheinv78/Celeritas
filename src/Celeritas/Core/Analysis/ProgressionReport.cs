@@ -196,9 +196,16 @@ public sealed class SecondaryDominantInfo
     // Produced by analysis; not constructible by consumers (#18 API freeze).
     internal SecondaryDominantInfo() { }
 
+    /// <summary>The secondary dominant chord symbol.</summary>
     public required string Chord { get; init; }
+
+    /// <summary>The chord it tonicizes.</summary>
     public required string Target { get; init; }
+
+    /// <summary>Scale degree of the target, if known.</summary>
     public string? TargetDegree { get; init; }
+
+    /// <summary>Index of the chord in the progression.</summary>
     public int Position { get; init; }
 }
 
@@ -210,7 +217,12 @@ public sealed class BorrowedChordInfo
     // Produced by analysis; not constructible by consumers (#18 API freeze).
     internal BorrowedChordInfo() { }
 
+    /// <summary>The borrowed chord symbol.</summary>
     public required string Chord { get; init; }
+
+    /// <summary>Key or mode the chord is borrowed from.</summary>
     public required string SourceKey { get; init; }
+
+    /// <summary>Index of the chord in the progression.</summary>
     public int Position { get; init; }
 }

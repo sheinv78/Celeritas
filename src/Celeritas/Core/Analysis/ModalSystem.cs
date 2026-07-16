@@ -135,6 +135,7 @@ public readonly struct ModalKey(byte root, Mode mode) : IEquatable<ModalKey>
         _ => new(Root, Mode.Ionian)
     };
 
+    /// <summary>Returns the key as a note name and mode (e.g. <c>"C Major"</c>).</summary>
     public override string ToString()
     {
         var noteName = ChordLibrary.NoteNames[Root];
@@ -149,10 +150,15 @@ public readonly struct ModalKey(byte root, Mode mode) : IEquatable<ModalKey>
         return $"{noteName} {modeName}";
     }
 
+    /// <summary>Indicates whether this key equals <paramref name="other"/> (same root and mode).</summary>
     public bool Equals(ModalKey other) => Root == other.Root && Mode == other.Mode;
+    /// <summary>Indicates whether <paramref name="obj"/> is a <see cref="ModalKey"/> equal to this one.</summary>
     public override bool Equals(object? obj) => obj is ModalKey other && Equals(other);
+    /// <summary>Returns a hash code combining root and mode.</summary>
     public override int GetHashCode() => HashCode.Combine(Root, Mode);
+    /// <summary>Indicates whether two keys are equal.</summary>
     public static bool operator ==(ModalKey left, ModalKey right) => left.Equals(right);
+    /// <summary>Indicates whether two keys differ.</summary>
     public static bool operator !=(ModalKey left, ModalKey right) => !left.Equals(right);
 }
 

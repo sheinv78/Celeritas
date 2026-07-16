@@ -7,6 +7,7 @@ namespace Celeritas.Core;
 /// Chromatic interval measured in semitones.
 /// Can be negative (descending) or larger than an octave (compound).
 /// </summary>
+/// <param name="Semitones">The signed semitone size of the interval.</param>
 public readonly record struct ChromaticInterval(int Semitones)
 {
     /// <summary>
@@ -36,8 +37,10 @@ public readonly record struct ChromaticInterval(int Semitones)
     /// </summary>
     public int ClassSemitones => ((Semitones % 12) + 12) % 12;
 
+    /// <summary>Direction of the interval: -1 descending, 0 unison, +1 ascending.</summary>
     public int Direction => Math.Sign(Semitones);
 
+    /// <summary>Short quality/size name of the simplified interval (e.g. "M3", "P5", "TT").</summary>
     public string SimpleName => SimpleSemitones switch
     {
         0 => "Unison",
@@ -74,21 +77,36 @@ public readonly record struct ChromaticInterval(int Semitones)
         _ => 0
     };
 
+    /// <summary>Returns <see cref="SimpleName"/>.</summary>
     public override string ToString() => SimpleName;
 
+    /// <summary>Negates the interval (reverses its direction).</summary>
     public static ChromaticInterval operator -(ChromaticInterval i) => new(-i.Semitones);
 
+    /// <summary>Unison (0 semitones).</summary>
     public static readonly ChromaticInterval Unison = new(0);
+    /// <summary>Minor second (1 semitone).</summary>
     public static readonly ChromaticInterval MinorSecond = new(1);
+    /// <summary>Major second (2 semitones).</summary>
     public static readonly ChromaticInterval MajorSecond = new(2);
+    /// <summary>Minor third (3 semitones).</summary>
     public static readonly ChromaticInterval MinorThird = new(3);
+    /// <summary>Major third (4 semitones).</summary>
     public static readonly ChromaticInterval MajorThird = new(4);
+    /// <summary>Perfect fourth (5 semitones).</summary>
     public static readonly ChromaticInterval PerfectFourth = new(5);
+    /// <summary>Tritone (6 semitones).</summary>
     public static readonly ChromaticInterval Tritone = new(6);
+    /// <summary>Perfect fifth (7 semitones).</summary>
     public static readonly ChromaticInterval PerfectFifth = new(7);
+    /// <summary>Minor sixth (8 semitones).</summary>
     public static readonly ChromaticInterval MinorSixth = new(8);
+    /// <summary>Major sixth (9 semitones).</summary>
     public static readonly ChromaticInterval MajorSixth = new(9);
+    /// <summary>Minor seventh (10 semitones).</summary>
     public static readonly ChromaticInterval MinorSeventh = new(10);
+    /// <summary>Major seventh (11 semitones).</summary>
     public static readonly ChromaticInterval MajorSeventh = new(11);
+    /// <summary>Octave (12 semitones).</summary>
     public static readonly ChromaticInterval Octave = new(12);
 }

@@ -5,6 +5,13 @@ using System.Text.Json;
 
 namespace Celeritas.Core.Analysis;
 
+/// <summary>
+/// One catalog entry mapping a pitch-class-set prime form to a label.
+/// </summary>
+/// <param name="Forte">Forte number or other label for the set.</param>
+/// <param name="PrimeForm">Prime form of the set (pitch classes 0-11).</param>
+/// <param name="Name">Optional descriptive name.</param>
+/// <param name="Notes">Optional free-form notes.</param>
 public sealed record PitchClassSetCatalogEntry(
     string Forte,
     int[] PrimeForm,
@@ -24,12 +31,18 @@ public sealed class PitchClassSetCatalog
         _byPrimeForm = byPrimeForm;
     }
 
+    /// <summary>
+    /// Load a catalog from the JSON file at <paramref name="path"/>.
+    /// </summary>
     public static PitchClassSetCatalog Load(string path)
     {
         var json = File.ReadAllText(path);
         return LoadJson(json);
     }
 
+    /// <summary>
+    /// Load a catalog from a JSON string. Entries with a blank Forte label or empty prime form are skipped.
+    /// </summary>
     public static PitchClassSetCatalog LoadJson(string json)
     {
         var options = new JsonSerializerOptions

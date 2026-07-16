@@ -6,6 +6,16 @@ using System.Runtime.CompilerServices;
 
 namespace Celeritas.Core.Analysis;
 
+/// <summary>
+/// Options controlling <c>FormAnalyzer</c> phrase, period, cadence, and section detection.
+/// </summary>
+/// <param name="MinRestForPhraseBoundary">Minimum rest (whole-note units) after a note that starts a new phrase.</param>
+/// <param name="MinNotesPerPhrase">Minimum notes a run must contain to count as a phrase.</param>
+/// <param name="PeriodLengthTolerance">Maximum length difference (whole-note units) for two adjacent phrases to form a period; <c>default</c> falls back to the value from <c>Default</c>.</param>
+/// <param name="DetectCadences">Whether to classify the cadence at each phrase end (requires <paramref name="Key"/>).</param>
+/// <param name="Key">Key context for cadence detection; no cadences are detected when <see langword="null"/>.</param>
+/// <param name="DetectSections">Whether to group phrases into lettered sections (A/B/A').</param>
+/// <param name="SectionSimilarityThreshold">Jaccard pitch-class similarity (0-1) at or above which two phrases share a section label.</param>
 public sealed record FormAnalysisOptions(
     Rational MinRestForPhraseBoundary,
     int MinNotesPerPhrase = 2,
@@ -15,6 +25,7 @@ public sealed record FormAnalysisOptions(
     bool DetectSections = true,
     float SectionSimilarityThreshold = 0.7f)
 {
+    /// <summary>Default options: 1/2 phrase-boundary rest, 2 notes/phrase, 1/4 period tolerance, cadence and section detection on, 0.7 section similarity.</summary>
     public static FormAnalysisOptions Default => new(
         MinRestForPhraseBoundary: new Rational(1, 2),
         MinNotesPerPhrase: 2,
@@ -25,6 +36,13 @@ public sealed record FormAnalysisOptions(
         SectionSimilarityThreshold: 0.7f);
 }
 
+/// <summary>A run of notes delimited by rests, with its span and ending cadence.</summary>
+/// <param name="StartIndex">Index of the phrase's first note in the offset-sorted buffer.</param>
+/// <param name="EndIndex">Index of the phrase's last note.</param>
+/// <param name="Start">Onset of the phrase (whole-note units).</param>
+/// <param name="End">End time of the phrase (whole-note units).</param>
+/// <param name="NoteCount">Number of notes in the phrase.</param>
+/// <param name="EndingCadence">Cadence classified at the phrase end, or <c>None</c>.</param>
 public readonly record struct Phrase(
     int StartIndex,
     int EndIndex,
@@ -33,9 +51,15 @@ public readonly record struct Phrase(
     int NoteCount,
     CadenceType EndingCadence = CadenceType.None)
 {
+    /// <summary>Duration of the phrase (<c>End - Start</c>, whole-note units).</summary>
     public Rational Length => End - Start;
 }
 
+/// <summary>Two adjacent phrases of near-equal length forming a period.</summary>
+/// <param name="FirstPhraseIndex">Index of the first phrase.</param>
+/// <param name="SecondPhraseIndex">Index of the second phrase.</param>
+/// <param name="LengthA">Length of the first phrase (whole-note units).</param>
+/// <param name="LengthB">Length of the second phrase (whole-note units).</param>
 public readonly record struct Period(int FirstPhraseIndex, int SecondPhraseIndex, Rational LengthA, Rational LengthB);
 
 /// <summary>
@@ -48,10 +72,13 @@ public readonly record struct Section(
     Rational Start,
     Rational End)
 {
+    /// <summary>Duration of the section (<c>End - Start</c>, whole-note units).</summary>
     public Rational Length => End - Start;
+    /// <summary>Number of phrases in the section.</summary>
     public int PhraseCount => EndPhraseIndex - StartPhraseIndex + 1;
 }
 
+/// <summary>Result of form analysis: phrases, periods, cadences, sections, and an overall form label.</summary>
 public sealed record FormAnalysisResult
 {
     // Produced by FormAnalyzer; not constructible by consumers (#18 API freeze).
@@ -79,11 +106,17 @@ public sealed record FormAnalysisResult
         IReadOnlyList<CadenceInfo> cadences)
         : this(phrases, periods, totalLength, cadences, [], "") { }
 
+    /// <summary>Detected phrases in time order.</summary>
     public IReadOnlyList<Phrase> Phrases { get; init; }
+    /// <summary>Adjacent phrase pairs of near-equal length.</summary>
     public IReadOnlyList<Period> Periods { get; init; }
+    /// <summary>Total span from the first phrase's start to the last phrase's end (whole-note units).</summary>
     public Rational TotalLength { get; init; }
+    /// <summary>Cadences detected at phrase ends (only when a key was supplied).</summary>
     public IReadOnlyList<CadenceInfo> Cadences { get; init; }
+    /// <summary>Lettered sections (A/B/A') grouping similar phrases.</summary>
     public IReadOnlyList<Section> Sections { get; init; }
+    /// <summary>Space-separated section labels (e.g. <c>"A B A"</c>), or empty when sections were not detected.</summary>
     public string FormLabel { get; init; }
 }
 

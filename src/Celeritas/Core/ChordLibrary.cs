@@ -5,38 +5,86 @@ using System.Runtime.CompilerServices;
 
 namespace Celeritas.Core;
 
+/// <summary>
+/// Recognized chord qualities.
+/// </summary>
 public enum ChordQuality : byte
 {
+    /// <summary>Unrecognized or unclassified chord.</summary>
     Unknown,
+
+    /// <summary>Major triad (root, major third, perfect fifth).</summary>
     Major,
+
+    /// <summary>Minor triad (root, minor third, perfect fifth).</summary>
     Minor,
+
+    /// <summary>Diminished triad (root, minor third, diminished fifth).</summary>
     Diminished,
+
+    /// <summary>Augmented triad (root, major third, augmented fifth).</summary>
     Augmented,
+
+    /// <summary>Major seventh chord (major triad plus a major seventh).</summary>
     Major7,
+
+    /// <summary>Minor seventh chord (minor triad plus a minor seventh).</summary>
     Minor7,
+
+    /// <summary>Dominant seventh chord (major triad plus a minor seventh).</summary>
     Dominant7,
+
+    /// <summary>Diminished seventh chord (diminished triad plus a diminished seventh).</summary>
     Diminished7,
+
+    /// <summary>Half-diminished seventh chord (diminished triad plus a minor seventh).</summary>
     HalfDim7,
+
+    /// <summary>Suspended second (root, major second, perfect fifth).</summary>
     Sus2,
+
+    /// <summary>Suspended fourth (root, perfect fourth, perfect fifth).</summary>
     Sus4,
+
+    /// <summary>Power chord: root and perfect fifth dyad, no third.</summary>
     Power,          // 5th chord (no 3rd)
+
+    /// <summary>Quartal chord built on stacked perfect fourths.</summary>
     Quartal,        // Built on 4ths
+
+    /// <summary>Major triad with an added ninth (the second).</summary>
     Add9,
+
+    /// <summary>Major triad with an added eleventh (the fourth).</summary>
     Add11,
+
+    /// <summary>Minor-major seventh chord (minor triad plus a major seventh).</summary>
     MinorMajor7,
+
+    /// <summary>Augmented seventh chord (augmented triad plus a minor seventh).</summary>
     Augmented7,
+
+    /// <summary>Dominant seventh chord with a flatted fifth.</summary>
     Dominant7Flat5
 }
 
 /// <summary>
 /// Compact chord info (8 bytes instead of 24+ for class)
 /// </summary>
+/// <param name="RootPitchClass">Root pitch class of the chord (0=C .. 11=B).</param>
+/// <param name="Quality">The chord's quality.</param>
 public readonly record struct ChordInfo(byte RootPitchClass, ChordQuality Quality)
 {
+    /// <summary>Root note name (e.g. "C", "F#") for <see cref="RootPitchClass"/>.</summary>
     public string Root => ChordLibrary.NoteNames[RootPitchClass];
+
+    /// <summary>Returns the root name followed by the quality (e.g. "C Major").</summary>
     public override string ToString() => $"{Root} {Quality}";
 }
 
+/// <summary>
+/// Lookup table mapping 12-bit pitch-class masks to recognized chords.
+/// </summary>
 public static class ChordLibrary
 {
     // Lookup array for all 4096 combinations (12-bit pitch-class mask).
@@ -44,6 +92,7 @@ public static class ChordLibrary
     private static readonly ChordInfo[] Lookup = new ChordInfo[4096];
     private static readonly bool[] HasChord = new bool[4096];
 
+    /// <summary>Note names indexed by pitch class (0=C .. 11=B), using sharp spellings.</summary>
     // IReadOnlyList so callers cannot mutate the shared table (indexing still works).
     public static IReadOnlyList<string> NoteNames { get; } = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
@@ -104,6 +153,10 @@ public static class ChordLibrary
         }
     }
 
+    /// <summary>
+    /// Returns the chord for a 12-bit pitch-class mask, or an <c>Unknown</c>
+    /// chord if the mask matches no known template.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChordInfo GetChord(ushort mask)
     {
@@ -115,6 +168,12 @@ public static class ChordLibrary
         };
     }
 
+    /// <summary>
+    /// Tries to resolve a 12-bit pitch-class mask to a known chord.
+    /// </summary>
+    /// <param name="mask">12-bit pitch-class mask (0-4095).</param>
+    /// <param name="chord">The matched chord, or an <c>Unknown</c> chord if none.</param>
+    /// <returns><see langword="true"/> if a chord was found; otherwise <see langword="false"/>.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryGetChord(ushort mask, out ChordInfo chord)
     {

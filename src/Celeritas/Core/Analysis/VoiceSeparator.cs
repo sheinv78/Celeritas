@@ -42,16 +42,25 @@ public sealed class Voice
 /// </summary>
 public readonly record struct VoiceNote
 {
+    /// <summary>MIDI pitch number (middle C = 60).</summary>
     public int Pitch { get; init; }
+
+    /// <summary>Onset time in whole-note units.</summary>
     public Rational Offset { get; init; }
+
+    /// <summary>Duration in whole-note units.</summary>
     public Rational Duration { get; init; }
+
+    /// <summary>Note velocity.</summary>
     public float Velocity { get; init; }
 
     /// <summary>Original index in the NoteBuffer.</summary>
     public int OriginalIndex { get; init; }
 
+    /// <summary>End time (<c>Offset</c> + <c>Duration</c>) in whole-note units.</summary>
     public Rational End => Offset + Duration;
 
+    /// <summary>Formats as note name, octave, and onset (e.g. <c>C4 @ 0</c>).</summary>
     public override string ToString() =>
         $"{ChordLibrary.NoteNames[Pitch % 12]}{(Pitch / 12) - 1} @ {Offset}";
 }
@@ -61,9 +70,16 @@ public readonly record struct VoiceNote
 /// </summary>
 public sealed record VoiceSeparationResult
 {
+    /// <summary>Separated voices, ordered highest to lowest; empty voices are omitted.</summary>
     public required IReadOnlyList<Voice> Voices { get; init; }
+
+    /// <summary>Total number of notes in the source buffer.</summary>
     public required int TotalNotes { get; init; }
+
+    /// <summary>Count of detected voice crossings.</summary>
     public required int VoiceCrossings { get; init; }
+
+    /// <summary>Heuristic separation quality, 0..1 (higher = cleaner).</summary>
     public required float SeparationQuality { get; init; }
 
     /// <summary>Get the voice assignment for each original note index.</summary>
@@ -525,10 +541,19 @@ public static class VoiceSeparator
 /// </summary>
 public sealed record SatbSeparationResult
 {
+    /// <summary>The underlying general separation result.</summary>
     public required VoiceSeparationResult Full { get; init; }
+
+    /// <summary>Soprano voice (highest register); an empty stub if unfilled.</summary>
     public required Voice Soprano { get; init; }
+
+    /// <summary>Alto voice; an empty stub if unfilled.</summary>
     public required Voice Alto { get; init; }
+
+    /// <summary>Tenor voice; an empty stub if unfilled.</summary>
     public required Voice Tenor { get; init; }
+
+    /// <summary>Bass voice (lowest register); an empty stub if unfilled.</summary>
     public required Voice Bass { get; init; }
 }
 

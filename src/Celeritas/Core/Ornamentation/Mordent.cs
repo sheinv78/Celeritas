@@ -20,6 +20,8 @@ public sealed class Mordent : Ornament
     /// </summary>
     public int Alternations { get; init; } = 1;
 
+    /// <summary>Expands into an alternation of the main note and its neighbor, ending on the main note.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="Alternations"/> is less than 1.</exception>
     public override NoteEvent[] Expand()
     {
         if (Alternations < 1)

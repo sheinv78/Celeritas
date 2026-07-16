@@ -7,12 +7,21 @@ using Melanchall.DryWetMidi.Interaction;
 
 namespace Celeritas.Core.Midi;
 
+/// <summary>
+/// How to split a MIDI file into multiple files.
+/// </summary>
 public enum MidiSplitMode
 {
+    /// <summary>One output file per track chunk.</summary>
     Track,
+
+    /// <summary>One output file per MIDI channel.</summary>
     Channel
 }
 
+/// <summary>
+/// How to combine multiple MIDI files when merging.
+/// </summary>
 public enum MidiMergeMode
 {
     /// <summary>
@@ -27,6 +36,9 @@ public enum MidiMergeMode
     SingleTrack
 }
 
+/// <summary>
+/// Summary statistics for a MIDI file.
+/// </summary>
 public sealed record MidiFileStatistics
 {
     // Produced by MIDI analysis; not constructible by consumers (#18 API freeze).
@@ -48,19 +60,36 @@ public sealed record MidiFileStatistics
         Channels = channels;
     }
 
+    /// <summary>Number of track chunks in the file.</summary>
     public int TrackCount { get; init; }
+
+    /// <summary>Total number of notes across all tracks.</summary>
     public int NoteCount { get; init; }
+
+    /// <summary>End of the file in absolute MIDI ticks.</summary>
     public long TotalTicks { get; init; }
+
+    /// <summary>Total duration in whole-note units (one 4/4 measure = 1).</summary>
     public Rational TotalDuration { get; init; } // in whole-note units (one 4/4 measure = 1)
+
+    /// <summary>Lowest MIDI note number present, or <see langword="null"/> if there are no notes.</summary>
     public int? MinNoteNumber { get; init; }
+
+    /// <summary>Highest MIDI note number present, or <see langword="null"/> if there are no notes.</summary>
     public int? MaxNoteNumber { get; init; }
+
+    /// <summary>Distinct MIDI channels used, in ascending order.</summary>
     public IReadOnlyList<int> Channels { get; init; }
 }
 
+/// <summary>
+/// Extension members for reading, writing, and transforming <see cref="MidiFile"/> instances.
+/// </summary>
 public static class MidiFileExtensions
 {
     extension(MidiFile file)
     {
+        /// <summary>Writes the file to <paramref name="path"/>.</summary>
         public void Save(string path)
         {
             ArgumentNullException.ThrowIfNull(file);
@@ -69,6 +98,11 @@ public static class MidiFileExtensions
             file.Write(stream);
         }
 
+        /// <summary>Adds a new track built from <paramref name="notes"/> and returns it.</summary>
+        /// <param name="notes">Notes to place on the track.</param>
+        /// <param name="name">Optional track name written as a sequence/track-name meta event.</param>
+        /// <param name="options">Export options controlling channel, velocity, and ticks-per-quarter-note.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
         public TrackChunk AddTrack(NoteEvent[] notes, string? name = null, MidiExportOptions? options = null)
         {
             // AsSpan() maps null to an empty span, so an unguarded null would quietly add an
@@ -136,6 +170,8 @@ public static class MidiFileExtensions
             return track;
         }
 
+        /// <summary>Inserts a tempo event of <paramref name="bpm"/> beats per minute at time zero.</summary>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="bpm"/> is not positive.</exception>
         public void SetTempo(int bpm)
         {
             ArgumentNullException.ThrowIfNull(file);
@@ -159,6 +195,7 @@ public static class MidiFileExtensions
             track.Events.Insert(0, new SetTempoEvent(tempo.MicrosecondsPerQuarterNote) { DeltaTime = 0 });
         }
 
+        /// <summary>Returns a deep copy of the file via a write/read round-trip.</summary>
         public MidiFile Clone()
         {
             ArgumentNullException.ThrowIfNull(file);
@@ -221,6 +258,8 @@ public static class MidiFileExtensions
             return MergeToSingleTrackSources(sources);
         }
 
+        /// <summary>Splits the file into separate files, one per track or per channel.</summary>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a known split mode.</exception>
         public IReadOnlyList<MidiFile> Split(MidiSplitMode mode)
         {
             ArgumentNullException.ThrowIfNull(file);
@@ -233,6 +272,8 @@ public static class MidiFileExtensions
             };
         }
 
+        /// <summary>Computes summary statistics (track/note counts, pitch range, duration, channels) for the file.</summary>
+        /// <exception cref="NotSupportedException">The file does not use ticks-per-quarter-note time division.</exception>
         public MidiFileStatistics GetStatistics()
         {
             ArgumentNullException.ThrowIfNull(file);

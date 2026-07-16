@@ -89,9 +89,16 @@ public sealed record ParseResult
         Errors = errors;
     }
 
+    /// <summary>The parsed note events.</summary>
     public NoteEvent[] Notes { get; init; }
+
+    /// <summary>The time signature found in the input, or <see langword="null"/> if none was specified.</summary>
     public TimeSignature? TimeSignature { get; init; }
+
+    /// <summary>Notation directives (tempo, section, dynamics, etc.) found in the input.</summary>
     public NotationDirective[] Directives { get; init; }
+
+    /// <summary>Parse errors collected during lexing/parsing.</summary>
     public IReadOnlyList<string> Errors { get; init; }
 }
 

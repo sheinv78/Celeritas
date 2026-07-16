@@ -3,9 +3,15 @@
 
 namespace Celeritas.Core;
 
+/// <summary>
+/// Direction of travel around the circle of fifths.
+/// </summary>
 public enum CircleDirection
 {
+    /// <summary>Ascending fifths: C → G → D → …</summary>
     Clockwise,
+
+    /// <summary>Ascending fourths (descending fifths): C → F → Bb → …</summary>
     CounterClockwise
 }
 
@@ -45,12 +51,16 @@ public static class CircleOfFifths
         return result;
     }
 
+    /// <summary>Returns the pitch class a perfect fifth above <paramref name="pc"/>.</summary>
     public static PitchClass NextFifth(PitchClass pc) => pc + PerfectFifth;
 
+    /// <summary>Returns the pitch class a perfect fifth below <paramref name="pc"/>.</summary>
     public static PitchClass PrevFifth(PitchClass pc) => pc - PerfectFifth;
 
+    /// <summary>Returns the pitch class a perfect fourth above <paramref name="pc"/>.</summary>
     public static PitchClass NextFourth(PitchClass pc) => pc + PerfectFourth;
 
+    /// <summary>Returns the pitch class a perfect fourth below <paramref name="pc"/>.</summary>
     public static PitchClass PrevFourth(PitchClass pc) => pc - PerfectFourth;
 
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined <see cref="CircleDirection"/> value.</exception>

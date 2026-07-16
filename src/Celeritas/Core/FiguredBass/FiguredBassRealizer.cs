@@ -10,11 +10,14 @@ public sealed class FiguredBassRealizer
     private bool AllowVoiceCrossing => _options is FiguredBassRealizerOptions o ? o.AllowVoiceCrossing : false;
     private int? MaxVoiceMovement => _options is FiguredBassRealizerOptions o ? o.MaxVoiceMovement : null;
 
+    /// <summary>Creates a realizer with the given options, or defaults when <paramref name="options"/> is <see langword="null"/>.</summary>
     public FiguredBassRealizer(FiguredBassOptions? options = null)
     {
         _options = options ?? new FiguredBassOptions();
     }
 
+    /// <summary>Creates a realizer with extended realizer options (voice crossing, movement limits).</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public FiguredBassRealizer(FiguredBassRealizerOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));

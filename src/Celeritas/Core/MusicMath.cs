@@ -7,6 +7,10 @@ using Celeritas.Core.Simd;
 
 namespace Celeritas.Core;
 
+/// <summary>
+/// Bulk pitch/velocity/timing operations over a <c>NoteBuffer</c>, plus MIDI
+/// note-name conversions. Timing is in whole-note units.
+/// </summary>
 public static unsafe class MusicMath
 {
     private static readonly IPitchTransformer PitchTransposeImpl = PitchTransformerFactory.Best;

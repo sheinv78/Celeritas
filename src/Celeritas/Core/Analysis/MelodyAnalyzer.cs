@@ -10,8 +10,11 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 public enum MelodicDirection
 {
+    /// <summary>Upward motion (pitch increases).</summary>
     Ascending,
+    /// <summary>Downward motion (pitch decreases).</summary>
     Descending,
+    /// <summary>No pitch change (repeated pitch).</summary>
     Static
 }
 
@@ -70,6 +73,7 @@ public sealed class Motif
     // Produced by analysis; not constructible by consumers (#18 API freeze).
     internal Motif() { }
 
+    /// <summary>The recurring pattern as consecutive melodic intervals in semitones.</summary>
     public required int[] IntervalPattern { get; init; }
 
     /// <summary>
@@ -77,7 +81,9 @@ public sealed class Motif
     /// are sequential note positions (index <c>i</c> as <c>i/1</c>) rather than musical times.
     /// </summary>
     public required IReadOnlyList<Rational> Occurrences { get; init; }
+    /// <summary>Number of intervals in the pattern.</summary>
     public required int Length { get; init; }
+    /// <summary>Prominence score in 0-1, derived from pattern length and occurrence count.</summary>
     public required double Significance { get; init; } // 0-1, based on frequency and length
 
     /// <summary>
@@ -95,13 +101,21 @@ public sealed class MelodicIntervalStatistics
     // Produced by analysis; not constructible by consumers (#18 API freeze).
     internal MelodicIntervalStatistics() { }
 
+    /// <summary>Number of intervals analyzed (one fewer than the note count).</summary>
     public required int TotalIntervals { get; init; }
+    /// <summary>Mean absolute interval size in semitones.</summary>
     public required double AverageInterval { get; init; }
+    /// <summary>Largest absolute interval in semitones.</summary>
     public required int LargestLeap { get; init; }
+    /// <summary>Percentage of intervals that are steps (1-2 semitones).</summary>
     public required double StepPercent { get; init; }
+    /// <summary>Percentage of intervals that are leaps (3+ semitones).</summary>
     public required double LeapPercent { get; init; }
+    /// <summary>Percentage of intervals that are repetitions (unison).</summary>
     public required double RepetitionPercent { get; init; }
+    /// <summary>Count of each absolute interval size, keyed by semitones.</summary>
     public required IReadOnlyDictionary<int, int> IntervalHistogram { get; init; }
+    /// <summary>Count of each motion type.</summary>
     public required IReadOnlyDictionary<MelodicMotionType, int> MotionHistogram { get; init; }
 }
 
@@ -113,17 +127,29 @@ public sealed class MelodyAnalysisResult
     // Produced by MelodyAnalyzer; not constructible by consumers (#18 API freeze).
     internal MelodyAnalysisResult() { }
 
+    /// <summary>Overall melodic contour classification.</summary>
     public required MelodicContour Contour { get; init; }
+    /// <summary>Human-readable description of the contour.</summary>
     public required string ContourDescription { get; init; }
+    /// <summary>Lowest MIDI pitch in the melody.</summary>
     public required int LowestPitch { get; init; }
+    /// <summary>Highest MIDI pitch in the melody.</summary>
     public required int HighestPitch { get; init; }
+    /// <summary>Pitch range in semitones (highest minus lowest).</summary>
     public required int Ambitus { get; init; } // range in semitones
+    /// <summary>Human-readable description of the range.</summary>
     public required string AmbitusDescription { get; init; }
+    /// <summary>Consecutive melodic intervals in order.</summary>
     public required IReadOnlyList<MelodicInterval> Intervals { get; init; }
+    /// <summary>Aggregate interval statistics.</summary>
     public required MelodicIntervalStatistics Statistics { get; init; }
+    /// <summary>Detected recurring motifs, most significant first (up to 5).</summary>
     public required IReadOnlyList<Motif> Motifs { get; init; }
+    /// <summary>Stepwise-ness in 0-1 (fraction of steps and repetitions).</summary>
     public required double Conjunctness { get; init; } // 0-1, how stepwise
+    /// <summary>Interval variety in 0-1 (normalized entropy of the interval histogram).</summary>
     public required double Complexity { get; init; } // 0-1, variety of intervals
+    /// <summary>Human-readable summary of the melody's character.</summary>
     public required string CharacterDescription { get; init; }
 }
 

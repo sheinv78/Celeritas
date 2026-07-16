@@ -26,10 +26,19 @@ public enum BeatStrength
 /// </summary>
 public enum GrooveFeel
 {
+    /// <summary>Even, unswung subdivisions.</summary>
     Straight,
+
+    /// <summary>Swung eighths (moderate long-short feel).</summary>
     Swing,
+
+    /// <summary>Heavy triplet-based long-short feel.</summary>
     Shuffle,
+
+    /// <summary>Latin/Afro-Cuban clave-driven feel.</summary>
     Latin,
+
+    /// <summary>Compound meter feel (beats divide in three).</summary>
     Compound
 }
 
@@ -38,14 +47,28 @@ public enum GrooveFeel
 /// </summary>
 public readonly record struct RhythmEvent
 {
+    /// <summary>Onset time of the event, in whole-note units.</summary>
     public Rational Offset { get; init; }
+
+    /// <summary>Duration of the event, in whole-note units.</summary>
     public Rational Duration { get; init; }
+
+    /// <summary>Zero-based index of the measure containing the onset.</summary>
     public int Measure { get; init; }
+
+    /// <summary>Position within the measure, in whole-note units from the barline.</summary>
     public Rational BeatInMeasure { get; init; }
+
+    /// <summary>Metrical strength of the onset position.</summary>
     public BeatStrength Strength { get; init; }
+
+    /// <summary>Whether the note is syncopated (weak-beat onset sustained over the next strong beat).</summary>
     public bool IsSyncopated { get; init; }
+
+    /// <summary>Index of the note in the original input buffer.</summary>
     public int OriginalIndex { get; init; }
 
+    /// <summary>End time of the event (<c>Offset + Duration</c>), in whole-note units.</summary>
     public Rational End => Offset + Duration;
 }
 
@@ -67,6 +90,7 @@ public sealed class RhythmPattern
     /// <summary>Description.</summary>
     public string? Description { get; init; }
 
+    /// <summary>Returns the pattern name.</summary>
     public override string ToString() => Name;
 }
 
@@ -75,10 +99,19 @@ public sealed class RhythmPattern
 /// </summary>
 public sealed record MeterDetectionResult
 {
+    /// <summary>Most likely detected time signature.</summary>
     public required TimeSignature TimeSignature { get; init; }
+
+    /// <summary>Confidence of the detection, in the range 0-1.</summary>
     public required float Confidence { get; init; }
+
+    /// <summary>Estimated tempo in beats per minute (placeholder without audio input).</summary>
     public required Rational Tempo { get; init; }
+
+    /// <summary>Other plausible time signatures, best first.</summary>
     public required IReadOnlyList<TimeSignature> Alternatives { get; init; }
+
+    /// <summary>Human-readable explanation of the detection outcome.</summary>
     public required string Reasoning { get; init; }
 }
 
@@ -87,15 +120,34 @@ public sealed record MeterDetectionResult
 /// </summary>
 public sealed record RhythmAnalysisResult
 {
+    /// <summary>Detected or supplied meter.</summary>
     public required MeterDetectionResult Meter { get; init; }
+
+    /// <summary>Per-onset rhythmic events in metrical context, ordered by time.</summary>
     public required IReadOnlyList<RhythmEvent> Events { get; init; }
+
+    /// <summary>Recognized rhythmic pattern occurrences.</summary>
     public required IReadOnlyList<RhythmPatternMatch> PatternMatches { get; init; }
+
+    /// <summary>Aggregate rhythmic statistics.</summary>
     public required RhythmStatistics Statistics { get; init; }
+
+    /// <summary>Swing ratio: fraction of a beat-pair taken by the first note (0.5 = straight).</summary>
     public required float SwingRatio { get; init; }
+
+    /// <summary>Fraction of notes that are syncopated, in the range 0-1.</summary>
     public required float Syncopation { get; init; }
+
+    /// <summary>Rhythmic density: onsets per beat.</summary>
     public required float Density { get; init; }
+
+    /// <summary>High-level groove feel classification.</summary>
     public required GrooveFeel GrooveFeel { get; init; }
+
+    /// <summary>Rhythmic drive/energy score, in the range 0-1.</summary>
     public required float GrooveDrive { get; init; }
+
+    /// <summary>Human-readable description of the rhythmic texture.</summary>
     public required string TextureDescription { get; init; }
 }
 
@@ -104,10 +156,19 @@ public sealed record RhythmAnalysisResult
 /// </summary>
 public sealed record RhythmPatternMatch
 {
+    /// <summary>The pattern that was matched.</summary>
     public required RhythmPattern Pattern { get; init; }
+
+    /// <summary>Onset time where the match begins, in whole-note units.</summary>
     public required Rational StartOffset { get; init; }
+
+    /// <summary>Index of the first onset of the match within the sorted note sequence.</summary>
     public required int StartIndex { get; init; }
+
+    /// <summary>Number of onsets spanned by the match.</summary>
     public required int Count { get; init; }
+
+    /// <summary>Match quality, in the range 0-1 (1 = exact).</summary>
     public required float MatchQuality { get; init; }
 }
 
@@ -116,16 +177,34 @@ public sealed record RhythmPatternMatch
 /// </summary>
 public sealed record RhythmStatistics
 {
+    /// <summary>Total number of notes analyzed.</summary>
     public int TotalNotes { get; init; }
+
+    /// <summary>Number of measures spanned by the notes.</summary>
     public int MeasureCount { get; init; }
+
+    /// <summary>Average number of notes per measure.</summary>
     public float NotesPerMeasure { get; init; }
+
+    /// <summary>Shortest note duration, in whole-note units.</summary>
     public Rational ShortestDuration { get; init; }
+
+    /// <summary>Longest note duration, in whole-note units.</summary>
     public Rational LongestDuration { get; init; }
+
+    /// <summary>Mean note duration, in whole-note units.</summary>
     public Rational AverageDuration { get; init; }
+
+    /// <summary>Number of syncopated notes.</summary>
     public int SyncopatedNotes { get; init; }
+
+    /// <summary>Percentage of notes that are syncopated; 0 when there are no notes.</summary>
     public float SyncopationPercent => TotalNotes > 0 ? SyncopatedNotes * 100f / TotalNotes : 0;
 
+    /// <summary>Count of notes keyed by their duration (whole-note units).</summary>
     public Dictionary<Rational, int> DurationHistogram { get; init; } = [];
+
+    /// <summary>Count of onsets keyed by their beat strength.</summary>
     public Dictionary<BeatStrength, int> StrengthHistogram { get; init; } = [];
 }
 

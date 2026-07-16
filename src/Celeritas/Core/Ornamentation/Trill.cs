@@ -32,6 +32,8 @@ public sealed class Trill : Ornament
     /// </summary>
     public bool HasTurnEnding { get; init; } = false;
 
+    /// <summary>Expands into a rapid alternation of main and upper notes, optionally closing with a turn.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="Speed"/> is not positive.</exception>
     public override NoteEvent[] Expand()
     {
         if (Speed <= 0)

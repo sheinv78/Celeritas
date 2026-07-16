@@ -3,12 +3,21 @@
 
 namespace Celeritas.Core;
 
+/// <summary>
+/// Whether a diatonic chord is built as a triad or a seventh chord.
+/// </summary>
 public enum DiatonicChordType
 {
+    /// <summary>Three-note triad.</summary>
     Triad,
+
+    /// <summary>Four-note seventh chord.</summary>
     Seventh
 }
 
+/// <summary>
+/// How the dominant (degree V) is treated in a minor key.
+/// </summary>
 public enum MinorDominantStyle
 {
     /// <summary>
@@ -26,16 +35,25 @@ public enum MinorDominantStyle
 /// <summary>
 /// A diatonic functional chord described by roman numeral + key.
 /// </summary>
+/// <param name="Key">The key the chord is analyzed in.</param>
+/// <param name="Roman">The roman-numeral chord within that key.</param>
 public readonly record struct FunctionalChord(KeySignature Key, RomanNumeralChord Roman)
 {
+    /// <summary>Root pitch class (0-11) of the chord in <see cref="Key"/>.</summary>
     public byte RootPitchClass => Roman.GetRootPitchClass(Key);
 
+    /// <summary>Root of the chord as a pitch class.</summary>
     public PitchClass Root => new(RootPitchClass);
 
+    /// <summary>Roman-numeral text for this chord (e.g. "ii7", "V").</summary>
     public string RomanNumeral => Roman.ToRomanNumeral();
 
+    /// <summary>Root note name (e.g. "C", "F#").</summary>
+    /// <param name="preferSharps">Whether to spell accidentals as sharps rather than flats.</param>
     public string RootName(bool preferSharps = true) => Root.ToName(preferSharps);
 
+    /// <summary>Chord symbol for this chord (e.g. "Dm7", "Gmaj7").</summary>
+    /// <param name="preferSharps">Whether to spell accidentals as sharps rather than flats.</param>
     public string Symbol(bool preferSharps = true)
     {
         var root = RootName(preferSharps);
@@ -56,6 +74,7 @@ public readonly record struct FunctionalChord(KeySignature Key, RomanNumeralChor
         };
     }
 
+    /// <summary>12-bit pitch-class mask of this chord in <see cref="Key"/>.</summary>
     public ushort PitchClassMask => Roman.GetPitchClassMask(Key);
 }
 
@@ -265,16 +284,24 @@ public static class FunctionalProgressions
 /// Secondary dominant chord (V or V7) targeting a diatonic degree.
 /// This is intentionally modeled as chromatic (non-diatonic) harmony.
 /// </summary>
+/// <param name="Key">The home key.</param>
+/// <param name="TargetDegree">The diatonic degree the dominant resolves to.</param>
+/// <param name="Type">Whether the dominant is a triad or a seventh chord.</param>
 public readonly record struct SecondaryDominant(KeySignature Key, ScaleDegree TargetDegree, DiatonicChordType Type)
 {
+    /// <summary>Pitch class of the target degree's root in <see cref="Key"/>.</summary>
     public PitchClass TargetRoot => new(Key.GetScaleDegreePitchClass(TargetDegree));
 
+    /// <summary>Root of the secondary dominant, a fifth above <see cref="TargetRoot"/>.</summary>
     public PitchClass Root => CircleOfFifths.NextFifth(TargetRoot); // dominant is a fifth above target
 
+    /// <summary>Roman-numeral text (e.g. "V7/ii").</summary>
     public string RomanNumeral => Type == DiatonicChordType.Seventh
         ? $"V7/{TargetDegree.ToString().ToLowerInvariant()}"
         : $"V/{TargetDegree.ToString().ToLowerInvariant()}";
 
+    /// <summary>Chord symbol for this secondary dominant (e.g. "A7").</summary>
+    /// <param name="preferSharps">Whether to spell accidentals as sharps rather than flats.</param>
     public string Symbol(bool preferSharps = true)
     {
         var root = Root.ToName(preferSharps);

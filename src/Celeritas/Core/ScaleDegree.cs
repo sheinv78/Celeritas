@@ -8,12 +8,25 @@ namespace Celeritas.Core;
 /// </summary>
 public enum ScaleDegree
 {
+    /// <summary>Tonic (first degree); value is its major-scale semitone offset.</summary>
     I = 0,      // Tonic
+
+    /// <summary>Supertonic (second degree); value is its major-scale semitone offset.</summary>
     Ii = 2,     // Supertonic
+
+    /// <summary>Mediant (third degree); value is its major-scale semitone offset.</summary>
     Iii = 4,    // Mediant
+
+    /// <summary>Subdominant (fourth degree); value is its major-scale semitone offset.</summary>
     Iv = 5,     // Subdominant
+
+    /// <summary>Dominant (fifth degree); value is its major-scale semitone offset.</summary>
     V = 7,      // Dominant
+
+    /// <summary>Submediant (sixth degree); value is its major-scale semitone offset.</summary>
     Vi = 9,     // Submediant
+
+    /// <summary>Leading tone (seventh degree); value is its major-scale semitone offset.</summary>
     Vii = 11    // Leading tone
 }
 
@@ -22,10 +35,19 @@ public enum ScaleDegree
 /// </summary>
 public enum HarmonicFunction
 {
+    /// <summary>Tonic function (rest/resolution): I, vi, iii.</summary>
     Tonic,          // I, vi, iii (rest)
+
+    /// <summary>Subdominant function (preparation): IV, ii.</summary>
     Subdominant,    // IV, ii (preparation)
+
+    /// <summary>Dominant function (tension): V, vii°.</summary>
     Dominant,       // V, vii° (tension)
+
+    /// <summary>Pre-dominant function: chords that can substitute for the subdominant (IV, ii).</summary>
     PreDominant,    // IV, ii (can substitute subdominant)
+
+    /// <summary>Chromatic function: borrowed or altered chords.</summary>
     Chromatic       // Borrowed/altered chords
 }
 
@@ -34,18 +56,32 @@ public enum HarmonicFunction
 /// </summary>
 public readonly record struct KeySignature
 {
+    /// <summary>Tonic pitch class (0=C .. 11=B).</summary>
     public readonly byte Root;      // 0-11 (C=0, C#=1, etc.)
+
+    /// <summary><see langword="true"/> for a major key, <see langword="false"/> for minor.</summary>
     public readonly bool IsMajor;   // true for major, false for minor
 
     private static readonly byte[] MajorScaleSteps = [0, 2, 4, 5, 7, 9, 11];
     private static readonly byte[] MinorScaleSteps = [0, 2, 3, 5, 7, 8, 10];
 
+    /// <summary>
+    /// Creates a key from a tonic pitch class (folded into 0-11) and mode.
+    /// </summary>
+    /// <param name="root">Tonic pitch class; reduced modulo 12.</param>
+    /// <param name="isMajor"><see langword="true"/> for major, <see langword="false"/> for minor.</param>
     public KeySignature(byte root, bool isMajor)
     {
         Root = (byte)(root % 12);
         IsMajor = isMajor;
     }
 
+    /// <summary>
+    /// Creates a key from a tonic note name (e.g. "C", "F#", "Bb") and mode.
+    /// </summary>
+    /// <param name="rootName">Tonic note name.</param>
+    /// <param name="isMajor"><see langword="true"/> for major, <see langword="false"/> for minor.</param>
+    /// <exception cref="ArgumentException"><paramref name="rootName"/> is not a recognized note name.</exception>
     public KeySignature(string rootName, bool isMajor)
     {
         Root = ParseNoteName(rootName);
@@ -151,5 +187,6 @@ public readonly record struct KeySignature
     /// </summary>
     public KeySignature GetSubdominantKey() => new((byte)((Root + 5) % 12), IsMajor);
 
+    /// <summary>Returns the tonic name followed by the mode (e.g. "C Major").</summary>
     public override string ToString() => $"{ChordLibrary.NoteNames[Root]} {(IsMajor ? "Major" : "Minor")}";
 }

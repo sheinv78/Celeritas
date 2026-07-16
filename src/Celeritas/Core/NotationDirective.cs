@@ -38,6 +38,7 @@ public sealed record TempoBpmDirective : NotationDirective
     /// </summary>
     public Rational? RampDuration { get; init; }
 
+    /// <summary>Returns a readable form such as "@bpm 120 at 0" or "@bpm 120 -&gt; 140 /2 at 0".</summary>
     public override string ToString()
     {
         if (TargetBpm.HasValue && RampDuration.HasValue)
@@ -58,6 +59,7 @@ public sealed record TempoCharacterDirective : NotationDirective
     /// </summary>
     public required string Character { get; init; }
 
+    /// <summary>Returns a readable form such as "@tempo Presto at 0".</summary>
     public override string ToString() => $"@tempo {Character} at {Time}";
 }
 
@@ -72,6 +74,7 @@ public sealed record SectionDirective : NotationDirective
     /// </summary>
     public required string Label { get; init; }
 
+    /// <summary>Returns a readable form such as "@section Chorus at 4".</summary>
     public override string ToString() => $"@section {Label} at {Time}";
 }
 
@@ -86,6 +89,7 @@ public sealed record PartDirective : NotationDirective
     /// </summary>
     public required string Name { get; init; }
 
+    /// <summary>Returns a readable form such as "@part Soprano at 0".</summary>
     public override string ToString() => $"@part {Name} at {Time}";
 }
 
@@ -113,6 +117,7 @@ public sealed record DynamicsDirective : NotationDirective
     /// </summary>
     public string? TargetLevel { get; init; }
 
+    /// <summary>Returns a readable form such as "@dynamics pp at 0" or "@cresc to ff at 2".</summary>
     public override string ToString()
     {
         return Type switch

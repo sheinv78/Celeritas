@@ -16,6 +16,7 @@ namespace Celeritas.Core.VoiceLeading;
 /// 2. Build a graph where edges connect compatible voicings of consecutive chords
 /// 3. Use parallel A* search to find the path with minimum voice leading cost
 /// </summary>
+/// <param name="options">Solver options; defaults to <c>VoiceLeadingSolverOptions.Default</c> when <see langword="null"/>.</param>
 public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null)
 {
     private readonly VoiceLeadingSolverOptions _options = options ?? VoiceLeadingSolverOptions.Default;
@@ -357,14 +358,17 @@ public sealed class VoiceLeadingSolverOptions
         MaxDegreeOfParallelism = Environment.ProcessorCount
     };
 
+    /// <summary>Default options.</summary>
     public static VoiceLeadingSolverOptions Default { get; } = new();
 
+    /// <summary>Strict preset: any violation invalidates the transition, with heavier smoothness weighting.</summary>
     public static VoiceLeadingSolverOptions Strict { get; } = new()
     {
         StrictMode = true,
         SmoothnessWeight = 5f
     };
 
+    /// <summary>Relaxed preset: violations are tolerated, with a higher cost cap and lighter smoothness weighting.</summary>
     public static VoiceLeadingSolverOptions Relaxed { get; } = new()
     {
         StrictMode = false,
@@ -386,9 +390,16 @@ public sealed class VoiceLeadingSolution
         Warnings = warnings;
     }
 
+    /// <summary>The chosen voicing for each chord, in progression order.</summary>
     public IReadOnlyList<Voicing> Voicings { get; }
+
+    /// <summary>Total voice leading cost of the solution path.</summary>
     public float TotalCost { get; }
+
+    /// <summary>Voice leading warnings for transitions that still violate rules.</summary>
     public IReadOnlyList<string> Warnings { get; }
+
+    /// <summary>True when a finite-cost solution with at least one voicing was found.</summary>
     public bool IsValid => TotalCost < float.MaxValue && Voicings.Count > 0;
 
     /// <summary>

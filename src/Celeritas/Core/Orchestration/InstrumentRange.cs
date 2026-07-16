@@ -30,6 +30,7 @@ public readonly record struct InstrumentRange(int MinPitch, int MaxPitch)
     /// <summary>Highest playable MIDI pitch.</summary>
     public int MaxPitch { get; init; } = ThrowIfNotBelowMin(ThrowIfNotMidiPitch(MaxPitch), MinPitch);
 
+    /// <summary>Returns whether <paramref name="pitch"/> lies within the inclusive range.</summary>
     public bool Contains(int pitch) => pitch >= MinPitch && pitch <= MaxPitch;
 
     private static int ThrowIfNotMidiPitch(int pitch,

@@ -6,11 +6,21 @@ namespace Celeritas.Core;
 /// <summary>
 /// Result of roman numeral analysis
 /// </summary>
+/// <param name="degree">The chord's diatonic scale degree.</param>
+/// <param name="quality">The chord's quality.</param>
+/// <param name="function">The chord's harmonic function.</param>
 public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality quality, HarmonicFunction function)
 {
+    /// <summary>The chord's diatonic scale degree.</summary>
     public readonly ScaleDegree Degree = degree;
+
+    /// <summary>The chord's quality.</summary>
     public readonly ChordQuality Quality = quality;
+
+    /// <summary>The chord's harmonic function.</summary>
     public readonly HarmonicFunction Function = function;
+
+    /// <summary><see langword="true"/> for a real analysis result; <see langword="false"/> for <see cref="Invalid"/>.</summary>
     public readonly bool IsValid = true;
 
     private static readonly byte[] MajorTriadIntervals = [0, 4, 7];
@@ -34,6 +44,7 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
     private static readonly byte[] Add9Intervals = [0, 4, 7, 2];
     private static readonly byte[] Add11Intervals = [0, 4, 7, 5];
 
+    /// <summary>A sentinel chord representing a failed or absent analysis (<see cref="IsValid"/> is <see langword="false"/>).</summary>
     public static RomanNumeralChord Invalid => new();
 
     /// <summary>
@@ -137,6 +148,10 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
         };
     }
 
+    /// <summary>
+    /// Formats this chord as a roman numeral with case and quality suffix
+    /// (e.g. "V7", "iiø7", "IVmaj7"); returns "?" when invalid.
+    /// </summary>
     public string ToRomanNumeral()
     {
         if (!IsValid) return "?";
@@ -178,5 +193,6 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
         return numeral + suffix;
     }
 
+    /// <summary>Returns the roman numeral followed by the harmonic function (e.g. "V7 (Dominant)").</summary>
     public override string ToString() => $"{ToRomanNumeral()} ({Function})";
 }

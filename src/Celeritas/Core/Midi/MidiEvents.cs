@@ -17,9 +17,13 @@ public sealed record TempoChange
         BeatsPerMinute = beatsPerMinute;
     }
 
+    /// <summary>Offset of the change in whole-note units.</summary>
     public Rational Offset { get; init; }
+
+    /// <summary>Tempo in beats per minute.</summary>
     public int BeatsPerMinute { get; init; }
 
+    /// <inheritdoc/>
     public override string ToString() => $"Tempo {BeatsPerMinute} BPM at {Offset}";
 }
 
@@ -36,10 +40,16 @@ public sealed record TimeSignatureChange
         Denominator = denominator;
     }
 
+    /// <summary>Offset of the change in whole-note units.</summary>
     public Rational Offset { get; init; }
+
+    /// <summary>Beats per measure (the time signature's top number).</summary>
     public int Numerator { get; init; }
+
+    /// <summary>Beat unit (the time signature's bottom number: 4, 8, 16, ...).</summary>
     public int Denominator { get; init; }
 
+    /// <inheritdoc/>
     public override string ToString() => $"Time Signature {Numerator}/{Denominator} at {Offset}";
 }
 

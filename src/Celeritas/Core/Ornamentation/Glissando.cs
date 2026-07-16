@@ -29,6 +29,7 @@ public sealed class Glissando : Ornament
     /// </summary>
     public bool Chromatic { get; init; } = true;
 
+    /// <summary>Expands into a series of stepped notes sliding from the base pitch to the target.</summary>
     public override NoteEvent[] Expand()
     {
         var targetPitch = IsAbsolute ? TargetPitch : BaseNote.Pitch + TargetPitch;

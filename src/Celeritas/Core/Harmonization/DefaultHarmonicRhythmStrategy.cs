@@ -6,10 +6,12 @@ namespace Celeritas.Core.Harmonization;
 /// <summary>
 /// Default strategy: one chord per beat (or per note if longer than a beat).
 /// </summary>
+/// <param name="beatDuration">Beat length in whole-note units; defaults to a quarter note when <see langword="null"/>.</param>
 public sealed class DefaultHarmonicRhythmStrategy(Rational? beatDuration = null) : IHarmonicRhythmStrategy
 {
     private readonly Rational _beatDuration = beatDuration ?? Rational.Quarter;
 
+    /// <summary>Segments the melody into beat-aligned slices, skipping beats with no sounding notes.</summary>
     public IReadOnlyList<MelodySlice> Segment(ReadOnlySpan<NoteEvent> melody)
     {
         if (melody.IsEmpty)
