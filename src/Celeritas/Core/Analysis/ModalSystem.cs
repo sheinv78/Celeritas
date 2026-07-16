@@ -319,12 +319,7 @@ public static class ModeLibrary
         float bestScore = float.MinValue;
 
         // Test all roots and common modes
-        Mode[] modesToTest =
-        [
-            Mode.Ionian, Mode.Dorian, Mode.Phrygian, Mode.Lydian,
-            Mode.Mixolydian, Mode.Aeolian, Mode.Locrian,
-            Mode.HarmonicMinor, Mode.MelodicMinor
-        ];
+        var modesToTest = DetectableModes;
 
         // Find the most prominent note (likely the root)
         int likelyRoot = 0;
@@ -371,8 +366,9 @@ public static class ModeLibrary
             }
         }
 
-        // Normalize confidence (0-1)
-        var confidence = Math.Clamp((bestScore + 1f) / 2f, 0f, 1f);
+        // Confidence is the margin among modes on the winning root, not "how well it fits":
+        // a single note fits many modes, so a fit-based score reported false certainty (#30).
+        var confidence = ModeMargin(distribution, bestKey.Root);
 
         return (bestKey, confidence);
     }
@@ -399,12 +395,7 @@ public static class ModeLibrary
         ModalKey bestKey = new((byte)rootHint, Mode.Ionian);
         float bestScore = float.MinValue;
 
-        Mode[] modesToTest =
-        [
-            Mode.Ionian, Mode.Dorian, Mode.Phrygian, Mode.Lydian,
-            Mode.Mixolydian, Mode.Aeolian, Mode.Locrian,
-            Mode.HarmonicMinor, Mode.MelodicMinor
-        ];
+        var modesToTest = DetectableModes;
 
         // Only test with the hinted root
         foreach (var mode in modesToTest)
@@ -419,7 +410,7 @@ public static class ModeLibrary
             }
         }
 
-        var confidence = Math.Clamp((bestScore + 1f) / 2f, 0f, 1f);
+        var confidence = ModeMargin(distribution, rootHint);
         return (bestKey, confidence);
     }
 
@@ -491,6 +482,52 @@ public static class ModeLibrary
         }
 
         return total > 0f;
+    }
+
+    private static readonly Mode[] DetectableModes =
+    [
+        Mode.Ionian, Mode.Dorian, Mode.Phrygian, Mode.Lydian,
+        Mode.Mixolydian, Mode.Aeolian, Mode.Locrian,
+        Mode.HarmonicMinor, Mode.MelodicMinor
+    ];
+
+    /// <summary>
+    /// Confidence that mode detection on a fixed <paramref name="root"/> is decisive: the margin
+    /// between the best-fitting mode and the next-best <em>different</em> mode on that root, using
+    /// the same <c>(best - second) / (best + eps)</c> ratio as <see cref="KeyProfiler"/>.
+    /// </summary>
+    /// <remarks>
+    /// The old <c>(bestScore + 1) / 2</c> reported near-total confidence whenever the notes simply
+    /// <em>fit</em> the winning mode — but a single pitch class fits every mode that contains it, so
+    /// one note detected an exotic mode at 100%. A margin answers the real question: not "do these
+    /// notes fit?" but "do they fit this mode better than the alternatives on the same root?". A
+    /// single note, a bare triad, or a pentatonic that omits the distinguishing degrees leaves the
+    /// top modes tied, so the margin — and the confidence — is ~0; a full scale separates its mode
+    /// and the margin is positive. Candidates are scored <em>raw</em> here, without the prominent-root
+    /// and common-mode tie-breakers that pick <em>which</em> answer to return, so the number reflects
+    /// the data's fit rather than the heuristics. Restricting the comparison to a single root is
+    /// deliberate: relative modes (C Ionian and A Aeolian) share every pitch class, so a margin taken
+    /// across all roots would collapse to ~0 even for an unambiguous scale — root disambiguation is a
+    /// separate axis, handled by the prominent-note heuristic, not by this score.
+    /// </remarks>
+    private static float ModeMargin(float[] distribution, int root)
+    {
+        float best = float.MinValue, second = float.MinValue;
+        foreach (var mode in DetectableModes)
+        {
+            var score = ScoreAgainstMode(distribution, new ModalKey((byte)root, mode));
+            if (score > best)
+            {
+                second = best;
+                best = score;
+            }
+            else if (score > second)
+            {
+                second = score;
+            }
+        }
+
+        return best > 0f ? Math.Clamp((best - second) / (best + 0.001f), 0f, 1f) : 0f;
     }
 
     private static float ScoreAgainstMode(float[] distribution, ModalKey key)

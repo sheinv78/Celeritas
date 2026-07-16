@@ -6,6 +6,11 @@ using Celeritas.Core.Analysis;
 
 namespace Celeritas.Tests;
 
+// Confidence here is a same-root mode margin (see ModeLibrary.ModeMargin / issue #30), not the old
+// "how well does it fit" score that reported ~1.0 for anything — a single note included. Modes are
+// close neighbours, so an honest margin for a clean full scale is modest (~0.2, in the same band as
+// KeyProfiler's own key confidences). These tests assert a positive floor that a full scale clears
+// but a single note or bare triad (which sit at 0.0) does not.
 public class ModalSystemTests
 {
     [Fact]
@@ -20,7 +25,7 @@ public class ModalSystemTests
         // Assert
         Assert.Equal(0, key.Root);  // C
         Assert.Equal(Mode.Dorian, key.Mode);
-        Assert.True(confidence > 0.8f);
+        Assert.True(confidence > 0.1f, $"a full scale should clear the modest margin floor, got {confidence}");
     }
 
     [Fact]
@@ -35,7 +40,7 @@ public class ModalSystemTests
         // Assert
         Assert.Equal(2, key.Root);  // D
         Assert.Equal(Mode.Dorian, key.Mode);
-        Assert.True(confidence > 0.8f);
+        Assert.True(confidence > 0.1f, $"a full scale should clear the modest margin floor, got {confidence}");
     }
 
     [Fact]
@@ -50,7 +55,7 @@ public class ModalSystemTests
         // Assert
         Assert.Equal(7, key.Root);  // G
         Assert.Equal(Mode.Mixolydian, key.Mode);
-        Assert.True(confidence > 0.8f);
+        Assert.True(confidence > 0.1f, $"a full scale should clear the modest margin floor, got {confidence}");
     }
 
     [Fact]
@@ -65,7 +70,7 @@ public class ModalSystemTests
         // Assert
         Assert.Equal(0, key.Root);  // C
         Assert.Equal(Mode.Phrygian, key.Mode);
-        Assert.True(confidence > 0.8f);
+        Assert.True(confidence > 0.1f, $"a full scale should clear the modest margin floor, got {confidence}");
     }
 
     [Fact]
@@ -80,7 +85,7 @@ public class ModalSystemTests
         // Assert
         Assert.Equal(9, key.Root);  // A
         Assert.Equal(Mode.HarmonicMinor, key.Mode);
-        Assert.True(confidence > 0.8f);
+        Assert.True(confidence > 0.1f, $"a full scale should clear the modest margin floor, got {confidence}");
     }
 
     [Fact]
@@ -106,6 +111,6 @@ public class ModalSystemTests
         // Assert: Should ignore octaves and identify mode correctly
         Assert.Equal(0, key.Root);  // C
         Assert.Equal(Mode.Dorian, key.Mode);
-        Assert.True(confidence > 0.8f);
+        Assert.True(confidence > 0.1f, $"a full scale should clear the modest margin floor, got {confidence}");
     }
 }
