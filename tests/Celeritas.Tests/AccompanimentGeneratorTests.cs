@@ -45,6 +45,33 @@ public sealed class AccompanimentGeneratorTests
     }
 
     [Fact]
+    public void Generate_FromChordAssignments_FoldsNegativePitchesInsteadOfCrashing()
+    {
+        // ChordAssignment is a public record struct with a raw int[] of pitches, so a
+        // caller can hand in a pitch below 0. GetUniquePitchClasses used a bare `% 12`,
+        // whose sign survives in C#: -1 % 12 == -1, and the (byte) cast then wrapped it
+        // to 255, indexing a stackalloc bool[12] out of bounds (IndexOutOfRangeException).
+        // Pitch classes are cyclic, so -1 must fold to B (11), not throw.
+        var chords = new[]
+        {
+            new ChordAssignment(
+                Start: Rational.Zero,
+                End: new Rational(1, 1),
+                Chord: new ChordInfo(0, ChordQuality.Major),
+                Pitches: [-1, -8, -5]) // B, E, G one octave below MIDI 0 -> pcs 11, 4, 7
+        };
+
+        var events = AccompanimentGenerator.Generate(chords, AccompanimentOptions.Default);
+
+        Assert.NotEmpty(events);
+        // Every emitted pitch must be a real, non-negative MIDI note.
+        Assert.All(events, e => Assert.True(e.Pitch >= 0, $"pitch {e.Pitch} is negative"));
+        // The folded pitch classes {11, 4, 7} must appear among the chord tones.
+        var producedPcs = events.Select(e => e.Pitch % 12).ToHashSet();
+        Assert.Contains(11, producedPcs);
+    }
+
+    [Fact]
     public void Generate_FromChordAssignments_Arpeggio_UsesSubdivisionUntilEnd()
     {
         var chords = new[]

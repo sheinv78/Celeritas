@@ -210,7 +210,9 @@ public static class AccompanimentGenerator
 
         for (var i = 0; i < pitches.Length && count < tmp.Length; i++)
         {
-            var pc = (byte)(pitches[i] % 12);
+            // Pitch classes are cyclic: fold so a negative pitch maps into 0..11 rather
+            // than wrapping past the (byte) cast into an out-of-bounds seen[] index.
+            var pc = (byte)PitchMath.Fold(pitches[i]);
             if (seen[pc])
                 continue;
             seen[pc] = true;
