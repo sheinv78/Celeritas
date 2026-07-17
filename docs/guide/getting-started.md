@@ -22,26 +22,23 @@ Most analysis types live under `Celeritas.Core.Analysis`, MIDI under
 
 ## Hello, chord
 
-Identify a chord from a handful of notes. Pitches are MIDI numbers (middle C = 60),
-and `ChordAnalyzer` reduces them to a pitch-class set and names the chord:
+Identify a chord straight from note names in scientific pitch notation.
+`ChordAnalyzer` reduces the notes to a pitch-class set and names the chord:
 
 ```csharp
 using Celeritas.Core;
 
-int[] pitches = [60, 64, 67];        // C4, E4, G4
-ChordInfo chord = ChordAnalyzer.Identify(pitches);
+ChordInfo chord = ChordAnalyzer.Identify("C4 E4 G4");
 
 Console.WriteLine(chord);            // C Major
 Console.WriteLine(chord.Quality);    // Major
 ```
 
-Prefer to write notes as text? Parse them first — `MusicNotation.Parse` accepts
-scientific pitch notation with durations:
+Under the hood, pitches are MIDI numbers (middle C = 60), so if you already have
+numbers — say, from a MIDI file — pass those instead:
 
 ```csharp
-NoteEvent[] notes = MusicNotation.Parse("C4/4 E4/4 G4/4");
-int[] p = notes.Select(n => n.Pitch).ToArray();
-Console.WriteLine(ChordAnalyzer.Identify(p));   // C Major
+ChordInfo same = ChordAnalyzer.Identify([60, 64, 67]);   // C Major
 ```
 
 ## Hello, key
@@ -53,8 +50,7 @@ profiler:
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
 
-int[] cMajorScale = [60, 62, 64, 65, 67, 69, 71];
-KeyDetectionResult result = KeyProfiler.DetectFromPitches(cMajorScale);
+KeyDetectionResult result = KeyProfiler.DetectFromPitches("C4 D4 E4 F4 G4 A4 B4");
 
 Console.WriteLine(result.Key);          // C Major
 Console.WriteLine(result.Confidence);   // a margin, not a probability — read on

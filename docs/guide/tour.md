@@ -17,7 +17,7 @@ notation supports durations (`/4`, `/8`, dotted `.`), chords (`[...]`), rests
 ```csharp
 NoteEvent[] notes = MusicNotation.Parse("4/4: C4/4 E4/4 G4/4 C5/4");
 foreach (var n in notes)
-    Console.WriteLine($"{n.Pitch} @ {n.Offset} for {n.Duration}");
+    Console.WriteLine($"{MusicMath.MidiToNoteName(n.Pitch)} @ {n.Offset} for {n.Duration}");
 ```
 
 For bulk work, load events into a [`NoteBuffer`](xref:Celeritas.Core.NoteBuffer) —
@@ -38,7 +38,7 @@ Console.WriteLine(buffer.Count);
 Name a chord from notes, or from a notation string:
 
 ```csharp
-ChordInfo chord = ChordAnalyzer.Identify([62, 65, 69, 60]);   // D F A C
+ChordInfo chord = ChordAnalyzer.Identify("D4 F4 A4 C5");
 Console.WriteLine(chord);            // D Minor7
 ```
 
@@ -48,8 +48,7 @@ Console.WriteLine(chord);            // D Minor7
 the best match plus ranked candidates:
 
 ```csharp
-int[] pitches = [60, 62, 64, 65, 67, 69, 71];   // C major scale
-KeyDetectionResult key = KeyProfiler.DetectFromPitches(pitches);
+KeyDetectionResult key = KeyProfiler.DetectFromPitches("C4 D4 E4 F4 G4 A4 B4");
 
 Console.WriteLine(key.Key);                       // C Major
 foreach (var candidate in key.TopKeys(5))
@@ -60,16 +59,15 @@ Have a `NoteBuffer` already? Use `KeyProfiler.DetectFromBuffer(buffer)`.
 
 ## 4. Mode detection
 
-Mode detection needs a pitch-class distribution and, ideally, a root hint (the
-tonic). Confidence is the margin among modes on that root:
+Detect the mode from the notes; the tonic defaults to the first note (pass an
+explicit root hint to override). Confidence is the margin among modes on that root:
 
 ```csharp
-var distribution = new float[12];
-foreach (var pc in new[] { 2, 4, 5, 7, 9, 11, 0 })   // D Dorian degrees
-    distribution[pc] += 1f;
+// D Dorian: D E F G A B C
+NoteEvent[] scale = MusicNotation.Parse("D4 E4 F4 G4 A4 B4 C5");
+var (mode, confidence) = ModeLibrary.DetectModeWithRoot(scale);   // root = first note (D)
 
-var (mode, confidence) = ModeLibrary.DetectModeWithRoot(distribution, rootHint: 2);
-Console.WriteLine($"{mode} (margin {confidence:F2})");   // D Dorian
+Console.WriteLine($"{mode} (margin {confidence:F2})");            // D Dorian
 ```
 
 ## 5. Progression analysis
