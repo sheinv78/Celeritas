@@ -1,5 +1,7 @@
 - name: Home
   href: index.md
+- name: Guide
+  href: guide/
 - name: API Reference
   href: api/
 - name: Cookbook

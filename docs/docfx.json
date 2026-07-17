@@ -20,7 +20,7 @@
         "files": [ "api/**.yml", "api/index.md" ]
       },
       {
-        "files": [ "index.md", "toc.yml", "COOKBOOK.md", "adr/**.md" ]
+        "files": [ "index.md", "toc.yml", "COOKBOOK.md", "guide/**.md", "guide/toc.yml", "adr/**.md" ]
       }
     ],
     "resource": [

@@ -1,0 +1,4 @@
+- name: Getting started
+  href: getting-started.md
+- name: 10-minute tour
+  href: tour.md
