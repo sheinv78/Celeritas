@@ -81,10 +81,15 @@ var report = ProgressionAdvisor.Analyze(["Dm7", "G7", "Cmaj7"]);
 Console.WriteLine($"Key: {report.Key} ({report.KeyConfidence:P0})");
 Console.WriteLine($"Pattern: {report.Pattern}");
 foreach (var c in report.Chords)
-    Console.WriteLine($"  {c.Symbol} = {c.RomanNumeral} ({c.Function})");
+    Console.WriteLine($"  {c.Symbol} = {c.RomanNumeral} / {c.Nashville}");   // e.g. Dm7 = ii7 / 2m7
 
 Console.WriteLine(report.Narrative);
 ```
+
+Each chord carries both its roman numeral and its **Nashville Number System**
+label (`c.Nashville`) — the scale degree as a number with a quality suffix
+(`2m7`, `5`, `1maj7`). Any [`RomanNumeralChord`](xref:Celeritas.Core.RomanNumeralChord)
+can produce one directly with `ToNashville()`.
 
 ## 6. Voice leading
 
