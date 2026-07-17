@@ -73,6 +73,8 @@ Celeritas.Core.Analysis.ChordAnalysisDetail.Function.get -> string!
 Celeritas.Core.Analysis.ChordAnalysisDetail.Function.init -> void
 Celeritas.Core.Analysis.ChordAnalysisDetail.IsBorrowed.get -> bool
 Celeritas.Core.Analysis.ChordAnalysisDetail.IsBorrowed.init -> void
+Celeritas.Core.Analysis.ChordAnalysisDetail.Nashville.get -> string!
+Celeritas.Core.Analysis.ChordAnalysisDetail.Nashville.init -> void
 Celeritas.Core.Analysis.ChordAnalysisDetail.Notes.get -> string![]!
 Celeritas.Core.Analysis.ChordAnalysisDetail.Notes.init -> void
 Celeritas.Core.Analysis.ChordAnalysisDetail.RomanNumeral.get -> string!
@@ -1374,6 +1376,7 @@ Celeritas.Core.RomanNumeralChord.GetRootPitchClass(Celeritas.Core.KeySignature k
 Celeritas.Core.RomanNumeralChord.RomanNumeralChord() -> void
 Celeritas.Core.RomanNumeralChord.RomanNumeralChord(Celeritas.Core.ScaleDegree degree, Celeritas.Core.ChordQuality quality, Celeritas.Core.HarmonicFunction function) -> void
 Celeritas.Core.RomanNumeralChord.ToRomanNumeral() -> string!
+Celeritas.Core.RomanNumeralChord.ToNashville() -> string!
 Celeritas.Core.RomanNumeralChord.WritePitchClasses(Celeritas.Core.KeySignature key, System.Span<byte> destination) -> int
 Celeritas.Core.ScaleDegree
 Celeritas.Core.ScaleDegree.I = 0 -> Celeritas.Core.ScaleDegree

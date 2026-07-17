@@ -193,6 +193,50 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
         return numeral + suffix;
     }
 
+    /// <summary>
+    /// Formats this chord in the Nashville Number System: the scale degree as a number
+    /// (1-7) with a quality suffix (e.g. <c>"2m"</c>, <c>"5"</c>, <c>"1maj7"</c>,
+    /// <c>"7°"</c>); returns <c>"?"</c> when invalid. Unlike a roman numeral, the number
+    /// never changes case — quality is carried entirely by the suffix.
+    /// </summary>
+    public string ToNashville()
+    {
+        if (!IsValid) return "?";
+
+        var number = Degree switch
+        {
+            ScaleDegree.I => "1",
+            ScaleDegree.Ii => "2",
+            ScaleDegree.Iii => "3",
+            ScaleDegree.Iv => "4",
+            ScaleDegree.V => "5",
+            ScaleDegree.Vi => "6",
+            ScaleDegree.Vii => "7",
+            _ => "?"
+        };
+
+        var suffix = Quality switch
+        {
+            ChordQuality.Major => "",
+            ChordQuality.Minor => "m",
+            ChordQuality.Augmented => "+",
+            ChordQuality.Diminished => "°",
+            ChordQuality.Dominant7 => "7",
+            ChordQuality.Major7 => "maj7",
+            ChordQuality.Minor7 => "m7",
+            ChordQuality.MinorMajor7 => "m(maj7)",
+            ChordQuality.HalfDim7 => "m7b5",
+            ChordQuality.Diminished7 => "°7",
+            ChordQuality.Dominant7Flat5 => "7b5",
+            ChordQuality.Augmented7 => "+7",
+            ChordQuality.Sus2 => "sus2",
+            ChordQuality.Sus4 => "sus4",
+            _ => ""
+        };
+
+        return number + suffix;
+    }
+
     /// <summary>Returns the roman numeral followed by the harmonic function (e.g. "V7 (Dominant)").</summary>
     public override string ToString() => $"{ToRomanNumeral()} ({Function})";
 }

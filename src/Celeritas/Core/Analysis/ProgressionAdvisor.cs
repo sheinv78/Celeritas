@@ -710,6 +710,8 @@ public static class ProgressionAdvisor
     {
         var roman = KeyAnalyzer.Analyze(pitches, key);
         var romanStr = FormatRomanNumeral(roman, info.Quality);
+        // Nashville uses the actual chord quality (info.Quality), matching the roman numeral above.
+        var nashvilleStr = new RomanNumeralChord(roman.Degree, info.Quality, roman.Function).ToNashville();
         var function = ProgressionNarrator.GetFunctionName(roman.Function);
         var character = DetermineCharacter(info.Quality, roman.Function, key);
         var description = ProgressionNarrator.GetCharacterDescription(character, position, totalChords);
@@ -745,6 +747,7 @@ public static class ProgressionAdvisor
             Symbol = symbol,
             Notes = noteNames,
             RomanNumeral = romanStr,
+            Nashville = nashvilleStr,
             Function = function,
             Character = character,
             Description = description,

@@ -258,7 +258,7 @@ progressionCommand.SetAction(parseResult => RunGuarded(() =>
     for (var i = 0; i < report.Chords.Count; i++)
     {
         var c = report.Chords[i];
-        Console.WriteLine($"  {i + 1}. {c.Symbol} ({c.RomanNumeral})");
+        Console.WriteLine($"  {i + 1}. {c.Symbol} ({c.RomanNumeral} · Nashville {c.Nashville})");
         Console.WriteLine($"     Notes: {string.Join(", ", c.Notes)}");
         Console.WriteLine($"     Function: {c.Function}");
         Console.WriteLine($"     Character: {c.Character} - {c.Description}");

@@ -62,6 +62,9 @@ public sealed class ChordAnalysisDetail
     /// <summary>Roman numeral in key (e.g., "i", "VI", "V")</summary>
     public required string RomanNumeral { get; init; }
 
+    /// <summary>Nashville Number System label in key (e.g., "6m", "1", "5"), or "?" if non-diatonic.</summary>
+    public required string Nashville { get; init; }
+
     /// <summary>Functional role</summary>
     public required string Function { get; init; }
 
