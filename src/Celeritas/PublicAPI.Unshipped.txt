@@ -1172,6 +1172,9 @@ Celeritas.Core.Notation.MusicXmlIo
 static Celeritas.Core.Notation.MusicXmlIo.Import(string! path) -> Celeritas.Core.NoteBuffer!
 static Celeritas.Core.Notation.MusicXmlIo.Import(System.IO.Stream! stream) -> Celeritas.Core.NoteBuffer!
 static Celeritas.Core.Notation.MusicXmlIo.Parse(string! xml) -> Celeritas.Core.NoteBuffer!
+static Celeritas.Core.Notation.MusicXmlIo.ToXml(Celeritas.Core.NoteBuffer! buffer) -> string!
+static Celeritas.Core.Notation.MusicXmlIo.Export(Celeritas.Core.NoteBuffer! buffer, string! path) -> void
+static Celeritas.Core.Notation.MusicXmlIo.Export(Celeritas.Core.NoteBuffer! buffer, System.IO.Stream! stream) -> void
 Celeritas.Core.NotationDirective
 Celeritas.Core.NotationDirective.Time.get -> Celeritas.Core.Rational
 Celeritas.Core.NotationDirective.Time.init -> void

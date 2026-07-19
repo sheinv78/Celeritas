@@ -54,6 +54,58 @@ public static class MusicXmlIo
         return BuildFromDocument(LoadSafely(reader => XDocument.Load(reader), textReader));
     }
 
+    /// <summary>
+    /// Serializes a <see cref="NoteBuffer"/> to a <c>score-partwise</c> MusicXML string.
+    /// </summary>
+    /// <remarks>
+    /// This first pass targets monophonic and block-chordal music: notes at the same onset are
+    /// written as a chord (they must share a duration), gaps become rests, and everything goes into
+    /// a single measure. Pitches are spelled with sharps. Overlapping notes of different lengths —
+    /// true polyphony needing voices — throw <see cref="NotSupportedException"/> rather than being
+    /// silently mis-timed.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="NotSupportedException">The notes overlap in a way that needs voice export.</exception>
+    public static string ToXml(NoteBuffer buffer)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        var doc = BuildDocument(buffer);
+        // A plain StringWriter is UTF-16, which would stamp encoding="utf-16" on the declaration and
+        // mislead anyone who then saves the text as UTF-8. Report UTF-8 so the declaration matches.
+        using var writer = new Utf8StringWriter();
+        doc.Save(writer);
+        return writer.ToString();
+    }
+
+    private sealed class Utf8StringWriter : StringWriter
+    {
+        public override System.Text.Encoding Encoding => System.Text.Encoding.UTF8;
+    }
+
+    /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML to <paramref name="path"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="NotSupportedException">The notes overlap in a way that needs voice export.</exception>
+    public static void Export(NoteBuffer buffer, string path)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        ArgumentNullException.ThrowIfNull(path);
+        using var stream = File.Create(path);
+        Export(buffer, stream);
+    }
+
+    /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML to a stream.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="stream"/> is <see langword="null"/>.</exception>
+    /// <exception cref="NotSupportedException">The notes overlap in a way that needs voice export.</exception>
+    public static void Export(NoteBuffer buffer, Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        ArgumentNullException.ThrowIfNull(stream);
+        var doc = BuildDocument(buffer);
+        var settings = new XmlWriterSettings { Indent = true, Encoding = new System.Text.UTF8Encoding(false) };
+        using var writer = XmlWriter.Create(stream, settings);
+        doc.Save(writer);
+    }
+
     // Loads with DTD processing off and no external resolver: MusicXML files carry a DOCTYPE,
     // and resolving it would fetch an external DTD (an XXE vector and a needless network hit).
     private static XDocument LoadSafely<T>(Func<XmlReader, XDocument> load, T input)
@@ -295,4 +347,141 @@ public static class MusicXmlIo
         double.TryParse(value?.Trim(), System.Globalization.CultureInfo.InvariantCulture, out var n)
             ? n
             : throw new InvalidDataException($"'{value}' is not a valid number for <{field}>.");
+
+    // ---- Export ----
+
+    private static XDocument BuildDocument(NoteBuffer buffer)
+    {
+        var events = new List<NoteEvent>(buffer.Count);
+        for (var i = 0; i < buffer.Count; i++)
+            events.Add(buffer.Get(i));
+        events.Sort((a, b) =>
+        {
+            var c = a.Offset.CompareTo(b.Offset);
+            return c != 0 ? c : a.Pitch.CompareTo(b.Pitch);
+        });
+
+        // Pick divisions (per quarter note) so every offset and duration lands on an integer:
+        // a value in whole notes * 4 gives quarters, whose reduced denominator must divide divisions.
+        long divisions = 1;
+        foreach (var e in events)
+        {
+            divisions = Lcm(divisions, (e.Offset * 4).Denominator);
+            divisions = Lcm(divisions, (e.Duration * 4).Denominator);
+        }
+
+        var measure = new XElement("measure",
+            new XAttribute("number", 1),
+            new XElement("attributes", new XElement("divisions", divisions)));
+
+        var cursor = Rational.Zero;
+        var i2 = 0;
+        while (i2 < events.Count)
+        {
+            var onset = events[i2].Offset;
+            if (onset < cursor)
+                throw new NotSupportedException(
+                    "Notes overlap (a note starts before the previous one ends); voice export is not supported yet.");
+
+            if (onset > cursor)
+            {
+                measure.Add(RestElement(onset - cursor, divisions));
+                cursor = onset;
+            }
+
+            // Gather the chord: every note sharing this onset. They must share a duration.
+            var groupDuration = events[i2].Duration;
+            var member = 0;
+            while (i2 < events.Count && events[i2].Offset == onset)
+            {
+                if (events[i2].Duration != groupDuration)
+                    throw new NotSupportedException(
+                        "Notes at the same onset have different durations; voice export is not supported yet.");
+                measure.Add(PitchedNoteElement(events[i2].Pitch, groupDuration, divisions, isChord: member > 0));
+                member++;
+                i2++;
+            }
+
+            cursor += groupDuration;
+        }
+
+        return new XDocument(
+            new XDeclaration("1.0", "UTF-8", null),
+            new XElement("score-partwise",
+                new XAttribute("version", "4.0"),
+                new XElement("part-list",
+                    new XElement("score-part",
+                        new XAttribute("id", "P1"),
+                        new XElement("part-name", "Music"))),
+                new XElement("part",
+                    new XAttribute("id", "P1"),
+                    measure)));
+    }
+
+    private static XElement RestElement(Rational duration, long divisions) =>
+        new("note",
+            new XElement("rest"),
+            new XElement("duration", DivisionsOf(duration, divisions)));
+
+    private static XElement PitchedNoteElement(int midi, Rational duration, long divisions, bool isChord)
+    {
+        var (step, alter, octave) = SpellSharp(midi);
+        var pitch = new XElement("pitch", new XElement("step", step));
+        if (alter != 0)
+            pitch.Add(new XElement("alter", alter));
+        pitch.Add(new XElement("octave", octave));
+
+        var note = new XElement("note");
+        if (isChord)
+            note.Add(new XElement("chord"));
+        note.Add(pitch);
+        note.Add(new XElement("duration", DivisionsOf(duration, divisions)));
+        return note;
+    }
+
+    // Whole-note duration -> integer division count: (duration * 4 quarters) * divisions.
+    private static long DivisionsOf(Rational duration, long divisions)
+    {
+        var quarters = duration * 4;               // whole notes -> quarter notes
+        return quarters.Numerator * divisions / quarters.Denominator;
+    }
+
+    // Spell a MIDI pitch with sharps: step letter, alter (0 or +1), and MusicXML octave.
+    private static (string step, int alter, int octave) SpellSharp(int midi)
+    {
+        var pc = ((midi % 12) + 12) % 12;
+        var octave = ((midi - pc) / 12) - 1;       // MusicXML octave 4 = middle C (60)
+        return pc switch
+        {
+            0 => ("C", 0, octave),
+            1 => ("C", 1, octave),
+            2 => ("D", 0, octave),
+            3 => ("D", 1, octave),
+            4 => ("E", 0, octave),
+            5 => ("F", 0, octave),
+            6 => ("F", 1, octave),
+            7 => ("G", 0, octave),
+            8 => ("G", 1, octave),
+            9 => ("A", 0, octave),
+            10 => ("A", 1, octave),
+            _ => ("B", 0, octave),
+        };
+    }
+
+    private static long Lcm(long a, long b)
+    {
+        if (a == 0 || b == 0) return 0;
+        return a / Gcd(a, b) * b;
+    }
+
+    private static long Gcd(long a, long b)
+    {
+        a = Math.Abs(a);
+        b = Math.Abs(b);
+        while (b != 0)
+        {
+            (a, b) = (b, a % b);
+        }
+        return a == 0 ? 1 : a;
+    }
 }
