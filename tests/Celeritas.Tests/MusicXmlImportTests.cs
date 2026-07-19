@@ -223,6 +223,52 @@ public class MusicXmlImportTests
         Assert.Equal(new Rational(1, 4), buffer.Get(0).Duration);
     }
 
+    private static string Dynamic(string mark) =>
+        $"<direction><direction-type><dynamics><{mark}/></dynamics></direction-type></direction>";
+
+    [Fact]
+    public void Import_NamedDynamic_SetsVelocity()
+    {
+        using var buffer = MusicXmlIo.Parse(PartwiseWith(Dynamic("f") + Note("C", 4, 1)));
+        Assert.Equal(96d / 127d, buffer.Get(0).Velocity, 3);   // forte
+    }
+
+    [Fact]
+    public void Import_SoundDynamics_SetsVelocity()
+    {
+        var xml = PartwiseWith("<direction><sound dynamics=\"50\"/></direction>" + Note("C", 4, 1));
+        using var buffer = MusicXmlIo.Parse(xml);
+        Assert.Equal(50d * 0.9 / 127d, buffer.Get(0).Velocity, 3);
+    }
+
+    [Fact]
+    public void Import_DynamicChange_AppliesToLaterNotes()
+    {
+        var xml = PartwiseWith(Dynamic("p") + Note("C", 4, 1) + Dynamic("f") + Note("D", 4, 1));
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        Assert.Equal(49d / 127d, buffer.Get(0).Velocity, 3);   // piano
+        Assert.Equal(96d / 127d, buffer.Get(1).Velocity, 3);   // forte
+    }
+
+    [Fact]
+    public void Import_NoDynamic_UsesDefaultVelocity()
+    {
+        using var buffer = MusicXmlIo.Parse(PartwiseWith(Note("C", 4, 1)));
+        Assert.Equal(0.8d, buffer.Get(0).Velocity, 3);
+    }
+
+    [Fact]
+    public void Import_TiedNotesWithDynamic_KeepStartVelocity()
+    {
+        var xml = PartwiseWith(
+            Dynamic("p") + Note("C", 4, 1, tieStart: true) + Note("C", 4, 1, tieStop: true));
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        Assert.Equal(1, buffer.Count);
+        Assert.Equal(49d / 127d, buffer.Get(0).Velocity, 3);   // piano at the chain start
+    }
+
     [Fact]
     public void Parse_Null_Throws() =>
         Assert.Throws<ArgumentNullException>(() => MusicXmlIo.Parse(null!));

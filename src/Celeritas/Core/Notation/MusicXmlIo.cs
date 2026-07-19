@@ -17,9 +17,10 @@ namespace Celeritas.Core.Notation;
 /// </para>
 /// <para>
 /// Multi-voice parts import correctly because voice timing rides on <c>&lt;backup&gt;</c>/
-/// <c>&lt;forward&gt;</c>. Not yet handled (spelled out so callers know the boundaries): grace
-/// notes, tuplet time-modification, dynamics/velocity, and the <c>score-timewise</c> layout.
-/// Compressed <c>.mxl</c> is not unpacked here.
+/// <c>&lt;forward&gt;</c>, and dynamics (<c>&lt;dynamics&gt;</c> marks and <c>&lt;sound dynamics&gt;</c>)
+/// set note velocity. Not yet handled (spelled out so callers know the boundaries): grace notes,
+/// tuplet time-modification, and the <c>score-timewise</c> layout. Export does not yet write
+/// dynamics back. Compressed <c>.mxl</c> is not unpacked here.
 /// </para>
 /// </summary>
 public static class MusicXmlIo
@@ -160,10 +161,11 @@ public static class MusicXmlIo
         var cursor = Rational.Zero;      // current time position within this part (whole notes)
         var lastNoteOnset = Rational.Zero; // onset of the most recent non-chord note (for <chord/>)
         var divisions = 0;               // divisions per quarter note; set by <attributes>
+        var velocity = DefaultVelocity;  // current dynamic, updated by <direction>/<sound>
 
         // Ties in progress, keyed by MIDI pitch: a tie-start holds a note open until the matching
-        // tie-stop, so the chain is emitted once with the summed duration.
-        var pending = new Dictionary<int, (Rational onset, Rational duration)>();
+        // tie-stop, so the chain is emitted once with the summed duration (and its start velocity).
+        var pending = new Dictionary<int, (Rational onset, Rational duration, float velocity)>();
 
         foreach (var measure in Children(part, "measure"))
         {
@@ -186,8 +188,15 @@ public static class MusicXmlIo
                         cursor += DurationOf(el, divisions);
                         break;
 
+                    // A dynamic marking or a playback hint sets the velocity for later notes.
+                    case "direction":
+                    case "sound":
+                        if (ReadDynamicVelocity(el) is float dyn)
+                            velocity = dyn;
+                        break;
+
                     case "note":
-                        ReadNote(el, divisions, ref cursor, ref lastNoteOnset, pending, notes);
+                        ReadNote(el, divisions, velocity, ref cursor, ref lastNoteOnset, pending, notes);
                         break;
                 }
             }
@@ -195,12 +204,12 @@ public static class MusicXmlIo
 
         // Flush any tie-start that never saw a matching stop (dangling/truncated input).
         foreach (var (midi, held) in pending)
-            notes.Add(new NoteEvent(midi, held.onset, held.duration, DefaultVelocity));
+            notes.Add(new NoteEvent(midi, held.onset, held.duration, held.velocity));
     }
 
     private static void ReadNote(
-        XElement note, int divisions, ref Rational cursor, ref Rational lastNoteOnset,
-        Dictionary<int, (Rational onset, Rational duration)> pending, List<NoteEvent> notes)
+        XElement note, int divisions, float velocity, ref Rational cursor, ref Rational lastNoteOnset,
+        Dictionary<int, (Rational onset, Rational duration, float velocity)> pending, List<NoteEvent> notes)
     {
         // Grace notes carry no <duration>; skip them in this pass.
         var durationEl = note.Element("duration");
@@ -230,13 +239,13 @@ public static class MusicXmlIo
 
         if (tieStop && pending.TryGetValue(midi, out var held))
         {
-            // Continue or close the chain begun by an earlier tie-start.
+            // Continue or close the chain begun by an earlier tie-start (its start velocity wins).
             var total = held.duration + duration;
             if (tieStart)
-                pending[midi] = (held.onset, total);            // middle of the chain: keep holding
+                pending[midi] = (held.onset, total, held.velocity);   // middle of the chain: keep holding
             else
             {
-                notes.Add(new NoteEvent(midi, held.onset, total, DefaultVelocity));
+                notes.Add(new NoteEvent(midi, held.onset, total, held.velocity));
                 pending.Remove(midi);
             }
         }
@@ -244,12 +253,12 @@ public static class MusicXmlIo
         {
             // Begin a chain. A stale pending for this pitch (malformed) is flushed first.
             if (pending.TryGetValue(midi, out var stale))
-                notes.Add(new NoteEvent(midi, stale.onset, stale.duration, DefaultVelocity));
-            pending[midi] = (onset, duration);
+                notes.Add(new NoteEvent(midi, stale.onset, stale.duration, stale.velocity));
+            pending[midi] = (onset, duration, velocity);
         }
         else
         {
-            notes.Add(new NoteEvent(midi, onset, duration, DefaultVelocity));
+            notes.Add(new NoteEvent(midi, onset, duration, velocity));
         }
 
         if (!isChord)
@@ -283,6 +292,49 @@ public static class MusicXmlIo
 
         return (start, stop);
     }
+
+    // Reads a velocity (0..1) from a <direction> or <sound> element, or null if it sets no dynamic.
+    // Prefers an explicit <sound dynamics="N"/> (N = percent of MIDI velocity 90); otherwise maps a
+    // named <dynamics> mark (p, mf, ff, ...).
+    private static float? ReadDynamicVelocity(XElement element)
+    {
+        var sound = element.Name.LocalName == "sound"
+            ? element
+            : element.Descendants().FirstOrDefault(e => e.Name.LocalName == "sound");
+        var dynamicsAttr = sound?.Attribute("dynamics")?.Value;
+        if (dynamicsAttr is not null
+            && double.TryParse(dynamicsAttr.Trim(), System.Globalization.CultureInfo.InvariantCulture, out var pct)
+            && pct > 0)
+        {
+            return (float)Math.Clamp(pct * 0.9 / 127.0, 0.0, 1.0);
+        }
+
+        var dynamics = element.Descendants().FirstOrDefault(e => e.Name.LocalName == "dynamics");
+        if (dynamics is not null)
+        {
+            foreach (var mark in dynamics.Elements())
+                if (NamedDynamicVelocity(mark.Name.LocalName) is float v)
+                    return v;
+        }
+
+        return null;
+    }
+
+    // Standard dynamic levels as a fraction of MIDI velocity 127.
+    private static float? NamedDynamicVelocity(string name) => name switch
+    {
+        "pppp" => 8f / 127f,
+        "ppp" => 16f / 127f,
+        "pp" => 33f / 127f,
+        "p" => 49f / 127f,
+        "mp" => 64f / 127f,
+        "mf" => 80f / 127f,
+        "f" => 96f / 127f,
+        "ff" => 112f / 127f,
+        "fff" => 120f / 127f,
+        "ffff" => 127f / 127f,
+        _ => null,
+    };
 
     private static int PitchToMidi(XElement pitch)
     {
