@@ -9,15 +9,16 @@ namespace Celeritas.Core.Notation;
 /// <summary>
 /// Imports MusicXML into the engine's <see cref="NoteBuffer"/> / <see cref="NoteEvent"/> model.
 /// <para>
-/// This first pass handles the common core of <c>score-partwise</c>: pitched notes
+/// This pass handles the common core of <c>score-partwise</c>: pitched notes
 /// (step/octave/alter), rests, chords (<c>&lt;chord/&gt;</c>), per-measure <c>&lt;divisions&gt;</c>,
-/// multiple measures, multiple parts (merged into one time line), and <c>&lt;backup&gt;</c>/
-/// <c>&lt;forward&gt;</c> cursor moves. Times are converted to the engine's whole-note units.
+/// multiple measures, multiple parts (merged into one time line), <c>&lt;backup&gt;</c>/
+/// <c>&lt;forward&gt;</c> cursor moves, and tie merging (a <c>&lt;tie&gt;</c> chain becomes one
+/// sustained note). Times are converted to the engine's whole-note units.
 /// </para>
 /// <para>
-/// Not yet handled (spelled out so callers know the boundaries): tie merging (tied notes are
-/// emitted as separate events), voices, grace notes, tuplet time-modification, dynamics/velocity,
-/// and the <c>score-timewise</c> layout. Compressed <c>.mxl</c> is not unpacked here.
+/// Not yet handled (spelled out so callers know the boundaries): voices, grace notes, tuplet
+/// time-modification, dynamics/velocity, and the <c>score-timewise</c> layout. Compressed
+/// <c>.mxl</c> is not unpacked here.
 /// </para>
 /// </summary>
 public static class MusicXmlIo
@@ -112,6 +113,10 @@ public static class MusicXmlIo
         var lastNoteOnset = Rational.Zero; // onset of the most recent non-chord note (for <chord/>)
         var divisions = 0;               // divisions per quarter note; set by <attributes>
 
+        // Ties in progress, keyed by MIDI pitch: a tie-start holds a note open until the matching
+        // tie-stop, so the chain is emitted once with the summed duration.
+        var pending = new Dictionary<int, (Rational onset, Rational duration)>();
+
         foreach (var measure in Children(part, "measure"))
         {
             foreach (var el in measure.Elements())
@@ -134,15 +139,20 @@ public static class MusicXmlIo
                         break;
 
                     case "note":
-                        ReadNote(el, divisions, ref cursor, ref lastNoteOnset, notes);
+                        ReadNote(el, divisions, ref cursor, ref lastNoteOnset, pending, notes);
                         break;
                 }
             }
         }
+
+        // Flush any tie-start that never saw a matching stop (dangling/truncated input).
+        foreach (var (midi, held) in pending)
+            notes.Add(new NoteEvent(midi, held.onset, held.duration, DefaultVelocity));
     }
 
     private static void ReadNote(
-        XElement note, int divisions, ref Rational cursor, ref Rational lastNoteOnset, List<NoteEvent> notes)
+        XElement note, int divisions, ref Rational cursor, ref Rational lastNoteOnset,
+        Dictionary<int, (Rational onset, Rational duration)> pending, List<NoteEvent> notes)
     {
         // Grace notes carry no <duration>; skip them in this pass.
         var durationEl = note.Element("duration");
@@ -167,15 +177,63 @@ public static class MusicXmlIo
         var pitch = note.Element("pitch")
             ?? throw new InvalidDataException("A sounding note has neither <pitch> nor <rest>.");
         var midi = PitchToMidi(pitch);
-
         var onset = isChord ? lastNoteOnset : cursor;
-        notes.Add(new NoteEvent(midi, onset, duration, DefaultVelocity));
+        var (tieStart, tieStop) = ReadTie(note);
+
+        if (tieStop && pending.TryGetValue(midi, out var held))
+        {
+            // Continue or close the chain begun by an earlier tie-start.
+            var total = held.duration + duration;
+            if (tieStart)
+                pending[midi] = (held.onset, total);            // middle of the chain: keep holding
+            else
+            {
+                notes.Add(new NoteEvent(midi, held.onset, total, DefaultVelocity));
+                pending.Remove(midi);
+            }
+        }
+        else if (tieStart)
+        {
+            // Begin a chain. A stale pending for this pitch (malformed) is flushed first.
+            if (pending.TryGetValue(midi, out var stale))
+                notes.Add(new NoteEvent(midi, stale.onset, stale.duration, DefaultVelocity));
+            pending[midi] = (onset, duration);
+        }
+        else
+        {
+            notes.Add(new NoteEvent(midi, onset, duration, DefaultVelocity));
+        }
 
         if (!isChord)
         {
             lastNoteOnset = cursor;
             cursor += duration;
         }
+    }
+
+    // Sounding ties come from <tie type="start|stop"/> (a note may carry both). Fall back to the
+    // notational <notations><tied> for files that only mark ties there.
+    private static (bool start, bool stop) ReadTie(XElement note)
+    {
+        bool start = false, stop = false;
+        foreach (var tie in Children(note, "tie"))
+        {
+            var type = tie.Attribute("type")?.Value;
+            if (type == "start") start = true;
+            else if (type == "stop") stop = true;
+        }
+
+        if (!start && !stop && note.Element("notations") is { } notations)
+        {
+            foreach (var tied in Children(notations, "tied"))
+            {
+                var type = tied.Attribute("type")?.Value;
+                if (type == "start") start = true;
+                else if (type == "stop") stop = true;
+            }
+        }
+
+        return (start, stop);
     }
 
     private static int PitchToMidi(XElement pitch)

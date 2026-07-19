@@ -19,13 +19,15 @@ public class MusicXmlImportTests
         </score-partwise>
         """;
 
-    private static string Note(string step, int octave, int duration, int? alter = null, bool chord = false, bool rest = false)
+    private static string Note(string step, int octave, int duration, int? alter = null, bool chord = false,
+        bool rest = false, bool tieStart = false, bool tieStop = false)
     {
         var body = rest
             ? "<rest/>"
             : $"<pitch><step>{step}</step>{(alter is null ? "" : $"<alter>{alter}</alter>")}<octave>{octave}</octave></pitch>";
         var chordEl = chord ? "<chord/>" : "";
-        return $"<note>{chordEl}{body}<duration>{duration}</duration></note>";
+        var ties = (tieStop ? "<tie type=\"stop\"/>" : "") + (tieStart ? "<tie type=\"start\"/>" : "");
+        return $"<note>{chordEl}{body}<duration>{duration}</duration>{ties}</note>";
     }
 
     [Fact]
@@ -144,6 +146,81 @@ public class MusicXmlImportTests
         using var buffer = MusicXmlIo.Parse(xml);
         Assert.Equal(1, buffer.Count);
         Assert.Equal(60, buffer.Get(0).Pitch);
+    }
+
+    [Fact]
+    public void Import_TiedNotes_MergeIntoOneSustainedNote()
+    {
+        // C4 quarter (tie start) -> C4 quarter (tie stop), then an untied G4.
+        var xml = PartwiseWith(
+            Note("C", 4, 1, tieStart: true) + Note("C", 4, 1, tieStop: true) + Note("G", 4, 1));
+
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        Assert.Equal(2, buffer.Count);
+        Assert.Equal(60, buffer.Get(0).Pitch);
+        Assert.Equal(Rational.Zero, buffer.Get(0).Offset);
+        Assert.Equal(new Rational(1, 2), buffer.Get(0).Duration);   // two quarters merged
+        Assert.Equal(67, buffer.Get(1).Pitch);
+        Assert.Equal(new Rational(2, 4), buffer.Get(1).Offset);     // cursor advanced past both
+    }
+
+    [Fact]
+    public void Import_TieChain_SumsAllSegments()
+    {
+        var xml = PartwiseWith(
+            Note("C", 4, 1, tieStart: true)
+            + Note("C", 4, 1, tieStart: true, tieStop: true)
+            + Note("C", 4, 1, tieStop: true));
+
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        Assert.Equal(1, buffer.Count);
+        Assert.Equal(new Rational(3, 4), buffer.Get(0).Duration);
+    }
+
+    [Fact]
+    public void Import_TieAcrossBarline_Merges()
+    {
+        var xml = $"""
+            <?xml version="1.0"?>
+            <score-partwise>
+              <part id="P1">
+                <measure number="1"><attributes><divisions>1</divisions></attributes>
+                  {Note("C", 4, 4, tieStart: true)}</measure>
+                <measure number="2">
+                  {Note("C", 4, 4, tieStop: true)}</measure>
+              </part>
+            </score-partwise>
+            """;
+
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        Assert.Equal(1, buffer.Count);
+        Assert.Equal(new Rational(2, 1), buffer.Get(0).Duration);   // two whole notes tied
+    }
+
+    [Fact]
+    public void Import_NotationTiedFallback_Merges()
+    {
+        string NoteTied(string type) =>
+            "<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration>"
+            + $"<notations><tied type=\"{type}\"/></notations></note>";
+
+        using var buffer = MusicXmlIo.Parse(PartwiseWith(NoteTied("start") + NoteTied("stop")));
+
+        Assert.Equal(1, buffer.Count);
+        Assert.Equal(new Rational(1, 2), buffer.Get(0).Duration);
+    }
+
+    [Fact]
+    public void Import_DanglingTieStart_IsStillEmitted()
+    {
+        using var buffer = MusicXmlIo.Parse(PartwiseWith(Note("C", 4, 1, tieStart: true)));
+
+        Assert.Equal(1, buffer.Count);
+        Assert.Equal(60, buffer.Get(0).Pitch);
+        Assert.Equal(new Rational(1, 4), buffer.Get(0).Duration);
     }
 
     [Fact]
