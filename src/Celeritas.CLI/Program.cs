@@ -8,6 +8,7 @@ using Celeritas.Core;
 using Celeritas.Core.Analysis;
 using Celeritas.Core.Harmonization;
 using Celeritas.Core.Midi;
+using Celeritas.Core.Notation;
 using Celeritas.Core.Simd;
 using Celeritas.Core.VoiceLeading;
 
@@ -1762,6 +1763,131 @@ pcsetCommand.SetAction(parseResult => RunGuarded(() =>
 }));
 
 rootCommand.Subcommands.Add(pcsetCommand);
+
+// ═══════════════════════════════════════════════════════════════
+// Command: musicxml - Import/export and analyze MusicXML
+// ═══════════════════════════════════════════════════════════════
+Command musicxmlCommand = new("musicxml", "Import/export and analyze MusicXML (score-partwise)");
+
+Option<FileInfo> xmlInOption = new("--in")
+{
+    Description = "Input file (.musicxml/.xml, or .mid for convert)",
+    Required = true
+};
+Option<FileInfo> xmlOutOption = new("--out")
+{
+    Description = "Output file (.mid or .musicxml/.xml)",
+    Required = true
+};
+
+static bool IsMusicXml(FileInfo f) =>
+    f.Extension.Equals(".musicxml", StringComparison.OrdinalIgnoreCase)
+    || f.Extension.Equals(".xml", StringComparison.OrdinalIgnoreCase);
+static bool IsMidiFile(FileInfo f) =>
+    f.Extension.Equals(".mid", StringComparison.OrdinalIgnoreCase)
+    || f.Extension.Equals(".midi", StringComparison.OrdinalIgnoreCase);
+
+Command musicxmlConvertCommand = new("convert", "Convert between MusicXML and MIDI (direction inferred from extensions)");
+musicxmlConvertCommand.Options.Add(xmlInOption);
+musicxmlConvertCommand.Options.Add(xmlOutOption);
+musicxmlConvertCommand.SetAction(parseResult => RunGuarded(() =>
+{
+    var inFile = parseResult.GetValue(xmlInOption);
+    var outFile = parseResult.GetValue(xmlOutOption);
+
+    if (inFile is null || !inFile.Exists)
+        throw new CliUsageException($"Input file not found: {inFile?.FullName ?? "(none)"}");
+    if (outFile is null)
+        throw new CliUsageException("Output file is required.");
+
+    if (IsMusicXml(inFile) && IsMidiFile(outFile))
+    {
+        using var buffer = MusicXmlIo.Import(inFile.FullName);
+        MidiIo.Export(buffer, outFile.FullName);
+        Console.WriteLine($"MusicXML -> MIDI: {buffer.Count} notes -> {outFile.Name}");
+    }
+    else if (IsMidiFile(inFile) && IsMusicXml(outFile))
+    {
+        using var buffer = MidiIo.Import(inFile.FullName);
+        MusicXmlIo.Export(buffer, outFile.FullName);
+        Console.WriteLine($"MIDI -> MusicXML: {buffer.Count} notes -> {outFile.Name}");
+    }
+    else
+    {
+        throw new CliUsageException(
+            "Unsupported conversion. Use .musicxml/.xml <-> .mid (direction is inferred from the file extensions).");
+    }
+}));
+
+Command musicxmlAnalyzeCommand = new("analyze", "Import a MusicXML file and summarize it (notes, range, key, chords)");
+musicxmlAnalyzeCommand.Options.Add(xmlInOption);
+musicxmlAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
+{
+    var inFile = parseResult.GetValue(xmlInOption);
+    if (inFile is null || !inFile.Exists)
+        throw new CliUsageException($"Input file not found: {inFile?.FullName ?? "(none)"}");
+
+    using var buffer = MusicXmlIo.Import(inFile.FullName);
+
+    Console.WriteLine();
+    Console.WriteLine("═══════════════════════════════════════════════════════════════");
+    Console.WriteLine("  MUSICXML ANALYSIS");
+    Console.WriteLine("═══════════════════════════════════════════════════════════════");
+    Console.WriteLine();
+    Console.WriteLine($"  File:  {inFile.Name}");
+    Console.WriteLine($"  Notes: {buffer.Count}");
+
+    if (buffer.Count == 0)
+    {
+        Console.WriteLine("  (empty score)");
+        return;
+    }
+
+    var last = buffer.Get(buffer.Count - 1);
+    Console.WriteLine($"  Length (whole notes): {(last.Offset + last.Duration).ToDouble():F2}");
+
+    int minPitch = int.MaxValue, maxPitch = int.MinValue;
+    for (var i = 0; i < buffer.Count; i++)
+    {
+        var p = buffer.Get(i).Pitch;
+        if (p < minPitch) minPitch = p;
+        if (p > maxPitch) maxPitch = p;
+    }
+    Console.WriteLine($"  Range: {MusicNotation.ToNotation(minPitch)} - {MusicNotation.ToNotation(maxPitch)}");
+
+    var key = KeyProfiler.DetectFromBuffer(buffer);
+    Console.WriteLine($"  Key:   {key.Key} (confidence {key.Confidence:P0})");
+
+    var groups = new Dictionary<Rational, List<int>>();
+    for (var i = 0; i < buffer.Count; i++)
+    {
+        var n = buffer.Get(i);
+        if (!groups.TryGetValue(n.Offset, out var list))
+        {
+            list = [];
+            groups[n.Offset] = list;
+        }
+        list.Add(n.Pitch);
+    }
+
+    var ordered = groups.OrderBy(g => g.Key).ToList();
+    Console.WriteLine();
+    Console.WriteLine($"  Chords ({ordered.Count} onsets, first 10):");
+    foreach (var g in ordered.Take(10))
+    {
+        var chord = ChordAnalyzer.Identify(g.Value.ToArray());
+        Console.WriteLine($"    {g.Key}: {chord}");
+    }
+    if (ordered.Count > 10)
+        Console.WriteLine($"    ... and {ordered.Count - 10} more");
+
+    Console.WriteLine();
+    Console.WriteLine("═══════════════════════════════════════════════════════════════");
+}));
+
+musicxmlCommand.Subcommands.Add(musicxmlConvertCommand);
+musicxmlCommand.Subcommands.Add(musicxmlAnalyzeCommand);
+rootCommand.Subcommands.Add(musicxmlCommand);
 
 return rootCommand.Parse(args).Invoke();
 

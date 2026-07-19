@@ -11,6 +11,7 @@ Common patterns and recipes for music analysis and composition tasks.
 - [Harmonization](#harmonization)
 - [Melody, Rhythm & Ornaments](#melody-rhythm--ornaments)
 - [MIDI Processing](#midi-processing)
+- [Notation (MusicXML)](#notation-musicxml)
 - [Performance Optimization](#performance-optimization)
 
 ---
@@ -413,6 +414,48 @@ using var buffer = MidiIo.Import("song.mid");
 MusicMath.Transpose(buffer, 2);
 
 MidiIo.Export(buffer, "transposed.mid");
+```
+
+---
+
+## Notation (MusicXML)
+
+### Import a MusicXML score
+
+```csharp
+using Celeritas.Core.Notation;
+
+using var buffer = MusicXmlIo.Import("score.musicxml");
+Console.WriteLine($"{buffer.Count} notes");
+
+// ...or parse a string you already have in memory:
+using var fromString = MusicXmlIo.Parse(xmlText);
+```
+
+Handles `score-partwise`: pitches, durations (via `<divisions>`), rests, chords,
+multiple parts, and tie merging. Reading is DTD-safe (no external fetch).
+
+### Export notes to MusicXML
+
+```csharp
+using Celeritas.Core.Notation;
+
+string xml = MusicXmlIo.ToXml(buffer);        // as a string
+MusicXmlIo.Export(buffer, "out.musicxml");    // ...or straight to a file
+```
+
+Monophonic and block-chordal material round-trips exactly (`Import` -> `ToXml` ->
+`Parse` yields the same notes).
+
+### Convert and analyze from the command line
+
+```bash
+# MusicXML <-> MIDI (direction inferred from the extensions)
+celeritas musicxml convert --in score.musicxml --out score.mid
+celeritas musicxml convert --in score.mid --out score.musicxml
+
+# Quick summary: notes, range, detected key, chord timeline
+celeritas musicxml analyze --in score.musicxml
 ```
 
 ---
