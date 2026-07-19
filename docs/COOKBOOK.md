@@ -9,6 +9,7 @@ Common patterns and recipes for music analysis and composition tasks.
 - [Chord Analysis](#chord-analysis)
 - [Key & Scale Detection](#key--scale-detection)
 - [Harmonization](#harmonization)
+- [Melody, Rhythm & Ornaments](#melody-rhythm--ornaments)
 - [MIDI Processing](#midi-processing)
 - [Performance Optimization](#performance-optimization)
 
@@ -205,6 +206,40 @@ Console.WriteLine($"Quality: {chord.Quality}");    // Major7
 Console.WriteLine($"Bass: {chord.Bass}");          // C
 ```
 
+### Nashville Number System
+
+Every chord in a progression report carries its Nashville number (scale degree +
+quality suffix), and any `RomanNumeralChord` can produce one with `ToNashville()`.
+
+```csharp
+using Celeritas.Core.Analysis;
+
+var report = ProgressionAdvisor.Analyze(["C", "Am", "F", "G"]);
+Console.WriteLine(string.Join(" ", report.Chords.Select(c => c.Nashville)));
+// Output: 1 6m 4 5
+
+// Or a single chord relative to a key:
+var key = new KeySignature("C", isMajor: true);
+var g7 = KeyAnalyzer.Analyze(MusicNotation.Parse("G4 B4 D5 F5").Select(n => n.Pitch).ToArray(), key);
+Console.WriteLine(g7.ToNashville());   // 57
+```
+
+### Pitch-class set analysis (Forte)
+
+Get the normal order, prime form, and interval vector of any set of notes.
+
+```csharp
+using Celeritas.Core.Analysis;
+
+int[] cmaj7 = MusicNotation.Parse("C4 E4 G4 B4").Select(n => n.Pitch).ToArray();
+var pcs = PitchClassSetAnalyzer.Analyze(cmaj7);
+
+Console.WriteLine(pcs.PitchClassesText);    // {0,4,7,11}
+Console.WriteLine(pcs.NormalOrderText);     // {11,0,4,7}
+Console.WriteLine(pcs.PrimeFormText);       // {0,1,5,8}
+Console.WriteLine(pcs.IntervalVectorText);  // <1,0,1,2,2,0>
+```
+
 ---
 
 ## Key & Scale Detection
@@ -294,6 +329,51 @@ foreach (var voicing in solution.Voicings)
     Console.WriteLine($"S: {voicing.Soprano}, A: {voicing.Alto}, " +
                      $"T: {voicing.Tenor}, B: {voicing.Bass}");
 }
+```
+
+---
+
+## Melody, Rhythm & Ornaments
+
+### Analyze a melody's contour and intervals
+
+```csharp
+using Celeritas.Core.Analysis;
+
+int[] melody = MusicNotation.Parse("C4 E4 G4 E4 C4 G4 C5").Select(n => n.Pitch).ToArray();
+var m = MelodyAnalyzer.Analyze(melody);
+
+Console.WriteLine(m.Contour);                     // Wave
+Console.WriteLine(m.AmbitusDescription);          // moderate range: C4 to C5 (P8)
+Console.WriteLine($"avg interval: {m.Statistics.AverageInterval:F1} semitones");   // 4.3
+Console.WriteLine($"largest leap: {m.Statistics.LargestLeap}");                    // 7
+```
+
+`m.Motifs` lists recurring interval patterns when the melody has any.
+
+### Predict the next rhythm in a style
+
+```csharp
+using Celeritas.Core.Analysis;
+
+var recent = new[] { Rational.Quarter, Rational.Eighth, Rational.Eighth, Rational.Quarter };
+var predictor = RhythmModels.GetStyleModel("jazz");   // classical, jazz, rock, latin, waltz
+var prediction = predictor.Predict(recent);
+
+Console.WriteLine($"next: {prediction.MostLikely} ({prediction.Confidence:P0})");   // next: 1/8 (38%)
+```
+
+### Expand an ornament to notes
+
+```csharp
+using Celeritas.Core.Ornamentation;
+
+var baseNote = new NoteEvent(MusicNotation.ParseNote("E4"), Rational.Zero, Rational.Half);
+var trill = new Trill { BaseNote = baseNote, Interval = 2, Speed = 8 };
+
+NoteEvent[] notes = trill.Expand();
+Console.WriteLine(notes.Length);                                  // 16
+Console.WriteLine(string.Join(", ", notes.Take(4).Select(n => n.Pitch)));   // 64, 66, 64, 66
 ```
 
 ---
