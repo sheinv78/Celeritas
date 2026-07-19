@@ -16,9 +16,10 @@ namespace Celeritas.Core.Notation;
 /// sustained note). Times are converted to the engine's whole-note units.
 /// </para>
 /// <para>
-/// Not yet handled (spelled out so callers know the boundaries): voices, grace notes, tuplet
-/// time-modification, dynamics/velocity, and the <c>score-timewise</c> layout. Compressed
-/// <c>.mxl</c> is not unpacked here.
+/// Multi-voice parts import correctly because voice timing rides on <c>&lt;backup&gt;</c>/
+/// <c>&lt;forward&gt;</c>. Not yet handled (spelled out so callers know the boundaries): grace
+/// notes, tuplet time-modification, dynamics/velocity, and the <c>score-timewise</c> layout.
+/// Compressed <c>.mxl</c> is not unpacked here.
 /// </para>
 /// </summary>
 public static class MusicXmlIo
@@ -58,14 +59,11 @@ public static class MusicXmlIo
     /// Serializes a <see cref="NoteBuffer"/> to a <c>score-partwise</c> MusicXML string.
     /// </summary>
     /// <remarks>
-    /// This first pass targets monophonic and block-chordal music: notes at the same onset are
-    /// written as a chord (they must share a duration), gaps become rests, and everything goes into
-    /// a single measure. Pitches are spelled with sharps. Overlapping notes of different lengths —
-    /// true polyphony needing voices — throw <see cref="NotSupportedException"/> rather than being
-    /// silently mis-timed.
+    /// Notes at the same onset and duration are written as a chord; gaps become rests. Overlapping
+    /// notes are split into separate voices (via <c>&lt;backup&gt;</c>), so polyphony round-trips.
+    /// Everything goes into a single measure and pitches are spelled with sharps.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
-    /// <exception cref="NotSupportedException">The notes overlap in a way that needs voice export.</exception>
     public static string ToXml(NoteBuffer buffer)
     {
         ArgumentNullException.ThrowIfNull(buffer);
@@ -84,7 +82,6 @@ public static class MusicXmlIo
 
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML to <paramref name="path"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
-    /// <exception cref="NotSupportedException">The notes overlap in a way that needs voice export.</exception>
     public static void Export(NoteBuffer buffer, string path)
     {
         ArgumentNullException.ThrowIfNull(buffer);
@@ -95,7 +92,6 @@ public static class MusicXmlIo
 
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML to a stream.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="stream"/> is <see langword="null"/>.</exception>
-    /// <exception cref="NotSupportedException">The notes overlap in a way that needs voice export.</exception>
     public static void Export(NoteBuffer buffer, Stream stream)
     {
         ArgumentNullException.ThrowIfNull(buffer);
@@ -370,39 +366,79 @@ public static class MusicXmlIo
             divisions = Lcm(divisions, (e.Duration * 4).Denominator);
         }
 
+        // Chord units: notes sharing an onset AND a duration are one chord. Notes at the same onset
+        // with different durations are independent (they go into different voices below).
+        var unitMap = new Dictionary<(Rational onset, Rational duration), List<int>>();
+        foreach (var e in events)
+        {
+            var key = (e.Offset, e.Duration);
+            if (!unitMap.TryGetValue(key, out var pitches))
+            {
+                pitches = [];
+                unitMap[key] = pitches;
+            }
+            pitches.Add(e.Pitch);
+        }
+
+        var units = unitMap
+            .Select(kv => (onset: kv.Key.onset, duration: kv.Key.duration, pitches: kv.Value))
+            .OrderBy(u => u.onset).ThenBy(u => u.duration).ToList();
+        foreach (var u in units)
+            u.pitches.Sort();
+
+        // Greedy voice assignment: each unit joins the first voice free at its onset; overlapping
+        // units start new voices. Monophonic / block-chordal input stays a single voice.
+        var voices = new List<List<(Rational onset, Rational duration, List<int> pitches)>>();
+        var voiceEnd = new List<Rational>();
+        foreach (var u in units)
+        {
+            var target = -1;
+            for (var k = 0; k < voices.Count; k++)
+            {
+                if (voiceEnd[k] <= u.onset)
+                {
+                    target = k;
+                    break;
+                }
+            }
+
+            if (target < 0)
+            {
+                voices.Add([]);
+                voiceEnd.Add(Rational.Zero);
+                target = voices.Count - 1;
+            }
+
+            voices[target].Add(u);
+            voiceEnd[target] = u.onset + u.duration;
+        }
+
         var measure = new XElement("measure",
             new XAttribute("number", 1),
             new XElement("attributes", new XElement("divisions", divisions)));
 
-        var cursor = Rational.Zero;
-        var i2 = 0;
-        while (i2 < events.Count)
+        var multiVoice = voices.Count > 1;
+        for (var vi = 0; vi < voices.Count; vi++)
         {
-            var onset = events[i2].Offset;
-            if (onset < cursor)
-                throw new NotSupportedException(
-                    "Notes overlap (a note starts before the previous one ends); voice export is not supported yet.");
+            // Return the cursor to the start of the measure before writing the next voice.
+            if (vi > 0)
+                measure.Add(new XElement("backup", new XElement("duration", DivisionsOf(voiceEnd[vi - 1], divisions))));
 
-            if (onset > cursor)
+            var voiceNumber = multiVoice ? vi + 1 : (int?)null;
+            var cursor = Rational.Zero;
+            foreach (var (onset, duration, pitches) in voices[vi])
             {
-                measure.Add(RestElement(onset - cursor, divisions));
-                cursor = onset;
-            }
+                if (onset > cursor)
+                {
+                    measure.Add(RestElement(onset - cursor, divisions, voiceNumber));
+                    cursor = onset;
+                }
 
-            // Gather the chord: every note sharing this onset. They must share a duration.
-            var groupDuration = events[i2].Duration;
-            var member = 0;
-            while (i2 < events.Count && events[i2].Offset == onset)
-            {
-                if (events[i2].Duration != groupDuration)
-                    throw new NotSupportedException(
-                        "Notes at the same onset have different durations; voice export is not supported yet.");
-                measure.Add(PitchedNoteElement(events[i2].Pitch, groupDuration, divisions, isChord: member > 0));
-                member++;
-                i2++;
-            }
+                for (var p = 0; p < pitches.Count; p++)
+                    measure.Add(PitchedNoteElement(pitches[p], duration, divisions, isChord: p > 0, voiceNumber));
 
-            cursor += groupDuration;
+                cursor += duration;
+            }
         }
 
         return new XDocument(
@@ -418,12 +454,17 @@ public static class MusicXmlIo
                     measure)));
     }
 
-    private static XElement RestElement(Rational duration, long divisions) =>
-        new("note",
+    private static XElement RestElement(Rational duration, long divisions, int? voice)
+    {
+        var note = new XElement("note",
             new XElement("rest"),
             new XElement("duration", DivisionsOf(duration, divisions)));
+        if (voice is int v)
+            note.Add(new XElement("voice", v));
+        return note;
+    }
 
-    private static XElement PitchedNoteElement(int midi, Rational duration, long divisions, bool isChord)
+    private static XElement PitchedNoteElement(int midi, Rational duration, long divisions, bool isChord, int? voice)
     {
         var (step, alter, octave) = SpellSharp(midi);
         var pitch = new XElement("pitch", new XElement("step", step));
@@ -436,6 +477,8 @@ public static class MusicXmlIo
             note.Add(new XElement("chord"));
         note.Add(pitch);
         note.Add(new XElement("duration", DivisionsOf(duration, divisions)));
+        if (voice is int v)
+            note.Add(new XElement("voice", v));
         return note;
     }
 

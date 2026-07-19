@@ -14,9 +14,12 @@ public class MusicXmlExportTests
         return b;
     }
 
+    // Canonical order (offset, pitch, duration): the round-trip preserves the multiset of notes,
+    // but NoteBuffer.Sort does not break offset ties by pitch, so sort explicitly before comparing.
     private static (int pitch, Rational offset, Rational duration)[] Dump(NoteBuffer b) =>
         Enumerable.Range(0, b.Count)
             .Select(i => { var e = b.Get(i); return (e.Pitch, e.Offset, e.Duration); })
+            .OrderBy(t => t.Offset).ThenBy(t => t.Pitch).ThenBy(t => t.Duration)
             .ToArray();
 
     private static void AssertRoundTrips(NoteBuffer original)
@@ -79,13 +82,41 @@ public class MusicXmlExportTests
     }
 
     [Fact]
-    public void Export_OverlappingPolyphony_Throws()
+    public void RoundTrip_Polyphony_PreservesOverlappingNotes()
     {
-        // C4 whole note from 0; E4 quarter starting at 1/4 overlaps it.
+        // A C3 half note under two soprano quarters: the bass overlaps both -> two voices.
+        using var original = Build(
+            (48, Rational.Zero, Rational.Half),
+            (72, Rational.Zero, Rational.Quarter),
+            (74, new Rational(1, 4), Rational.Quarter));
+        AssertRoundTrips(original);
+    }
+
+    [Fact]
+    public void ToXml_Polyphony_EmitsVoicesAndBackup()
+    {
+        using var b = Build(
+            (48, Rational.Zero, Rational.Half),
+            (72, Rational.Zero, Rational.Quarter));   // overlaps the half note
+        var xml = MusicXmlIo.ToXml(b);
+
+        Assert.Contains("<backup>", xml);
+        Assert.Contains("<voice>1</voice>", xml);
+        Assert.Contains("<voice>2</voice>", xml);
+    }
+
+    [Fact]
+    public void ToXml_BlockChord_StaysOneVoice()
+    {
+        // A block chord shares onset + duration, so it is one unit in one voice: no split.
         using var b = Build(
             (60, Rational.Zero, Rational.Whole),
-            (64, new Rational(1, 4), Rational.Quarter));
-        Assert.Throws<NotSupportedException>(() => MusicXmlIo.ToXml(b));
+            (64, Rational.Zero, Rational.Whole),
+            (67, Rational.Zero, Rational.Whole));
+        var xml = MusicXmlIo.ToXml(b);
+
+        Assert.DoesNotContain("<backup", xml);
+        Assert.DoesNotContain("<voice>", xml);
     }
 
     [Fact]
