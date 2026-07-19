@@ -2,3 +2,5 @@
   href: getting-started.md
 - name: 10-minute tour
   href: tour.md
+- name: Python quickstart
+  href: python.md

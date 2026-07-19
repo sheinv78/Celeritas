@@ -28,7 +28,7 @@ print(f"Transposed: {transposed}")  # [62, 66, 69] = D, F#, A
 
 # Identify chord
 chord = identify_chord([60, 64, 67])
-print(f"Chord: {chord}")  # "Cmaj"
+print(f"Chord: {chord}")  # "CMajor"
 
 # Parse chord symbols (ANTLR-backed)
 print(parse_chord_symbol("C7(b9,#11)"))
