@@ -2,6 +2,8 @@
   href: index.md
 - name: Guide
   href: guide/
+- name: Concepts
+  href: concepts/
 - name: API Reference
   href: api/
 - name: Cookbook

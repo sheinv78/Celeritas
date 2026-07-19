@@ -1,0 +1,8 @@
+- name: The whole-note time model
+  href: time-model.md
+- name: NoteBuffer lifecycle & ownership
+  href: notebuffer.md
+- name: SIMD dispatch
+  href: simd.md
+- name: Pitches & enharmonic spelling
+  href: enharmonics.md
