@@ -1168,6 +1168,10 @@ Celeritas.Core.MinorDominantStyle.Harmonic = 1 -> Celeritas.Core.MinorDominantSt
 Celeritas.Core.MinorDominantStyle.Natural = 0 -> Celeritas.Core.MinorDominantStyle
 Celeritas.Core.MusicMath
 Celeritas.Core.MusicNotation
+Celeritas.Core.Notation.MusicXmlIo
+static Celeritas.Core.Notation.MusicXmlIo.Import(string! path) -> Celeritas.Core.NoteBuffer!
+static Celeritas.Core.Notation.MusicXmlIo.Import(System.IO.Stream! stream) -> Celeritas.Core.NoteBuffer!
+static Celeritas.Core.Notation.MusicXmlIo.Parse(string! xml) -> Celeritas.Core.NoteBuffer!
 Celeritas.Core.NotationDirective
 Celeritas.Core.NotationDirective.Time.get -> Celeritas.Core.Rational
 Celeritas.Core.NotationDirective.Time.init -> void
