@@ -575,7 +575,7 @@ modeCommand.SetAction(parseResult => RunGuarded(() =>
                 // Accept pitch-class-only tokens like "D" or "Bb" by normalizing
                 // to a default octave. (Mode detection ignores octave anyway.)
                 var token = note;
-                if (Regex.IsMatch(token, "^[A-Ga-g](?:#{1,2}|b{1,2})?$"))
+                if (NotePatterns.PitchClassToken().IsMatch(token))
                 {
                     token = token + "4";
                 }
@@ -1949,3 +1949,11 @@ static Rational ParseRational(string s)
 /// A user-input error that should be reported as a one-line message with exit code 1.
 /// </summary>
 internal sealed class CliUsageException(string message) : Exception(message);
+
+/// <summary>Source-generated regular expressions used by the CLI.</summary>
+internal static partial class NotePatterns
+{
+    // A bare pitch class ("C", "D#", "Bb", double accidentals allowed) with no octave.
+    [GeneratedRegex("^[A-Ga-g](?:#{1,2}|b{1,2})?$")]
+    public static partial Regex PitchClassToken();
+}
