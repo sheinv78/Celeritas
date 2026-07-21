@@ -64,7 +64,7 @@
       <!-- Public API surface tracking: any public API change not recorded in
            PublicAPI.{Shipped,Unshipped}.txt is flagged (RS0016/RS0017). This is the
            guardrail for curating and freezing the API on the road to 1.0. -->
-      <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
+      <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>
