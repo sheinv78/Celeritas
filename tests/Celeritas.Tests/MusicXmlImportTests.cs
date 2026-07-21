@@ -204,7 +204,7 @@ public class MusicXmlImportTests
     [Fact]
     public void Import_NotationTiedFallback_Merges()
     {
-        string NoteTied(string type) =>
+        static string NoteTied(string type) =>
             "<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration>"
             + $"<notations><tied type=\"{type}\"/></notations></note>";
 

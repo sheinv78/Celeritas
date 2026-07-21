@@ -138,9 +138,9 @@ public class FiguredBassTests
         var figures4 = FiguredBassRealizer.ParseFigures("");
 
         // Assert
-        Assert.Equal(new[] { 6 }, figures1);
-        Assert.Equal(new[] { 6, 4 }, figures2);
-        Assert.Equal(new[] { 7 }, figures3);
+        Assert.Equal([6], figures1);
+        Assert.Equal([6, 4], figures2);
+        Assert.Equal([7], figures3);
         Assert.Empty(figures4);
     }
 

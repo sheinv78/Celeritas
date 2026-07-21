@@ -90,7 +90,7 @@ public static class AccompanimentGenerator
             }
         }
 
-        return events.ToArray();
+        return [.. events];
     }
 
     /// <summary>
@@ -135,7 +135,7 @@ public static class AccompanimentGenerator
                 continue;
             }
 
-            var chordPitchClasses = DeduplicatePitchClasses(pcs.Slice(0, pcCount), opt.MaxChordTones);
+            var chordPitchClasses = DeduplicatePitchClasses(pcs[..pcCount], opt.MaxChordTones);
             if (chordPitchClasses.Length == 0)
             {
                 offset += duration;
@@ -196,7 +196,7 @@ public static class AccompanimentGenerator
             offset += duration;
         }
 
-        return events.ToArray();
+        return [.. events];
     }
 
     private static byte[] GetUniquePitchClasses(int[] pitches, int max)

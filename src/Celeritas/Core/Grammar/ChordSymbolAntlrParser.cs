@@ -122,7 +122,7 @@ internal static class ChordSymbolAntlrParser
             while (j < s.Length && char.IsDigit(s[j]))
                 j++;
 
-            if (!int.TryParse(s.Slice(start, j - start), out var degree))
+            if (!int.TryParse(s[start..j], out var degree))
                 continue;
 
             if (degree is 5 or 9 or 11 or 13)
@@ -269,7 +269,7 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
         {
             var altText = alt.GetText();
             var accidental = altText.StartsWith("#", StringComparison.Ordinal) ? "#" : "b";
-            var num = new string(altText.Where(char.IsDigit).ToArray());
+            var num = new string([.. altText.Where(char.IsDigit)]);
             if (num.Length > 0)
                 builder.ApplyAlteration(accidental, int.Parse(num));
             return;
@@ -278,7 +278,7 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
         if (suffix.addTone() is { } add)
         {
             // add9, add2, add11...
-            var num = new string(add.GetText().Where(char.IsDigit).ToArray());
+            var num = new string([.. add.GetText().Where(char.IsDigit)]);
             if (num.Length > 0)
                 builder.ApplyAdd(int.Parse(num));
             return;
@@ -287,7 +287,7 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
         if (suffix.omitTone() is { } omit)
         {
             // no3, omit5...
-            var num = new string(omit.GetText().Where(char.IsDigit).ToArray());
+            var num = new string([.. omit.GetText().Where(char.IsDigit)]);
             if (num.Length > 0)
                 builder.ApplyOmit(int.Parse(num));
             return;
@@ -318,21 +318,21 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
             {
                 case ChordSymbolParser.AddToneContext add:
                     // add9/add11...
-                    var addNum = new string(add.GetText().Where(char.IsDigit).ToArray());
+                    var addNum = new string([.. add.GetText().Where(char.IsDigit)]);
                     if (addNum.Length > 0)
                         builder.ApplyAdd(int.Parse(addNum));
                     return;
                 case ChordSymbolParser.OmitToneContext omit:
                     // Supports: omit3 / no3
                     var omitText = omit.GetText().ToLowerInvariant();
-                    var omitNum = new string(omitText.Where(char.IsDigit).ToArray());
+                    var omitNum = new string([.. omitText.Where(char.IsDigit)]);
                     if (omitNum.Length > 0)
                         builder.ApplyOmit(int.Parse(omitNum));
                     return;
                 case ChordSymbolParser.AlterationContext alt:
                     var altText = alt.GetText();
                     var accidental = altText.StartsWith("#", StringComparison.Ordinal) ? "#" : "b";
-                    var num = new string(altText.Where(char.IsDigit).ToArray());
+                    var num = new string([.. altText.Where(char.IsDigit)]);
                     if (num.Length > 0)
                         builder.ApplyAlteration(accidental, int.Parse(num));
                     return;

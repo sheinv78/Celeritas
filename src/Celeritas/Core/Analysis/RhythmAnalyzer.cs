@@ -349,7 +349,7 @@ public static class RhythmAnalyzer
     {
         ArgumentNullException.ThrowIfNull(notes);
 
-        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        var arr = notes as NoteEvent[] ?? [.. notes];
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
         return DetectMeter(buffer);
@@ -387,7 +387,7 @@ public static class RhythmAnalyzer
     {
         ArgumentNullException.ThrowIfNull(notes);
 
-        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        var arr = notes as NoteEvent[] ?? [.. notes];
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
         return IdentifyPattern(buffer);
@@ -710,10 +710,9 @@ public static class RhythmAnalyzer
         }
 
         // Remove overlapping matches, keep best
-        matches = matches
+        matches = [.. matches
             .GroupBy(m => m.StartIndex / 4) // Group by approximate position
-            .Select(g => g.OrderByDescending(m => m.MatchQuality).First())
-            .ToList();
+            .Select(g => g.OrderByDescending(m => m.MatchQuality).First())];
 
         return matches;
     }
@@ -841,16 +840,17 @@ public static class RhythmAnalyzer
         float density,
         List<RhythmPatternMatch> patterns)
     {
-        var parts = new List<string>();
-
-        // Density description
-        parts.Add(density switch
+        var parts = new List<string>
         {
-            < 0.5f => "Sparse, spacious rhythm",
-            < 1.0f => "Moderate rhythmic activity",
-            < 2.0f => "Active, driving rhythm",
-            _ => "Dense, busy rhythmic texture"
-        });
+            // Density description
+            density switch
+            {
+                < 0.5f => "Sparse, spacious rhythm",
+                < 1.0f => "Moderate rhythmic activity",
+                < 2.0f => "Active, driving rhythm",
+                _ => "Dense, busy rhythmic texture"
+            }
+        };
 
         // Swing description
         if (swing is > 0.55f and < 0.75f)

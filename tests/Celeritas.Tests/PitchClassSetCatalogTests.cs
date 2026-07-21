@@ -18,7 +18,7 @@ public class PitchClassSetCatalogTests
         var catalog = PitchClassSetCatalog.LoadJson(json);
 
         var pcs = PitchClassSetAnalyzer.Analyze([60, 64, 67]);
-        Assert.Equal(new[] { 0, 3, 7 }, pcs.PrimeForm);
+        Assert.Equal([0, 3, 7], pcs.PrimeForm);
 
         Assert.True(catalog.TryGetByPrimeForm(pcs.PrimeForm, out var entry));
         Assert.NotNull(entry);

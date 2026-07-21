@@ -1,8 +1,8 @@
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
-using Ornamentation = Celeritas.Core.Ornamentation;
 using Celeritas.Core.Midi;
 using Celeritas.Core.VoiceLeading;
+using Ornamentation = Celeritas.Core.Ornamentation;
 
 namespace Celeritas.Tests;
 

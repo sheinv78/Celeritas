@@ -316,7 +316,7 @@ public static class ProgressionAdvisor
     private static string GetChordSymbolForDegree(KeySignature key, ScaleDegree degree)
     {
         var scalePos = (int)degree - 1;
-        var intervals = key.IsMajor ? new[] { 0, 2, 4, 5, 7, 9, 11 } : new[] { 0, 2, 3, 5, 7, 8, 10 };
+        var intervals = key.IsMajor ? new[] { 0, 2, 4, 5, 7, 9, 11 } : [0, 2, 3, 5, 7, 8, 10];
 
         if (scalePos < 0 || scalePos >= intervals.Length)
         {

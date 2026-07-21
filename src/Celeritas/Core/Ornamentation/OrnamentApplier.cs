@@ -32,7 +32,7 @@ public static class OrnamentApplier
             }
         }
 
-        return result.ToArray();
+        return [.. result];
     }
 
     /// <summary>
@@ -156,7 +156,7 @@ public static class OrnamentApplier
             }
         }
 
-        return result.ToArray();
+        return [.. result];
     }
 
     /// <summary>

@@ -232,9 +232,7 @@ public static class MelodyAnalyzer
             return EmptyResult();
         }
 
-        times ??= Enumerable.Range(0, pitches.Length)
-            .Select(i => new Rational(i, 1))
-            .ToArray();
+        times ??= [.. Enumerable.Range(0, pitches.Length).Select(i => new Rational(i, 1))];
 
         // Calculate intervals
         var intervals = new List<MelodicInterval>();
@@ -269,7 +267,7 @@ public static class MelodyAnalyzer
 
         // Detect motifs. times lines up with pitches (and so with the note each interval starts
         // on), so an occurrence at interval index i is reported at that note's onset, times[i].
-        var motifs = DetectMotifs(intervals.Select(i => i.Semitones).ToArray(), times);
+        var motifs = DetectMotifs([.. intervals.Select(i => i.Semitones)], times);
 
         // Calculate conjunctness (how stepwise the melody is)
         var conjunctness = stats.TotalIntervals > 0
@@ -528,7 +526,7 @@ public static class MelodyAnalyzer
         }
 
         // Sort by significance
-        return motifs.OrderByDescending(m => m.Significance).Take(5).ToList();
+        return [.. motifs.OrderByDescending(m => m.Significance).Take(5)];
     }
 
     private static double CalculateComplexity(IReadOnlyDictionary<int, int> histogram)

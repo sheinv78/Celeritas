@@ -9,16 +9,16 @@ public class PitchClassSetAnalyzerTests
     {
         // C major triad: {0,4,7}
         var result = PitchClassSetAnalyzer.Analyze([60, 64, 67]);
-        Assert.Equal(new[] { 0, 3, 7 }, result.PrimeForm);
+        Assert.Equal([0, 3, 7], result.PrimeForm);
         Assert.Equal(3, result.Cardinality);
-        Assert.Equal(new[] { 0, 4, 7 }, result.PitchClasses);
+        Assert.Equal([0, 4, 7], result.PitchClasses);
     }
 
     [Fact]
     public void ChromaticTetrachord_PrimeForm_Is0123()
     {
         var result = PitchClassSetAnalyzer.Analyze([60, 61, 62, 63]);
-        Assert.Equal(new[] { 0, 1, 2, 3 }, result.PrimeForm);
+        Assert.Equal([0, 1, 2, 3], result.PrimeForm);
         Assert.Equal(4, result.Cardinality);
     }
 
@@ -26,7 +26,7 @@ public class PitchClassSetAnalyzerTests
     public void WholeToneHexachord_PrimeForm_Is0246810()
     {
         var result = PitchClassSetAnalyzer.Analyze([60, 62, 64, 66, 68, 70]);
-        Assert.Equal(new[] { 0, 2, 4, 6, 8, 10 }, result.PrimeForm);
+        Assert.Equal([0, 2, 4, 6, 8, 10], result.PrimeForm);
         Assert.Equal(6, result.Cardinality);
     }
 

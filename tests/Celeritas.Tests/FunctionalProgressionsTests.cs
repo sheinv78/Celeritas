@@ -10,8 +10,8 @@ public class FunctionalProgressionsTests
         var key = new KeySignature(PitchClass.C.Value, isMajor: true);
         var prog = FunctionalProgressions.TwoFiveOne(key);
 
-        Assert.Equal(["Dm7", "G7", "Cmaj7"], prog.Select(c => c.Symbol(preferSharps: true)).ToArray());
-        Assert.Equal(["ii7", "V7", "Imaj7"], prog.Select(c => c.RomanNumeral).ToArray());
+        Assert.Equal(["Dm7", "G7", "Cmaj7"], [.. prog.Select(c => c.Symbol(preferSharps: true))]);
+        Assert.Equal(["ii7", "V7", "Imaj7"], [.. prog.Select(c => c.RomanNumeral)]);
     }
 
     [Fact]
@@ -20,8 +20,8 @@ public class FunctionalProgressionsTests
         var key = new KeySignature(PitchClass.A.Value, isMajor: false);
         var prog = FunctionalProgressions.TwoFiveOne(key);
 
-        Assert.Equal(["Bm7b5", "E7", "Am7"], prog.Select(c => c.Symbol(preferSharps: true)).ToArray());
-        Assert.Equal(["iiø7", "V7", "i7"], prog.Select(c => c.RomanNumeral).ToArray());
+        Assert.Equal(["Bm7b5", "E7", "Am7"], [.. prog.Select(c => c.Symbol(preferSharps: true))]);
+        Assert.Equal(["iiø7", "V7", "i7"], [.. prog.Select(c => c.RomanNumeral)]);
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class FunctionalProgressionsTests
         var key = new KeySignature(PitchClass.C.Value, isMajor: true);
         var prog = FunctionalProgressions.Turnaround(key);
 
-        Assert.Equal(["Cmaj7", "Am7", "Dm7", "G7", "Cmaj7"], prog.Select(c => c.Symbol(preferSharps: true)).ToArray());
+        Assert.Equal(["Cmaj7", "Am7", "Dm7", "G7", "Cmaj7"], [.. prog.Select(c => c.Symbol(preferSharps: true))]);
     }
 
     [Fact]
@@ -50,8 +50,8 @@ public class FunctionalProgressionsTests
         var key = new KeySignature(PitchClass.C.Value, isMajor: true);
         var prog = FunctionalProgressions.ThreeSixTwoFiveOne(key);
 
-        Assert.Equal(["Em7", "Am7", "Dm7", "G7", "Cmaj7"], prog.Select(c => c.Symbol(preferSharps: true)).ToArray());
-        Assert.Equal(["iii7", "vi7", "ii7", "V7", "Imaj7"], prog.Select(c => c.RomanNumeral).ToArray());
+        Assert.Equal(["Em7", "Am7", "Dm7", "G7", "Cmaj7"], [.. prog.Select(c => c.Symbol(preferSharps: true))]);
+        Assert.Equal(["iii7", "vi7", "ii7", "V7", "Imaj7"], [.. prog.Select(c => c.RomanNumeral)]);
     }
 
     [Fact]

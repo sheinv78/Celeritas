@@ -2,11 +2,10 @@ using Celeritas.Core;
 using Celeritas.Core.Analysis;
 using Celeritas.Core.FiguredBass;
 using Celeritas.Core.Harmonization;
+using Celeritas.Core.Midi;
 using Celeritas.Core.Ornamentation;
 using Celeritas.Core.VoiceLeading;
-using Celeritas.Core.Midi;
 using Melanchall.DryWetMidi.Core;
-
 // Both namespaces define a NoteEvent; this file means the engine's.
 using NoteEvent = Celeritas.Core.NoteEvent;
 
@@ -260,9 +259,9 @@ public class NullArgumentContractTests
     [Fact]
     public void EmptyInput_IsStillAValidAnswer_NotAnError()
     {
-        Assert.Equal(0, KeyAnalyzer.IdentifyKey(Array.Empty<int>()).Root);
-        Assert.Empty(new MelodyHarmonizer().Harmonize(Array.Empty<NoteEvent>()).Chords);
-        Assert.Empty(OrnamentApplier.Apply(Array.Empty<NoteEvent>(), new Dictionary<int, Ornament>()));
+        Assert.Equal(0, KeyAnalyzer.IdentifyKey([]).Root);
+        Assert.Empty(new MelodyHarmonizer().Harmonize([]).Chords);
+        Assert.Empty(OrnamentApplier.Apply([], new Dictionary<int, Ornament>()));
     }
 
     /// <summary>

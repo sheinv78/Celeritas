@@ -284,7 +284,7 @@ public static class ModulationDetector
             return null;
         }
 
-        var detectedKey = KeyAnalyzer.IdentifyKey(allPitches.ToArray());
+        var detectedKey = KeyAnalyzer.IdentifyKey([.. allPitches]);
 
         // Require significant difference from current key
         if (detectedKey.Root == currentKey.Root && detectedKey.IsMajor == currentKey.IsMajor)

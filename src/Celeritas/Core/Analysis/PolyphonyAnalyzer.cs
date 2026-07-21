@@ -937,7 +937,7 @@ public sealed record ImitationDetectionResult
     };
 }
 
-file static class PolyphonyAnalyzerHelpers
+static file class PolyphonyAnalyzerHelpers
 {
     public static float Clamp01(float x) => x < 0 ? 0 : x > 1 ? 1 : x;
 

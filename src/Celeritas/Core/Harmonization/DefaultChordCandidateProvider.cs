@@ -132,7 +132,7 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
     {
         var numerals = isMajor
             ? new[] { "I", "ii", "iii", "IV", "V", "vi", "vii°" }
-            : new[] { "i", "ii°", "III", "iv", "v", "VI", "VII" };
+            : ["i", "ii°", "III", "iv", "v", "VI", "VII"];
         return numerals[degree];
     }
 }

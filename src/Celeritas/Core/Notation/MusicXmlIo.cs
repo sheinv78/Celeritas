@@ -508,7 +508,7 @@ public static class MusicXmlIo
         }
 
         var units = unitMap
-            .Select(kv => (onset: kv.Key.onset, duration: kv.Key.duration, pitches: kv.Value))
+            .Select(kv => (kv.Key.onset, kv.Key.duration, pitches: kv.Value))
             .OrderBy(u => u.onset).ThenBy(u => u.duration).ToList();
         foreach (var u in units)
             u.pitches.Sort();

@@ -42,8 +42,8 @@ public static class OrchestrationMapper
 
         return new OrchestrationResult
         {
-            Bass = new OrchestratedPart { Definition = opt.Bass, Notes = bass.ToArray() },
-            Harmony = new OrchestratedPart { Definition = opt.Harmony, Notes = harmony.ToArray() }
+            Bass = new OrchestratedPart { Definition = opt.Bass, Notes = [.. bass] },
+            Harmony = new OrchestratedPart { Definition = opt.Harmony, Notes = [.. harmony] }
         };
     }
 

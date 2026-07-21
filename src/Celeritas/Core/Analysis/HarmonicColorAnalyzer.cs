@@ -424,7 +424,7 @@ public static class HarmonicColorAnalyzer
                 result.Add(pc);
         }
 
-        return result.ToArray();
+        return [.. result];
     }
 
     private static string DescribeAlteration(KeySignature key, int pitchClass)

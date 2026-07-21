@@ -20,7 +20,7 @@ public class MidiEventsWriteTests
         var tempos = track.Events.OfType<SetTempoEvent>().ToArray();
 
         Assert.Equal(2, tempos.Length);
-        Assert.Equal(new long[] { 0, 480 }, absTimes.Where((_, i) => track.Events[i] is SetTempoEvent).ToArray());
+        Assert.Equal([0, 480], absTimes.Where((_, i) => track.Events[i] is SetTempoEvent).ToArray());
 
         // Ensure track is well-formed (no negative deltas).
         Assert.All(track.Events, e => Assert.True(e.DeltaTime >= 0));

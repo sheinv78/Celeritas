@@ -17,10 +17,9 @@ public class MusicXmlExportTests
     // Canonical order (offset, pitch, duration): the round-trip preserves the multiset of notes,
     // but NoteBuffer.Sort does not break offset ties by pitch, so sort explicitly before comparing.
     private static (int pitch, Rational offset, Rational duration)[] Dump(NoteBuffer b) =>
-        Enumerable.Range(0, b.Count)
+        [.. Enumerable.Range(0, b.Count)
             .Select(i => { var e = b.Get(i); return (e.Pitch, e.Offset, e.Duration); })
-            .OrderBy(t => t.Offset).ThenBy(t => t.Pitch).ThenBy(t => t.Duration)
-            .ToArray();
+            .OrderBy(t => t.Offset).ThenBy(t => t.Pitch).ThenBy(t => t.Duration)];
 
     private static void AssertRoundTrips(NoteBuffer original)
     {

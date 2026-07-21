@@ -77,7 +77,7 @@ public class PropertyChordMaskTests
         Gen.Int[-1_000, -1].Sample(p =>
         {
             var pc = ((p % 12) + 12) % 12;
-            Assert.Equal(ChordAnalyzer.GetMask(new[] { pc }), ChordAnalyzer.GetMask(new[] { p }));
+            Assert.Equal(ChordAnalyzer.GetMask([pc]), ChordAnalyzer.GetMask([p]));
         });
     }
 }

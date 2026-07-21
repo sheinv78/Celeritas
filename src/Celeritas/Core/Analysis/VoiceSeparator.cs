@@ -115,7 +115,7 @@ public static class VoiceSeparator
     {
         ArgumentNullException.ThrowIfNull(notes);
 
-        var arr = notes as NoteEvent[] ?? notes.ToArray();
+        var arr = notes as NoteEvent[] ?? [.. notes];
         using var buffer = new NoteBuffer(Math.Max(4, arr.Length));
         buffer.AddRange(arr);
         return SeparateIntoSatb(buffer, options);

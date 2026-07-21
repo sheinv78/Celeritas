@@ -33,35 +33,35 @@ public class MidiFuzzTests
     // ---- malformed corpus generators -----------------------------------------------------
 
     // (a) truncated header: "MThd" plus a partial length field.
-    private static byte[] TruncatedHeader() => new byte[] { 0x4D, 0x54, 0x68, 0x64, 0x00, 0x00 };
+    private static byte[] TruncatedHeader() => [0x4D, 0x54, 0x68, 0x64, 0x00, 0x00];
 
     // (f) valid header declaring one track, but zero track chunks follow.
-    private static byte[] HeaderOnly() => new byte[]
-    {
+    private static byte[] HeaderOnly() =>
+    [
         0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
         0x00, 0x00, 0x00, 0x00, 0x01, 0xE0, // format 0, 0 tracks, tpq 480
-    };
+    ];
 
     // (b) valid header (declares 1 track) but the track chunk is truncated mid-event.
-    private static byte[] TruncatedTrack() => new byte[]
-    {
+    private static byte[] TruncatedTrack() =>
+    [
         0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
         0x00, 0x00, 0x00, 0x01, 0x01, 0xE0,
         0x4D, 0x54, 0x72, 0x6B, 0x00, 0x00, 0x00, 0x10, // MTrk, declares 16 bytes
         0x00, 0x90, 0x3C,                                // only 3 bytes present
-    };
+    ];
 
     // (c) track chunk declaring a huge length (0x7FFFFFFF) with no data — a naive reader
     //     could try to pre-allocate ~2 GiB. Hardened settings must abort instead.
-    private static byte[] HugeChunkLength() => new byte[]
-    {
+    private static byte[] HugeChunkLength() =>
+    [
         0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
         0x00, 0x00, 0x00, 0x01, 0x01, 0xE0,
         0x4D, 0x54, 0x72, 0x6B, 0x7F, 0xFF, 0xFF, 0xFF, // MTrk length = int.MaxValue
-    };
+    ];
 
     // (e) arbitrary garbage that is not a MIDI file at all.
-    private static byte[] Garbage() => new byte[] { 0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x11, 0x22, 0x33 };
+    private static byte[] Garbage() => [0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x11, 0x22, 0x33];
 
     // (g) valid, round-trippable control produced by MidiIo itself.
     private static byte[] ValidRoundTrip()
@@ -100,7 +100,7 @@ public class MidiFuzzTests
 
         // WaitAny (unlike Wait) does not itself throw when the task faults — it just reports
         // completion, letting us inspect the fault deliberately.
-        var completed = Task.WaitAny(new[] { (Task)task }, ImportTimeoutMs) == 0;
+        var completed = Task.WaitAny([(Task)task], ImportTimeoutMs) == 0;
         Assert.True(completed, $"MidiIo.Import did not complete within {ImportTimeoutMs} ms — possible hang/unbounded read.");
 
         if (task.IsFaulted)
@@ -163,7 +163,7 @@ public class MidiFuzzTests
     [Fact]
     public void Import_EmptyStream_ThrowsArgumentException()
     {
-        var (buffer, error) = Import(Array.Empty<byte>());
+        var (buffer, error) = Import([]);
         buffer?.Dispose();
         Assert.IsAssignableFrom<ArgumentException>(error);
     }

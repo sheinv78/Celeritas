@@ -21,15 +21,14 @@ public class NoteBufferBoundsTests
     }
 
     public static TheoryData<int> OutOfRangeIndices() =>
-        new()
-        {
+        [
             -1,
             int.MinValue,
             2,          // == Count: allocated but never written
             9,          // < Capacity but >= Count
             10,         // == Capacity
             int.MaxValue,
-        };
+        ];
 
     [Theory]
     [MemberData(nameof(OutOfRangeIndices))]

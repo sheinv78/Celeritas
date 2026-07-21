@@ -144,7 +144,7 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
             ChordQuality.Add9 => Add9Intervals,
             ChordQuality.Add11 => Add11Intervals,
 
-            _ => ReadOnlySpan<byte>.Empty
+            _ => []
         };
     }
 

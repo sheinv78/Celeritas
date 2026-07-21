@@ -28,7 +28,7 @@ public class GenerationFixTests
         var notes = realizer.RealizeSymbol(symbol);
         var pitchClasses = notes.Select(n => n.Pitch % 12).Distinct().OrderBy(x => x).ToArray();
 
-        Assert.Equal(new[] { 0, 4, 9 }, pitchClasses); // A, C, E
+        Assert.Equal([0, 4, 9], pitchClasses); // A, C, E
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class GenerationFixTests
         var notes = realizer.RealizeSymbol(symbol);
         var pitchClasses = notes.Select(n => n.Pitch % 12).Distinct().OrderBy(x => x).ToArray();
 
-        Assert.Equal(new[] { 1, 4, 9 }, pitchClasses); // A, C#, E
+        Assert.Equal([1, 4, 9], pitchClasses); // A, C#, E
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class GenerationFixTests
     [Fact]
     public void FiguredBass_ParseFigures_ToleratesAccidentalPrefixes()
     {
-        Assert.Equal(new[] { 6, 5 }, FiguredBassRealizer.ParseFigures("6/#5"));
+        Assert.Equal([6, 5], FiguredBassRealizer.ParseFigures("6/#5"));
     }
 
     [Fact]

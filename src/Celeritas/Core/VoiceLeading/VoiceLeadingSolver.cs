@@ -133,7 +133,7 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
             }
         }
 
-        return voicings.ToArray();
+        return [.. voicings];
     }
 
     /// <summary>

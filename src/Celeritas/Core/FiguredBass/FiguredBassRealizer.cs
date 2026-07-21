@@ -7,7 +7,7 @@ public sealed class FiguredBassRealizer
 {
     private readonly FiguredBassOptions _options;
 
-    private bool AllowVoiceCrossing => _options is FiguredBassRealizerOptions o ? o.AllowVoiceCrossing : false;
+    private bool AllowVoiceCrossing => _options is FiguredBassRealizerOptions o && o.AllowVoiceCrossing;
     private int? MaxVoiceMovement => _options is FiguredBassRealizerOptions o ? o.MaxVoiceMovement : null;
 
     /// <summary>Creates a realizer with the given options, or defaults when <paramref name="options"/> is <see langword="null"/>.</summary>
@@ -43,7 +43,7 @@ public sealed class FiguredBassRealizer
             previousUpperVoices = voicing.Length switch
             {
                 // Cache upper voices for the next symbol.
-                > 1 => voicing.Skip(1).Select(n => n.Pitch).ToArray(),
+                > 1 => [.. voicing.Skip(1).Select(n => n.Pitch)],
                 _ => null
             };
         }
@@ -69,7 +69,7 @@ public sealed class FiguredBassRealizer
         var notes = new List<NoteEvent>(1 + intervals.Length)
         {
             // Bass note
-            new NoteEvent(symbol.BassPitch, symbol.Time, symbol.Duration)
+            new(symbol.BassPitch, symbol.Time, symbol.Duration)
         };
 
         // Generate target pitch-classes for upper voices.
@@ -138,7 +138,7 @@ public sealed class FiguredBassRealizer
             notes.Add(new NoteEvent(newUpper[i], symbol.Time, symbol.Duration, 0.7f));
         }
 
-        return notes.ToArray();
+        return [.. notes];
     }
 
     private static int ChooseClosestPitchInRange(
@@ -219,7 +219,7 @@ public sealed class FiguredBassRealizer
         var notes = new List<NoteEvent>
         {
             // Bass note
-            new NoteEvent(symbol.BassPitch, symbol.Time, symbol.Duration)
+            new(symbol.BassPitch, symbol.Time, symbol.Duration)
         };
 
         // Realize upper voices based on intervals
@@ -369,7 +369,7 @@ public sealed class FiguredBassRealizer
         var figures = new List<int>(parts.Length);
         foreach (var part in parts)
         {
-            var digits = new string(part.Where(char.IsDigit).ToArray());
+            var digits = new string([.. part.Where(char.IsDigit)]);
             if (digits.Length > 0)
             {
                 figures.Add(int.Parse(digits));

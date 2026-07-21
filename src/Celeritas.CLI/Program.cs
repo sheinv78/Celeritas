@@ -38,7 +38,7 @@ static string[] ExpandListArgs(string[] raw)
         result.AddRange(parts);
     }
 
-    return result.ToArray();
+    return [.. result];
 }
 
 Option<int> semitonesOption = new("--semitones", "-s")
@@ -1023,7 +1023,7 @@ melodyCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
     Console.WriteLine();
 
-    var analysis = MelodyAnalyzer.Analyze(pitches.ToArray());
+    var analysis = MelodyAnalyzer.Analyze([.. pitches]);
 
     // Display notes
     var noteNames = pitches.Select(MusicMath.MidiToNoteName);

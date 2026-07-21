@@ -56,7 +56,7 @@ internal static class MusicNotationAntlrParser
         var visitor = new MusicNotationVisitorImpl(validateMeasures);
         var notes = visitor.Visit(tree);
 
-        return new ParseResult(notes, visitor.TimeSignature, visitor.Directives.ToArray(), errors);
+        return new ParseResult(notes, visitor.TimeSignature, [.. visitor.Directives], errors);
     }
 
     /// <summary>
@@ -212,7 +212,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
             _measureStart = _currentTime;
         }
 
-        return _notes.ToArray();
+        return [.. _notes];
     }
 
     public override NoteEvent[] VisitTimeSignature(MusicNotationParser.TimeSignatureContext context)
@@ -679,7 +679,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         {
             // Remove surrounding quotes
             var text = context.STRING().GetText();
-            return text.Substring(1, text.Length - 2);
+            return text[1..^1];
         }
 
         if (context.IDENT() != null)

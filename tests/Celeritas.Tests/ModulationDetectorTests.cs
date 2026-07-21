@@ -81,7 +81,7 @@ public class ModulationDetectorTests
     public void Analyze_EmptyInput_ReturnsStartKey()
     {
         var startKey = new KeySignature("D", false);
-        var result = ModulationDetector.Analyze(ReadOnlySpan<NoteEvent>.Empty, startKey);
+        var result = ModulationDetector.Analyze([], startKey);
 
         Assert.Empty(result.Modulations);
         Assert.Equal(startKey, result.EndKey);
