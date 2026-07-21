@@ -134,19 +134,19 @@ public static class ChordLibrary
             (ChordQuality.Add11,      [0, 4, 7, 17 % 12]), // 17 % 12 = 5
         };
 
-        foreach (var t in templates)
+        foreach (var (quality, steps) in templates)
         {
             for (var root = 0; root < 12; root++)
             {
                 ushort mask = 0;
-                foreach (var step in t.steps)
+                foreach (var step in steps)
                 {
                     mask |= (ushort)(1 << ((root + step) % 12));
                 }
 
                 if (!HasChord[mask])
                 {
-                    Lookup[mask] = new ChordInfo((byte)root, t.quality);
+                    Lookup[mask] = new ChordInfo((byte)root, quality);
                     HasChord[mask] = true;
                 }
             }

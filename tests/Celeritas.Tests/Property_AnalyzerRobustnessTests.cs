@@ -130,7 +130,7 @@ public class PropertyAnalyzerRobustnessTests
             .Sample(t =>
             {
                 // Deterministic shuffle — CsCheck replays by seed, so Random() would not reproduce.
-                var shuffled = t.pitches.OrderBy(p => (p * 2654435761L ^ t.seed) & 0xFFFF).ToArray();
+                var shuffled = t.pitches.OrderBy(p => ((p * 2654435761L) ^ t.seed) & 0xFFFF).ToArray();
                 var doubled = t.pitches.Concat(t.pitches).ToArray();
 
                 var baseline = PitchClassSetAnalyzer.GetNormalOrder(t.pitches);

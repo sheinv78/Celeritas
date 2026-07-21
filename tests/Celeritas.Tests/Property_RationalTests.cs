@@ -72,7 +72,7 @@ public class PropertyRationalTests
             .Sample(t =>
             {
                 var (a, b, c) = t;
-                Assert.Equal((a + b) + c, a + (b + c));
+                Assert.Equal(a + b + c, a + (b + c));
             });
     }
 
@@ -83,7 +83,7 @@ public class PropertyRationalTests
             .Sample(t =>
             {
                 var (a, b, c) = t;
-                Assert.Equal((a * b) * c, a * (b * c));
+                Assert.Equal(a * b * c, a * (b * c));
             });
     }
 
@@ -104,7 +104,7 @@ public class PropertyRationalTests
             .Sample(t =>
             {
                 var (a, b) = t;
-                Assert.Equal(a, (a + b) - b);
+                Assert.Equal(a, a + b - b);
             });
     }
 
@@ -116,7 +116,7 @@ public class PropertyRationalTests
             .Sample(t =>
             {
                 var (a, b) = t;
-                Assert.Equal(a, (a * b) / b);
+                Assert.Equal(a, a * b / b);
             });
     }
 

@@ -23,25 +23,19 @@ public enum RhythmStyle
 /// <summary>
 /// Rhythm predictor using Markov chains and N-gram models.
 /// </summary>
-public sealed class RhythmPredictor
+/// <remarks>
+/// Create a new rhythm predictor.
+/// </remarks>
+/// <param name="order">Markov chain order (1 = first-order, 2 = second-order, etc.)</param>
+/// <param name="seed">Random seed for reproducibility (null = random)</param>
+public sealed class RhythmPredictor(int order = 2, int? seed = null)
 {
     // Stores RAW transition counts; probabilities are computed at query time.
     // This keeps repeated Train() calls accumulating correctly (normalizing in
     // place would mix probabilities with subsequent raw counts).
     private readonly Dictionary<string, Dictionary<Rational, float>> _transitions = [];
-    private readonly int _order;
-    private readonly Random _random;
-
-    /// <summary>
-    /// Create a new rhythm predictor.
-    /// </summary>
-    /// <param name="order">Markov chain order (1 = first-order, 2 = second-order, etc.)</param>
-    /// <param name="seed">Random seed for reproducibility (null = random)</param>
-    public RhythmPredictor(int order = 2, int? seed = null)
-    {
-        _order = Math.Max(1, order);
-        _random = seed.HasValue ? new Random(seed.Value) : new Random();
-    }
+    private readonly int _order = Math.Max(1, order);
+    private readonly Random _random = seed.HasValue ? new Random(seed.Value) : new Random();
 
     /// <summary>
     /// Train the predictor on a sequence of durations.
@@ -123,8 +117,8 @@ public sealed class RhythmPredictor
         {
             MostLikely = best.Key,
             Confidence = best.Value / total,
-            Alternatives = sorted.Skip(1).Take(4).Select(kv =>
-                new RhythmAlternative { Duration = kv.Key, Probability = kv.Value / total }).ToList(),
+            Alternatives = [.. sorted.Skip(1).Take(4).Select(kv =>
+                new RhythmAlternative { Duration = kv.Key, Probability = kv.Value / total })],
             ContextFound = true
         };
     }
@@ -200,14 +194,13 @@ public sealed class RhythmPredictor
             Order = _order,
             UniqueContexts = _transitions.Count,
             TotalTransitions = _transitions.Values.Sum(d => d.Count),
-            MostCommonDurations = _transitions
+            MostCommonDurations = [.. _transitions
                 .SelectMany(kv => kv.Value)
                 .GroupBy(kv => kv.Key)
                 .Select(g => (g.Key, g.Sum(x => x.Value)))
                 .OrderByDescending(x => x.Item2)
                 .Take(5)
-                .Select(x => x.Key)
-                .ToList()
+                .Select(x => x.Key)]
         };
     }
 
@@ -285,8 +278,8 @@ public sealed class RhythmPredictor
                 {
                     MostLikely = sorted[0].Key,
                     Confidence = sorted[0].Value / total * 0.8f, // Lower confidence for fallback
-                    Alternatives = sorted.Skip(1).Take(4).Select(kv =>
-                        new RhythmAlternative { Duration = kv.Key, Probability = kv.Value / total }).ToList(),
+                    Alternatives = [.. sorted.Skip(1).Take(4).Select(kv =>
+                        new RhythmAlternative { Duration = kv.Key, Probability = kv.Value / total })],
                     ContextFound = true
                 };
             }

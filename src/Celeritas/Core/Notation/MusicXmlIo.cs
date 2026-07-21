@@ -510,8 +510,8 @@ public static class MusicXmlIo
         var units = unitMap
             .Select(kv => (kv.Key.onset, kv.Key.duration, pitches: kv.Value))
             .OrderBy(u => u.onset).ThenBy(u => u.duration).ToList();
-        foreach (var u in units)
-            u.pitches.Sort();
+        foreach (var (onset, duration, pitches) in units)
+            pitches.Sort();
 
         // Greedy voice assignment: each unit joins the first voice free at its onset; overlapping
         // units start new voices. Monophonic / block-chordal input stays a single voice.

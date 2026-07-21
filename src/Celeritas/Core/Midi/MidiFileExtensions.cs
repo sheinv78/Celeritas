@@ -345,7 +345,7 @@ public static class MidiFileExtensions
                 totalDuration: totalDuration,
                 minNoteNumber: minNoteNumber,
                 maxNoteNumber: maxNoteNumber,
-                channels: channels.OrderBy(c => c).ToArray());
+                channels: [.. channels.OrderBy(c => c)]);
         }
     }
 
@@ -412,11 +412,11 @@ public static class MidiFileExtensions
 
         var mergedTrack = new TrackChunk();
         long prev = 0;
-        foreach (var item in collected)
+        foreach (var (Time, Order, Event) in collected)
         {
-            item.Event.DeltaTime = Math.Max(0, item.Time - prev);
-            mergedTrack.Events.Add(item.Event);
-            prev = item.Time;
+            Event.DeltaTime = Math.Max(0, Time - prev);
+            mergedTrack.Events.Add(Event);
+            prev = Time;
         }
 
         if (endOfTrackPrototype is not null)

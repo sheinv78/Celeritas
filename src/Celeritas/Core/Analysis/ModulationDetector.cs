@@ -165,7 +165,7 @@ public static class ModulationDetector
             }
 
             // Determine modulation type
-            var modulationType = DetermineModulationType(currentKey, detectedKey.Value, currentChord.Offset);
+            var modulationType = DetermineModulationType(currentKey, detectedKey.Value);
             var confidence = stability;
 
             // Check duration to distinguish tonicization from true modulation
@@ -321,7 +321,7 @@ public static class ModulationDetector
         return totalCount > 0 ? (float)inKeyCount / totalCount : 0f;
     }
 
-    private static ModulationType DetermineModulationType(KeySignature fromKey, KeySignature toKey, Rational offset)
+    private static ModulationType DetermineModulationType(KeySignature fromKey, KeySignature toKey)
     {
         var interval = (toKey.Root - fromKey.Root + 12) % 12;
 

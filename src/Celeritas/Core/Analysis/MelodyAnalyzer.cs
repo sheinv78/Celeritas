@@ -278,7 +278,7 @@ public static class MelodyAnalyzer
         var complexity = CalculateComplexity(stats.IntervalHistogram);
 
         // Character description
-        var character = DescribeCharacter(contour, conjunctness, complexity, ambitus, stats);
+        var character = DescribeCharacter(conjunctness, complexity, ambitus, stats);
 
         return new MelodyAnalysisResult
         {
@@ -506,7 +506,7 @@ public static class MelodyAnalyzer
                     seenPatterns.Add(patternKey);
 
                     // Significance based on length and frequency
-                    var significance = (len * occurrences.Count) / (double)intervals.Length;
+                    var significance = len * occurrences.Count / (double)intervals.Length;
                     significance = Math.Min(1.0, significance);
 
                     motifs.Add(new Motif
@@ -517,7 +517,7 @@ public static class MelodyAnalyzer
                         // were wrapped straight into Rational — index 3 surfaced as 3/1, three
                         // whole notes — so the real onsets extracted by Analyze(NoteBuffer) were
                         // discarded and replaced with the note's position in the sequence.
-                        Occurrences = occurrences.Select(i => noteTimes[i]).ToList(),
+                        Occurrences = [.. occurrences.Select(i => noteTimes[i])],
                         Length = len,
                         Significance = significance
                     });
@@ -555,7 +555,6 @@ public static class MelodyAnalyzer
     }
 
     private static string DescribeCharacter(
-        MelodicContour contour,
         double conjunctness,
         double complexity,
         int ambitus,

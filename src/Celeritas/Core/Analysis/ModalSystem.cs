@@ -539,7 +539,7 @@ public static class ModeLibrary
     private static float ScoreAgainstMode(float[] distribution, ModalKey key)
     {
         var intervals = GetIntervals(key.Mode);
-        float inScale = 0f, outScale = 0f;
+        float inScale = 0f;
         float total = 0f;
 
         for (int i = 0; i < 12; i++)
@@ -556,7 +556,7 @@ public static class ModeLibrary
             inScale += distribution[pc];
         }
 
-        outScale = total - inScale;
+        var outScale = total - inScale;
 
         // Bonus for characteristic notes
         var (characteristic, _) = GetCharacteristicNotes(key.Mode);

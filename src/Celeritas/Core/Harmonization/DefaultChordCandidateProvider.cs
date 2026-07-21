@@ -106,8 +106,7 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
             // Bonus if melody note is chord tone (root/3rd/5th)
             var melodyInChord = CountMatchingBits(melodyMask, chordMask);
             baseCost -= melodyInChord * 0.1f;
-
-            var romanNumeral = ToRomanNumeral(degree, key.IsMajor);
+            _ = ToRomanNumeral(degree, key.IsMajor);
             yield return new ChordCandidate(chord, pitches, baseCost);
         }
     }

@@ -17,14 +17,12 @@ namespace Celeritas.Core;
 /// </summary>
 public readonly record struct Rational : IComparable<Rational>
 {
-    private readonly long _numerator;
-    private readonly long _denominatorMinusOne; // stored minus one so default(Rational) == 0/1
-
     /// <summary>The signed numerator, in lowest terms.</summary>
-    public long Numerator => _numerator;
+    public long Numerator { get; }
 
     /// <summary>The denominator, in lowest terms; always positive (at least 1).</summary>
-    public long Denominator => _denominatorMinusOne + 1;
+    // Backed by (denominator - 1) so a zero-initialized default(Rational) reads as 1 — i.e. 0/1.
+    public long Denominator => field + 1;
 
     /// <summary>
     /// Creates a rational number, normalized to lowest terms with a positive denominator.
@@ -40,8 +38,8 @@ public readonly record struct Rational : IComparable<Rational>
 
         if (numerator == 0)
         {
-            _numerator = 0;
-            _denominatorMinusOne = 0;
+            Numerator = 0;
+            Denominator = 0;
             return;
         }
 
@@ -55,8 +53,8 @@ public readonly record struct Rational : IComparable<Rational>
             num = checked(-num);
             den = checked(-den);
         }
-        _numerator = num;
-        _denominatorMinusOne = den - 1;
+        Numerator = num;
+        Denominator = den - 1;
     }
 
     /// <summary>Zero (0/1).</summary>
@@ -139,8 +137,8 @@ public readonly record struct Rational : IComparable<Rational>
         var g1 = Gcd(a.Numerator, b.Denominator);
         var g2 = Gcd(b.Numerator, a.Denominator);
         return new Rational(
-            checked((a.Numerator / g1) * (b.Numerator / g2)),
-            checked((a.Denominator / g2) * (b.Denominator / g1)));
+            checked(a.Numerator / g1 * (b.Numerator / g2)),
+            checked(a.Denominator / g2 * (b.Denominator / g1)));
     }
 
     /// <summary>Divides <paramref name="a"/> by <paramref name="b"/> exactly.</summary>
@@ -155,8 +153,8 @@ public readonly record struct Rational : IComparable<Rational>
         var g1 = Gcd(a.Numerator, b.Numerator);
         var g2 = Gcd(b.Denominator, a.Denominator);
         return new Rational(
-            checked((a.Numerator / g1) * (b.Denominator / g2)),
-            checked((a.Denominator / g2) * (b.Numerator / g1)));
+            checked(a.Numerator / g1 * (b.Denominator / g2)),
+            checked(a.Denominator / g2 * (b.Numerator / g1)));
     }
 
     /// <summary>Multiplies a rational number by an integer exactly.</summary>

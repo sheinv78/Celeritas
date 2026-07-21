@@ -320,7 +320,7 @@ public static class VoiceSeparator
 
         return new VoiceSeparationResult
         {
-            Voices = voices.Where(v => v.Notes.Count > 0).ToList(),
+            Voices = [.. voices.Where(v => v.Notes.Count > 0)],
             TotalNotes = buffer.Count,
             VoiceCrossings = voiceCrossings,
             SeparationQuality = quality,

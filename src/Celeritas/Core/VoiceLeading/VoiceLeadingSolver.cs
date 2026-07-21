@@ -90,14 +90,14 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
         // For 3-note chords, one note must be doubled
         // For 4-note chords, use all notes
 
-        var bassRange = VoiceRanges.Bass;
+        var (Min, Max) = VoiceRanges.Bass;
         var tenorRange = VoiceRanges.Tenor;
         var altoRange = VoiceRanges.Alto;
         var sopRange = VoiceRanges.Soprano;
 
         // Generate all combinations
         // Optimize by only considering pitches that are in range for each voice
-        var bassPitches = GetPitchesInRange(pitchClasses, bassRange.Min, bassRange.Max);
+        var bassPitches = GetPitchesInRange(pitchClasses, Min, Max);
         var tenorPitches = GetPitchesInRange(pitchClasses, tenorRange.Min, tenorRange.Max);
         var altoPitches = GetPitchesInRange(pitchClasses, altoRange.Min, altoRange.Max);
         var sopPitches = GetPitchesInRange(pitchClasses, sopRange.Min, sopRange.Max);

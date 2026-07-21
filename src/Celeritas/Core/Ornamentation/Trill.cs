@@ -48,7 +48,7 @@ public sealed class Trill : Ornament
         var endTime = BaseNote.Offset + BaseNote.Duration;
 
         // Calculate how many notes fit
-        var totalNotes = (int)((BaseNote.Duration.Numerator * Speed * 4) / BaseNote.Duration.Denominator);
+        var totalNotes = (int)(BaseNote.Duration.Numerator * Speed * 4 / BaseNote.Duration.Denominator);
 
         // The base note is shorter than a single trill unit — expanding would silently
         // delete it; keep the plain note instead.

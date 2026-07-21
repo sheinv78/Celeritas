@@ -467,8 +467,8 @@ public static class ProgressionAdvisor
 
         // Complexity heuristic (0-1)
         var complexity = Clamp01(
-            ((uniqueRoots / (float)Math.Max(1, parsedChords.Count)) * 0.35f) +
-            ((variety / 12f) * 0.15f) +
+            (uniqueRoots / (float)Math.Max(1, parsedChords.Count) * 0.35f) +
+            (variety / 12f * 0.15f) +
             (modulations.Count > 0 ? 0.25f : 0f) +
             (hasModalMixture ? 0.15f : 0f) +
             (hasAltered ? 0.10f : 0f));

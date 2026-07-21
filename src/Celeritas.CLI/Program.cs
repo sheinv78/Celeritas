@@ -947,7 +947,7 @@ rhythmCommand.SetAction(parseResult => RunGuarded(() =>
             }
 
             // Generate continuation
-            var continuation = predictor.GenerateMeasure(durations.TakeLast(2).ToList(), meter);
+            var continuation = predictor.GenerateMeasure([.. durations.TakeLast(2)], meter);
             Console.WriteLine();
             Console.WriteLine($"  Generated measure ({style} style):");
             Console.WriteLine($"    {string.Join(" ", continuation)}");

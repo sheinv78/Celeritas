@@ -7,12 +7,19 @@ namespace Celeritas.Core.Harmonization;
 /// Harmonizes melodies using dynamic programming (Viterbi-style).
 /// Fully extensible via strategy interfaces.
 /// </summary>
-public sealed class MelodyHarmonizer
+/// <remarks>
+/// Create a harmonizer with custom strategies.
+/// </remarks>
+public sealed class MelodyHarmonizer(
+    IChordCandidateProvider candidateProvider,
+    ITransitionScorer transitionScorer,
+    IMelodyFitScorer fitScorer,
+    IHarmonicRhythmStrategy rhythmStrategy)
 {
-    private readonly IChordCandidateProvider _candidateProvider;
-    private readonly ITransitionScorer _transitionScorer;
-    private readonly IMelodyFitScorer _fitScorer;
-    private readonly IHarmonicRhythmStrategy _rhythmStrategy;
+    private readonly IChordCandidateProvider _candidateProvider = candidateProvider ?? throw new ArgumentNullException(nameof(candidateProvider));
+    private readonly ITransitionScorer _transitionScorer = transitionScorer ?? throw new ArgumentNullException(nameof(transitionScorer));
+    private readonly IMelodyFitScorer _fitScorer = fitScorer ?? throw new ArgumentNullException(nameof(fitScorer));
+    private readonly IHarmonicRhythmStrategy _rhythmStrategy = rhythmStrategy ?? throw new ArgumentNullException(nameof(rhythmStrategy));
 
     /// <summary>
     /// Create a harmonizer with default strategies.
@@ -23,21 +30,6 @@ public sealed class MelodyHarmonizer
                new DefaultTransitionScorer(), // implements both interfaces
                new DefaultHarmonicRhythmStrategy())
     {
-    }
-
-    /// <summary>
-    /// Create a harmonizer with custom strategies.
-    /// </summary>
-    public MelodyHarmonizer(
-        IChordCandidateProvider candidateProvider,
-        ITransitionScorer transitionScorer,
-        IMelodyFitScorer fitScorer,
-        IHarmonicRhythmStrategy rhythmStrategy)
-    {
-        _candidateProvider = candidateProvider ?? throw new ArgumentNullException(nameof(candidateProvider));
-        _transitionScorer = transitionScorer ?? throw new ArgumentNullException(nameof(transitionScorer));
-        _fitScorer = fitScorer ?? throw new ArgumentNullException(nameof(fitScorer));
-        _rhythmStrategy = rhythmStrategy ?? throw new ArgumentNullException(nameof(rhythmStrategy));
     }
 
     /// <summary>
