@@ -577,7 +577,7 @@ modeCommand.SetAction(parseResult => RunGuarded(() =>
                 var token = note;
                 if (NotePatterns.PitchClassToken().IsMatch(token))
                 {
-                    token = token + "4";
+                    token += "4";
                 }
 
                 var midi2 = MusicNotation.ParseNote(token);
@@ -872,7 +872,7 @@ rhythmCommand.SetAction(parseResult => RunGuarded(() =>
         foreach (var dur in durations)
         {
             buffer.Add(new NoteEvent(60, offset, dur)); // C4 as placeholder pitch
-            offset = offset + dur;
+            offset += dur;
         }
 
         // Analyze

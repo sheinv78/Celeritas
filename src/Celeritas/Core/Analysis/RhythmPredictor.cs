@@ -184,7 +184,7 @@ public sealed class RhythmPredictor
                 context.RemoveAt(0);
             }
 
-            current = current + next;
+            current += next;
         }
 
         return result;

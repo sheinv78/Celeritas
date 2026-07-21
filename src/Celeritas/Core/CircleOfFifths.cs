@@ -45,7 +45,7 @@ public static class CircleOfFifths
         for (var i = 0; i < result.Length; i++)
         {
             result[i] = current;
-            current = current + step;
+            current += step;
         }
 
         return result;
