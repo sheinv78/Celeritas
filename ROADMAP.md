@@ -1,7 +1,7 @@
 # Celeritas Roadmap
 
 > Direction and milestones for Celeritas. A living document — priorities may shift.
-> Last updated: 2026-07-15.
+> Last updated: 2026-07-17.
 
 ## North Star
 
@@ -45,6 +45,8 @@ Celeritas already covers most of the symbolic-music core, all under test:
 
 ### 0.10 — Stabilize the core
 
+**✅ Shipped.** Correctness bugs fixed, public API curated and CI-gated against a baseline.
+
 - Audit and curate the public API surface: make internal what should be internal, seal
   where appropriate, reconcile naming and namespaces.
 - Adopt `Microsoft.CodeAnalysis.PublicApiAnalyzers` with `PublicAPI.Shipped.txt` /
@@ -61,6 +63,9 @@ Celeritas already covers most of the symbolic-music core, all under test:
 
 ### 0.11 — Documentation & DX
 
+**✅ Shipped.** Full public XML-doc coverage (CI-gated), a live DocFX API site,
+guides, a Python quickstart, and an expanded Cookbook.
+
 - Publish an API reference site (DocFX) to GitHub Pages from CI.
 - Conceptual guides: the whole-note time model, `NoteBuffer` lifecycle/ownership, the SIMD
   dispatch strategy, enharmonic spelling.
@@ -69,9 +74,15 @@ Celeritas already covers most of the symbolic-music core, all under test:
 
 ### 0.12 — Notation interop (flagship)
 
-- MusicXML import → `NoteBuffer`/`NoteEvent` (partwise & timewise) and export.
-- Round-trip fidelity tests against a public MusicXML corpus.
-- CLI: `celeritas musicxml convert|analyze`.
+**Core shipped.** MusicXML `score-partwise` import/export with round-trip fidelity.
+
+- ✅ MusicXML import → `NoteBuffer`/`NoteEvent`: pitches, durations, rests, chords,
+  ties, multiple voices/parts, and dynamics → velocity.
+- ✅ MusicXML export, with import → export → import round-trip fidelity tests.
+- ✅ CLI: `celeritas musicxml convert|analyze`; Cookbook recipe.
+- Extended coverage & polish — tuplets, grace notes, `score-timewise`, compressed
+  `.mxl`, export dynamics, and public-corpus validation — tracked in
+  [#39](https://github.com/sheinv78/Celeritas/issues/39).
 - Stretch: ABC notation import.
 
 ### 1.0 — Stable release
