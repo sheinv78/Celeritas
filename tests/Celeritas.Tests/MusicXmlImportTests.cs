@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Celeritas.Core;
 using Celeritas.Core.Notation;
 
@@ -267,6 +268,60 @@ public class MusicXmlImportTests
 
         Assert.Equal(1, buffer.Count);
         Assert.Equal(49d / 127d, buffer.Get(0).Velocity, 3);   // piano at the chain start
+    }
+
+    private static MemoryStream Mxl(string scoreXml, bool withContainer, string scoreName)
+    {
+        var ms = new MemoryStream();
+        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            if (withContainer)
+            {
+                using var w = new StreamWriter(zip.CreateEntry("META-INF/container.xml").Open());
+                w.Write($"<container><rootfiles><rootfile full-path=\"{scoreName}\"/></rootfiles></container>");
+            }
+            using var s = new StreamWriter(zip.CreateEntry(scoreName).Open());
+            s.Write(scoreXml);
+        }
+        ms.Position = 0;
+        return ms;
+    }
+
+    [Fact]
+    public void Import_Mxl_WithContainer_ReadsNamedScore()
+    {
+        // Two entries; container points at the real score, a decoy .xml sits alongside.
+        var score = PartwiseWith(Note("C", 4, 1) + Note("E", 4, 1));
+        using var mxl = Mxl(score, withContainer: true, scoreName: "score.xml");
+
+        using var buffer = MusicXmlIo.Import(mxl);
+
+        Assert.Equal(2, buffer.Count);
+        Assert.Equal(60, buffer.Get(0).Pitch);
+        Assert.Equal(64, buffer.Get(1).Pitch);
+    }
+
+    [Fact]
+    public void Import_Mxl_NoContainer_FallsBackToFirstScore()
+    {
+        using var mxl = Mxl(PartwiseWith(Note("G", 4, 1)), withContainer: false, scoreName: "whatever.musicxml");
+
+        using var buffer = MusicXmlIo.Import(mxl);
+
+        Assert.Equal(1, buffer.Count);
+        Assert.Equal(67, buffer.Get(0).Pitch);
+    }
+
+    [Fact]
+    public void Import_Stream_PlainXml_StillWorks()
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(PartwiseWith(Note("C", 4, 1)));
+        using var stream = new MemoryStream(bytes);
+
+        using var buffer = MusicXmlIo.Import(stream);
+
+        Assert.Equal(1, buffer.Count);
+        Assert.Equal(60, buffer.Get(0).Pitch);
     }
 
     [Fact]

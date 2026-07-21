@@ -1,6 +1,7 @@
 // Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
+using System.IO.Compression;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -18,9 +19,9 @@ namespace Celeritas.Core.Notation;
 /// <para>
 /// Multi-voice parts import correctly because voice timing rides on <c>&lt;backup&gt;</c>/
 /// <c>&lt;forward&gt;</c>, and dynamics (<c>&lt;dynamics&gt;</c> marks and <c>&lt;sound dynamics&gt;</c>)
-/// set note velocity. Not yet handled (spelled out so callers know the boundaries): grace notes,
-/// tuplet time-modification, and the <c>score-timewise</c> layout. Export does not yet write
-/// dynamics back. Compressed <c>.mxl</c> is not unpacked here.
+/// set note velocity. Compressed <c>.mxl</c> archives are unwrapped on import. Not yet handled
+/// (spelled out so callers know the boundaries): grace notes, tuplet time-modification, and the
+/// <c>score-timewise</c> layout. Export does not yet write dynamics back.
 /// </para>
 /// </summary>
 public static class MusicXmlIo
@@ -37,13 +38,28 @@ public static class MusicXmlIo
         return Import(stream);
     }
 
-    /// <summary>Reads and imports MusicXML from a stream.</summary>
+    /// <summary>
+    /// Reads and imports MusicXML from a stream. Plain XML and compressed <c>.mxl</c> (a ZIP whose
+    /// score is named by <c>META-INF/container.xml</c>) are both accepted, detected by content.
+    /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidDataException">The document is not valid, importable MusicXML.</exception>
     public static NoteBuffer Import(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        return BuildFromDocument(LoadSafely(reader => XDocument.Load(reader), stream));
+
+        // Buffer so we can sniff the format and re-read it (MusicXML files are small).
+        using var buffered = new MemoryStream();
+        stream.CopyTo(buffered);
+        buffered.Position = 0;
+
+        // A .mxl archive starts with the ZIP local-file signature "PK\x03\x04".
+        var isZip = buffered.Length >= 2 && buffered.ReadByte() == 'P' && buffered.ReadByte() == 'K';
+        buffered.Position = 0;
+
+        return BuildFromDocument(isZip
+            ? LoadFromMxl(buffered)
+            : LoadSafely(reader => XDocument.Load(reader), (Stream)buffered));
     }
 
     /// <summary>Imports MusicXML held in a string.</summary>
@@ -129,6 +145,65 @@ public static class MusicXmlIo
         {
             throw new InvalidDataException($"Not well-formed XML: {ex.Message}", ex);
         }
+    }
+
+    // Unwraps a compressed .mxl archive: read the score named by META-INF/container.xml, or fall
+    // back to the first non-META-INF .xml/.musicxml entry.
+    private static XDocument LoadFromMxl(Stream zipStream)
+    {
+        ZipArchive archive;
+        try
+        {
+            archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
+        }
+        catch (InvalidDataException ex)
+        {
+            throw new InvalidDataException($"Not a readable .mxl (ZIP) archive: {ex.Message}", ex);
+        }
+
+        using (archive)
+        {
+            var entry = FindScoreEntry(archive)
+                ?? throw new InvalidDataException("The .mxl archive contains no MusicXML score.");
+            using var entryStream = entry.Open();
+            return LoadSafely(reader => XDocument.Load(reader), entryStream);
+        }
+    }
+
+    private static ZipArchiveEntry? FindScoreEntry(ZipArchive archive)
+    {
+        // Preferred: the rootfile path declared in META-INF/container.xml.
+        var container = archive.GetEntry("META-INF/container.xml");
+        if (container is not null)
+        {
+            try
+            {
+                using var containerStream = container.Open();
+                var doc = LoadSafely(reader => XDocument.Load(reader), containerStream);
+                var fullPath = doc.Descendants()
+                    .FirstOrDefault(e => e.Name.LocalName == "rootfile")
+                    ?.Attribute("full-path")?.Value;
+
+                if (!string.IsNullOrWhiteSpace(fullPath))
+                {
+                    var named = archive.GetEntry(fullPath)
+                        ?? archive.Entries.FirstOrDefault(e =>
+                            e.FullName.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
+                    if (named is not null)
+                        return named;
+                }
+            }
+            catch (InvalidDataException)
+            {
+                // Unusable container.xml — fall through to the heuristic below.
+            }
+        }
+
+        // Fallback: the first score-looking entry outside META-INF.
+        return archive.Entries.FirstOrDefault(e =>
+            !e.FullName.StartsWith("META-INF/", StringComparison.OrdinalIgnoreCase)
+            && (e.FullName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)
+                || e.FullName.EndsWith(".musicxml", StringComparison.OrdinalIgnoreCase)));
     }
 
     private static NoteBuffer BuildFromDocument(XDocument doc)
