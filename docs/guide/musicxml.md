@@ -66,11 +66,17 @@ overlapping lines are split into voices.
 
 ## Boundaries
 
-This is a working core, not a full MusicXML implementation. Not yet handled:
-tuplet grouping (`<time-modification>` — though triplet *durations* import exactly),
-grace notes, and the `score-timewise` layout (rejected with a clear error rather
-than mis-read). Dynamics are written back on export only for single-voice music;
-polyphonic velocity is left at the default.
+This is a working core, not a full MusicXML implementation. Remaining
+approximations, spelled out:
+
+- **Tuplet grouping metadata** (`<time-modification>`) is ignored — tuplet
+  *durations* import exactly (a triplet-eighth is exactly `1/12`), only the
+  notational grouping is dropped.
+- **Grace notes** are approximated: the pitch is kept as a short note (`1/32`) at
+  the beat of its principal note, without shifting time.
+- **`score-timewise`** is transposed to partwise on import and read normally.
+- **Dynamics on export** are written for single-voice music only; polyphonic
+  velocity is left at the default. Export uses a single measure.
 
 ## From the command line
 

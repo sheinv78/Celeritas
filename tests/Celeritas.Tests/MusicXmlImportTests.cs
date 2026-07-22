@@ -325,6 +325,63 @@ public class MusicXmlImportTests
     }
 
     [Fact]
+    public void Import_ScoreTimewise_TransposesAndReads()
+    {
+        // Timewise nests measures over parts; the reader should transpose and accumulate time.
+        var xml = $"""
+            <?xml version="1.0"?>
+            <score-timewise>
+              <measure number="1">
+                <part id="P1"><attributes><divisions>1</divisions></attributes>
+                  {Note("C", 4, 1)}{Note("D", 4, 1)}</part>
+              </measure>
+              <measure number="2">
+                <part id="P1">{Note("E", 4, 1)}{Note("F", 4, 1)}</part>
+              </measure>
+            </score-timewise>
+            """;
+
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        Assert.Equal(4, buffer.Count);
+        Assert.Equal([60, 62, 64, 65], Enumerable.Range(0, 4).Select(i => buffer.Get(i).Pitch));
+        Assert.Equal(new Rational(3, 4), buffer.Get(3).Offset);   // cursor carried across measures
+    }
+
+    [Fact]
+    public void Import_GraceNote_PreservedWithoutAdvancingTime()
+    {
+        // A grace note (no <duration>) before a principal quarter, then another note.
+        var xml = PartwiseWith(
+            "<note><grace/><pitch><step>D</step><octave>4</octave></pitch></note>"
+            + Note("C", 4, 1) + Note("E", 4, 1));
+
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        Assert.Equal(3, buffer.Count);
+        var notes = Enumerable.Range(0, 3).Select(i => buffer.Get(i)).ToArray();
+
+        // Grace D and principal C share onset 0 (the grace did not advance time).
+        Assert.Equal([60, 62], notes.Where(n => n.Offset == Rational.Zero).Select(n => n.Pitch).OrderBy(p => p));
+        Assert.Equal(new Rational(1, 32), notes.First(n => n.Pitch == 62).Duration);   // short nominal length
+        Assert.Equal(new Rational(1, 4), notes.First(n => n.Pitch == 64).Offset);       // E follows the quarter
+    }
+
+    [Fact]
+    public void Import_TupletDurations_AreExact()
+    {
+        // divisions=3 per quarter makes a triplet-eighth's duration 1; three of them fill a quarter.
+        var xml = PartwiseWith(
+            Note("C", 4, 1) + Note("D", 4, 1) + Note("E", 4, 1),
+            partAttrs: "<divisions>3</divisions>");
+
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        Assert.All(Enumerable.Range(0, 3), i => Assert.Equal(new Rational(1, 12), buffer.Get(i).Duration));
+        Assert.Equal(new Rational(1, 6), buffer.Get(2).Offset);   // 0, 1/12, 1/6
+    }
+
+    [Fact]
     public void Parse_Null_Throws() =>
         Assert.Throws<ArgumentNullException>(() => MusicXmlIo.Parse(null!));
 

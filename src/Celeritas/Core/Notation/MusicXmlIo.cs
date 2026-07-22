@@ -20,13 +20,18 @@ namespace Celeritas.Core.Notation;
 /// Multi-voice parts import correctly because voice timing rides on <c>&lt;backup&gt;</c>/
 /// <c>&lt;forward&gt;</c>, and dynamics (<c>&lt;dynamics&gt;</c> marks and <c>&lt;sound dynamics&gt;</c>)
 /// set note velocity (and single-voice export writes velocity back as <c>&lt;sound dynamics&gt;</c>).
-/// Compressed <c>.mxl</c> archives are unwrapped on import. Not yet handled (spelled out so callers
-/// know the boundaries): grace notes, tuplet time-modification, and the <c>score-timewise</c> layout.
+/// Compressed <c>.mxl</c> archives are unwrapped and the <c>score-timewise</c> layout is transposed
+/// to partwise on import; grace notes are approximated as short notes at the following beat.
+/// Remaining boundary: tuplet grouping metadata (<c>&lt;time-modification&gt;</c>) is ignored, though
+/// tuplet <em>durations</em> import exactly. Export writes a single measure.
 /// </para>
 /// </summary>
 public static class MusicXmlIo
 {
     private const float DefaultVelocity = 0.8f;
+
+    // Nominal length given to grace notes on import (they carry no duration of their own).
+    private static readonly Rational GraceDuration = new(1, 32);
 
     /// <summary>Reads and imports a MusicXML file from <paramref name="path"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
@@ -212,14 +217,18 @@ public static class MusicXmlIo
             ?? throw new InvalidDataException("MusicXML document has no root element.");
 
         // Element names are compared without namespace: MusicXML is conventionally unqualified,
-        // but tolerate a default namespace by matching on LocalName.
-        if (root.Name.LocalName == "score-timewise")
-            throw new InvalidDataException("score-timewise is not supported yet; convert to score-partwise.");
-        if (root.Name.LocalName != "score-partwise")
-            throw new InvalidDataException($"Expected a score-partwise root, found '{root.Name.LocalName}'.");
+        // but tolerate a default namespace by matching on LocalName. score-timewise nests
+        // measures over parts; transpose it to the part-over-measure shape the reader expects.
+        var parts = root.Name.LocalName switch
+        {
+            "score-partwise" => Children(root, "part"),
+            "score-timewise" => TimewiseToParts(root),
+            _ => throw new InvalidDataException(
+                $"Expected a score-partwise or score-timewise root, found '{root.Name.LocalName}'."),
+        };
 
         var notes = new List<NoteEvent>();
-        foreach (var part in Children(root, "part"))
+        foreach (var part in parts)
             ReadPart(part, notes);
 
         var buffer = new NoteBuffer(Math.Max(notes.Count, 1));
@@ -229,6 +238,43 @@ public static class MusicXmlIo
             buffer.Sort();
         }
         return buffer;
+    }
+
+    // Rebuilds score-timewise (measures over parts) into partwise <part> elements (part over
+    // measures), so the single partwise reader handles both layouts.
+    private static List<XElement> TimewiseToParts(XElement root)
+    {
+        var partIds = new List<string>();
+        foreach (var measure in Children(root, "measure"))
+            foreach (var part in Children(measure, "part"))
+            {
+                var id = part.Attribute("id")?.Value ?? "";
+                if (!partIds.Contains(id))
+                    partIds.Add(id);
+            }
+
+        var result = new List<XElement>(partIds.Count);
+        foreach (var id in partIds)
+        {
+            var partEl = new XElement("part", new XAttribute("id", id));
+            foreach (var measure in Children(root, "measure"))
+            {
+                var slice = Children(measure, "part")
+                    .FirstOrDefault(p => (p.Attribute("id")?.Value ?? "") == id);
+                if (slice is null)
+                    continue;
+
+                var measureEl = new XElement("measure");
+                if (measure.Attribute("number") is { } number)
+                    measureEl.Add(new XAttribute("number", number.Value));
+                foreach (var child in slice.Elements())
+                    measureEl.Add(new XElement(child));   // deep clone
+                partEl.Add(measureEl);
+            }
+            result.Add(partEl);
+        }
+
+        return result;
     }
 
     private static void ReadPart(XElement part, List<NoteEvent> notes)
@@ -286,10 +332,16 @@ public static class MusicXmlIo
         XElement note, int divisions, float velocity, ref Rational cursor, ref Rational lastNoteOnset,
         Dictionary<int, (Rational onset, Rational duration, float velocity)> pending, List<NoteEvent> notes)
     {
-        // Grace notes carry no <duration>; skip them in this pass.
         var durationEl = note.Element("duration");
         if (durationEl is null)
+        {
+            // Grace notes carry no <duration>. Preserve the pitch at the current position with a
+            // short nominal length, without advancing time — an approximation (the engine has no
+            // dedicated grace-note concept). A non-grace note without a duration is skipped.
+            if (note.Element("grace") is not null && note.Element("pitch") is { } gracePitch)
+                notes.Add(new NoteEvent(PitchToMidi(gracePitch), cursor, GraceDuration, velocity));
             return;
+        }
 
         var duration = DurationToWholeNotes(ParseInt(durationEl.Value, "duration"), divisions);
         var isChord = note.Element("chord") is not null;
