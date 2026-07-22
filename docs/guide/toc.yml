@@ -4,3 +4,5 @@
   href: tour.md
 - name: Python quickstart
   href: python.md
+- name: Notation interop (MusicXML)
+  href: musicxml.md
