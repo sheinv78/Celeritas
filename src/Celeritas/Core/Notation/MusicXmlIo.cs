@@ -19,9 +19,9 @@ namespace Celeritas.Core.Notation;
 /// <para>
 /// Multi-voice parts import correctly because voice timing rides on <c>&lt;backup&gt;</c>/
 /// <c>&lt;forward&gt;</c>, and dynamics (<c>&lt;dynamics&gt;</c> marks and <c>&lt;sound dynamics&gt;</c>)
-/// set note velocity. Compressed <c>.mxl</c> archives are unwrapped on import. Not yet handled
-/// (spelled out so callers know the boundaries): grace notes, tuplet time-modification, and the
-/// <c>score-timewise</c> layout. Export does not yet write dynamics back.
+/// set note velocity (and single-voice export writes velocity back as <c>&lt;sound dynamics&gt;</c>).
+/// Compressed <c>.mxl</c> archives are unwrapped on import. Not yet handled (spelled out so callers
+/// know the boundaries): grace notes, tuplet time-modification, and the <c>score-timewise</c> layout.
 /// </para>
 /// </summary>
 public static class MusicXmlIo
@@ -494,28 +494,29 @@ public static class MusicXmlIo
         }
 
         // Chord units: notes sharing an onset AND a duration are one chord. Notes at the same onset
-        // with different durations are independent (they go into different voices below).
-        var unitMap = new Dictionary<(Rational onset, Rational duration), List<int>>();
+        // with different durations are independent (they go into different voices below). The unit's
+        // velocity is taken from its first note (chords are assumed uniform in dynamics).
+        var unitMap = new Dictionary<(Rational onset, Rational duration), (List<int> pitches, float velocity)>();
         foreach (var e in events)
         {
             var key = (e.Offset, e.Duration);
-            if (!unitMap.TryGetValue(key, out var pitches))
+            if (!unitMap.TryGetValue(key, out var unit))
             {
-                pitches = [];
-                unitMap[key] = pitches;
+                unit = ([], e.Velocity);
+                unitMap[key] = unit;
             }
-            pitches.Add(e.Pitch);
+            unit.pitches.Add(e.Pitch);
         }
 
         var units = unitMap
-            .Select(kv => (kv.Key.onset, kv.Key.duration, pitches: kv.Value))
+            .Select(kv => (kv.Key.onset, kv.Key.duration, kv.Value.pitches, kv.Value.velocity))
             .OrderBy(u => u.onset).ThenBy(u => u.duration).ToList();
-        foreach (var (onset, duration, pitches) in units)
-            pitches.Sort();
+        foreach (var u in units)
+            u.pitches.Sort();
 
         // Greedy voice assignment: each unit joins the first voice free at its onset; overlapping
         // units start new voices. Monophonic / block-chordal input stays a single voice.
-        var voices = new List<List<(Rational onset, Rational duration, List<int> pitches)>>();
+        var voices = new List<List<(Rational onset, Rational duration, List<int> pitches, float velocity)>>();
         var voiceEnd = new List<Rational>();
         foreach (var u in units)
         {
@@ -553,12 +554,21 @@ public static class MusicXmlIo
 
             var voiceNumber = multiVoice ? vi + 1 : (int?)null;
             var cursor = Rational.Zero;
-            foreach (var (onset, duration, pitches) in voices[vi])
+            var currentVelocity = DefaultVelocity;   // import's starting dynamic
+            foreach (var (onset, duration, pitches, velocity) in voices[vi])
             {
                 if (onset > cursor)
                 {
                     measure.Add(RestElement(onset - cursor, divisions, voiceNumber));
                     cursor = onset;
+                }
+
+                // Emit a dynamic when the velocity changes. Single-voice only: with multiple voices a
+                // measure-level dynamic would bleed across voice lines, so velocity is left to default.
+                if (!multiVoice && Math.Abs(velocity - currentVelocity) > 0.001f)
+                {
+                    measure.Add(DynamicsElement(velocity));
+                    currentVelocity = velocity;
                 }
 
                 for (var p = 0; p < pitches.Count; p++)
@@ -579,6 +589,15 @@ public static class MusicXmlIo
                 new XElement("part",
                     new XAttribute("id", "P1"),
                     measure)));
+    }
+
+    // A measure-level playback dynamic: velocity (0..1) -> <sound dynamics="N"/>, the inverse of
+    // import's N * 0.9 / 127. Rounded for readable output; round-trip stays within ~0.001.
+    private static XElement DynamicsElement(float velocity)
+    {
+        var percent = Math.Round(velocity * 127.0 / 0.9, 2);
+        return new XElement("sound",
+            new XAttribute("dynamics", percent.ToString(System.Globalization.CultureInfo.InvariantCulture)));
     }
 
     private static XElement RestElement(Rational duration, long divisions, int? voice)

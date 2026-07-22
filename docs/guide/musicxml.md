@@ -68,8 +68,9 @@ overlapping lines are split into voices.
 
 This is a working core, not a full MusicXML implementation. Not yet handled:
 tuplet grouping (`<time-modification>` — though triplet *durations* import exactly),
-grace notes, the `score-timewise` layout, and writing dynamics back on export.
-`score-timewise` input is rejected with a clear error rather than mis-read.
+grace notes, and the `score-timewise` layout (rejected with a clear error rather
+than mis-read). Dynamics are written back on export only for single-voice music;
+polyphonic velocity is left at the default.
 
 ## From the command line
 

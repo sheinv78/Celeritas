@@ -119,6 +119,31 @@ public class MusicXmlExportTests
     }
 
     [Fact]
+    public void RoundTrip_Velocity_SingleVoice_Preserved()
+    {
+        using var original = new NoteBuffer(3);
+        original.AddNote(60, Rational.Zero, Rational.Quarter, 0.5f);      // quieter than default
+        original.AddNote(62, Rational.Quarter, Rational.Quarter, 0.5f);   // same -> no new dynamic
+        original.AddNote(64, Rational.Half, Rational.Quarter, 0.95f);     // louder -> new dynamic
+        original.Sort();
+
+        using var again = MusicXmlIo.Parse(MusicXmlIo.ToXml(original));
+
+        Assert.Equal(3, again.Count);
+        Assert.Equal(0.5, again.Get(0).Velocity, 2);
+        Assert.Equal(0.5, again.Get(1).Velocity, 2);
+        Assert.Equal(0.95, again.Get(2).Velocity, 2);
+    }
+
+    [Fact]
+    public void ToXml_DefaultVelocity_EmitsNoDynamics()
+    {
+        // Default velocity matches the import default, so no dynamic marking is needed.
+        using var b = Build((60, Rational.Zero, Rational.Quarter));
+        Assert.DoesNotContain("<sound", MusicXmlIo.ToXml(b));
+    }
+
+    [Fact]
     public void ToXml_Null_Throws() =>
         Assert.Throws<ArgumentNullException>(() => MusicXmlIo.ToXml(null!));
 }
