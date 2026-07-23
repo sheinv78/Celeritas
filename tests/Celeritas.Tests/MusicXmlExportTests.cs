@@ -144,6 +144,61 @@ public class MusicXmlExportTests
     }
 
     [Fact]
+    public void RoundTrip_MultiMeasureMelody_Preserved()
+    {
+        using var original = new NoteBuffer(6);
+        for (var i = 0; i < 6; i++)
+            original.AddNote(60 + i, new Rational(i, 4), Rational.Quarter);   // 6 quarters = 1.5 bars of 4/4
+        original.Sort();
+
+        var xml = MusicXmlIo.ToXml(original);
+        Assert.Contains("<measure number=\"2\"", xml);   // spilled into a second measure
+        using var again = MusicXmlIo.Parse(xml);
+        Assert.Equal(Dump(original), Dump(again));
+    }
+
+    [Fact]
+    public void RoundTrip_NoteAcrossBarline_SplitAndTied()
+    {
+        // A whole note starting on beat 3 of 4/4 spans [1/2, 3/2], crossing the barline at 1.
+        using var original = new NoteBuffer(1);
+        original.AddNote(60, new Rational(1, 2), Rational.Whole);
+        original.Sort();
+
+        var xml = MusicXmlIo.ToXml(original);
+        Assert.Contains("<tie type=\"start\"", xml);
+        Assert.Contains("<tie type=\"stop\"", xml);
+
+        using var again = MusicXmlIo.Parse(xml);
+        Assert.Equal(1, again.Count);                       // reassembled into one note
+        Assert.Equal(60, again.Get(0).Pitch);
+        Assert.Equal(new Rational(1, 2), again.Get(0).Offset);
+        Assert.Equal(Rational.Whole, again.Get(0).Duration);
+    }
+
+    [Fact]
+    public void RoundTrip_ThreeFourMeter_Preserved()
+    {
+        using var original = new NoteBuffer(4);
+        for (var i = 0; i < 4; i++)
+            original.AddNote(60, new Rational(i, 4), Rational.Quarter);   // 4 quarters across 3/4 bars
+        original.Sort();
+
+        using var again = MusicXmlIo.Parse(MusicXmlIo.ToXml(original, new TimeSignature(3, 4)));
+        Assert.Equal(Dump(original), Dump(again));
+    }
+
+    [Fact]
+    public void ToXml_WritesTimeSignature()
+    {
+        using var b = Build((60, Rational.Zero, Rational.Quarter));
+        var xml = MusicXmlIo.ToXml(b, new TimeSignature(3, 4));
+
+        Assert.Contains("<beats>3</beats>", xml);
+        Assert.Contains("<beat-type>4</beat-type>", xml);
+    }
+
+    [Fact]
     public void ToXml_Null_Throws() =>
         Assert.Throws<ArgumentNullException>(() => MusicXmlIo.ToXml(null!));
 }

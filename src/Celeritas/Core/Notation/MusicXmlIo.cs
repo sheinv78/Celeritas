@@ -33,6 +33,9 @@ public static class MusicXmlIo
     // Nominal length given to grace notes on import (they carry no duration of their own).
     private static readonly Rational GraceDuration = new(1, 32);
 
+    // Default meter used when export is not given one: notes are barred into 4/4 measures.
+    private static readonly TimeSignature CommonTime = new(4, 4);
+
     /// <summary>Reads and imports a MusicXML file from <paramref name="path"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidDataException">The document is not valid, importable MusicXML.</exception>
@@ -78,18 +81,25 @@ public static class MusicXmlIo
     }
 
     /// <summary>
-    /// Serializes a <see cref="NoteBuffer"/> to a <c>score-partwise</c> MusicXML string.
+    /// Serializes a <see cref="NoteBuffer"/> to a <c>score-partwise</c> MusicXML string, barred into
+    /// 4/4 measures.
     /// </summary>
     /// <remarks>
-    /// Notes at the same onset and duration are written as a chord; gaps become rests. Overlapping
-    /// notes are split into separate voices (via <c>&lt;backup&gt;</c>), so polyphony round-trips.
-    /// Everything goes into a single measure and pitches are spelled with sharps.
+    /// Notes at the same onset and duration are written as a chord; gaps become rests; overlapping
+    /// notes are split into separate voices (via <c>&lt;backup&gt;</c>). The timeline is divided into
+    /// measures of the given meter, notes crossing a barline are split and tied, and pitches are
+    /// spelled with sharps — so import → export → import round-trips.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
-    public static string ToXml(NoteBuffer buffer)
+    public static string ToXml(NoteBuffer buffer) => ToXml(buffer, CommonTime);
+
+    /// <inheritdoc cref="ToXml(NoteBuffer)"/>
+    /// <param name="buffer">The notes to serialize.</param>
+    /// <param name="timeSignature">The meter to bar the notes into.</param>
+    public static string ToXml(NoteBuffer buffer, TimeSignature timeSignature)
     {
         ArgumentNullException.ThrowIfNull(buffer);
-        var doc = BuildDocument(buffer);
+        var doc = BuildDocument(buffer, timeSignature);
         // A plain StringWriter is UTF-16, which would stamp encoding="utf-16" on the declaration and
         // mislead anyone who then saves the text as UTF-8. Report UTF-8 so the declaration matches.
         using var writer = new Utf8StringWriter();
@@ -102,23 +112,31 @@ public static class MusicXmlIo
         public override System.Text.Encoding Encoding => System.Text.Encoding.UTF8;
     }
 
-    /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML to <paramref name="path"/>.</summary>
+    /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML (4/4) to <paramref name="path"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
-    public static void Export(NoteBuffer buffer, string path)
+    public static void Export(NoteBuffer buffer, string path) => Export(buffer, path, CommonTime);
+
+    /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML, barred into <paramref name="timeSignature"/>, to a file.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
+    public static void Export(NoteBuffer buffer, string path, TimeSignature timeSignature)
     {
         ArgumentNullException.ThrowIfNull(buffer);
         ArgumentNullException.ThrowIfNull(path);
         using var stream = File.Create(path);
-        Export(buffer, stream);
+        Export(buffer, stream, timeSignature);
     }
 
-    /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML to a stream.</summary>
+    /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML (4/4) to a stream.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="stream"/> is <see langword="null"/>.</exception>
-    public static void Export(NoteBuffer buffer, Stream stream)
+    public static void Export(NoteBuffer buffer, Stream stream) => Export(buffer, stream, CommonTime);
+
+    /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML, barred into <paramref name="timeSignature"/>, to a stream.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="stream"/> is <see langword="null"/>.</exception>
+    public static void Export(NoteBuffer buffer, Stream stream, TimeSignature timeSignature)
     {
         ArgumentNullException.ThrowIfNull(buffer);
         ArgumentNullException.ThrowIfNull(stream);
-        var doc = BuildDocument(buffer);
+        var doc = BuildDocument(buffer, timeSignature);
         var settings = new XmlWriterSettings { Indent = true, Encoding = new System.Text.UTF8Encoding(false) };
         using var writer = XmlWriter.Create(stream, settings);
         doc.Save(writer);
@@ -525,8 +543,13 @@ public static class MusicXmlIo
 
     // ---- Export ----
 
-    private static XDocument BuildDocument(NoteBuffer buffer)
+    // A note segment confined to one measure, carrying tie flags for barline splits.
+    private readonly record struct Segment(
+        int Measure, Rational Onset, Rational Duration, List<int> Pitches, float Velocity, bool TieStart, bool TieStop);
+
+    private static XDocument BuildDocument(NoteBuffer buffer, TimeSignature timeSignature)
     {
+        var measureLen = timeSignature.MeasureDuration;
         var events = new List<NoteEvent>(buffer.Count);
         for (var i = 0; i < buffer.Count; i++)
             events.Add(buffer.Get(i));
@@ -593,41 +616,101 @@ public static class MusicXmlIo
             voiceEnd[target] = u.onset + u.duration;
         }
 
-        var measure = new XElement("measure",
-            new XAttribute("number", 1),
-            new XElement("attributes", new XElement("divisions", divisions)));
+        // Total length and how many measures cover it.
+        var totalEnd = Rational.Zero;
+        foreach (var vlist in voices)
+            foreach (var (onset, duration, _, _) in vlist)
+            {
+                var end = onset + duration;
+                if (end > totalEnd)
+                    totalEnd = end;
+            }
+
+        var measureCount = 1;
+        while (measureLen * measureCount < totalEnd)
+            measureCount++;
+
+        // Split each voice's units at barlines into per-measure, tied segments.
+        var segmentsByVoice = new List<List<Segment>>(voices.Count);
+        foreach (var vlist in voices)
+        {
+            var segs = new List<Segment>();
+            foreach (var (onset, duration, pitches, velocity) in vlist)
+            {
+                var segStart = onset;
+                var end = onset + duration;
+                while (segStart < end)
+                {
+                    var m = MeasureIndexOf(segStart, measureLen);
+                    var barline = measureLen * (m + 1);
+                    var segEnd = end < barline ? end : barline;
+                    segs.Add(new Segment(m, segStart, segEnd - segStart, pitches, velocity,
+                        TieStart: segEnd < end, TieStop: segStart > onset));
+                    segStart = segEnd;
+                }
+            }
+            segmentsByVoice.Add(segs);
+        }
 
         var multiVoice = voices.Count > 1;
-        for (var vi = 0; vi < voices.Count; vi++)
+        var partEl = new XElement("part", new XAttribute("id", "P1"));
+        var currentVelocity = DefaultVelocity;   // single-voice dynamic, tracked across measures
+
+        for (var m = 0; m < measureCount; m++)
         {
-            // Return the cursor to the start of the measure before writing the next voice.
-            if (vi > 0)
-                measure.Add(new XElement("backup", new XElement("duration", DivisionsOf(voiceEnd[vi - 1], divisions))));
+            var mStart = measureLen * m;
+            var mEnd = measureLen * (m + 1);
+            var measureEl = new XElement("measure", new XAttribute("number", m + 1));
+            if (m == 0)
+                measureEl.Add(new XElement("attributes",
+                    new XElement("divisions", divisions),
+                    TimeElement(timeSignature)));
 
-            var voiceNumber = multiVoice ? vi + 1 : (int?)null;
-            var cursor = Rational.Zero;
-            var currentVelocity = DefaultVelocity;   // import's starting dynamic
-            foreach (var (onset, duration, pitches, velocity) in voices[vi])
+            var wroteAVoice = false;
+            for (var vi = 0; vi < segmentsByVoice.Count; vi++)
             {
-                if (onset > cursor)
+                var voiceSegs = segmentsByVoice[vi].Where(s => s.Measure == m).OrderBy(s => s.Onset).ToList();
+                if (voiceSegs.Count == 0)
+                    continue;
+
+                // Each voice fills the measure, so returning to its start is a full-measure backup.
+                if (wroteAVoice)
+                    measureEl.Add(new XElement("backup", new XElement("duration", DivisionsOf(measureLen, divisions))));
+                wroteAVoice = true;
+
+                var voiceNumber = multiVoice ? vi + 1 : (int?)null;
+                var cursor = mStart;
+                foreach (var s in voiceSegs)
                 {
-                    measure.Add(RestElement(onset - cursor, divisions, voiceNumber));
-                    cursor = onset;
+                    if (s.Onset > cursor)
+                    {
+                        measureEl.Add(RestElement(s.Onset - cursor, divisions, voiceNumber));
+                        cursor = s.Onset;
+                    }
+
+                    if (!multiVoice && Math.Abs(s.Velocity - currentVelocity) > 0.001f)
+                    {
+                        measureEl.Add(DynamicsElement(s.Velocity));
+                        currentVelocity = s.Velocity;
+                    }
+
+                    for (var p = 0; p < s.Pitches.Count; p++)
+                        measureEl.Add(PitchedNoteElement(
+                            s.Pitches[p], s.Duration, divisions, isChord: p > 0, voiceNumber, s.TieStart, s.TieStop));
+
+                    cursor += s.Duration;
                 }
 
-                // Emit a dynamic when the velocity changes. Single-voice only: with multiple voices a
-                // measure-level dynamic would bleed across voice lines, so velocity is left to default.
-                if (!multiVoice && Math.Abs(velocity - currentVelocity) > 0.001f)
-                {
-                    measure.Add(DynamicsElement(velocity));
-                    currentVelocity = velocity;
-                }
-
-                for (var p = 0; p < pitches.Count; p++)
-                    measure.Add(PitchedNoteElement(pitches[p], duration, divisions, isChord: p > 0, voiceNumber));
-
-                cursor += duration;
+                // Pad to the barline so measures are full (the reader advances a continuous cursor).
+                if (cursor < mEnd)
+                    measureEl.Add(RestElement(mEnd - cursor, divisions, voiceNumber));
             }
+
+            // A wholly empty measure still advances time by one measure.
+            if (!wroteAVoice)
+                measureEl.Add(RestElement(measureLen, divisions, null));
+
+            partEl.Add(measureEl);
         }
 
         return new XDocument(
@@ -638,10 +721,19 @@ public static class MusicXmlIo
                     new XElement("score-part",
                         new XAttribute("id", "P1"),
                         new XElement("part-name", "Music"))),
-                new XElement("part",
-                    new XAttribute("id", "P1"),
-                    measure)));
+                partEl));
     }
+
+    private static int MeasureIndexOf(Rational time, Rational measureLen)
+    {
+        var q = time / measureLen;               // >= 0 for note times
+        return (int)(q.Numerator / q.Denominator);
+    }
+
+    private static XElement TimeElement(TimeSignature ts) =>
+        new("time",
+            new XElement("beats", ts.BeatsPerMeasure),
+            new XElement("beat-type", ts.BeatUnit));
 
     // A measure-level playback dynamic: velocity (0..1) -> <sound dynamics="N"/>, the inverse of
     // import's N * 0.9 / 127. Rounded for readable output; round-trip stays within ~0.001.
@@ -662,7 +754,8 @@ public static class MusicXmlIo
         return note;
     }
 
-    private static XElement PitchedNoteElement(int midi, Rational duration, long divisions, bool isChord, int? voice)
+    private static XElement PitchedNoteElement(
+        int midi, Rational duration, long divisions, bool isChord, int? voice, bool tieStart, bool tieStop)
     {
         var (step, alter, octave) = SpellSharp(midi);
         var pitch = new XElement("pitch", new XElement("step", step));
@@ -675,6 +768,10 @@ public static class MusicXmlIo
             note.Add(new XElement("chord"));
         note.Add(pitch);
         note.Add(new XElement("duration", DivisionsOf(duration, divisions)));
+        if (tieStop)
+            note.Add(new XElement("tie", new XAttribute("type", "stop")));
+        if (tieStart)
+            note.Add(new XElement("tie", new XAttribute("type", "start")));
         if (voice is int v)
             note.Add(new XElement("voice", v));
         return note;

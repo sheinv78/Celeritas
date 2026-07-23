@@ -26,13 +26,17 @@ is never fetched (no XXE, no network).
 ## Exporting
 
 ```csharp
-string xml = MusicXmlIo.ToXml(buffer);          // as a string
+string xml = MusicXmlIo.ToXml(buffer);          // as a string (4/4)
 MusicXmlIo.Export(buffer, "out.musicxml");      // ...or straight to a file
 MusicXmlIo.Export(buffer, stream);              // ...or a stream
+
+// Bar the notes into a specific meter:
+MusicXmlIo.Export(buffer, "out.musicxml", new TimeSignature(3, 4));
 ```
 
-Monophonic and block-chordal material **round-trips exactly** — import → export →
-import yields the same notes:
+Notes are divided into measures of the given meter (4/4 by default), and a note
+crossing a barline is split into tied notes — the exact inverse of import's tie
+merge. **Round-trips exactly** — import → export → import yields the same notes:
 
 ```csharp
 using var original = MusicXmlIo.Import("score.musicxml");
@@ -76,7 +80,7 @@ approximations, spelled out:
   the beat of its principal note, without shifting time.
 - **`score-timewise`** is transposed to partwise on import and read normally.
 - **Dynamics on export** are written for single-voice music only; polyphonic
-  velocity is left at the default. Export uses a single measure.
+  velocity is left at the default.
 
 ## From the command line
 
