@@ -58,7 +58,7 @@
            builds carry a high-severity advisory (CVE-2025-55247 / GHSA-w3q9-fxm7-j8fq, NU1903).
            Pin a patched version directly; PrivateAssets=all + ExcludeAssets=runtime keep it
            build-time only (it never ships in the package). -->
-      <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.7.1" PrivateAssets="all" ExcludeAssets="runtime" />
+      <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.8.2" PrivateAssets="all" ExcludeAssets="runtime" />
       <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.301" PrivateAssets="all" />
 
       <!-- Public API surface tracking: any public API change not recorded in
