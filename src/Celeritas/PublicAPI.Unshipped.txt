@@ -1840,3 +1840,445 @@ static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Alto -> (int Min, int Ma
 static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Bass -> (int Min, int Max)
 static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Soprano -> (int Min, int Max)
 static readonly Celeritas.Core.VoiceLeading.VoiceRanges.Tenor -> (int Min, int Max)
+~override Celeritas.Core.Accompaniment.AccompanimentOptions.Equals(object obj) -> bool
+~override Celeritas.Core.Accompaniment.AccompanimentOptions.ToString() -> string
+~override Celeritas.Core.Accompaniment.HarmonicRhythmItem.Equals(object obj) -> bool
+~override Celeritas.Core.Accompaniment.HarmonicRhythmItem.ToString() -> string
+~override Celeritas.Core.Analysis.CadenceInfo.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.CadenceInfo.ToString() -> string
+~override Celeritas.Core.Analysis.ChromaticPitchEvent.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.ChromaticPitchEvent.ToString() -> string
+~override Celeritas.Core.Analysis.KeyCorrelation.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.KeyDetectionResult.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.MelodicHarmonyEvent.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.MelodicHarmonyEvent.ToString() -> string
+~override Celeritas.Core.Analysis.MelodicInterval.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.MelodicInterval.ToString() -> string
+~override Celeritas.Core.Analysis.ModalProgression.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.ModalProgression.ToString() -> string
+~override Celeritas.Core.Analysis.ModalTurnEvent.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.ModalTurnEvent.ToString() -> string
+~override Celeritas.Core.Analysis.Period.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.Period.ToString() -> string
+~override Celeritas.Core.Analysis.Phrase.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.Phrase.ToString() -> string
+~override Celeritas.Core.Analysis.PitchClassSetAnalysisResult.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.PitchClassSetAnalysisResult.ToString() -> string
+~override Celeritas.Core.Analysis.RhythmEvent.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.RhythmEvent.ToString() -> string
+~override Celeritas.Core.Analysis.Section.Equals(object obj) -> bool
+~override Celeritas.Core.Analysis.Section.ToString() -> string
+~override Celeritas.Core.Analysis.VoiceNote.Equals(object obj) -> bool
+~override Celeritas.Core.ChordInfo.Equals(object obj) -> bool
+~override Celeritas.Core.ChromaticInterval.Equals(object obj) -> bool
+~override Celeritas.Core.FunctionalChord.Equals(object obj) -> bool
+~override Celeritas.Core.FunctionalChord.ToString() -> string
+~override Celeritas.Core.Harmonization.ChordAssignment.Equals(object obj) -> bool
+~override Celeritas.Core.Harmonization.ChordAssignment.ToString() -> string
+~override Celeritas.Core.Harmonization.ChordCandidate.Equals(object obj) -> bool
+~override Celeritas.Core.Harmonization.ChordCandidate.ToString() -> string
+~override Celeritas.Core.Harmonization.MelodySlice.Equals(object obj) -> bool
+~override Celeritas.Core.Harmonization.MelodySlice.ToString() -> string
+~override Celeritas.Core.KeySignature.Equals(object obj) -> bool
+~override Celeritas.Core.Orchestration.InstrumentRange.Equals(object obj) -> bool
+~override Celeritas.Core.Orchestration.InstrumentRange.ToString() -> string
+~override Celeritas.Core.Orchestration.OrchestrationOptions.Equals(object obj) -> bool
+~override Celeritas.Core.Orchestration.OrchestrationOptions.ToString() -> string
+~override Celeritas.Core.Orchestration.OrchestrationPartDefinition.Equals(object obj) -> bool
+~override Celeritas.Core.Orchestration.OrchestrationPartDefinition.ToString() -> string
+~override Celeritas.Core.PitchClass.Equals(object obj) -> bool
+~override Celeritas.Core.Rational.Equals(object obj) -> bool
+~override Celeritas.Core.SecondaryDominant.Equals(object obj) -> bool
+~override Celeritas.Core.SecondaryDominant.ToString() -> string
+~override Celeritas.Core.SpnNote.Equals(object obj) -> bool
+~override Celeritas.Core.VoiceLeading.VoiceLeadingCheck.Equals(object obj) -> bool
+~override Celeritas.Core.VoiceLeading.VoiceLeadingCheck.ToString() -> string
+abstract Celeritas.Core.NotationDirective.<Clone>$() -> Celeritas.Core.NotationDirective!
+Celeritas.Core.Accompaniment.AccompanimentOptions.Deconstruct(out Celeritas.Core.Accompaniment.AccompanimentPattern Pattern, out int BassOctave, out int ChordOctave, out float BassVelocity, out float ChordVelocity, out Celeritas.Core.Rational Subdivision, out int MaxChordTones) -> void
+Celeritas.Core.Accompaniment.AccompanimentOptions.Equals(Celeritas.Core.Accompaniment.AccompanimentOptions other) -> bool
+Celeritas.Core.Accompaniment.HarmonicRhythmItem.Deconstruct(out Celeritas.Core.RomanNumeralChord Chord, out Celeritas.Core.Rational Duration) -> void
+Celeritas.Core.Accompaniment.HarmonicRhythmItem.Equals(Celeritas.Core.Accompaniment.HarmonicRhythmItem other) -> bool
+Celeritas.Core.Analysis.CadenceInfo.Deconstruct(out Celeritas.Core.Analysis.CadenceType Type, out int Position, out string! FromChord, out string! ToChord, out string! Description) -> void
+Celeritas.Core.Analysis.CadenceInfo.Equals(Celeritas.Core.Analysis.CadenceInfo other) -> bool
+Celeritas.Core.Analysis.ChordCharacterClassification.<Clone>$() -> Celeritas.Core.Analysis.ChordCharacterClassification!
+Celeritas.Core.Analysis.ChordCharacterClassification.Equals(Celeritas.Core.Analysis.ChordCharacterClassification? other) -> bool
+Celeritas.Core.Analysis.ChromaticPitchEvent.Deconstruct(out Celeritas.Core.Rational Offset, out int Pitch, out byte PitchClass, out string! NoteName, out string! Alteration) -> void
+Celeritas.Core.Analysis.ChromaticPitchEvent.Equals(Celeritas.Core.Analysis.ChromaticPitchEvent other) -> bool
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.<Clone>$() -> Celeritas.Core.Analysis.CounterpointRulesCheckResult!
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.CounterpointRulesCheckResult() -> void
+Celeritas.Core.Analysis.CounterpointRulesCheckResult.Equals(Celeritas.Core.Analysis.CounterpointRulesCheckResult? other) -> bool
+Celeritas.Core.Analysis.CounterpointViolation.<Clone>$() -> Celeritas.Core.Analysis.CounterpointViolation!
+Celeritas.Core.Analysis.CounterpointViolation.CounterpointViolation() -> void
+Celeritas.Core.Analysis.CounterpointViolation.Equals(Celeritas.Core.Analysis.CounterpointViolation? other) -> bool
+Celeritas.Core.Analysis.FormAnalysisOptions.<Clone>$() -> Celeritas.Core.Analysis.FormAnalysisOptions!
+Celeritas.Core.Analysis.FormAnalysisOptions.Deconstruct(out Celeritas.Core.Rational MinRestForPhraseBoundary, out int MinNotesPerPhrase, out Celeritas.Core.Rational PeriodLengthTolerance, out bool DetectCadences, out Celeritas.Core.KeySignature? Key, out bool DetectSections, out float SectionSimilarityThreshold) -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.Equals(Celeritas.Core.Analysis.FormAnalysisOptions? other) -> bool
+Celeritas.Core.Analysis.FormAnalysisResult.<Clone>$() -> Celeritas.Core.Analysis.FormAnalysisResult!
+Celeritas.Core.Analysis.FormAnalysisResult.Equals(Celeritas.Core.Analysis.FormAnalysisResult? other) -> bool
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.<Clone>$() -> Celeritas.Core.Analysis.HarmonicColorAnalysisOptions!
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.Deconstruct(out int ModalTurnWindowChords, out double MinModalTurnCoverage, out double MinModalTurnImprovement) -> void
+Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.Equals(Celeritas.Core.Analysis.HarmonicColorAnalysisOptions? other) -> bool
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.<Clone>$() -> Celeritas.Core.Analysis.HarmonicColorAnalysisResult!
+Celeritas.Core.Analysis.HarmonicColorAnalysisResult.Equals(Celeritas.Core.Analysis.HarmonicColorAnalysisResult? other) -> bool
+Celeritas.Core.Analysis.ImitationDetectionResult.<Clone>$() -> Celeritas.Core.Analysis.ImitationDetectionResult!
+Celeritas.Core.Analysis.ImitationDetectionResult.Equals(Celeritas.Core.Analysis.ImitationDetectionResult? other) -> bool
+Celeritas.Core.Analysis.ImitationDetectionResult.ImitationDetectionResult() -> void
+Celeritas.Core.Analysis.KeyCorrelation.Deconstruct(out Celeritas.Core.KeySignature Key, out float Correlation) -> void
+Celeritas.Core.Analysis.KeyCorrelation.Equals(Celeritas.Core.Analysis.KeyCorrelation other) -> bool
+Celeritas.Core.Analysis.KeyDetectionResult.Deconstruct(out Celeritas.Core.KeySignature Key, out float Confidence, out Celeritas.Core.Analysis.KeyCorrelation[]! AllCorrelations) -> void
+Celeritas.Core.Analysis.KeyDetectionResult.Equals(Celeritas.Core.Analysis.KeyDetectionResult other) -> bool
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Deconstruct(out Celeritas.Core.Rational Offset, out int Pitch, out byte PitchClass, out Celeritas.Core.Rational ChordStart, out Celeritas.Core.Rational ChordEnd, out ushort ChordMask, out bool IsChordTone, out Celeritas.Core.Analysis.MelodicHarmonyEventType Type, out string! Description) -> void
+Celeritas.Core.Analysis.MelodicHarmonyEvent.Equals(Celeritas.Core.Analysis.MelodicHarmonyEvent other) -> bool
+Celeritas.Core.Analysis.MelodicInterval.Deconstruct(out int Semitones, out Celeritas.Core.Analysis.MelodicDirection Direction, out Celeritas.Core.Analysis.MelodicMotionType Motion) -> void
+Celeritas.Core.Analysis.MelodicInterval.Equals(Celeritas.Core.Analysis.MelodicInterval other) -> bool
+Celeritas.Core.Analysis.MeterDetectionResult.<Clone>$() -> Celeritas.Core.Analysis.MeterDetectionResult!
+Celeritas.Core.Analysis.MeterDetectionResult.Equals(Celeritas.Core.Analysis.MeterDetectionResult? other) -> bool
+Celeritas.Core.Analysis.MeterDetectionResult.MeterDetectionResult() -> void
+Celeritas.Core.Analysis.ModalProgression.Deconstruct(out string! Name, out string! Description, out System.Collections.Generic.IReadOnlyList<int>! Degrees) -> void
+Celeritas.Core.Analysis.ModalProgression.Equals(Celeritas.Core.Analysis.ModalProgression other) -> bool
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.<Clone>$() -> Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord!
+Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.Equals(Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord? other) -> bool
+Celeritas.Core.Analysis.ModalTurnEvent.Deconstruct(out int StartChordIndex, out int EndChordIndex, out Celeritas.Core.Analysis.Mode Mode, out double Confidence, out byte[]! OutOfKeyPitchClasses) -> void
+Celeritas.Core.Analysis.ModalTurnEvent.Equals(Celeritas.Core.Analysis.ModalTurnEvent other) -> bool
+Celeritas.Core.Analysis.Period.Deconstruct(out int FirstPhraseIndex, out int SecondPhraseIndex, out Celeritas.Core.Rational LengthA, out Celeritas.Core.Rational LengthB) -> void
+Celeritas.Core.Analysis.Period.Equals(Celeritas.Core.Analysis.Period other) -> bool
+Celeritas.Core.Analysis.Phrase.Deconstruct(out int StartIndex, out int EndIndex, out Celeritas.Core.Rational Start, out Celeritas.Core.Rational End, out int NoteCount, out Celeritas.Core.Analysis.CadenceType EndingCadence) -> void
+Celeritas.Core.Analysis.Phrase.Equals(Celeritas.Core.Analysis.Phrase other) -> bool
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.Deconstruct(out ushort Mask, out int Cardinality, out int[]! PitchClasses, out int[]! NormalOrder, out int[]! PrimeForm, out int[]! IntervalVector) -> void
+Celeritas.Core.Analysis.PitchClassSetAnalysisResult.Equals(Celeritas.Core.Analysis.PitchClassSetAnalysisResult other) -> bool
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.<Clone>$() -> Celeritas.Core.Analysis.PitchClassSetCatalogEntry!
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.Deconstruct(out string! Forte, out int[]! PrimeForm, out string? Name, out string? Notes) -> void
+Celeritas.Core.Analysis.PitchClassSetCatalogEntry.Equals(Celeritas.Core.Analysis.PitchClassSetCatalogEntry? other) -> bool
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.<Clone>$() -> Celeritas.Core.Analysis.PolyphonyAnalysisResult!
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.Equals(Celeritas.Core.Analysis.PolyphonyAnalysisResult? other) -> bool
+Celeritas.Core.Analysis.PolyphonyAnalysisResult.PolyphonyAnalysisResult() -> void
+Celeritas.Core.Analysis.RhythmAnalysisResult.<Clone>$() -> Celeritas.Core.Analysis.RhythmAnalysisResult!
+Celeritas.Core.Analysis.RhythmAnalysisResult.Equals(Celeritas.Core.Analysis.RhythmAnalysisResult? other) -> bool
+Celeritas.Core.Analysis.RhythmAnalysisResult.RhythmAnalysisResult() -> void
+Celeritas.Core.Analysis.RhythmEvent.Equals(Celeritas.Core.Analysis.RhythmEvent other) -> bool
+Celeritas.Core.Analysis.RhythmPatternMatch.<Clone>$() -> Celeritas.Core.Analysis.RhythmPatternMatch!
+Celeritas.Core.Analysis.RhythmPatternMatch.Equals(Celeritas.Core.Analysis.RhythmPatternMatch? other) -> bool
+Celeritas.Core.Analysis.RhythmPatternMatch.RhythmPatternMatch() -> void
+Celeritas.Core.Analysis.RhythmStatistics.<Clone>$() -> Celeritas.Core.Analysis.RhythmStatistics!
+Celeritas.Core.Analysis.RhythmStatistics.Equals(Celeritas.Core.Analysis.RhythmStatistics? other) -> bool
+Celeritas.Core.Analysis.RhythmStatistics.RhythmStatistics() -> void
+Celeritas.Core.Analysis.SatbSeparationResult.<Clone>$() -> Celeritas.Core.Analysis.SatbSeparationResult!
+Celeritas.Core.Analysis.SatbSeparationResult.Equals(Celeritas.Core.Analysis.SatbSeparationResult? other) -> bool
+Celeritas.Core.Analysis.SatbSeparationResult.SatbSeparationResult() -> void
+Celeritas.Core.Analysis.Section.Deconstruct(out char Label, out int StartPhraseIndex, out int EndPhraseIndex, out Celeritas.Core.Rational Start, out Celeritas.Core.Rational End) -> void
+Celeritas.Core.Analysis.Section.Equals(Celeritas.Core.Analysis.Section other) -> bool
+Celeritas.Core.Analysis.VoiceNote.Equals(Celeritas.Core.Analysis.VoiceNote other) -> bool
+Celeritas.Core.Analysis.VoiceSeparationResult.<Clone>$() -> Celeritas.Core.Analysis.VoiceSeparationResult!
+Celeritas.Core.Analysis.VoiceSeparationResult.Equals(Celeritas.Core.Analysis.VoiceSeparationResult? other) -> bool
+Celeritas.Core.Analysis.VoiceSeparationResult.VoiceSeparationResult() -> void
+Celeritas.Core.ChordInfo.Deconstruct(out byte RootPitchClass, out Celeritas.Core.ChordQuality Quality) -> void
+Celeritas.Core.ChordInfo.Equals(Celeritas.Core.ChordInfo other) -> bool
+Celeritas.Core.ChromaticInterval.Deconstruct(out int Semitones) -> void
+Celeritas.Core.ChromaticInterval.Equals(Celeritas.Core.ChromaticInterval other) -> bool
+Celeritas.Core.DynamicsDirective.DynamicsDirective() -> void
+Celeritas.Core.DynamicsDirective.Equals(Celeritas.Core.DynamicsDirective? other) -> bool
+Celeritas.Core.FunctionalChord.Deconstruct(out Celeritas.Core.KeySignature Key, out Celeritas.Core.RomanNumeralChord Roman) -> void
+Celeritas.Core.FunctionalChord.Equals(Celeritas.Core.FunctionalChord other) -> bool
+Celeritas.Core.Harmonization.ChordAssignment.Deconstruct(out Celeritas.Core.Rational Start, out Celeritas.Core.Rational End, out Celeritas.Core.ChordInfo Chord, out int[]! Pitches) -> void
+Celeritas.Core.Harmonization.ChordAssignment.Equals(Celeritas.Core.Harmonization.ChordAssignment other) -> bool
+Celeritas.Core.Harmonization.ChordCandidate.Deconstruct(out Celeritas.Core.ChordInfo Chord, out int[]! Pitches, out float BaseCost) -> void
+Celeritas.Core.Harmonization.ChordCandidate.Equals(Celeritas.Core.Harmonization.ChordCandidate other) -> bool
+Celeritas.Core.Harmonization.MelodySlice.Deconstruct(out Celeritas.Core.Rational Start, out Celeritas.Core.Rational End, out int[]! Pitches, out bool IsStrongBeat) -> void
+Celeritas.Core.Harmonization.MelodySlice.Equals(Celeritas.Core.Harmonization.MelodySlice other) -> bool
+Celeritas.Core.KeySignature.Equals(Celeritas.Core.KeySignature other) -> bool
+Celeritas.Core.Midi.MidiExportOptions.<Clone>$() -> Celeritas.Core.Midi.MidiExportOptions!
+Celeritas.Core.Midi.MidiExportOptions.Deconstruct(out int TicksPerQuarterNote, out int Bpm, out int Channel, out byte DefaultVelocity) -> void
+Celeritas.Core.Midi.MidiExportOptions.Equals(Celeritas.Core.Midi.MidiExportOptions? other) -> bool
+Celeritas.Core.Midi.MidiFileStatistics.<Clone>$() -> Celeritas.Core.Midi.MidiFileStatistics!
+Celeritas.Core.Midi.MidiFileStatistics.Equals(Celeritas.Core.Midi.MidiFileStatistics? other) -> bool
+Celeritas.Core.Midi.MidiImportOptions.<Clone>$() -> Celeritas.Core.Midi.MidiImportOptions!
+Celeritas.Core.Midi.MidiImportOptions.Deconstruct(out int? Channel, out int? MaxNotes, out bool SortByOffset) -> void
+Celeritas.Core.Midi.MidiImportOptions.Equals(Celeritas.Core.Midi.MidiImportOptions? other) -> bool
+Celeritas.Core.Midi.TempoChange.<Clone>$() -> Celeritas.Core.Midi.TempoChange!
+Celeritas.Core.Midi.TempoChange.Equals(Celeritas.Core.Midi.TempoChange? other) -> bool
+Celeritas.Core.Midi.TimeSignatureChange.<Clone>$() -> Celeritas.Core.Midi.TimeSignatureChange!
+Celeritas.Core.Midi.TimeSignatureChange.Equals(Celeritas.Core.Midi.TimeSignatureChange? other) -> bool
+Celeritas.Core.NotationDirective.NotationDirective() -> void
+Celeritas.Core.NotationDirective.NotationDirective(Celeritas.Core.NotationDirective! original) -> void
+Celeritas.Core.Orchestration.InstrumentRange.Deconstruct(out int MinPitch, out int MaxPitch) -> void
+Celeritas.Core.Orchestration.InstrumentRange.Equals(Celeritas.Core.Orchestration.InstrumentRange other) -> bool
+Celeritas.Core.Orchestration.OrchestrationOptions.Deconstruct(out int SplitPitch, out Celeritas.Core.Orchestration.OrchestrationPartDefinition Bass, out Celeritas.Core.Orchestration.OrchestrationPartDefinition Harmony) -> void
+Celeritas.Core.Orchestration.OrchestrationOptions.Equals(Celeritas.Core.Orchestration.OrchestrationOptions other) -> bool
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.Deconstruct(out Celeritas.Core.Orchestration.OrchestrationPartKind Kind, out string! Name, out Celeritas.Core.Orchestration.InstrumentRange Range) -> void
+Celeritas.Core.Orchestration.OrchestrationPartDefinition.Equals(Celeritas.Core.Orchestration.OrchestrationPartDefinition other) -> bool
+Celeritas.Core.ParseResult.<Clone>$() -> Celeritas.Core.ParseResult!
+Celeritas.Core.ParseResult.Equals(Celeritas.Core.ParseResult? other) -> bool
+Celeritas.Core.PartDirective.Equals(Celeritas.Core.PartDirective? other) -> bool
+Celeritas.Core.PartDirective.PartDirective() -> void
+Celeritas.Core.PitchClass.Equals(Celeritas.Core.PitchClass other) -> bool
+Celeritas.Core.Rational.Equals(Celeritas.Core.Rational other) -> bool
+Celeritas.Core.SecondaryDominant.Deconstruct(out Celeritas.Core.KeySignature Key, out Celeritas.Core.ScaleDegree TargetDegree, out Celeritas.Core.DiatonicChordType Type) -> void
+Celeritas.Core.SecondaryDominant.Equals(Celeritas.Core.SecondaryDominant other) -> bool
+Celeritas.Core.SectionDirective.Equals(Celeritas.Core.SectionDirective? other) -> bool
+Celeritas.Core.SectionDirective.SectionDirective() -> void
+Celeritas.Core.SpnNote.Deconstruct(out Celeritas.Core.PitchClass PitchClass, out int Octave) -> void
+Celeritas.Core.SpnNote.Equals(Celeritas.Core.SpnNote other) -> bool
+Celeritas.Core.TempoBpmDirective.Equals(Celeritas.Core.TempoBpmDirective? other) -> bool
+Celeritas.Core.TempoBpmDirective.TempoBpmDirective() -> void
+Celeritas.Core.TempoCharacterDirective.Equals(Celeritas.Core.TempoCharacterDirective? other) -> bool
+Celeritas.Core.TempoCharacterDirective.TempoCharacterDirective() -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.Deconstruct(out Celeritas.Core.VoiceLeading.VoiceLeadingViolation Violations, out float Penalty) -> void
+Celeritas.Core.VoiceLeading.VoiceLeadingCheck.Equals(Celeritas.Core.VoiceLeading.VoiceLeadingCheck other) -> bool
+override Celeritas.Core.Accompaniment.AccompanimentOptions.GetHashCode() -> int
+override Celeritas.Core.Accompaniment.HarmonicRhythmItem.GetHashCode() -> int
+override Celeritas.Core.Analysis.CadenceInfo.GetHashCode() -> int
+override Celeritas.Core.Analysis.ChordCharacterClassification.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.ChordCharacterClassification.GetHashCode() -> int
+override Celeritas.Core.Analysis.ChordCharacterClassification.ToString() -> string!
+override Celeritas.Core.Analysis.ChromaticPitchEvent.GetHashCode() -> int
+override Celeritas.Core.Analysis.CounterpointRulesCheckResult.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.CounterpointRulesCheckResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.CounterpointRulesCheckResult.ToString() -> string!
+override Celeritas.Core.Analysis.CounterpointViolation.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.CounterpointViolation.GetHashCode() -> int
+override Celeritas.Core.Analysis.CounterpointViolation.ToString() -> string!
+override Celeritas.Core.Analysis.FormAnalysisOptions.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.FormAnalysisOptions.GetHashCode() -> int
+override Celeritas.Core.Analysis.FormAnalysisOptions.ToString() -> string!
+override Celeritas.Core.Analysis.FormAnalysisResult.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.FormAnalysisResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.FormAnalysisResult.ToString() -> string!
+override Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.GetHashCode() -> int
+override Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.ToString() -> string!
+override Celeritas.Core.Analysis.HarmonicColorAnalysisResult.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.HarmonicColorAnalysisResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.HarmonicColorAnalysisResult.ToString() -> string!
+override Celeritas.Core.Analysis.ImitationDetectionResult.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.ImitationDetectionResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.ImitationDetectionResult.ToString() -> string!
+override Celeritas.Core.Analysis.KeyCorrelation.GetHashCode() -> int
+override Celeritas.Core.Analysis.KeyDetectionResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.MelodicHarmonyEvent.GetHashCode() -> int
+override Celeritas.Core.Analysis.MelodicInterval.GetHashCode() -> int
+override Celeritas.Core.Analysis.MeterDetectionResult.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.MeterDetectionResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.MeterDetectionResult.ToString() -> string!
+override Celeritas.Core.Analysis.ModalProgression.GetHashCode() -> int
+override Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.GetHashCode() -> int
+override Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.ToString() -> string!
+override Celeritas.Core.Analysis.ModalTurnEvent.GetHashCode() -> int
+override Celeritas.Core.Analysis.Period.GetHashCode() -> int
+override Celeritas.Core.Analysis.Phrase.GetHashCode() -> int
+override Celeritas.Core.Analysis.PitchClassSetAnalysisResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.PitchClassSetCatalogEntry.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.PitchClassSetCatalogEntry.GetHashCode() -> int
+override Celeritas.Core.Analysis.PitchClassSetCatalogEntry.ToString() -> string!
+override Celeritas.Core.Analysis.PolyphonyAnalysisResult.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.PolyphonyAnalysisResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.PolyphonyAnalysisResult.ToString() -> string!
+override Celeritas.Core.Analysis.RhythmAnalysisResult.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.RhythmAnalysisResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.RhythmAnalysisResult.ToString() -> string!
+override Celeritas.Core.Analysis.RhythmEvent.GetHashCode() -> int
+override Celeritas.Core.Analysis.RhythmPatternMatch.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.RhythmPatternMatch.GetHashCode() -> int
+override Celeritas.Core.Analysis.RhythmPatternMatch.ToString() -> string!
+override Celeritas.Core.Analysis.RhythmStatistics.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.RhythmStatistics.GetHashCode() -> int
+override Celeritas.Core.Analysis.RhythmStatistics.ToString() -> string!
+override Celeritas.Core.Analysis.SatbSeparationResult.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.SatbSeparationResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.SatbSeparationResult.ToString() -> string!
+override Celeritas.Core.Analysis.Section.GetHashCode() -> int
+override Celeritas.Core.Analysis.VoiceNote.GetHashCode() -> int
+override Celeritas.Core.Analysis.VoiceSeparationResult.Equals(object? obj) -> bool
+override Celeritas.Core.Analysis.VoiceSeparationResult.GetHashCode() -> int
+override Celeritas.Core.Analysis.VoiceSeparationResult.ToString() -> string!
+override Celeritas.Core.ChordInfo.GetHashCode() -> int
+override Celeritas.Core.ChromaticInterval.GetHashCode() -> int
+override Celeritas.Core.DynamicsDirective.<Clone>$() -> Celeritas.Core.DynamicsDirective!
+override Celeritas.Core.DynamicsDirective.Equals(object? obj) -> bool
+override Celeritas.Core.DynamicsDirective.GetHashCode() -> int
+override Celeritas.Core.FunctionalChord.GetHashCode() -> int
+override Celeritas.Core.Harmonization.ChordAssignment.GetHashCode() -> int
+override Celeritas.Core.Harmonization.ChordCandidate.GetHashCode() -> int
+override Celeritas.Core.Harmonization.MelodySlice.GetHashCode() -> int
+override Celeritas.Core.KeySignature.GetHashCode() -> int
+override Celeritas.Core.Midi.MidiExportOptions.Equals(object? obj) -> bool
+override Celeritas.Core.Midi.MidiExportOptions.GetHashCode() -> int
+override Celeritas.Core.Midi.MidiExportOptions.ToString() -> string!
+override Celeritas.Core.Midi.MidiFileStatistics.Equals(object? obj) -> bool
+override Celeritas.Core.Midi.MidiFileStatistics.GetHashCode() -> int
+override Celeritas.Core.Midi.MidiFileStatistics.ToString() -> string!
+override Celeritas.Core.Midi.MidiImportOptions.Equals(object? obj) -> bool
+override Celeritas.Core.Midi.MidiImportOptions.GetHashCode() -> int
+override Celeritas.Core.Midi.MidiImportOptions.ToString() -> string!
+override Celeritas.Core.Midi.TempoChange.Equals(object? obj) -> bool
+override Celeritas.Core.Midi.TempoChange.GetHashCode() -> int
+override Celeritas.Core.Midi.TimeSignatureChange.Equals(object? obj) -> bool
+override Celeritas.Core.Midi.TimeSignatureChange.GetHashCode() -> int
+override Celeritas.Core.NotationDirective.Equals(object? obj) -> bool
+override Celeritas.Core.NotationDirective.GetHashCode() -> int
+override Celeritas.Core.NotationDirective.ToString() -> string!
+override Celeritas.Core.Orchestration.InstrumentRange.GetHashCode() -> int
+override Celeritas.Core.Orchestration.OrchestrationOptions.GetHashCode() -> int
+override Celeritas.Core.Orchestration.OrchestrationPartDefinition.GetHashCode() -> int
+override Celeritas.Core.ParseResult.Equals(object? obj) -> bool
+override Celeritas.Core.ParseResult.GetHashCode() -> int
+override Celeritas.Core.ParseResult.ToString() -> string!
+override Celeritas.Core.PartDirective.<Clone>$() -> Celeritas.Core.PartDirective!
+override Celeritas.Core.PartDirective.Equals(object? obj) -> bool
+override Celeritas.Core.PartDirective.GetHashCode() -> int
+override Celeritas.Core.PitchClass.GetHashCode() -> int
+override Celeritas.Core.Rational.GetHashCode() -> int
+override Celeritas.Core.SecondaryDominant.GetHashCode() -> int
+override Celeritas.Core.SectionDirective.<Clone>$() -> Celeritas.Core.SectionDirective!
+override Celeritas.Core.SectionDirective.Equals(object? obj) -> bool
+override Celeritas.Core.SectionDirective.GetHashCode() -> int
+override Celeritas.Core.SpnNote.GetHashCode() -> int
+override Celeritas.Core.TempoBpmDirective.<Clone>$() -> Celeritas.Core.TempoBpmDirective!
+override Celeritas.Core.TempoBpmDirective.Equals(object? obj) -> bool
+override Celeritas.Core.TempoBpmDirective.GetHashCode() -> int
+override Celeritas.Core.TempoCharacterDirective.<Clone>$() -> Celeritas.Core.TempoCharacterDirective!
+override Celeritas.Core.TempoCharacterDirective.Equals(object? obj) -> bool
+override Celeritas.Core.TempoCharacterDirective.GetHashCode() -> int
+override Celeritas.Core.VoiceLeading.VoiceLeadingCheck.GetHashCode() -> int
+override sealed Celeritas.Core.DynamicsDirective.Equals(Celeritas.Core.NotationDirective? other) -> bool
+override sealed Celeritas.Core.PartDirective.Equals(Celeritas.Core.NotationDirective? other) -> bool
+override sealed Celeritas.Core.SectionDirective.Equals(Celeritas.Core.NotationDirective? other) -> bool
+override sealed Celeritas.Core.TempoBpmDirective.Equals(Celeritas.Core.NotationDirective? other) -> bool
+override sealed Celeritas.Core.TempoCharacterDirective.Equals(Celeritas.Core.NotationDirective? other) -> bool
+static Celeritas.Core.Accompaniment.AccompanimentOptions.operator !=(Celeritas.Core.Accompaniment.AccompanimentOptions left, Celeritas.Core.Accompaniment.AccompanimentOptions right) -> bool
+static Celeritas.Core.Accompaniment.AccompanimentOptions.operator ==(Celeritas.Core.Accompaniment.AccompanimentOptions left, Celeritas.Core.Accompaniment.AccompanimentOptions right) -> bool
+static Celeritas.Core.Accompaniment.HarmonicRhythmItem.operator !=(Celeritas.Core.Accompaniment.HarmonicRhythmItem left, Celeritas.Core.Accompaniment.HarmonicRhythmItem right) -> bool
+static Celeritas.Core.Accompaniment.HarmonicRhythmItem.operator ==(Celeritas.Core.Accompaniment.HarmonicRhythmItem left, Celeritas.Core.Accompaniment.HarmonicRhythmItem right) -> bool
+static Celeritas.Core.Analysis.CadenceInfo.operator !=(Celeritas.Core.Analysis.CadenceInfo left, Celeritas.Core.Analysis.CadenceInfo right) -> bool
+static Celeritas.Core.Analysis.CadenceInfo.operator ==(Celeritas.Core.Analysis.CadenceInfo left, Celeritas.Core.Analysis.CadenceInfo right) -> bool
+static Celeritas.Core.Analysis.ChordCharacterClassification.operator !=(Celeritas.Core.Analysis.ChordCharacterClassification? left, Celeritas.Core.Analysis.ChordCharacterClassification? right) -> bool
+static Celeritas.Core.Analysis.ChordCharacterClassification.operator ==(Celeritas.Core.Analysis.ChordCharacterClassification? left, Celeritas.Core.Analysis.ChordCharacterClassification? right) -> bool
+static Celeritas.Core.Analysis.ChromaticPitchEvent.operator !=(Celeritas.Core.Analysis.ChromaticPitchEvent left, Celeritas.Core.Analysis.ChromaticPitchEvent right) -> bool
+static Celeritas.Core.Analysis.ChromaticPitchEvent.operator ==(Celeritas.Core.Analysis.ChromaticPitchEvent left, Celeritas.Core.Analysis.ChromaticPitchEvent right) -> bool
+static Celeritas.Core.Analysis.CounterpointRulesCheckResult.operator !=(Celeritas.Core.Analysis.CounterpointRulesCheckResult? left, Celeritas.Core.Analysis.CounterpointRulesCheckResult? right) -> bool
+static Celeritas.Core.Analysis.CounterpointRulesCheckResult.operator ==(Celeritas.Core.Analysis.CounterpointRulesCheckResult? left, Celeritas.Core.Analysis.CounterpointRulesCheckResult? right) -> bool
+static Celeritas.Core.Analysis.CounterpointViolation.operator !=(Celeritas.Core.Analysis.CounterpointViolation? left, Celeritas.Core.Analysis.CounterpointViolation? right) -> bool
+static Celeritas.Core.Analysis.CounterpointViolation.operator ==(Celeritas.Core.Analysis.CounterpointViolation? left, Celeritas.Core.Analysis.CounterpointViolation? right) -> bool
+static Celeritas.Core.Analysis.FormAnalysisOptions.operator !=(Celeritas.Core.Analysis.FormAnalysisOptions? left, Celeritas.Core.Analysis.FormAnalysisOptions? right) -> bool
+static Celeritas.Core.Analysis.FormAnalysisOptions.operator ==(Celeritas.Core.Analysis.FormAnalysisOptions? left, Celeritas.Core.Analysis.FormAnalysisOptions? right) -> bool
+static Celeritas.Core.Analysis.FormAnalysisResult.operator !=(Celeritas.Core.Analysis.FormAnalysisResult? left, Celeritas.Core.Analysis.FormAnalysisResult? right) -> bool
+static Celeritas.Core.Analysis.FormAnalysisResult.operator ==(Celeritas.Core.Analysis.FormAnalysisResult? left, Celeritas.Core.Analysis.FormAnalysisResult? right) -> bool
+static Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.operator !=(Celeritas.Core.Analysis.HarmonicColorAnalysisOptions? left, Celeritas.Core.Analysis.HarmonicColorAnalysisOptions? right) -> bool
+static Celeritas.Core.Analysis.HarmonicColorAnalysisOptions.operator ==(Celeritas.Core.Analysis.HarmonicColorAnalysisOptions? left, Celeritas.Core.Analysis.HarmonicColorAnalysisOptions? right) -> bool
+static Celeritas.Core.Analysis.HarmonicColorAnalysisResult.operator !=(Celeritas.Core.Analysis.HarmonicColorAnalysisResult? left, Celeritas.Core.Analysis.HarmonicColorAnalysisResult? right) -> bool
+static Celeritas.Core.Analysis.HarmonicColorAnalysisResult.operator ==(Celeritas.Core.Analysis.HarmonicColorAnalysisResult? left, Celeritas.Core.Analysis.HarmonicColorAnalysisResult? right) -> bool
+static Celeritas.Core.Analysis.ImitationDetectionResult.operator !=(Celeritas.Core.Analysis.ImitationDetectionResult? left, Celeritas.Core.Analysis.ImitationDetectionResult? right) -> bool
+static Celeritas.Core.Analysis.ImitationDetectionResult.operator ==(Celeritas.Core.Analysis.ImitationDetectionResult? left, Celeritas.Core.Analysis.ImitationDetectionResult? right) -> bool
+static Celeritas.Core.Analysis.KeyCorrelation.operator !=(Celeritas.Core.Analysis.KeyCorrelation left, Celeritas.Core.Analysis.KeyCorrelation right) -> bool
+static Celeritas.Core.Analysis.KeyCorrelation.operator ==(Celeritas.Core.Analysis.KeyCorrelation left, Celeritas.Core.Analysis.KeyCorrelation right) -> bool
+static Celeritas.Core.Analysis.KeyDetectionResult.operator !=(Celeritas.Core.Analysis.KeyDetectionResult left, Celeritas.Core.Analysis.KeyDetectionResult right) -> bool
+static Celeritas.Core.Analysis.KeyDetectionResult.operator ==(Celeritas.Core.Analysis.KeyDetectionResult left, Celeritas.Core.Analysis.KeyDetectionResult right) -> bool
+static Celeritas.Core.Analysis.MelodicHarmonyEvent.operator !=(Celeritas.Core.Analysis.MelodicHarmonyEvent left, Celeritas.Core.Analysis.MelodicHarmonyEvent right) -> bool
+static Celeritas.Core.Analysis.MelodicHarmonyEvent.operator ==(Celeritas.Core.Analysis.MelodicHarmonyEvent left, Celeritas.Core.Analysis.MelodicHarmonyEvent right) -> bool
+static Celeritas.Core.Analysis.MelodicInterval.operator !=(Celeritas.Core.Analysis.MelodicInterval left, Celeritas.Core.Analysis.MelodicInterval right) -> bool
+static Celeritas.Core.Analysis.MelodicInterval.operator ==(Celeritas.Core.Analysis.MelodicInterval left, Celeritas.Core.Analysis.MelodicInterval right) -> bool
+static Celeritas.Core.Analysis.MeterDetectionResult.operator !=(Celeritas.Core.Analysis.MeterDetectionResult? left, Celeritas.Core.Analysis.MeterDetectionResult? right) -> bool
+static Celeritas.Core.Analysis.MeterDetectionResult.operator ==(Celeritas.Core.Analysis.MeterDetectionResult? left, Celeritas.Core.Analysis.MeterDetectionResult? right) -> bool
+static Celeritas.Core.Analysis.ModalProgression.operator !=(Celeritas.Core.Analysis.ModalProgression left, Celeritas.Core.Analysis.ModalProgression right) -> bool
+static Celeritas.Core.Analysis.ModalProgression.operator ==(Celeritas.Core.Analysis.ModalProgression left, Celeritas.Core.Analysis.ModalProgression right) -> bool
+static Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.operator !=(Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord? left, Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord? right) -> bool
+static Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.operator ==(Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord? left, Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord? right) -> bool
+static Celeritas.Core.Analysis.ModalTurnEvent.operator !=(Celeritas.Core.Analysis.ModalTurnEvent left, Celeritas.Core.Analysis.ModalTurnEvent right) -> bool
+static Celeritas.Core.Analysis.ModalTurnEvent.operator ==(Celeritas.Core.Analysis.ModalTurnEvent left, Celeritas.Core.Analysis.ModalTurnEvent right) -> bool
+static Celeritas.Core.Analysis.Period.operator !=(Celeritas.Core.Analysis.Period left, Celeritas.Core.Analysis.Period right) -> bool
+static Celeritas.Core.Analysis.Period.operator ==(Celeritas.Core.Analysis.Period left, Celeritas.Core.Analysis.Period right) -> bool
+static Celeritas.Core.Analysis.Phrase.operator !=(Celeritas.Core.Analysis.Phrase left, Celeritas.Core.Analysis.Phrase right) -> bool
+static Celeritas.Core.Analysis.Phrase.operator ==(Celeritas.Core.Analysis.Phrase left, Celeritas.Core.Analysis.Phrase right) -> bool
+static Celeritas.Core.Analysis.PitchClassSetAnalysisResult.operator !=(Celeritas.Core.Analysis.PitchClassSetAnalysisResult left, Celeritas.Core.Analysis.PitchClassSetAnalysisResult right) -> bool
+static Celeritas.Core.Analysis.PitchClassSetAnalysisResult.operator ==(Celeritas.Core.Analysis.PitchClassSetAnalysisResult left, Celeritas.Core.Analysis.PitchClassSetAnalysisResult right) -> bool
+static Celeritas.Core.Analysis.PitchClassSetCatalogEntry.operator !=(Celeritas.Core.Analysis.PitchClassSetCatalogEntry? left, Celeritas.Core.Analysis.PitchClassSetCatalogEntry? right) -> bool
+static Celeritas.Core.Analysis.PitchClassSetCatalogEntry.operator ==(Celeritas.Core.Analysis.PitchClassSetCatalogEntry? left, Celeritas.Core.Analysis.PitchClassSetCatalogEntry? right) -> bool
+static Celeritas.Core.Analysis.PolyphonyAnalysisResult.operator !=(Celeritas.Core.Analysis.PolyphonyAnalysisResult? left, Celeritas.Core.Analysis.PolyphonyAnalysisResult? right) -> bool
+static Celeritas.Core.Analysis.PolyphonyAnalysisResult.operator ==(Celeritas.Core.Analysis.PolyphonyAnalysisResult? left, Celeritas.Core.Analysis.PolyphonyAnalysisResult? right) -> bool
+static Celeritas.Core.Analysis.RhythmAnalysisResult.operator !=(Celeritas.Core.Analysis.RhythmAnalysisResult? left, Celeritas.Core.Analysis.RhythmAnalysisResult? right) -> bool
+static Celeritas.Core.Analysis.RhythmAnalysisResult.operator ==(Celeritas.Core.Analysis.RhythmAnalysisResult? left, Celeritas.Core.Analysis.RhythmAnalysisResult? right) -> bool
+static Celeritas.Core.Analysis.RhythmEvent.operator !=(Celeritas.Core.Analysis.RhythmEvent left, Celeritas.Core.Analysis.RhythmEvent right) -> bool
+static Celeritas.Core.Analysis.RhythmEvent.operator ==(Celeritas.Core.Analysis.RhythmEvent left, Celeritas.Core.Analysis.RhythmEvent right) -> bool
+static Celeritas.Core.Analysis.RhythmPatternMatch.operator !=(Celeritas.Core.Analysis.RhythmPatternMatch? left, Celeritas.Core.Analysis.RhythmPatternMatch? right) -> bool
+static Celeritas.Core.Analysis.RhythmPatternMatch.operator ==(Celeritas.Core.Analysis.RhythmPatternMatch? left, Celeritas.Core.Analysis.RhythmPatternMatch? right) -> bool
+static Celeritas.Core.Analysis.RhythmStatistics.operator !=(Celeritas.Core.Analysis.RhythmStatistics? left, Celeritas.Core.Analysis.RhythmStatistics? right) -> bool
+static Celeritas.Core.Analysis.RhythmStatistics.operator ==(Celeritas.Core.Analysis.RhythmStatistics? left, Celeritas.Core.Analysis.RhythmStatistics? right) -> bool
+static Celeritas.Core.Analysis.SatbSeparationResult.operator !=(Celeritas.Core.Analysis.SatbSeparationResult? left, Celeritas.Core.Analysis.SatbSeparationResult? right) -> bool
+static Celeritas.Core.Analysis.SatbSeparationResult.operator ==(Celeritas.Core.Analysis.SatbSeparationResult? left, Celeritas.Core.Analysis.SatbSeparationResult? right) -> bool
+static Celeritas.Core.Analysis.Section.operator !=(Celeritas.Core.Analysis.Section left, Celeritas.Core.Analysis.Section right) -> bool
+static Celeritas.Core.Analysis.Section.operator ==(Celeritas.Core.Analysis.Section left, Celeritas.Core.Analysis.Section right) -> bool
+static Celeritas.Core.Analysis.VoiceNote.operator !=(Celeritas.Core.Analysis.VoiceNote left, Celeritas.Core.Analysis.VoiceNote right) -> bool
+static Celeritas.Core.Analysis.VoiceNote.operator ==(Celeritas.Core.Analysis.VoiceNote left, Celeritas.Core.Analysis.VoiceNote right) -> bool
+static Celeritas.Core.Analysis.VoiceSeparationResult.operator !=(Celeritas.Core.Analysis.VoiceSeparationResult? left, Celeritas.Core.Analysis.VoiceSeparationResult? right) -> bool
+static Celeritas.Core.Analysis.VoiceSeparationResult.operator ==(Celeritas.Core.Analysis.VoiceSeparationResult? left, Celeritas.Core.Analysis.VoiceSeparationResult? right) -> bool
+static Celeritas.Core.ChordInfo.operator !=(Celeritas.Core.ChordInfo left, Celeritas.Core.ChordInfo right) -> bool
+static Celeritas.Core.ChordInfo.operator ==(Celeritas.Core.ChordInfo left, Celeritas.Core.ChordInfo right) -> bool
+static Celeritas.Core.ChromaticInterval.operator !=(Celeritas.Core.ChromaticInterval left, Celeritas.Core.ChromaticInterval right) -> bool
+static Celeritas.Core.ChromaticInterval.operator ==(Celeritas.Core.ChromaticInterval left, Celeritas.Core.ChromaticInterval right) -> bool
+static Celeritas.Core.DynamicsDirective.operator !=(Celeritas.Core.DynamicsDirective? left, Celeritas.Core.DynamicsDirective? right) -> bool
+static Celeritas.Core.DynamicsDirective.operator ==(Celeritas.Core.DynamicsDirective? left, Celeritas.Core.DynamicsDirective? right) -> bool
+static Celeritas.Core.FunctionalChord.operator !=(Celeritas.Core.FunctionalChord left, Celeritas.Core.FunctionalChord right) -> bool
+static Celeritas.Core.FunctionalChord.operator ==(Celeritas.Core.FunctionalChord left, Celeritas.Core.FunctionalChord right) -> bool
+static Celeritas.Core.Harmonization.ChordAssignment.operator !=(Celeritas.Core.Harmonization.ChordAssignment left, Celeritas.Core.Harmonization.ChordAssignment right) -> bool
+static Celeritas.Core.Harmonization.ChordAssignment.operator ==(Celeritas.Core.Harmonization.ChordAssignment left, Celeritas.Core.Harmonization.ChordAssignment right) -> bool
+static Celeritas.Core.Harmonization.ChordCandidate.operator !=(Celeritas.Core.Harmonization.ChordCandidate left, Celeritas.Core.Harmonization.ChordCandidate right) -> bool
+static Celeritas.Core.Harmonization.ChordCandidate.operator ==(Celeritas.Core.Harmonization.ChordCandidate left, Celeritas.Core.Harmonization.ChordCandidate right) -> bool
+static Celeritas.Core.Harmonization.MelodySlice.operator !=(Celeritas.Core.Harmonization.MelodySlice left, Celeritas.Core.Harmonization.MelodySlice right) -> bool
+static Celeritas.Core.Harmonization.MelodySlice.operator ==(Celeritas.Core.Harmonization.MelodySlice left, Celeritas.Core.Harmonization.MelodySlice right) -> bool
+static Celeritas.Core.KeySignature.operator !=(Celeritas.Core.KeySignature left, Celeritas.Core.KeySignature right) -> bool
+static Celeritas.Core.KeySignature.operator ==(Celeritas.Core.KeySignature left, Celeritas.Core.KeySignature right) -> bool
+static Celeritas.Core.Midi.MidiExportOptions.operator !=(Celeritas.Core.Midi.MidiExportOptions? left, Celeritas.Core.Midi.MidiExportOptions? right) -> bool
+static Celeritas.Core.Midi.MidiExportOptions.operator ==(Celeritas.Core.Midi.MidiExportOptions? left, Celeritas.Core.Midi.MidiExportOptions? right) -> bool
+static Celeritas.Core.Midi.MidiFileExtensions.AddTrack(this Melanchall.DryWetMidi.Core.MidiFile! file, Celeritas.Core.NoteEvent[]! notes, string? name = null, Celeritas.Core.Midi.MidiExportOptions? options = null) -> Melanchall.DryWetMidi.Core.TrackChunk!
+static Celeritas.Core.Midi.MidiFileExtensions.Clone(this Melanchall.DryWetMidi.Core.MidiFile! file) -> Melanchall.DryWetMidi.Core.MidiFile!
+static Celeritas.Core.Midi.MidiFileExtensions.GetStatistics(this Melanchall.DryWetMidi.Core.MidiFile! file) -> Celeritas.Core.Midi.MidiFileStatistics!
+static Celeritas.Core.Midi.MidiFileExtensions.Merge(this Melanchall.DryWetMidi.Core.MidiFile! file, Melanchall.DryWetMidi.Core.MidiFile! other) -> Melanchall.DryWetMidi.Core.MidiFile!
+static Celeritas.Core.Midi.MidiFileExtensions.Merge(this Melanchall.DryWetMidi.Core.MidiFile! file, params Melanchall.DryWetMidi.Core.MidiFile![]! others) -> Melanchall.DryWetMidi.Core.MidiFile!
+static Celeritas.Core.Midi.MidiFileExtensions.MergeToSingleTrack(this Melanchall.DryWetMidi.Core.MidiFile! file, Melanchall.DryWetMidi.Core.MidiFile! other) -> Melanchall.DryWetMidi.Core.MidiFile!
+static Celeritas.Core.Midi.MidiFileExtensions.MergeToSingleTrack(this Melanchall.DryWetMidi.Core.MidiFile! file, params Melanchall.DryWetMidi.Core.MidiFile![]! others) -> Melanchall.DryWetMidi.Core.MidiFile!
+static Celeritas.Core.Midi.MidiFileExtensions.Save(this Melanchall.DryWetMidi.Core.MidiFile! file, string! path) -> void
+static Celeritas.Core.Midi.MidiFileExtensions.SetTempo(this Melanchall.DryWetMidi.Core.MidiFile! file, int bpm) -> void
+static Celeritas.Core.Midi.MidiFileExtensions.Split(this Melanchall.DryWetMidi.Core.MidiFile! file, Celeritas.Core.Midi.MidiSplitMode mode) -> System.Collections.Generic.IReadOnlyList<Melanchall.DryWetMidi.Core.MidiFile!>!
+static Celeritas.Core.Midi.MidiFileStatistics.operator !=(Celeritas.Core.Midi.MidiFileStatistics? left, Celeritas.Core.Midi.MidiFileStatistics? right) -> bool
+static Celeritas.Core.Midi.MidiFileStatistics.operator ==(Celeritas.Core.Midi.MidiFileStatistics? left, Celeritas.Core.Midi.MidiFileStatistics? right) -> bool
+static Celeritas.Core.Midi.MidiImportOptions.operator !=(Celeritas.Core.Midi.MidiImportOptions? left, Celeritas.Core.Midi.MidiImportOptions? right) -> bool
+static Celeritas.Core.Midi.MidiImportOptions.operator ==(Celeritas.Core.Midi.MidiImportOptions? left, Celeritas.Core.Midi.MidiImportOptions? right) -> bool
+static Celeritas.Core.Midi.TempoChange.operator !=(Celeritas.Core.Midi.TempoChange? left, Celeritas.Core.Midi.TempoChange? right) -> bool
+static Celeritas.Core.Midi.TempoChange.operator ==(Celeritas.Core.Midi.TempoChange? left, Celeritas.Core.Midi.TempoChange? right) -> bool
+static Celeritas.Core.Midi.TimeSignatureChange.operator !=(Celeritas.Core.Midi.TimeSignatureChange? left, Celeritas.Core.Midi.TimeSignatureChange? right) -> bool
+static Celeritas.Core.Midi.TimeSignatureChange.operator ==(Celeritas.Core.Midi.TimeSignatureChange? left, Celeritas.Core.Midi.TimeSignatureChange? right) -> bool
+static Celeritas.Core.NotationDirective.operator !=(Celeritas.Core.NotationDirective? left, Celeritas.Core.NotationDirective? right) -> bool
+static Celeritas.Core.NotationDirective.operator ==(Celeritas.Core.NotationDirective? left, Celeritas.Core.NotationDirective? right) -> bool
+static Celeritas.Core.NoteArithmeticExtensions.IntervalTo(this int fromMidiPitch, int toMidiPitch) -> Celeritas.Core.ChromaticInterval
+static Celeritas.Core.NoteArithmeticExtensions.PitchClass(this int midiPitch) -> Celeritas.Core.PitchClass
+static Celeritas.Core.NoteArithmeticExtensions.ToSpnNote(this int midiPitch) -> Celeritas.Core.SpnNote
+static Celeritas.Core.NoteArithmeticExtensions.Transpose(this int fromMidiPitch, Celeritas.Core.ChromaticInterval interval) -> int
+static Celeritas.Core.Orchestration.InstrumentRange.operator !=(Celeritas.Core.Orchestration.InstrumentRange left, Celeritas.Core.Orchestration.InstrumentRange right) -> bool
+static Celeritas.Core.Orchestration.InstrumentRange.operator ==(Celeritas.Core.Orchestration.InstrumentRange left, Celeritas.Core.Orchestration.InstrumentRange right) -> bool
+static Celeritas.Core.Orchestration.OrchestrationOptions.operator !=(Celeritas.Core.Orchestration.OrchestrationOptions left, Celeritas.Core.Orchestration.OrchestrationOptions right) -> bool
+static Celeritas.Core.Orchestration.OrchestrationOptions.operator ==(Celeritas.Core.Orchestration.OrchestrationOptions left, Celeritas.Core.Orchestration.OrchestrationOptions right) -> bool
+static Celeritas.Core.Orchestration.OrchestrationPartDefinition.operator !=(Celeritas.Core.Orchestration.OrchestrationPartDefinition left, Celeritas.Core.Orchestration.OrchestrationPartDefinition right) -> bool
+static Celeritas.Core.Orchestration.OrchestrationPartDefinition.operator ==(Celeritas.Core.Orchestration.OrchestrationPartDefinition left, Celeritas.Core.Orchestration.OrchestrationPartDefinition right) -> bool
+static Celeritas.Core.ParseResult.operator !=(Celeritas.Core.ParseResult? left, Celeritas.Core.ParseResult? right) -> bool
+static Celeritas.Core.ParseResult.operator ==(Celeritas.Core.ParseResult? left, Celeritas.Core.ParseResult? right) -> bool
+static Celeritas.Core.PartDirective.operator !=(Celeritas.Core.PartDirective? left, Celeritas.Core.PartDirective? right) -> bool
+static Celeritas.Core.PartDirective.operator ==(Celeritas.Core.PartDirective? left, Celeritas.Core.PartDirective? right) -> bool
+static Celeritas.Core.PitchClass.operator !=(Celeritas.Core.PitchClass left, Celeritas.Core.PitchClass right) -> bool
+static Celeritas.Core.PitchClass.operator ==(Celeritas.Core.PitchClass left, Celeritas.Core.PitchClass right) -> bool
+static Celeritas.Core.Rational.operator !=(Celeritas.Core.Rational left, Celeritas.Core.Rational right) -> bool
+static Celeritas.Core.Rational.operator ==(Celeritas.Core.Rational left, Celeritas.Core.Rational right) -> bool
+static Celeritas.Core.SecondaryDominant.operator !=(Celeritas.Core.SecondaryDominant left, Celeritas.Core.SecondaryDominant right) -> bool
+static Celeritas.Core.SecondaryDominant.operator ==(Celeritas.Core.SecondaryDominant left, Celeritas.Core.SecondaryDominant right) -> bool
+static Celeritas.Core.SectionDirective.operator !=(Celeritas.Core.SectionDirective? left, Celeritas.Core.SectionDirective? right) -> bool
+static Celeritas.Core.SectionDirective.operator ==(Celeritas.Core.SectionDirective? left, Celeritas.Core.SectionDirective? right) -> bool
+static Celeritas.Core.SpnNote.operator !=(Celeritas.Core.SpnNote left, Celeritas.Core.SpnNote right) -> bool
+static Celeritas.Core.SpnNote.operator ==(Celeritas.Core.SpnNote left, Celeritas.Core.SpnNote right) -> bool
+static Celeritas.Core.TempoBpmDirective.operator !=(Celeritas.Core.TempoBpmDirective? left, Celeritas.Core.TempoBpmDirective? right) -> bool
+static Celeritas.Core.TempoBpmDirective.operator ==(Celeritas.Core.TempoBpmDirective? left, Celeritas.Core.TempoBpmDirective? right) -> bool
+static Celeritas.Core.TempoCharacterDirective.operator !=(Celeritas.Core.TempoCharacterDirective? left, Celeritas.Core.TempoCharacterDirective? right) -> bool
+static Celeritas.Core.TempoCharacterDirective.operator ==(Celeritas.Core.TempoCharacterDirective? left, Celeritas.Core.TempoCharacterDirective? right) -> bool
+static Celeritas.Core.VoiceLeading.VoiceLeadingCheck.operator !=(Celeritas.Core.VoiceLeading.VoiceLeadingCheck left, Celeritas.Core.VoiceLeading.VoiceLeadingCheck right) -> bool
+static Celeritas.Core.VoiceLeading.VoiceLeadingCheck.operator ==(Celeritas.Core.VoiceLeading.VoiceLeadingCheck left, Celeritas.Core.VoiceLeading.VoiceLeadingCheck right) -> bool
+virtual Celeritas.Core.NotationDirective.EqualityContract.get -> System.Type!
+virtual Celeritas.Core.NotationDirective.Equals(Celeritas.Core.NotationDirective? other) -> bool
+virtual Celeritas.Core.NotationDirective.PrintMembers(System.Text.StringBuilder! builder) -> bool
