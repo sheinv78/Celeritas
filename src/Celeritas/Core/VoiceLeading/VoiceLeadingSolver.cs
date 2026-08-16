@@ -102,16 +102,25 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
         var altoPitches = GetPitchesInRange(pitchClasses, altoRange.Min, altoRange.Max);
         var sopPitches = GetPitchesInRange(pitchClasses, sopRange.Min, sopRange.Max);
 
+        // 12-bit mask of the pitch classes this chord requires; each candidate voicing's
+        // coverage is a cheap OR of four bits instead of a HashSet + LINQ per voicing.
+        var requiredMask = 0;
+        foreach (var pc in pitchClasses)
+            requiredMask |= 1 << PitchMath.Fold(pc);
+
         foreach (var bass in bassPitches)
         {
+            var bassMask = 1 << (bass % 12);
             foreach (var tenor in tenorPitches)
             {
                 if (tenor <= bass) continue; // Voices must be in order
+                var tenorMask = bassMask | (1 << (tenor % 12));
 
                 foreach (var alto in altoPitches)
                 {
                     if (alto <= tenor) continue;
                     if (alto - tenor > 12 && _options.EnforceSpacing) continue; // Spacing rule
+                    var altoMask = tenorMask | (1 << (alto % 12));
 
                     foreach (var sop in sopPitches)
                     {
@@ -119,12 +128,8 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
                         if (sop - alto > 12 && _options.EnforceSpacing) continue;
 
                         // Check that all pitch classes are covered
-                        var covered = new HashSet<int>
-                        {
-                            bass % 12, tenor % 12, alto % 12, sop % 12
-                        };
-
-                        if (!pitchClasses.All(pc => covered.Contains(pc)))
+                        var covered = altoMask | (1 << (sop % 12));
+                        if ((covered & requiredMask) != requiredMask)
                             continue;
 
                         voicings.Add(new Voicing(bass, tenor, alto, sop));

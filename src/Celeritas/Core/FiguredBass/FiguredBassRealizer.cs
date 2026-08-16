@@ -8,7 +8,6 @@ public sealed class FiguredBassRealizer
     private readonly FiguredBassOptions _options;
 
     private bool AllowVoiceCrossing => _options is FiguredBassRealizerOptions o && o.AllowVoiceCrossing;
-    private int? MaxVoiceMovement => _options is FiguredBassRealizerOptions o ? o.MaxVoiceMovement : null;
 
     /// <summary>Creates a realizer with the given options, or defaults when <paramref name="options"/> is <see langword="null"/>.</summary>
     public FiguredBassRealizer(FiguredBassOptions? options = null)
@@ -83,10 +82,14 @@ public sealed class FiguredBassRealizer
         // If voice count changes, reset voice leading.
         if (previousUpperVoices == null || previousUpperVoices.Length != targetPitchClasses.Length)
         {
+            // Stack each upper voice at the lowest octave strictly above the bass and
+            // above the previous upper voice (so the voicing never crosses), raised
+            // further when the bass sits below MinPitch.
+            var floor = Math.Max(symbol.BassPitch, _options.MinPitch - 1);
             for (var i = 0; i < targetPitchClasses.Length; i++)
             {
-                var basePitch = targetPitchClasses[i] + (12 * 4); // start around octave 4
-                var realized = AdjustToRange(basePitch, _options.MinPitch, _options.MaxPitch);
+                var realized = LowestPitchOfClassAbove(targetPitchClasses[i], floor);
+                floor = realized;
                 notes.Add(new NoteEvent(realized, symbol.Time, symbol.Duration, 0.7f));
             }
 
@@ -105,9 +108,9 @@ public sealed class FiguredBassRealizer
             newUpper[i] = ChooseClosestPitchInRange(
                 targetPitchClasses[i],
                 previousUpperVoices[i],
+                symbol.BassPitch,
                 _options.MinPitch,
-                _options.MaxPitch,
-                MaxVoiceMovement);
+                _options.MaxPitch);
         }
 
         if (!AllowVoiceCrossing)
@@ -144,47 +147,50 @@ public sealed class FiguredBassRealizer
     private static int ChooseClosestPitchInRange(
         int pitchClass,
         int previousPitch,
+        int bassPitch,
         int minPitch,
-        int maxPitch,
-        int? maxMovement)
+        int maxPitch)
     {
-        // Enumerate octave candidates within range for the given pitch-class.
-        var candidates = new List<int>();
-        for (var p = pitchClass; p <= maxPitch; p += 12)
+        // Upper voices must stay strictly above the bass, even when the configured
+        // range would otherwise allow dipping below it.
+        var floor = Math.Max(minPitch, bassPitch + 1);
+
+        // Enumerate octave candidates within range for the given pitch-class and pick
+        // the one closest to the previous pitch of this voice. This is inherently the
+        // minimum movement, so FiguredBassRealizerOptions.MaxVoiceMovement is satisfied
+        // whenever it is satisfiable; when it is not, the closest candidate is the
+        // documented best-effort fallback (the realizer never fails mid-progression).
+        var best = int.MinValue;
+        for (var p = LowestPitchOfClassAbove(pitchClass, floor - 1); p <= maxPitch; p += 12)
         {
-            if (p >= minPitch)
+            if (best == int.MinValue || Math.Abs(p - previousPitch) < Math.Abs(best - previousPitch))
             {
-                candidates.Add(p);
+                best = p;
             }
         }
 
-        if (candidates.Count == 0)
+        if (best == int.MinValue)
         {
-            // Fallback (should not happen for sane ranges)
-            return Math.Clamp(pitchClass, minPitch, maxPitch);
+            // Range too narrow to hold this pitch class above the bass: keep the pitch
+            // class and the above-bass guarantee (soft violation of MaxPitch).
+            return LowestPitchOfClassAbove(pitchClass, bassPitch);
         }
 
-        // If constrained, prefer any candidate within movement first.
-        if (maxMovement is { } limit)
-        {
-            var within = candidates
-                .Select(p => (p, diff: Math.Abs(p - previousPitch)))
-                .Where(x => x.diff <= limit)
-                .OrderBy(x => x.diff)
-                .ToList();
+        return best;
+    }
 
-            return within.Count switch
-            {
-                0 => throw new InvalidOperationException(
-                    $"Cannot realize voice within MaxVoiceMovement={limit} semitones."),
-                _ => within[0].p
-            };
+    /// <summary>
+    /// Lowest pitch of the given pitch class strictly above <paramref name="floor"/>.
+    /// </summary>
+    private static int LowestPitchOfClassAbove(int pitchClass, int floor)
+    {
+        var delta = PitchMath.Fold(pitchClass - PitchMath.Fold(floor));
+        if (delta == 0)
+        {
+            delta = 12;
         }
 
-        // Unconstrained: choose closest.
-        return candidates
-            .OrderBy(p => Math.Abs(p - previousPitch))
-            .First();
+        return floor + delta;
     }
 
     private static NoteEvent[] EnforceUpperVoiceOrdering(FiguredBassSymbol symbol, NoteEvent[] notes)
@@ -274,16 +280,50 @@ public sealed class FiguredBassRealizer
         // Apply accidentals if specified
         if (accidentals != null && accidentals.TryGetValue(interval, out var accidental))
         {
-            pitch += accidental switch
+            pitch = accidental switch
             {
-                '#' => 1,
-                'b' => -1,
-                'n' => 0,
-                _ => 0
+                '#' => pitch + 1,
+                'b' => pitch - 1,
+                // 'n' cancels the key's alteration: force the natural (unaltered-letter)
+                // pitch of the diatonic degree, e.g. "n3" above D in D major is F natural,
+                // not the key's F#.
+                'n' => NaturalizeDegree(bassPitch, interval, pitch),
+                _ => pitch
             };
         }
 
         return pitch;
+    }
+
+    private static readonly int[] NaturalPitchClasses = [0, 2, 4, 5, 7, 9, 11]; // C D E F G A B
+
+    /// <summary>
+    /// Forces the natural (unaltered-letter) pitch of the diatonic degree reached by
+    /// <paramref name="interval"/> above the bass: the target letter is counted from the
+    /// bass letter, and the diatonic pitch is moved to that letter's natural pitch class.
+    /// A chromatic bass is treated as a sharpened natural (letter of the natural below).
+    /// </summary>
+    private static int NaturalizeDegree(int bassPitch, int interval, int diatonicPitch)
+    {
+        var bassPc = PitchMath.Fold(bassPitch);
+        var letterIndex = Array.IndexOf(NaturalPitchClasses, bassPc);
+        if (letterIndex < 0)
+        {
+            // Chromatic bass: spell as a sharp (letter of the natural a semitone below).
+            letterIndex = Array.IndexOf(NaturalPitchClasses, PitchMath.Fold(bassPc - 1));
+        }
+
+        var steps = Math.Max(interval, 1) - 1;
+        var naturalPc = NaturalPitchClasses[(letterIndex + steps) % 7];
+
+        // Move the diatonic pitch to the natural letter pitch by the shortest distance.
+        var delta = PitchMath.Fold(naturalPc - PitchMath.Fold(diatonicPitch));
+        if (delta > 6)
+        {
+            delta -= 12;
+        }
+
+        return diatonicPitch + delta;
     }
 
     private int DiatonicIntervalSemitones(int bassPitch, int interval)
@@ -346,7 +386,10 @@ public sealed class FiguredBassRealizer
             pitch -= 12;
         }
 
-        return pitch;
+        // A range narrower than an octave can leave the pitch below MinPitch after the
+        // downward pass; the final clamp guarantees the [MinPitch, MaxPitch] contract
+        // even when the pitch class has to be given up.
+        return Math.Clamp(pitch, minPitch, maxPitch);
     }
 
     /// <summary>

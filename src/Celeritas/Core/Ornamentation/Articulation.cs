@@ -60,9 +60,18 @@ public sealed class Articulation : Ornament
     public float VelocityMultiplier { get; init; } = 1.0f;
 
     /// <summary>Expands into the single base note with duration and velocity scaled by the multipliers.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="DurationMultiplier"/> is not positive.</exception>
     public override NoteEvent[] Expand()
     {
-        var duration = BaseNote.Duration * new Rational((int)(DurationMultiplier * 100), 100);
+        if (DurationMultiplier <= 0f)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(DurationMultiplier), DurationMultiplier, "Duration multiplier must be positive.");
+        }
+
+        // Round (not truncate) the float to a centesimal ratio: 0.7f is stored as
+        // 0.69999998...; truncation turned it into 69/100 instead of 7/10.
+        var duration = BaseNote.Duration * new Rational((long)Math.Round(DurationMultiplier * 100), 100);
         var velocity = Math.Clamp(BaseNote.Velocity * VelocityMultiplier, 0f, 1f);
 
         return [new NoteEvent(BaseNote.Pitch, BaseNote.Offset, duration, velocity)];

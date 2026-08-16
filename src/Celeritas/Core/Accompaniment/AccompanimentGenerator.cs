@@ -16,11 +16,14 @@ public static class AccompanimentGenerator
     /// Uses the provided chord pitches (voicing) and adds a bass line.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="chords"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="options"/> is a <c>default(AccompanimentOptions)</c>-like value (see <see cref="AccompanimentOptions.Default"/>).</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A computed MIDI pitch falls outside 0..127 (bad <see cref="AccompanimentOptions.BassOctave"/> or <see cref="AccompanimentOptions.ChordOctave"/>).</exception>
     public static NoteEvent[] Generate(IReadOnlyList<ChordAssignment> chords, AccompanimentOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(chords);
 
         var opt = options ?? AccompanimentOptions.Default;
+        ValidateOptions(opt);
         if (chords.Count == 0)
             return [];
 
@@ -43,7 +46,9 @@ public static class AccompanimentGenerator
             if (chordPitchClasses.Length == 0)
                 continue;
 
-            var bassPitch = PitchClassToMidiAtOrAbove(chord.Chord.RootPitchClass, OctaveToMidiBase(opt.BassOctave));
+            var bassPitch = ValidateMidiPitch(
+                PitchClassToMidiAtOrAbove(chord.Chord.RootPitchClass, OctaveToMidiBase(opt.BassOctave)),
+                nameof(AccompanimentOptions.BassOctave));
 
             if (opt.Pattern == AccompanimentPattern.Block)
             {
@@ -98,6 +103,8 @@ public static class AccompanimentGenerator
     /// Chords are spelled in the provided key.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="progression"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="options"/> is a <c>default(AccompanimentOptions)</c>-like value (see <see cref="AccompanimentOptions.Default"/>).</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A computed MIDI pitch falls outside 0..127 (bad <see cref="AccompanimentOptions.BassOctave"/> or <see cref="AccompanimentOptions.ChordOctave"/>).</exception>
     public static NoteEvent[] Generate(
         IReadOnlyList<HarmonicRhythmItem> progression,
         KeySignature key,
@@ -106,6 +113,7 @@ public static class AccompanimentGenerator
         ArgumentNullException.ThrowIfNull(progression);
 
         var opt = options ?? AccompanimentOptions.Default;
+        ValidateOptions(opt);
         if (progression.Count == 0)
             return [];
 
@@ -143,7 +151,9 @@ public static class AccompanimentGenerator
             }
 
             var rootPc = roman.GetRootPitchClass(key);
-            var bassPitch = PitchClassToMidiAtOrAbove(rootPc, OctaveToMidiBase(opt.BassOctave));
+            var bassPitch = ValidateMidiPitch(
+                PitchClassToMidiAtOrAbove(rootPc, OctaveToMidiBase(opt.BassOctave)),
+                nameof(AccompanimentOptions.BassOctave));
 
             if (opt.Pattern == AccompanimentPattern.Block)
             {
@@ -278,7 +288,37 @@ public static class AccompanimentGenerator
                 voiced[i] += 12;
         }
 
+        foreach (var pitch in voiced)
+            ValidateMidiPitch(pitch, nameof(AccompanimentOptions.ChordOctave));
+
         return voiced;
+    }
+
+    private static void ValidateOptions(in AccompanimentOptions options)
+    {
+        // A default(AccompanimentOptions) struct has MaxChordTones == 0, which produces
+        // no chord tones at all and used to realize silently to an empty accompaniment.
+        if (options.MaxChordTones <= 0)
+        {
+            throw new ArgumentException(
+                "MaxChordTones must be positive; this looks like default(AccompanimentOptions). " +
+                "Pass null or AccompanimentOptions.Default to use the standard defaults, " +
+                "or start from AccompanimentOptions.Default with a `with` expression to customize.",
+                "options");
+        }
+    }
+
+    private static int ValidateMidiPitch(int pitch, string optionName)
+    {
+        if (pitch is < 0 or > 127)
+        {
+            throw new ArgumentOutOfRangeException(
+                optionName,
+                pitch,
+                $"Computed MIDI pitch is outside 0..127; adjust AccompanimentOptions.{optionName}.");
+        }
+
+        return pitch;
     }
 
     private static int OctaveToMidiBase(int octave) => 12 * (octave + 1);

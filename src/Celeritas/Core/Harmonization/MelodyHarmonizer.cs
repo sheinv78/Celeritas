@@ -85,7 +85,10 @@ public sealed class MelodyHarmonizer(
             // Ensure at least one candidate (fallback to tonic)
             if (candidates.Count == 0)
             {
-                var tonicPitches = new[] { 60 + key.Root, 60 + ((key.Root + (key.IsMajor ? 4 : 3)) % 12), 60 + ((key.Root + 7) % 12) };
+                // Root-position tonic: third and fifth stacked above the root (folding
+                // each tone into octave 4 independently produced arbitrary inversions).
+                var tonicRoot = 60 + key.Root;
+                var tonicPitches = new[] { tonicRoot, tonicRoot + (key.IsMajor ? 4 : 3), tonicRoot + 7 };
                 var tonicChord = ChordAnalyzer.Identify(tonicPitches);
                 candidates.Add(new ChordCandidate(tonicChord, tonicPitches, 1.0f));
             }

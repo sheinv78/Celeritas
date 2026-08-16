@@ -258,8 +258,11 @@ public class FiguredBassTests
     }
 
     [Fact]
-    public void FiguredBassRealizerOptions_MaxVoiceMovement_ThrowsWhenImpossible()
+    public void FiguredBassRealizerOptions_MaxVoiceMovement_FallsBackToClosestWhenImpossible()
     {
+        // MaxVoiceMovement is a soft constraint: an unreachable limit (0 semitones across
+        // a chord change) must not abort the realization mid-progression; each voice
+        // falls back to the octave placement closest to its previous pitch.
         var options = new FiguredBassRealizerOptions
         {
             MinPitch = 60,
@@ -289,6 +292,15 @@ public class FiguredBassTests
             }
         };
 
-        Assert.Throws<InvalidOperationException>(() => realizer.Realize(symbols));
+        var notes = realizer.Realize(symbols);
+
+        // Both chords realize fully: bass + 2 upper voices each.
+        var second = notes.Where(n => n.Offset == new Rational(1, 4)).ToArray();
+        Assert.Equal(3, second.Length);
+        Assert.Equal(50, second[0].Pitch);
+
+        // Upper voices stay above the bass, carry the D-minor pitch classes (F, A),
+        // and sit at the octave closest to the previous chord's voices (E4/G4 -> F4/A4).
+        Assert.Equal([65, 69], second.Skip(1).Select(n => n.Pitch).ToArray());
     }
 }
