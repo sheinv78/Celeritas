@@ -63,13 +63,24 @@ public readonly record struct FunctionalChord(KeySignature Key, RomanNumeralChor
             ChordQuality.Major => root,
             ChordQuality.Minor => root + "m",
             ChordQuality.Diminished => root + "dim",
+            ChordQuality.Augmented => root + "aug",
+            ChordQuality.Sus2 => root + "sus2",
+            ChordQuality.Sus4 => root + "sus4",
+            ChordQuality.Power => root + "5",
 
             ChordQuality.Major7 => root + "maj7",
             ChordQuality.Minor7 => root + "m7",
             ChordQuality.Dominant7 => root + "7",
             ChordQuality.Dominant7Flat5 => root + "7b5",
             ChordQuality.HalfDim7 => root + "m7b5",
+            ChordQuality.Diminished7 => root + "dim7",
+            ChordQuality.Augmented7 => root + "aug7",
+            ChordQuality.MinorMajor7 => root + "m(maj7)",
 
+            ChordQuality.Add9 => root + "add9",
+            ChordQuality.Add11 => root + "add11",
+
+            // No conventional symbol (Unknown, Quartal): fall back to a readable name.
             _ => root + " " + Roman.Quality
         };
     }
@@ -213,7 +224,7 @@ public static class FunctionalProgressions
         return result;
     }
 
-    private static RomanNumeralChord MakeDiatonic(KeySignature key, ScaleDegree degree, DiatonicChordType type, MinorDominantStyle minorDominant)
+    internal static RomanNumeralChord MakeDiatonic(KeySignature key, ScaleDegree degree, DiatonicChordType type, MinorDominantStyle minorDominant)
     {
         var quality = key.IsMajor
             ? MajorQuality(degree, type)
@@ -295,10 +306,40 @@ public readonly record struct SecondaryDominant(KeySignature Key, ScaleDegree Ta
     /// <summary>Root of the secondary dominant, a fifth above <see cref="TargetRoot"/>.</summary>
     public PitchClass Root => CircleOfFifths.NextFifth(TargetRoot); // dominant is a fifth above target
 
-    /// <summary>Roman-numeral text (e.g. "V7/ii").</summary>
-    public string RomanNumeral => Type == DiatonicChordType.Seventh
-        ? $"V7/{TargetDegree.ToString().ToLowerInvariant()}"
-        : $"V/{TargetDegree.ToString().ToLowerInvariant()}";
+    /// <summary>
+    /// Roman-numeral text (e.g. "V7/ii", "V7/V"). The target's case follows its
+    /// diatonic quality in <see cref="Key"/>: lowercase for minor/diminished targets
+    /// (ii, iii, vi, vii), uppercase for major targets (IV, V).
+    /// </summary>
+    public string RomanNumeral
+    {
+        get
+        {
+            var head = Type == DiatonicChordType.Seventh ? "V7" : "V";
+            return $"{head}/{TargetNumeral()}";
+        }
+    }
+
+    private string TargetNumeral()
+    {
+        // ScaleDegree names are already roman numerals in mixed case ("Ii", "Iv", ...).
+        var numeral = TargetDegree.ToString().ToUpperInvariant();
+
+        // Case follows the target degree's diatonic triad quality in the key,
+        // using the same quality table the diatonic progressions are built from.
+        var quality = FunctionalProgressions
+            .MakeDiatonic(Key, TargetDegree, DiatonicChordType.Triad, MinorDominantStyle.Harmonic)
+            .Quality;
+
+        var isLowercase = quality is ChordQuality.Minor
+            or ChordQuality.Diminished
+            or ChordQuality.Minor7
+            or ChordQuality.HalfDim7
+            or ChordQuality.Diminished7
+            or ChordQuality.MinorMajor7;
+
+        return isLowercase ? numeral.ToLowerInvariant() : numeral;
+    }
 
     /// <summary>Chord symbol for this secondary dominant (e.g. "A7").</summary>
     /// <param name="preferSharps">Whether to spell accidentals as sharps rather than flats.</param>

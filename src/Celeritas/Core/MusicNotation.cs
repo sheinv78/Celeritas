@@ -248,6 +248,10 @@ public static class MusicNotation
         var sb = new StringBuilder();
         var i = 0;
 
+        // Scratch list reused across iterations (cleared per note) to avoid a
+        // single-element List allocation for every note in the sequence.
+        var chordNotes = groupChords ? new List<NoteEvent>() : null;
+
         while (i < sequence.Length)
         {
             if (sb.Length > 0)
@@ -258,7 +262,8 @@ public static class MusicNotation
             // Check if next notes form a chord (same offset and duration)
             if (groupChords && i < sequence.Length - 1)
             {
-                var chordNotes = new List<NoteEvent> { sequence[i] };
+                chordNotes!.Clear();
+                chordNotes.Add(sequence[i]);
                 var chordOffset = sequence[i].Offset;
                 var chordDuration = sequence[i].Duration;
 
@@ -374,6 +379,10 @@ public static class MusicNotation
         var directiveIndex = 0;
         var currentTime = Rational.Zero;
 
+        // Scratch list reused across iterations (cleared per note) to avoid a
+        // single-element List allocation for every note in the sequence.
+        var chordNotes = groupChords ? new List<NoteEvent>() : null;
+
         while (noteIndex < notes.Length || directiveIndex < directives.Length)
         {
             // Insert directives that occur at or before current time
@@ -409,7 +418,8 @@ public static class MusicNotation
                 // Check for chord (groupChords logic from FormatNoteSequence)
                 if (groupChords && noteIndex < notes.Length - 1)
                 {
-                    var chordNotes = new List<NoteEvent> { notes[noteIndex] };
+                    chordNotes!.Clear();
+                    chordNotes.Add(notes[noteIndex]);
                     var chordOffset = notes[noteIndex].Offset;
                     var chordDuration = notes[noteIndex].Duration;
 
@@ -536,6 +546,11 @@ public static class MusicNotation
     /// <summary>
     /// Try-parse a key signature.
     /// Accepts: C, Cm, C minor, C major, C#, Db minor, etc.
+    /// The whole input must be consumed: a pitch-class prefix followed by exactly one
+    /// mode token ("" / "m" / "min" / "minor" for minor forms, "M" / "maj" / "major"
+    /// for major forms). Word forms may be separated from the pitch by a single space
+    /// and are case-insensitive; a lone 'm'/'M' attaches directly to the pitch and is
+    /// case-significant (Em = E minor, EM = E major).
     /// </summary>
     private static bool TryParseKey(ReadOnlySpan<char> keyString, out KeySignature key)
     {
@@ -547,30 +562,57 @@ public static class MusicNotation
             return false;
         }
 
-        // Detect minor: contains "min"/"minor" or ends with 'm' (but not "maj"/"major")
-        var lower = keyString.ToString().ToLowerInvariant();
-        var isMinor = lower.Contains("minor", StringComparison.Ordinal) ||
-                      lower.Contains("min", StringComparison.Ordinal) ||
-                      (lower.EndsWith('m') && !lower.EndsWith("maj", StringComparison.Ordinal) && !lower.EndsWith("major", StringComparison.Ordinal));
-
-        lower = lower.Length switch
-        {
-            // Strip trailing 'm' (e.g., "cm")
-            > 1 when lower[^1] == 'm' => lower[..^1],
-            // Strip mode keywords
-            _ => lower.Replace("major", "", StringComparison.Ordinal)
-                .Replace("minor", "", StringComparison.Ordinal)
-                .Replace("maj", "", StringComparison.Ordinal)
-                .Replace("min", "", StringComparison.Ordinal)
-                .Trim()
-        };
-
-        if (!TryParsePitchClass(lower.AsSpan(), out var pitchClass, out _))
+        if (!TryParsePitchClass(keyString, out var pitchClass, out var consumed))
         {
             return false;
         }
 
-        key = new KeySignature((byte)pitchClass, !isMinor);
+        // The remainder after the pitch class must be exactly one mode token; a single
+        // space is allowed only before the word forms. Anything else is not a key.
+        var remainder = keyString[consumed..];
+        var hadSpace = false;
+        if (!remainder.IsEmpty && remainder[0] == ' ')
+        {
+            hadSpace = true;
+            remainder = remainder[1..];
+            if (remainder.IsEmpty)
+            {
+                return false;
+            }
+        }
+
+        bool isMajor;
+        if (remainder.IsEmpty)
+        {
+            isMajor = true;
+        }
+        else if (remainder.Length == 1)
+        {
+            // Single-letter mode: attaches directly to the pitch (never after a space),
+            // and case is significant ("Em" = E minor, "EM" = E major).
+            if (hadSpace || (remainder[0] != 'm' && remainder[0] != 'M'))
+            {
+                return false;
+            }
+
+            isMajor = remainder[0] == 'M';
+        }
+        else if (remainder.Equals("min", StringComparison.OrdinalIgnoreCase) ||
+                 remainder.Equals("minor", StringComparison.OrdinalIgnoreCase))
+        {
+            isMajor = false;
+        }
+        else if (remainder.Equals("maj", StringComparison.OrdinalIgnoreCase) ||
+                 remainder.Equals("major", StringComparison.OrdinalIgnoreCase))
+        {
+            isMajor = true;
+        }
+        else
+        {
+            return false;
+        }
+
+        key = new KeySignature((byte)pitchClass, isMajor);
         return true;
     }
 
