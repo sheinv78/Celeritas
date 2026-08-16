@@ -103,6 +103,7 @@ public static class MidiFileExtensions
         /// <param name="name">Optional track name written as a sequence/track-name meta event.</param>
         /// <param name="options">Export options controlling channel, velocity, and ticks-per-quarter-note.</param>
         /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">A note has a negative offset, which MIDI cannot represent.</exception>
         public TrackChunk AddTrack(NoteEvent[] notes, string? name = null, MidiExportOptions? options = null)
         {
             // AsSpan() maps null to an empty span, so an unguarded null would quietly add an
@@ -143,9 +144,19 @@ public static class MidiFileExtensions
             using var notesManager = track.ManageNotes();
             var channel = (FourBitNumber)options.Channel;
 
-            foreach (var e in notes)
+            for (var i = 0; i < notes.Length; i++)
             {
+                var e = notes[i];
                 var noteNumber = Math.Clamp(e.Pitch, 0, 127);
+
+                if (e.Offset < Rational.Zero)
+                {
+                    // Without this guard the negative tick time surfaces as a raw DryWetMidi
+                    // exception; validate here with the same contract as MidiIo.Export.
+                    throw new ArgumentException(
+                        $"Note {i} has a negative offset ({e.Offset}); MIDI cannot represent events before time zero.",
+                        nameof(notes));
+                }
 
                 var timeTicks = MidiIo.WholeNotesToTicks(e.Offset, ticksPerQuarter);
                 var lengthTicks = Math.Max(1, MidiIo.WholeNotesToTicks(e.Duration, ticksPerQuarter));
@@ -170,7 +181,10 @@ public static class MidiFileExtensions
             return track;
         }
 
-        /// <summary>Inserts a tempo event of <paramref name="bpm"/> beats per minute at time zero.</summary>
+        /// <summary>
+        /// Sets the tempo at time zero to <paramref name="bpm"/> beats per minute, replacing any
+        /// tempo already there. Tempo changes later in the track are preserved.
+        /// </summary>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="bpm"/> is not positive.</exception>
         public void SetTempo(int bpm)
         {
@@ -191,8 +205,31 @@ public static class MidiFileExtensions
                 file.Chunks.Add(track);
             }
 
-            // Insert tempo at time=0 without shifting existing events.
-            track.Events.Insert(0, new SetTempoEvent(tempo.MicrosecondsPerQuarterNote) { DeltaTime = 0 });
+            // Replace semantics: with same-tick tempo events, the LAST one wins during playback,
+            // so merely inserting at index 0 would leave a pre-existing tick-0 tempo in force.
+            // Remove every tempo event at tick 0 first (their own delta is necessarily 0, so
+            // removal shifts nothing), then insert the new one without moving later events.
+            var events = track.Events;
+            var index = 0;
+            long absoluteTicks = 0;
+            while (index < events.Count)
+            {
+                absoluteTicks += events[index].DeltaTime;
+                if (absoluteTicks > 0)
+                {
+                    break;
+                }
+
+                if (events[index] is SetTempoEvent)
+                {
+                    events.RemoveAt(index);
+                    continue;
+                }
+
+                index++;
+            }
+
+            events.Insert(0, new SetTempoEvent(tempo.MicrosecondsPerQuarterNote) { DeltaTime = 0 });
         }
 
         /// <summary>Returns a deep copy of the file via a write/read round-trip.</summary>
