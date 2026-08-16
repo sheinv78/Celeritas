@@ -169,6 +169,16 @@ public static class ModalProgressions
     /// <summary>
     /// Detect if a progression matches a known modal pattern.
     /// </summary>
+    /// <remarks>
+    /// Patterns are matched on bare scale-degree numbers (1-7): chord qualities and
+    /// alterations are not represented, so degree sequences shared by several modes
+    /// (e.g. 1-7-1, which is I-bVII-I in Mixolydian but i-VII-i in Aeolian) cannot be
+    /// distinguished by this method alone. When multiple modes match with the same
+    /// confidence, the tie is resolved by mode enumeration order (Ionian, Dorian,
+    /// Phrygian, Lydian, Mixolydian, Aeolian, Locrian, then the altered modes) — the
+    /// first mode tried wins. Treat the returned mode as a plausible reading, not a
+    /// unique identification.
+    /// </remarks>
     public static (Mode mode, ModalProgression? match, float confidence) DetectModalProgression(
         ReadOnlySpan<int> romanNumerals)
     {

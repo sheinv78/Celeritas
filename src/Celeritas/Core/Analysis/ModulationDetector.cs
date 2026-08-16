@@ -87,6 +87,13 @@ public static class ModulationDetector
     /// <summary>
     /// Analyze a sequence of note events for modulations.
     /// </summary>
+    /// <remarks>
+    /// Harmonic evidence is normally taken from chords (2+ simultaneous onsets on an
+    /// eighth-note grid). When the input is (nearly) monophonic and fewer than two such
+    /// chords exist, the analysis falls back to treating each quantized onset as a
+    /// pseudo-chord — single notes included — so melodic key changes are still detected.
+    /// Pivot-chord identification is unavailable in that fallback.
+    /// </remarks>
     public static ModulationAnalysisResult Analyze(ReadOnlySpan<NoteEvent> notes, KeySignature startKey)
     {
         if (notes.Length == 0)
@@ -130,11 +137,10 @@ public static class ModulationDetector
 
         for (int i = windowSize; i < chords.Count; i++)
         {
-            var window = chords.Skip(Math.Max(0, i - windowSize)).Take(windowSize).ToList();
-            var currentChord = chords[i];
+            var windowStart = i - windowSize;
 
-            // Detect key at this position
-            var detectedKey = DetectKeyInWindow(window, currentKey);
+            // Detect key at this position (evidence window is chords[windowStart..i-1])
+            var detectedKey = DetectKeyInWindow(chords, windowStart, i, currentKey);
 
             if (detectedKey == null || detectedKey.Equals(currentKey))
             {
@@ -142,8 +148,8 @@ public static class ModulationDetector
             }
 
             // Check if this is a real modulation or just a passing chromaticism
-            var futureWindow = chords.Skip(i).Take(windowSize / 2).ToList();
-            var stability = MeasureKeyStability(futureWindow, detectedKey.Value);
+            var futureEnd = Math.Min(i + (windowSize / 2), chords.Count);
+            var stability = MeasureKeyStability(chords, i, futureEnd, detectedKey.Value);
 
             if (stability < 0.5f)
             {
@@ -164,12 +170,20 @@ public static class ModulationDetector
                 continue;
             }
 
+            // The key change is confirmed at index i, but the evidence window is
+            // chords[windowStart..i-1]: attributing the boundary to chords[i] lagged the
+            // reported Offset by up to windowSize chords and truncated the measured new-key
+            // area, biasing real modulations toward Tonicization. Attribute the boundary to
+            // the earliest window chord that belongs to the new key and not the old one.
+            var boundaryIndex = FindModulationBoundary(chords, windowStart, i, currentKey, detectedKey.Value);
+
             // Determine modulation type
             var modulationType = DetermineModulationType(currentKey, detectedKey.Value);
             var confidence = stability;
 
-            // Check duration to distinguish tonicization from true modulation
-            var duration = CalculateKeyDuration(chords, i, detectedKey.Value);
+            // Check duration to distinguish tonicization from true modulation,
+            // measured from the attributed boundary rather than the detection index.
+            var duration = CalculateKeyDuration(chords, boundaryIndex, detectedKey.Value);
             var isTonicization = duration < minModulationDuration;
 
             modulationType = isTonicization switch
@@ -181,9 +195,19 @@ public static class ModulationDetector
             // Look for pivot chord
             var pivotChord = FindPivotChord(chords, i, currentKey, detectedKey.Value);
 
+            // DetermineModulationType only sees the root interval, so it can never produce
+            // PivotChord on its own. Direct is its generic fallback: when a pivot chord was
+            // actually found, the more specific PivotChord classification applies. The
+            // interval-specific labels (Chromatic, ModalInterchange) and Tonicization keep
+            // priority over the pivot upgrade.
+            if (modulationType == ModulationType.Direct && pivotChord != null)
+            {
+                modulationType = ModulationType.PivotChord;
+            }
+
             var modulation = new ModulationEvent
             {
-                Offset = currentChord.Offset,
+                Offset = chords[boundaryIndex].Offset,
                 FromKey = currentKey,
                 ToKey = detectedKey.Value,
                 Type = modulationType,
@@ -255,6 +279,24 @@ public static class ModulationDetector
             chords.Add(new ChordEvent(offset, mask, pitchClasses));
         }
 
+        // Fallback for (nearly) monophonic input: with fewer than two simultaneous-onset
+        // chords the analysis loop never runs and a melody's key change was silently
+        // reported as "no modulations". Reuse the same eighth-note quantization groups,
+        // but let every onset form a pseudo-chord — a single note becomes a 1-note event.
+        // Pivot-chord identification still requires real (2+ note) chords and simply
+        // yields none here; key detection and stability work fine on single notes.
+        if (chords.Count < 2 && groups.Count > 0)
+        {
+            chords.Clear();
+            foreach (var (offset, pitches) in groups.OrderBy(kvp => kvp.Key))
+            {
+                var mask = ChordAnalyzer.GetMask(pitches.ToArray());
+                var pitchClasses = PitchClassSetAnalyzer.MaskToPitchClasses(mask);
+
+                chords.Add(new ChordEvent(offset, mask, pitchClasses));
+            }
+        }
+
         return chords;
     }
 
@@ -265,18 +307,18 @@ public static class ModulationDetector
         return grid * rounded;
     }
 
-    private static KeySignature? DetectKeyInWindow(List<ChordEvent> window, KeySignature currentKey)
+    private static KeySignature? DetectKeyInWindow(List<ChordEvent> chords, int start, int end, KeySignature currentKey)
     {
-        if (window.Count == 0)
+        if (start >= end)
         {
             return null;
         }
 
         // Collect all pitch classes in the window and detect the key
         var allPitches = new List<int>();
-        foreach (var chord in window)
+        for (int i = start; i < end; i++)
         {
-            allPitches.AddRange(chord.PitchClasses);
+            allPitches.AddRange(chords[i].PitchClasses);
         }
 
         if (allPitches.Count == 0)
@@ -295,9 +337,9 @@ public static class ModulationDetector
         return detectedKey;
     }
 
-    private static float MeasureKeyStability(List<ChordEvent> window, KeySignature key)
+    private static float MeasureKeyStability(List<ChordEvent> chords, int start, int end, KeySignature key)
     {
-        if (window.Count == 0)
+        if (start >= end)
         {
             return 0f;
         }
@@ -306,9 +348,9 @@ public static class ModulationDetector
         var inKeyCount = 0;
         var totalCount = 0;
 
-        foreach (var chord in window)
+        for (int i = start; i < end; i++)
         {
-            foreach (var pc in chord.PitchClasses)
+            foreach (var pc in chords[i].PitchClasses)
             {
                 totalCount++;
                 if (scale.Contains(pc))
@@ -319,6 +361,43 @@ public static class ModulationDetector
         }
 
         return totalCount > 0 ? (float)inKeyCount / totalCount : 0f;
+    }
+
+    /// <summary>
+    /// Locate the chord where a confirmed key change actually begins. Scans the evidence
+    /// window (chords[windowStart..detectionIndex-1]) for the earliest chord that is
+    /// diatonic to the new key and NOT diatonic to the old key — the first unambiguous
+    /// new-key sonority. Falls back to the window start when every window chord is
+    /// ambiguous (diatonic to both keys or to neither).
+    /// </summary>
+    private static int FindModulationBoundary(
+        List<ChordEvent> chords,
+        int windowStart,
+        int detectionIndex,
+        KeySignature fromKey,
+        KeySignature toKey)
+    {
+        var fromScale = fromKey.GetScale();
+        var toScale = toKey.GetScale();
+
+        for (int i = windowStart; i < detectionIndex; i++)
+        {
+            var pcs = chords[i].PitchClasses;
+            if (pcs.Length == 0)
+            {
+                continue;
+            }
+
+            var diatonicToNew = pcs.All(pc => toScale.Contains(pc));
+            var diatonicToOld = pcs.All(pc => fromScale.Contains(pc));
+
+            if (diatonicToNew && !diatonicToOld)
+            {
+                return i;
+            }
+        }
+
+        return windowStart;
     }
 
     private static ModulationType DetermineModulationType(KeySignature fromKey, KeySignature toKey)

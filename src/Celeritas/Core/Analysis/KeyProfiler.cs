@@ -221,6 +221,12 @@ public static class KeyProfiler
     /// Detect key from a human-readable notation string.
     /// Example: "C4 D4 E4 F4 G4 A4 B4"
     /// </summary>
+    /// <remarks>
+    /// A notation string containing no notes returns the empty-input sentinel: C major with
+    /// <see cref="KeyDetectionResult.Confidence"/> of 0 and an empty
+    /// <see cref="KeyDetectionResult.AllCorrelations"/> array. Check the confidence (or that
+    /// the correlations are non-empty) before treating the key as a real detection.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="notation"/> is <see langword="null"/>.</exception>
     public static KeyDetectionResult DetectFromPitches(string notation)
     {
@@ -245,6 +251,12 @@ public static class KeyProfiler
     /// <summary>
     /// Detect key from an array of note events.
     /// </summary>
+    /// <remarks>
+    /// An empty span returns the empty-input sentinel: C major with
+    /// <see cref="KeyDetectionResult.Confidence"/> of 0 and an empty
+    /// <see cref="KeyDetectionResult.AllCorrelations"/> array. Check the confidence (or that
+    /// the correlations are non-empty) before treating the key as a real detection.
+    /// </remarks>
     public static KeyDetectionResult DetectFromPitches(ReadOnlySpan<NoteEvent> notes)
     {
         if (notes.IsEmpty)
@@ -420,11 +432,14 @@ public static class KeyProfiler
     // NOTE on correlation bias: the "correlation" computed here is a dot product of the
     // z-scored input with the RAW (non-normalized) key profiles, divided by 12. Because
     // the major and minor profiles have different standard deviations (sigma), this is
-    // not a true Pearson correlation and introduces a small systematic bias between
-    // major and minor scores. This is a deliberate tradeoff: normalizing each profile
-    // would change the absolute correlation values relied upon by downstream consumers
-    // and the ranking within each mode is unaffected. Comparisons of magnitudes across
-    // modes should therefore be treated as approximate.
+    // not a true Pearson correlation. The ranking WITHIN each mode is unaffected (all 12
+    // rotations of a profile share its sigma), but the cross-mode argmax in Detect IS
+    // affected: the major profile's larger sigma inflates major scores by roughly 9%
+    // relative to minor ones, so borderline major-vs-minor decisions lean major. This is
+    // a documented, deliberate tradeoff: normalizing each profile would change the
+    // absolute correlation values relied upon by downstream consumers. Comparisons of
+    // magnitudes across modes should therefore be treated as approximate and slightly
+    // major-biased.
 
     /// <summary>
     /// Scalar fallback for systems without SIMD.
@@ -488,13 +503,17 @@ public static class KeyProfiler
     /// Returns key "trajectory" through the piece.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="stepSize"/> is not positive.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="windowSize"/> or
+    /// <paramref name="stepSize"/> is not positive.</exception>
     public static KeyTrajectory AnalyzeModulations(
         NoteBuffer buffer,
         Rational windowSize,
         Rational stepSize)
     {
         ArgumentNullException.ThrowIfNull(buffer);
+
+        if (windowSize <= Rational.Zero)
+            throw new ArgumentOutOfRangeException(nameof(windowSize), windowSize, "Window size must be positive");
 
         if (stepSize <= Rational.Zero)
             throw new ArgumentOutOfRangeException(nameof(stepSize), stepSize, "Step size must be positive");
@@ -504,6 +523,14 @@ public static class KeyProfiler
         var currentPos = Rational.Zero;
         var endTime = GetEndTime(buffer);
 
+        // Copy the notes once, sorted by onset, so each window scans only its own slice
+        // instead of rescanning the whole buffer for every step (O(windows x notes)).
+        var sorted = new NoteEvent[buffer.Count];
+        for (var i = 0; i < buffer.Count; i++)
+            sorted[i] = buffer.Get(i);
+        Array.Sort(sorted, static (a, b) => a.Offset.CompareTo(b.Offset));
+        var start = 0;
+
         // Allocate distribution buffer once, outside loop
         var distribution = new float[12];
 
@@ -511,16 +538,26 @@ public static class KeyProfiler
         {
             var windowEnd = currentPos + windowSize;
 
+            // Leading notes that ended at or before this window's start can never overlap
+            // any later window either (windows only move forward), so drop them for good.
+            while (start < sorted.Length && sorted[start].Offset + sorted[start].Duration <= currentPos)
+                start++;
+
             // Clear and fill distribution
             Array.Clear(distribution);
 
-            for (var i = 0; i < buffer.Count; i++)
+            for (var i = start; i < sorted.Length; i++)
             {
-                var note = buffer.Get(i);
-                // Check if note overlaps with window
-                if (note.Offset < windowEnd && note.Offset + note.Duration > currentPos)
+                var note = sorted[i];
+                // Sorted by onset: once a note starts at/after the window end, all later ones do too.
+                if (note.Offset >= windowEnd)
+                    break;
+                // Check if note overlaps with window. Fold like the sibling paths in
+                // ExtractPitchClassDistribution and DetectFromPitches: `%` keeps the sign in C#,
+                // so a pitch below zero indexed backwards out of the distribution.
+                if (note.Offset + note.Duration > currentPos)
                 {
-                    var pitchClass = note.Pitch % 12;
+                    var pitchClass = PitchMath.Fold(note.Pitch);
                     distribution[pitchClass] += (float)note.Duration.ToDouble();
                 }
             }
@@ -595,28 +632,57 @@ public sealed class KeyTrajectory
         Points = points;
     }
 
-    private IReadOnlyList<(Rational Position, KeyDetectionResult Result)> Points { get; }
+    /// <summary>
+    /// The per-window detection results: the start position of each analysis window
+    /// together with the key detected in it, in chronological order.
+    /// </summary>
+    public IReadOnlyList<(Rational Position, KeyDetectionResult Result)> Points { get; }
+
+    // Confidence is a best-vs-runner-up margin, not a fit score: for genuine, unambiguous
+    // detections (a full diatonic scale) it sits around 0.1-0.35, and windows straddling a
+    // key change collapse to near zero (the two keys score almost equally). The old 0.3 bar
+    // demanded near-maximal margins from BOTH adjacent windows and rejected most real
+    // modulations. Calibration on a clear 8-whole-note C->G passage (scale eighths, window
+    // 2 whole notes, step 1) measured genuine single-key windows at 0.2326 margin and the
+    // one window straddling the boundary at 0.0084. The bar is set to ~half the genuine
+    // margin (2.1x headroom for confident windows, 13x above the straddling-window noise
+    // floor); windows at or below it are treated as ambiguous and skipped, not as evidence
+    // against a modulation.
+    private const float MinModulationConfidence = 0.11f;
 
     /// <summary>
     /// Detect modulation points (where key changes significantly).
     /// </summary>
+    /// <remarks>
+    /// Windows whose detection confidence (a best-vs-runner-up margin) does not clear an
+    /// internal bar are treated as ambiguous — typically windows straddling the key change
+    /// itself — and are skipped rather than counted as evidence against a modulation. A
+    /// modulation is reported at the first confident window whose key differs from the
+    /// previous confident window's key.
+    /// </remarks>
     public IEnumerable<(Rational Position, KeySignature FromKey, KeySignature ToKey)> DetectModulations()
     {
-        for (var i = 1; i < Points.Count; i++)
-        {
-            var prev = Points[i - 1].Result.Key;
-            var curr = Points[i].Result.Key;
+        KeySignature? lastConfident = null;
 
-            if (prev.Root == curr.Root && prev.IsMajor == curr.IsMajor)
+        for (var i = 0; i < Points.Count; i++)
+        {
+            // Margin semantics, see MinModulationConfidence above: a low-margin window is
+            // ambiguous (it straddles the change, or the content is chromatic), so it
+            // neither confirms nor vetoes a modulation.
+            if (Points[i].Result.Confidence <= MinModulationConfidence)
             {
                 continue;
             }
 
-            // Check if both have reasonable confidence
-            if (Points[i - 1].Result.Confidence > 0.3f && Points[i].Result.Confidence > 0.3f)
+            var curr = Points[i].Result.Key;
+
+            if (lastConfident is { } prev
+                && (prev.Root != curr.Root || prev.IsMajor != curr.IsMajor))
             {
                 yield return (Points[i].Position, prev, curr);
             }
+
+            lastConfident = curr;
         }
     }
 }

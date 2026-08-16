@@ -279,7 +279,9 @@ public static class ModeLibrary
     public static bool ContainsPitch(ModalKey key, int pitchClass)
     {
         var mask = GetScaleMask(key);
-        return (mask & (1 << (pitchClass % 12))) != 0;
+        // Fold, not `%`: `%` keeps the sign in C#, so a negative pitch class shifted by a
+        // negative amount (1 << -n sets bit 31) and the test was always false.
+        return (mask & (1 << PitchMath.Fold(pitchClass))) != 0;
     }
 
     /// <summary>
@@ -433,7 +435,9 @@ public static class ModeLibrary
         var distribution = new float[12];
         foreach (var pc in pitchClasses)
         {
-            distribution[pc % 12] += 1f;
+            // Fold like the sibling overloads: `%` keeps the sign, so a negative pitch
+            // class indexed backwards out of the distribution.
+            distribution[PitchMath.Fold(pc)] += 1f;
         }
         return DetectModeWithRoot(distribution, rootHint);
     }
