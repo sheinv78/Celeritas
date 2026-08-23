@@ -77,17 +77,18 @@ public class PolyphonyAnalyzerTests
     [Fact]
     public void DetectImitation_Canon_IsDetected()
     {
-        // Both voices always sound together so VoiceSeparator reliably splits them.
-        // Lower (C3 octave): C3 D3 E3 G3  — same interval pattern as upper.
-        // Upper (C5 octave): C5 D5 E5 G5
-        // Intervals in both: [2, 2, 3] → canon detected at unison/octave interval.
+        // Lower (C3 octave): C3 D3 E3 G3 — same interval pattern as upper.
+        // Upper (C5 octave): C5 D5 E5 G5, entering one whole note later.
+        // Intervals in both: [2, 2, 3] (two distinct values) → canon at the octave.
+        // The delayed entry matters: a zero delay is simultaneous (parallel) motion,
+        // which DetectImitation deliberately no longer reports as a canon.
         using var buf = new NoteBuffer(8);
         int[] lo = [48, 50, 52, 55]; // C3 D3 E3 G3
         int[] hi = [72, 74, 76, 79]; // C5 D5 E5 G5
         for (int i = 0; i < 4; i++)
         {
             buf.AddNote(lo[i], new Rational(i, 1), Rational.Quarter);
-            buf.AddNote(hi[i], new Rational(i, 1), Rational.Quarter);
+            buf.AddNote(hi[i], new Rational(i + 1, 1), Rational.Quarter);
         }
 
         var result = PolyphonyAnalyzer.DetectImitation(buf);
@@ -96,8 +97,8 @@ public class PolyphonyAnalyzerTests
         Assert.Equal("Canon", result.Type);
         // Voices are 2 octaves apart (|48-72|=24 or |72-48|=-24)
         Assert.NotEqual(0, result.Interval);
-        // Both voices start simultaneously → delay = 0
-        Assert.Equal(Rational.Zero, result.TimeDelay);
+        // The follower enters one whole note after the leader.
+        Assert.Equal(new Rational(1, 1), result.TimeDelay);
         Assert.NotEmpty(result.VoicesInvolved);
         Assert.Equal(2, result.VoicesInvolved.Count);
     }
