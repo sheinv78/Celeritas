@@ -3,6 +3,7 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Celeritas.Core.Analysis;
 
 namespace Celeritas.Core;
 
@@ -21,6 +22,15 @@ public static class KeyAnalyzer
     private static readonly ushort[] MajorScaleMasksByRoot;
     private static readonly ushort[] MinorScaleMasksByRoot;
 
+    // Standard deviation of the Krumhansl-Kessler profile of each mode. Every one of the 12
+    // rotations of a profile is a permutation of the same 12 weights, so one root is
+    // representative of the mode. Dividing by these turns the profile dot product in
+    // ProfileScore into a true Pearson correlation, which is what makes a major candidate and
+    // its relative minor comparable: the two profiles have different sigmas (1.26 vs 1.15), and
+    // an unscaled dot product would hand every relative-pair tie to the major by construction.
+    private static readonly float MajorProfileSigma;
+    private static readonly float MinorProfileSigma;
+
     static KeyAnalyzer()
     {
         MajorScaleMasksByRoot = new ushort[12];
@@ -33,6 +43,33 @@ public static class KeyAnalyzer
             MajorScaleMasksByRoot[root] = RotateLeft(MajorScaleMask, root);
             MinorScaleMasksByRoot[root] = RotateLeft(MinorScaleMask, root);
         }
+
+        MajorProfileSigma = ProfileSigma(true);
+        MinorProfileSigma = ProfileSigma(false);
+    }
+
+    /// <summary>
+    /// Standard deviation of a mode's Krumhansl-Kessler weights, read from
+    /// <see cref="KeyProfiler.GetKeyProfile"/> so the two analyzers share one set of constants.
+    /// </summary>
+    private static float ProfileSigma(bool isMajor)
+    {
+        var profile = KeyProfiler.GetKeyProfile(0, isMajor);
+
+        var sum = 0f;
+        for (var i = 0; i < 12; i++)
+            sum += profile[i];
+        var mean = sum / 12f;
+
+        var variance = 0f;
+        for (var i = 0; i < 12; i++)
+        {
+            var deviation = profile[i] - mean;
+            variance += deviation * deviation;
+        }
+
+        // The profiles are not constant, so this is strictly positive and safe to divide by.
+        return MathF.Sqrt(variance / 12f);
     }
 
     /// <summary>
@@ -148,58 +185,173 @@ public static class KeyAnalyzer
     }
 
     /// <summary>
-    /// Identify key signature from a collection of pitches using bitwise correlation
+    /// Identify the key of a collection of pitches: the 24 major and natural-minor scales are
+    /// first ranked by how many of the input's pitch classes they contain, and the candidates
+    /// that tie for that best overlap are then separated by how heavily the input weights each
+    /// of their scale degrees.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    /// <remarks>
+    /// <para>
+    /// Scale overlap alone cannot answer this question. A key and its relative (G major and E
+    /// minor) have <em>identical</em> pitch-class sets, so they always tie; so does any key whose
+    /// scale merely happens to contain the notes played (a melody on G B D A C sits inside C
+    /// major, G major, A minor and E minor alike). Which of those a listener hears is decided by
+    /// <em>emphasis</em> — how often the tonic and the other structural degrees actually sound —
+    /// and that is why this overload reads a multiset of pitches rather than a set. Repeating a
+    /// note is evidence, and it is counted.
+    /// </para>
+    /// <para>
+    /// The tie-break scores each surviving candidate by correlating the input's pitch-class
+    /// counts against that key's Krumhansl-Kessler profile, the same weights
+    /// <see cref="KeyProfiler"/> uses, read from <see cref="KeyProfiler.GetKeyProfile"/> so the
+    /// two analyzers cannot drift apart. Keeping the overlap prefilter in front of it preserves
+    /// a guarantee <see cref="KeyProfiler"/> does not make: where some scale contains every pitch
+    /// class sounded, the key returned is one of those scales — <see cref="KeyProfiler"/> may
+    /// name a key whose scale omits a note that is plainly sounding. The two therefore agree on
+    /// material that decides the key, but can differ on material that does not: this method also
+    /// divides out the major bias documented in <see cref="KeyProfiler"/>, which is enough to tip
+    /// a near-tie between relatives.
+    /// </para>
+    /// <para>
+    /// Note counts are the weighting; note durations are not. A caller who wants a held whole
+    /// note to outweigh a passing sixteenth wants <see cref="KeyProfiler.DetectFromBuffer"/>,
+    /// which weights by duration.
+    /// </para>
+    /// <para>
+    /// <strong>Documented conventions where the input cannot decide.</strong> These are fixed
+    /// answers, not artifacts of iteration order:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>Empty input returns <c>C major</c>.</description></item>
+    /// <item><description>A bare scale — every pitch class of one diatonic set sounded equally
+    /// often — returns the <em>relative major</em> (a plain G-major scale is G major, not E
+    /// minor). The Krumhansl-Kessler weights lean that way for an evenly-weighted diatonic set;
+    /// the margin is thin, and callers who need the distinction must supply material that
+    /// emphasizes a tonic.</description></item>
+    /// <item><description>An input that leaves every candidate scoring identically — all twelve
+    /// pitch classes sounded equally often, say — returns <c>C major</c>: on an exact tie the
+    /// lowest root wins, major before minor.</description></item>
+    /// </list>
+    /// <para>
+    /// This method returns a bare <see cref="KeySignature"/> and so cannot report how thin the
+    /// winning margin was, and it will answer a genuinely undecided input as confidently as a
+    /// decided one. Callers who slide a window across music and must not mistake an ambiguous
+    /// window for a key change — modulation detection above all — need the margin as well as the
+    /// answer: use <see cref="KeyProfiler.DetectFromPitches(ReadOnlySpan{int})"/> and gate on its
+    /// <see cref="KeyDetectionResult.Confidence"/>, as
+    /// <see cref="KeyTrajectory.DetectModulations"/> does.
+    /// </para>
+    /// </remarks>
     public static KeySignature IdentifyKey(ReadOnlySpan<int> pitches)
     {
         if (pitches.IsEmpty)
             return new KeySignature(0, true);
 
-        var mask = ChordAnalyzer.GetMask(pitches);
-        return IdentifyKey(mask);
+        // Build the mask and the multiset in one pass. ChordAnalyzer.GetMask would give the
+        // mask alone, and the multiplicities it drops are precisely the evidence that separates
+        // a key from its relative.
+        Span<int> counts = stackalloc int[12];
+        counts.Clear();
+        ushort mask = 0;
+
+        foreach (var pitch in pitches)
+        {
+            // Fold rather than `%`: `%` keeps the sign in C#, so a pitch below zero would index
+            // backwards out of `counts`. Folding also keeps the answer octave-invariant, which a
+            // question about pitch classes must be.
+            var pitchClass = PitchMath.Fold(pitch);
+            counts[pitchClass]++;
+            mask |= (ushort)(1 << pitchClass);
+        }
+
+        return IdentifyKey(mask, counts);
     }
 
     /// <summary>
-    /// Identify key signature from a pitch class mask
+    /// Identify a key from a pitch-class mask plus the pitch-class counts behind it.
+    /// The mask selects the candidates; the counts choose between them.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static KeySignature IdentifyKey(ushort mask)
+    private static KeySignature IdentifyKey(ushort mask, ReadOnlySpan<int> counts)
     {
-        // Try all 12 rotations for major and minor
-        var bestMatch = 0;
-        var bestCount = 0;
-        var bestIsMajor = true;
+        // Pass 1: the historical prefilter. How many of the input's pitch classes does the best
+        // scale contain? Every candidate reaching that number stays in the running -- the old
+        // code instead kept whichever of them the loop happened to reach first, which is how a
+        // diatonic G-major melody came back as E minor.
+        var bestOverlap = 0;
 
         for (var root = 0; root < 12; root++)
         {
-            var majorMask = MajorScaleMasksByRoot[root];
-            var minorMask = MinorScaleMasksByRoot[root];
+            var majorOverlap = PopCount((ushort)(mask & MajorScaleMasksByRoot[root]));
+            if (majorOverlap > bestOverlap)
+                bestOverlap = majorOverlap;
 
-            // Count matching bits (pitch classes in scale)
-            var majorCount = PopCount((ushort)(mask & majorMask));
-            var minorCount = PopCount((ushort)(mask & minorMask));
+            var minorOverlap = PopCount((ushort)(mask & MinorScaleMasksByRoot[root]));
+            if (minorOverlap > bestOverlap)
+                bestOverlap = minorOverlap;
+        }
 
-            if (majorCount > bestCount)
+        // Pass 2: separate the tied candidates by how the input actually weights their degrees.
+        var total = 0;
+        for (var i = 0; i < 12; i++)
+            total += counts[i];
+        var meanCount = total / 12f;
+
+        // Roots ascending, major before minor at each root, compared with a strict `>`: an exact
+        // tie therefore resolves to the lowest root and to major, the documented convention.
+        var bestRoot = 0;
+        var bestIsMajor = true;
+        var bestScore = float.NegativeInfinity;
+
+        for (var root = 0; root < 12; root++)
+        {
+            for (var mode = 0; mode < 2; mode++)
             {
-                bestCount = majorCount;
-                bestMatch = root;
-                bestIsMajor = true;
-            }
+                var isMajor = mode == 0;
+                var scaleMask = isMajor ? MajorScaleMasksByRoot[root] : MinorScaleMasksByRoot[root];
 
-            if (minorCount > bestCount)
-            {
-                bestCount = minorCount;
-                bestMatch = root;
-                bestIsMajor = false;
+                if (PopCount((ushort)(mask & scaleMask)) != bestOverlap)
+                    continue;
+
+                var score = ProfileScore(counts, meanCount, root, isMajor);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestRoot = root;
+                    bestIsMajor = isMajor;
+                }
             }
         }
 
-        return new KeySignature((byte)bestMatch, bestIsMajor);
+        return new KeySignature((byte)bestRoot, bestIsMajor);
     }
 
     /// <summary>
-    /// Identify key signature from a collection of pitches (array overload)
+    /// Correlate a pitch-class count vector with one key's Krumhansl-Kessler profile.
+    /// </summary>
+    /// <remarks>
+    /// Pearson's r between the counts and the profile is
+    /// <c>sum((c_i - c_mean)(p_i - p_mean)) / (12 * sigma_c * sigma_p)</c>. The centred counts sum
+    /// to zero, so the <c>p_mean</c> term drops out entirely; <c>sigma_c</c> and the 12 are the
+    /// same for every candidate and cannot change a ranking, so they are omitted. What must
+    /// <em>not</em> be omitted is <c>sigma_p</c>: it differs between the two modes, and it is the
+    /// only thing standing between this and the major bias documented in <see cref="KeyProfiler"/>.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static float ProfileScore(ReadOnlySpan<int> counts, float meanCount, int root, bool isMajor)
+    {
+        var profile = KeyProfiler.GetKeyProfile(root, isMajor);
+
+        var sum = 0f;
+        for (var i = 0; i < 12; i++)
+            sum += (counts[i] - meanCount) * profile[i];
+
+        return sum / (isMajor ? MajorProfileSigma : MinorProfileSigma);
+    }
+
+    /// <summary>
+    /// Identify key signature from a collection of pitches (array overload).
+    /// See <see cref="IdentifyKey(ReadOnlySpan{int})"/> for the algorithm and for the
+    /// conventions used where the input cannot decide the key.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="pitches"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -250,7 +402,15 @@ public static class KeyAnalyzer
 
     /// <summary>
     /// Alias for IdentifyKey for more intuitive API.
+    /// Example: <c>DetectKey("G4 B4 D5 G5 D5 B4 G4")</c> -&gt; G major.
     /// </summary>
+    /// <remarks>
+    /// How often a note appears in <paramref name="notation"/> is evidence and is counted: see
+    /// <see cref="IdentifyKey(ReadOnlySpan{int})"/> for the algorithm and for what is returned
+    /// when the notation cannot decide the key (blank text, a bare scale, a chromatic run).
+    /// Note <em>durations</em> written in the notation are ignored; only the notes themselves are
+    /// weighed.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="notation"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static KeySignature DetectKey(string notation)
@@ -264,12 +424,24 @@ public static class KeyAnalyzer
     /// <summary>
     /// Alias for IdentifyKey for more intuitive API.
     /// </summary>
+    /// <remarks>
+    /// Each note counts once towards the key, however long it is held; see
+    /// <see cref="IdentifyKey(ReadOnlySpan{int})"/> for the algorithm and its documented
+    /// answers for undecidable input. For duration-weighted detection use
+    /// <see cref="KeyProfiler.DetectFromPitches(ReadOnlySpan{NoteEvent})"/>.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static KeySignature DetectKey(ReadOnlySpan<NoteEvent> notes) => IdentifyKey(notes);
 
     /// <summary>
     /// Alias for IdentifyKey for more intuitive API.
     /// </summary>
+    /// <remarks>
+    /// Each note in the buffer counts once towards the key, however long it is held; see
+    /// <see cref="IdentifyKey(ReadOnlySpan{int})"/> for the algorithm and its documented
+    /// answers for undecidable input. For duration-weighted detection use
+    /// <see cref="KeyProfiler.DetectFromBuffer"/>.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static KeySignature DetectKey(NoteBuffer buffer)
