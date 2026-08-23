@@ -105,7 +105,10 @@ public static class MidiEvents
             }
         }
 
-        return tempoChanges;
+        // Tracks are scanned one after another, so a multi-track file would otherwise return
+        // each track's changes concatenated rather than one chronological list. OrderBy is a
+        // stable sort: same-offset events keep their track order.
+        return [.. tempoChanges.OrderBy(t => t.Offset)];
     }
 
     /// <summary>
@@ -158,7 +161,8 @@ public static class MidiEvents
             }
         }
 
-        return timeSignatureChanges;
+        // Same chronological guarantee as GetTempoChanges: stable-sort the per-track scan.
+        return [.. timeSignatureChanges.OrderBy(t => t.Offset)];
     }
 
     /// <summary>
@@ -202,14 +206,19 @@ public static class MidiEvents
     {
         ArgumentNullException.ThrowIfNull(track);
 
-        if (numerator <= 0)
+        // The event stores the numerator in a single byte, so values outside [1..255] would
+        // silently wrap through the (byte) cast below (300 -> 44).
+        if (numerator is < 1 or > byte.MaxValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(numerator), "Numerator must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(numerator), numerator, "Numerator must be in [1..255].");
         }
 
-        if (!IsPowerOfTwo(denominator))
+        // DryWetMidi's TimeSignatureEvent takes the denominator as a byte and requires a power of
+        // two (verified against 8.0.3), so [1..128] is the representable set; anything larger
+        // would wrap through the cast (512 -> 0) before DryWetMidi could reject it.
+        if (denominator is < 1 or > 128 || !IsPowerOfTwo(denominator))
         {
-            throw new ArgumentException("Denominator must be a power of 2.", nameof(denominator));
+            throw new ArgumentOutOfRangeException(nameof(denominator), denominator, "Denominator must be a power of two in [1..128].");
         }
 
         if (ticksPerQuarterNote <= 0)

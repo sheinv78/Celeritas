@@ -85,12 +85,20 @@ public static class MusicXmlIo
     /// 4/4 measures.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Notes at the same onset and duration are written as a chord; gaps become rests; overlapping
     /// notes are split into separate voices (via <c>&lt;backup&gt;</c>). The timeline is divided into
     /// measures of the given meter, notes crossing a barline are split and tied, and pitches are
     /// spelled with sharps — so import → export → import round-trips.
+    /// </para>
+    /// <para>
+    /// Dynamics are deliberately exported for single-voice output only (a per-voice dynamic has no
+    /// clean MusicXML representation in this writer), and a chord is written with its first note's
+    /// velocity — chords are assumed dynamically uniform.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
     public static string ToXml(NoteBuffer buffer) => ToXml(buffer, CommonTime);
 
     /// <inheritdoc cref="ToXml(NoteBuffer)"/>
@@ -114,10 +122,12 @@ public static class MusicXmlIo
 
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML (4/4) to <paramref name="path"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
     public static void Export(NoteBuffer buffer, string path) => Export(buffer, path, CommonTime);
 
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML, barred into <paramref name="timeSignature"/>, to a file.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
     public static void Export(NoteBuffer buffer, string path, TimeSignature timeSignature)
     {
         ArgumentNullException.ThrowIfNull(buffer);
@@ -128,10 +138,12 @@ public static class MusicXmlIo
 
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML (4/4) to a stream.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="stream"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
     public static void Export(NoteBuffer buffer, Stream stream) => Export(buffer, stream, CommonTime);
 
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML, barred into <paramref name="timeSignature"/>, to a stream.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="stream"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
     public static void Export(NoteBuffer buffer, Stream stream, TimeSignature timeSignature)
     {
         ArgumentNullException.ThrowIfNull(buffer);
@@ -170,6 +182,55 @@ public static class MusicXmlIo
         }
     }
 
+    // Ceiling on the bytes an .mxl entry may inflate to. Real scores are a few MB; a ZIP entry
+    // that decompresses past this is a zip bomb, and inflating it unbounded is a DoS.
+    private const long MaxDecompressedMxlBytes = 256L * 1024 * 1024;
+
+    // Counts bytes as they are read out of a decompression stream and refuses to go past the cap.
+    // Counting actual reads (rather than trusting the entry's declared Length) is deliberate:
+    // the declared size in a crafted archive can lie.
+    private sealed class CappedReadStream(Stream inner, long maxBytes) : Stream
+    {
+        private long _totalRead;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            var read = inner.Read(buffer, offset, count);
+            _totalRead += read;
+            if (_totalRead > maxBytes)
+            {
+                throw new InvalidDataException(
+                    $"The .mxl entry decompresses beyond the {maxBytes / (1024 * 1024)} MB safety limit; refusing to inflate it further.");
+            }
+            return read;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                inner.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+
     // Unwraps a compressed .mxl archive: read the score named by META-INF/container.xml, or fall
     // back to the first non-META-INF .xml/.musicxml entry.
     private static XDocument LoadFromMxl(Stream zipStream)
@@ -188,8 +249,8 @@ public static class MusicXmlIo
         {
             var entry = FindScoreEntry(archive)
                 ?? throw new InvalidDataException("The .mxl archive contains no MusicXML score.");
-            using var entryStream = entry.Open();
-            return LoadSafely(reader => XDocument.Load(reader), entryStream);
+            using var entryStream = new CappedReadStream(entry.Open(), MaxDecompressedMxlBytes);
+            return LoadSafely(reader => XDocument.Load(reader), (Stream)entryStream);
         }
     }
 
@@ -201,8 +262,8 @@ public static class MusicXmlIo
         {
             try
             {
-                using var containerStream = container.Open();
-                var doc = LoadSafely(reader => XDocument.Load(reader), containerStream);
+                using var containerStream = new CappedReadStream(container.Open(), MaxDecompressedMxlBytes);
+                var doc = LoadSafely(reader => XDocument.Load(reader), (Stream)containerStream);
                 var fullPath = doc.Descendants()
                     .FirstOrDefault(e => e.Name.LocalName == "rootfile")
                     ?.Attribute("full-path")?.Value;
@@ -302,9 +363,11 @@ public static class MusicXmlIo
         var divisions = 0;               // divisions per quarter note; set by <attributes>
         var velocity = DefaultVelocity;  // current dynamic, updated by <direction>/<sound>
 
-        // Ties in progress, keyed by MIDI pitch: a tie-start holds a note open until the matching
-        // tie-stop, so the chain is emitted once with the summed duration (and its start velocity).
-        var pending = new Dictionary<int, (Rational onset, Rational duration, float velocity)>();
+        // Ties in progress, keyed by (voice, MIDI pitch): a tie-start holds a note open until the
+        // matching tie-stop, so the chain is emitted once with the summed duration (and its start
+        // velocity). Keying by pitch alone would merge two voices sustaining the same pitch (a
+        // unison tie across a barline) into one chain; notes without a <voice> share one default key.
+        var pending = new Dictionary<(string voice, int midi), (Rational onset, Rational duration, float velocity)>();
 
         foreach (var measure in Children(part, "measure"))
         {
@@ -342,13 +405,13 @@ public static class MusicXmlIo
         }
 
         // Flush any tie-start that never saw a matching stop (dangling/truncated input).
-        foreach (var (midi, held) in pending)
-            notes.Add(new NoteEvent(midi, held.onset, held.duration, held.velocity));
+        foreach (var (key, held) in pending)
+            notes.Add(new NoteEvent(key.midi, held.onset, held.duration, held.velocity));
     }
 
     private static void ReadNote(
         XElement note, int divisions, float velocity, ref Rational cursor, ref Rational lastNoteOnset,
-        Dictionary<int, (Rational onset, Rational duration, float velocity)> pending, List<NoteEvent> notes)
+        Dictionary<(string voice, int midi), (Rational onset, Rational duration, float velocity)> pending, List<NoteEvent> notes)
     {
         var durationEl = note.Element("duration");
         if (durationEl is null)
@@ -361,7 +424,7 @@ public static class MusicXmlIo
             return;
         }
 
-        var duration = DurationToWholeNotes(ParseInt(durationEl.Value, "duration"), divisions);
+        var duration = DurationToWholeNotes(ParseDecimal(durationEl.Value, "duration"), divisions);
         var isChord = note.Element("chord") is not null;
         var isRest = note.Element("rest") is not null;
 
@@ -382,24 +445,27 @@ public static class MusicXmlIo
         var onset = isChord ? lastNoteOnset : cursor;
         var (tieStart, tieStop) = ReadTie(note);
 
-        if (tieStop && pending.TryGetValue(midi, out var held))
+        // Ties only connect notes within one voice; absent <voice>, all notes share one default.
+        var key = (voice: note.Element("voice")?.Value.Trim() ?? "", midi);
+
+        if (tieStop && pending.TryGetValue(key, out var held))
         {
             // Continue or close the chain begun by an earlier tie-start (its start velocity wins).
             var total = held.duration + duration;
             if (tieStart)
-                pending[midi] = (held.onset, total, held.velocity);   // middle of the chain: keep holding
+                pending[key] = (held.onset, total, held.velocity);   // middle of the chain: keep holding
             else
             {
                 notes.Add(new NoteEvent(midi, held.onset, total, held.velocity));
-                pending.Remove(midi);
+                pending.Remove(key);
             }
         }
         else if (tieStart)
         {
-            // Begin a chain. A stale pending for this pitch (malformed) is flushed first.
-            if (pending.TryGetValue(midi, out var stale))
+            // Begin a chain. A stale pending for this voice+pitch (malformed) is flushed first.
+            if (pending.TryGetValue(key, out var stale))
                 notes.Add(new NoteEvent(midi, stale.onset, stale.duration, stale.velocity));
-            pending[midi] = (onset, duration, velocity);
+            pending[key] = (onset, duration, velocity);
         }
         else
         {
@@ -516,16 +582,16 @@ public static class MusicXmlIo
         var durationEl = el.Element("duration");
         return durationEl is null
             ? Rational.Zero
-            : DurationToWholeNotes(ParseInt(durationEl.Value, "duration"), divisions);
+            : DurationToWholeNotes(ParseDecimal(durationEl.Value, "duration"), divisions);
     }
 
     // MusicXML <duration> is in divisions, where <divisions> is divisions-per-quarter-note.
     // A quarter note is 1/4 of a whole note, so wholeNotes = duration / (divisions * 4).
-    private static Rational DurationToWholeNotes(int duration, int divisions)
+    private static Rational DurationToWholeNotes(Rational duration, int divisions)
     {
         if (divisions <= 0)
             throw new InvalidDataException("A note or move appears before a positive <divisions> was declared.");
-        return new Rational(duration, (long)divisions * 4);
+        return duration / ((long)divisions * 4);
     }
 
     private static IEnumerable<XElement> Children(XElement parent, string localName) =>
@@ -535,6 +601,42 @@ public static class MusicXmlIo
         int.TryParse(value?.Trim(), out var n)
             ? n
             : throw new InvalidDataException($"'{value}' is not a valid integer for <{field}>.");
+
+    // MusicXML types <duration> as xs:decimal, and real-world files do write values like "1.5".
+    // Integers stay on the fast path; a decimal is converted EXACTLY to a Rational over a
+    // power-of-ten denominator, then flows into the same exact Rational math as everything else.
+    private static Rational ParseDecimal(string value, string field)
+    {
+        var text = value?.Trim();
+        if (long.TryParse(text, out var integral))
+            return new Rational(integral, 1);
+
+        if (!decimal.TryParse(
+                text,
+                System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowDecimalPoint,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var parsed))
+        {
+            throw new InvalidDataException($"'{value}' is not a valid number for <{field}>.");
+        }
+
+        // Scale by ten until integral: 1.5 -> 15/10. decimal's scale is at most 28, so the loop
+        // terminates; a denominator past long range means the value cannot be held exactly.
+        var scaled = parsed;
+        long denominator = 1;
+        while (scaled != decimal.Truncate(scaled))
+        {
+            if (denominator > long.MaxValue / 10)
+                throw new InvalidDataException($"'{value}' has too many decimal places for <{field}>.");
+            scaled *= 10m;
+            denominator *= 10;
+        }
+
+        if (scaled < long.MinValue || scaled > long.MaxValue)
+            throw new InvalidDataException($"'{value}' is out of range for <{field}>.");
+
+        return new Rational((long)scaled, denominator);
+    }
 
     private static double ParseDouble(string value, string field) =>
         double.TryParse(value?.Trim(), System.Globalization.CultureInfo.InvariantCulture, out var n)
@@ -552,7 +654,18 @@ public static class MusicXmlIo
         var measureLen = timeSignature.MeasureDuration;
         var events = new List<NoteEvent>(buffer.Count);
         for (var i = 0; i < buffer.Count; i++)
-            events.Add(buffer.Get(i));
+        {
+            var e = buffer.Get(i);
+            if (e.Offset < Rational.Zero)
+            {
+                // MeasureIndexOf truncates toward zero, so a negative onset would silently land in
+                // measure 0 at the wrong time. Refuse it up front, matching MidiIo.Export.
+                throw new ArgumentException(
+                    $"Note {i} has a negative offset ({e.Offset}); MusicXML cannot represent events before time zero.",
+                    nameof(buffer));
+            }
+            events.Add(e);
+        }
         events.Sort((a, b) =>
         {
             var c = a.Offset.CompareTo(b.Offset);
@@ -568,13 +681,24 @@ public static class MusicXmlIo
             divisions = Lcm(divisions, (e.Duration * 4).Denominator);
         }
 
+        // The measure length must land on integer divisions too: barline splits, padding rests,
+        // and full-measure backups are all expressed in divisions of it. Without this, a whole
+        // note barred into 7/8 truncates to a zero-length tied segment (<duration>0</duration>).
+        divisions = Lcm(divisions, (measureLen * 4).Denominator);
+
+        // The shortest exactly-representable length at the chosen divisions: one division unit.
+        var minDuration = new Rational(1, checked(divisions * 4));
+
         // Chord units: notes sharing an onset AND a duration are one chord. Notes at the same onset
         // with different durations are independent (they go into different voices below). The unit's
         // velocity is taken from its first note (chords are assumed uniform in dynamics).
+        // A zero-duration note would produce no barline segment at all and silently vanish from the
+        // score; clamp it to one division unit so the pitch survives export without a tie chain.
         var unitMap = new Dictionary<(Rational onset, Rational duration), (List<int> pitches, float velocity)>();
         foreach (var e in events)
         {
-            var key = (e.Offset, e.Duration);
+            var duration = e.Duration.Numerator == 0 ? minDuration : e.Duration;
+            var key = (e.Offset, duration);
             if (!unitMap.TryGetValue(key, out var unit))
             {
                 unit = ([], e.Velocity);
@@ -630,11 +754,14 @@ public static class MusicXmlIo
         while (measureLen * measureCount < totalEnd)
             measureCount++;
 
-        // Split each voice's units at barlines into per-measure, tied segments.
-        var segmentsByVoice = new List<List<Segment>>(voices.Count);
+        // Split each voice's units at barlines into per-measure, tied segments, bucketed by
+        // measure up front: the emit loop below visits measures x voices, and re-filtering the
+        // full segment list there would rescan every segment once per measure (quadratic).
+        // Buckets stay onset-ordered because each voice's units are assigned in onset order.
+        var segmentsByVoiceAndMeasure = new List<List<Segment>?[]>(voices.Count);
         foreach (var vlist in voices)
         {
-            var segs = new List<Segment>();
+            var byMeasure = new List<Segment>?[measureCount];
             foreach (var (onset, duration, pitches, velocity) in vlist)
             {
                 var segStart = onset;
@@ -644,12 +771,12 @@ public static class MusicXmlIo
                     var m = MeasureIndexOf(segStart, measureLen);
                     var barline = measureLen * (m + 1);
                     var segEnd = end < barline ? end : barline;
-                    segs.Add(new Segment(m, segStart, segEnd - segStart, pitches, velocity,
+                    (byMeasure[m] ??= []).Add(new Segment(m, segStart, segEnd - segStart, pitches, velocity,
                         TieStart: segEnd < end, TieStop: segStart > onset));
                     segStart = segEnd;
                 }
             }
-            segmentsByVoice.Add(segs);
+            segmentsByVoiceAndMeasure.Add(byMeasure);
         }
 
         var multiVoice = voices.Count > 1;
@@ -667,10 +794,10 @@ public static class MusicXmlIo
                     TimeElement(timeSignature)));
 
             var wroteAVoice = false;
-            for (var vi = 0; vi < segmentsByVoice.Count; vi++)
+            for (var vi = 0; vi < segmentsByVoiceAndMeasure.Count; vi++)
             {
-                var voiceSegs = segmentsByVoice[vi].Where(s => s.Measure == m).OrderBy(s => s.Onset).ToList();
-                if (voiceSegs.Count == 0)
+                var voiceSegs = segmentsByVoiceAndMeasure[vi][m];
+                if (voiceSegs is null || voiceSegs.Count == 0)
                     continue;
 
                 // Each voice fills the measure, so returning to its start is a full-measure backup.
@@ -809,7 +936,19 @@ public static class MusicXmlIo
     private static long Lcm(long a, long b)
     {
         if (a == 0 || b == 0) return 0;
-        return a / Gcd(a, b) * b;
+        try
+        {
+            // checked: an unchecked overflow here would silently yield garbage (possibly negative)
+            // <divisions>, corrupting every duration in the exported score.
+            return checked(a / Gcd(a, b) * b);
+        }
+        catch (OverflowException ex)
+        {
+            throw new InvalidOperationException(
+                "Cannot pick a MusicXML <divisions> value: the note offsets and durations use " +
+                "denominators too diverse to combine exactly (their least common multiple " +
+                "overflows a 64-bit integer).", ex);
+        }
     }
 
     private static long Gcd(long a, long b)
