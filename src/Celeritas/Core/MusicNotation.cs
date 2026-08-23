@@ -95,6 +95,8 @@ public static class MusicNotation
     /// <param name="validateMeasures">Validate measure durations against time signature</param>
     /// <returns>Array of note events with timing information</returns>
     /// <exception cref="ArgumentNullException"><paramref name="input"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="input"/> is not valid notation: a syntax
+    /// error, an unknown pitch or duration, or a pitch outside the MIDI range 0-127.</exception>
     public static NoteEvent[] Parse(string input, bool validateMeasures = false)
     {
         // string.IsNullOrWhiteSpace downstream treats null as blank, so null used to come back
@@ -105,13 +107,18 @@ public static class MusicNotation
 
     /// <summary>
     /// Parse music notation into a full result: notes plus directives (tempo, dynamics,
-    /// sections, parts), the leading time signature, and any parse errors. Use this when you
-    /// need more than the note events <see cref="Parse(string, bool)"/> returns.
+    /// sections, parts) and the leading time signature. Use this when you need more than the
+    /// note events <see cref="Parse(string, bool)"/> returns.
     /// </summary>
     /// <param name="input">Music notation string</param>
     /// <param name="validateMeasures">Validate measure durations against time signature</param>
-    /// <returns>The parsed notes together with directives, time signature, and errors.</returns>
+    /// <returns>
+    /// The parsed notes together with directives and the leading time signature.
+    /// <see cref="ParseResult.Errors"/> is always empty — a parse error throws instead.
+    /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="input"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="input"/> is not valid notation: a syntax
+    /// error, an unknown pitch or duration, or a pitch outside the MIDI range 0-127.</exception>
     public static ParseResult ParseFull(string input, bool validateMeasures = false)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -520,6 +527,11 @@ public static class MusicNotation
     /// <summary>
     /// Parse key signature from various formats
     /// Supports: "C", "Cm", "C minor", "c", "C#", "C# major", "Db minor"
+    /// The whole string must be consumed: a pitch class, then at most one mode token. No token
+    /// means major; the word forms "min"/"minor" and "maj"/"major" are case-insensitive and may
+    /// follow a single space. A lone 'm'/'M' must attach directly to the pitch and is
+    /// case-significant, so "Em" is E minor and "EM" is E major (changed in 0.10.0). Trailing
+    /// text is rejected — "Gm7", "dorian" and "Cat" are all invalid.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="keyString"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="keyString"/> is blank or is not a key signature.</exception>
@@ -546,11 +558,11 @@ public static class MusicNotation
     /// <summary>
     /// Try-parse a key signature.
     /// Accepts: C, Cm, C minor, C major, C#, Db minor, etc.
-    /// The whole input must be consumed: a pitch-class prefix followed by exactly one
-    /// mode token ("" / "m" / "min" / "minor" for minor forms, "M" / "maj" / "major"
-    /// for major forms). Word forms may be separated from the pitch by a single space
-    /// and are case-insensitive; a lone 'm'/'M' attaches directly to the pitch and is
-    /// case-significant (Em = E minor, EM = E major).
+    /// The whole input must be consumed: a pitch-class prefix followed by at most one
+    /// mode token ("m" / "min" / "minor" for minor forms, "M" / "maj" / "major" for
+    /// major forms; no token at all also means major). Word forms may be separated from
+    /// the pitch by a single space and are case-insensitive; a lone 'm'/'M' attaches
+    /// directly to the pitch and is case-significant (Em = E minor, EM = E major).
     /// </summary>
     private static bool TryParseKey(ReadOnlySpan<char> keyString, out KeySignature key)
     {

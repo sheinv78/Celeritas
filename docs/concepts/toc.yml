@@ -6,3 +6,5 @@
   href: simd.md
 - name: Pitches & enharmonic spelling
   href: enharmonics.md
+- name: Detection confidence & margins
+  href: confidence.md

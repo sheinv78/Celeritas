@@ -71,6 +71,13 @@ public static class ModulationDetector
     /// <summary>
     /// Analyze a note buffer for modulations starting from a known key.
     /// </summary>
+    /// <remarks>
+    /// Harmonic evidence is normally taken from chords (2+ simultaneous onsets on an
+    /// eighth-note grid). When the buffer is (nearly) monophonic and fewer than two such
+    /// chords exist, the analysis falls back to treating each quantized onset as a
+    /// pseudo-chord — single notes included — so melodic key changes are still detected.
+    /// Pivot-chord identification is unavailable in that fallback.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static ModulationAnalysisResult Analyze(NoteBuffer buffer, KeySignature startKey)
     {

@@ -21,8 +21,12 @@ internal static class MusicNotationAntlrParser
     /// </summary>
     /// <param name="input">Music notation string</param>
     /// <param name="validateMeasures">Validate measure durations against time signature</param>
-    /// <returns>Parsed result with notes and metadata</returns>
+    /// <returns>
+    /// Parsed result with notes and metadata. Its <see cref="ParseResult.Errors"/> list is always
+    /// empty: any lexer or parser error throws instead of being reported through the result.
+    /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="input"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The input contains lexer or parser errors.</exception>
     public static ParseResult Parse(string input, bool validateMeasures = false)
     {
         // IsNullOrWhiteSpace below treats null as blank, so null used to come back as an
@@ -98,7 +102,11 @@ public sealed record ParseResult
     /// <summary>Notation directives (tempo, section, dynamics, etc.) found in the input.</summary>
     public NotationDirective[] Directives { get; init; }
 
-    /// <summary>Parse errors collected during lexing/parsing.</summary>
+    /// <summary>
+    /// Parse errors collected during lexing/parsing. Always empty on a result handed to a caller:
+    /// parsing throws <see cref="ArgumentException"/> as soon as an error is recorded, so there is
+    /// nothing here to inspect — catch the exception instead.
+    /// </summary>
     public IReadOnlyList<string> Errors { get; init; }
 }
 

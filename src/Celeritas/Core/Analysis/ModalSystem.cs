@@ -274,7 +274,8 @@ public static class ModeLibrary
     }
 
     /// <summary>
-    /// Check if a pitch class belongs to a scale.
+    /// Check if a pitch class belongs to a scale. A <paramref name="pitchClass"/> outside 0-11 is
+    /// folded to its pitch class rather than rejected.
     /// </summary>
     public static bool ContainsPitch(ModalKey key, int pitchClass)
     {
@@ -425,7 +426,8 @@ public static class ModeLibrary
     /// <summary>
     /// Detect mode from pitch classes with root hint.
     /// </summary>
-    /// <param name="pitchClasses">Collection of pitch classes (0-11).</param>
+    /// <param name="pitchClasses">Collection of pitch classes; values outside 0-11 are folded to
+    /// their pitch class rather than rejected.</param>
     /// <param name="rootHint">Hint for the root note (pitch class).</param>
     /// <exception cref="ArgumentNullException"><paramref name="pitchClasses"/> is <see langword="null"/>.</exception>
     public static (ModalKey key, float confidence) DetectModeWithRoot(IEnumerable<int> pitchClasses, int rootHint)

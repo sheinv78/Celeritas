@@ -58,7 +58,7 @@ class FormAndPolyphony
         var sectionAnalysis = FormAnalyzer.Analyze(sonataBuffer, formOptions);
 
         Console.WriteLine("\n=== Section Structure ===");
-        Console.WriteLine($"Form label: {sectionAnalysis.FormLabel}");  // A B A
+        Console.WriteLine($"Form label: {sectionAnalysis.FormLabel}");  // A - this input reads as one section
         Console.WriteLine($"Sections: {sectionAnalysis.Sections.Count}");
 
         foreach (var section in sectionAnalysis.Sections)
@@ -146,7 +146,7 @@ class FormAndPolyphony
 
         var satb = MusicNotation.Parse(@"
             << C5/1 >> << G4/1 >> << E4/1 >> << C3/1 >>");
-        var satbSeparated = VoiceSeparator.SeparateIntoSATB(satb);
+        var satbSeparated = VoiceSeparator.SeparateIntoSatb(satb);
 
         Console.WriteLine("\n=== SATB Separation ===");
         Console.WriteLine($"Soprano: {satbSeparated.Soprano.Notes.Count} notes");
@@ -210,50 +210,73 @@ class FormAndPolyphony
 /* Expected Output:
 
 === Form Analysis ===
-Phrases detected: 4
-  Phrase: 0 → 3/2
-    Length: 3/2
+Phrases detected: 1
+  Phrase: 0 → 29/4
+    Length: 29/4
     Cadence: None
-  ...
+
+Cadences:
 
 === Section Structure ===
-Form label: A B A
-Sections: 3
+Form label: A
+Sections: 1
+
   Section A:
-    Time: 0 → 4
-    Length: 4
+    Time: 0 → 6
+    Length: 6
     Phrases: 1
 
 === Polyphony Analysis ===
-Voices detected: 2
-Texture density: 1.50
-Voice independence: 75.0%
-Quality score: 85.0%
+Voices detected: 4
+Texture density: 2.00
+Voice independence: 100.0 %
+Quality score: 100.0 %
 
 Motion statistics:
-  Parallel: 25.0%
-  Similar: 12.5%
-  Contrary: 50.0%
-  Oblique: 12.5%
+  Parallel: 0.0%
+  Similar: 0.0%
+  Contrary: 75.0%
+  Oblique: 25.0%
 
 === Voice Separation ===
 Input notes: 8
-Voices: 2
-Separation quality: 95.0%
+Voices: 4
+Separation quality: 100.0 %
 Voice crossings: 0
 
   Soprano:
-    Notes: 4
-    Range: 60-72
-    Average pitch: 66.0
-    First notes: C4 E4 G4 C5
+    Notes: 1
+    Range: 72-72
+    Average pitch: 72.0
+    First notes: C5
+
+  Alto:
+    Notes: 3
+    Range: 64-67
+    Average pitch: 65.0
+    First notes: E4 G4 E4
+
+  Tenor:
+    Notes: 1
+    Range: 60-60
+    Average pitch: 60.0
+    First notes: C4
+
+  Bass:
+    Notes: 3
+    Range: 48-55
+    Average pitch: 51.7
+    First notes: C3 E3 G3
 
 === SATB Separation ===
 Soprano: 1 notes
   Range: 72-72
-Alto: 1 notes
-  Range: 67-67
-...
+Alto: 2 notes
+  Range: 64-67
+Tenor: 0 notes
+  Range: 0-0
+Bass: 1 notes
+  Range: 48-48
 
 === Counterpoint Rules ===
 Parallel fifths: 0
@@ -261,13 +284,13 @@ Parallel octaves: 0
 Hidden parallels: 0
 Voice crossing: 0
 Spacing violations: 0
-Overall quality: 95.0%
+Overall quality: 100.0 %
 
 === Imitation ===
-Has imitation: true
+Has imitation: True
 Type: Canon
-Interval: -12 semitones
-Time delay: 2
+Interval: 12 semitones
+Time delay: 1
 Voices involved: 1, 2
 
 */

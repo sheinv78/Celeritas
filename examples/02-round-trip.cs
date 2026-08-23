@@ -31,11 +31,13 @@ class RoundTrip
         Console.WriteLine($"Letters: {letters}");
         // Output: "C4:q E4:e G4:h."
 
-        // Without dots (expand dotted notes)
+        // Without dots: a dotted value has no plain note symbol, so the formatter
+        // falls back to the raw rational (3/4) instead of the dotted form (2.)
         var noDots = MusicNotation.FormatNoteSequence(notes,
             useDot: false, useLetters: false);
         Console.WriteLine($"No dots: {noDots}");
-        // Output: "C4/4 E4/8 G4/4~ G4/4" (dotted half becomes tied notes)
+        // Output: "C4/4 E4/8 G4/3/4" (the dotted half prints as the rational 3/4,
+        // which is NOT valid input notation - keep useDot: true for round-trips)
 
         // ===== Chord Grouping =====
 
@@ -53,8 +55,8 @@ class RoundTrip
 
         // ===== Directives =====
 
-        // Parse with directives (use ANTLR parser)
-        var result = MusicNotationAntlrParser.Parse(
+        // Parse with directives (Parse returns notes only; ParseFull adds directives)
+        var result = MusicNotation.ParseFull(
             "@bpm 120 @dynamics mf C4/4 E4/4 G4/4");
 
         // Format back with directives
@@ -65,7 +67,7 @@ class RoundTrip
 
         // ===== BPM Ramps =====
 
-        var rampResult = MusicNotationAntlrParser.Parse(
+        var rampResult = MusicNotation.ParseFull(
             "@bpm 120 -> 140 /2 C4/1 D4/1");
         var rampFormatted = MusicNotation.FormatWithDirectives(
             rampResult.Notes, rampResult.Directives);
@@ -74,7 +76,7 @@ class RoundTrip
 
         // ===== Dynamics Changes =====
 
-        var dynamicsResult = MusicNotationAntlrParser.Parse(
+        var dynamicsResult = MusicNotation.ParseFull(
             "@dynamics p @cresc to ff C4/2 @dim to pp D4/2");
         var dynamicsFormatted = MusicNotation.FormatWithDirectives(
             dynamicsResult.Notes, dynamicsResult.Directives);
@@ -84,10 +86,10 @@ class RoundTrip
         // ===== Complete Round-Trip Test =====
 
         var original = "@bpm 120 @section intro @dynamics mf [C4 E4 G4]/4 @cresc to ff [D4 F4]/4 C5/2";
-        var parsed = MusicNotationAntlrParser.Parse(original);
+        var parsed = MusicNotation.ParseFull(original);
         var exported = MusicNotation.FormatWithDirectives(
             parsed.Notes, parsed.Directives, groupChords: true);
-        var reparsed = MusicNotationAntlrParser.Parse(exported);
+        var reparsed = MusicNotation.ParseFull(exported);
 
         Console.WriteLine($"\nOriginal:  {original}");
         Console.WriteLine($"Exported:  {exported}");
@@ -97,7 +99,7 @@ class RoundTrip
 
         // ===== Quoted Strings in Directives =====
 
-        var quotedResult = MusicNotationAntlrParser.Parse(
+        var quotedResult = MusicNotation.ParseFull(
             "@section \"verse 1\" @tempo allegro C4/4");
         var quotedExported = MusicNotation.FormatWithDirectives(
             quotedResult.Notes, quotedResult.Directives);
@@ -107,11 +109,14 @@ class RoundTrip
 
         // ===== Complex Example =====
 
-        var complex = MusicNotationAntlrParser.Parse(@"
+        // A time signature is only admitted at the very start of the input or
+        // immediately after a '|', so it has to lead - it cannot follow directives.
+        var complex = MusicNotation.ParseFull(@"
+            4/4:
             @bpm 120
             @section intro
             @dynamics mf
-            4/4: [C4 E4 G4]/4 R/4 [D4 F4 A4]/2 |
+            [C4 E4 G4]/4 R/4 [D4 F4 A4]/2 |
             @cresc to ff
             [G4 B4 D5]/2 @dim to p [C4 E4 G4]/2
         ");
@@ -129,7 +134,7 @@ class RoundTrip
 Formatted: C4/4 E4/8 G4/2.
 Numeric: C4/4 E4/8 G4/2.
 Letters: C4:q E4:e G4:h.
-No dots: C4/4 E4/8 G4/4~ G4/4
+No dots: C4/4 E4/8 G4/3/4
 Flat: C4/4 E4/4 G4/4 D4/4 F4/4 A4/4 B4/2
 Grouped: [C4 E4 G4]/4 [D4 F4 A4]/4 B4/2
 With directives: @bpm 120 @dynamics mf C4/4 E4/4 G4/4
@@ -142,5 +147,8 @@ Match: True
 Notes match: True
 Directives match: True
 Quoted: @section "verse 1" @tempo allegro C4/4
+
+Complex export:
+@bpm 120 @section intro @dynamics mf [C4 E4 G4]/4 R/4 [D4 F4 A4]/2 @cresc to ff [G4 B4 D5]/2 @dim to p [C4 E4 G4]/2
 
 */

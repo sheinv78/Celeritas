@@ -224,48 +224,79 @@ class HarmonizationAndVoiceLeading
 
 === Harmonization Result ===
 Melody notes: 5
-Chords generated: 3
+Chords generated: 6
 
 Chord progression:
-  0: C (I)
-  1/2: F (IV)
-  3/2: G (V)
-
-Harmonic rhythm: Moderate
-Cost (lower is better): 12.45
+  0: C Major
+  1/4: G Major
+  1/2: C Major
+  3/4: F Major
+  1: G Major
+  5/4: C Major
+Cost (lower is better): -0.20
 
 === SATB Voice Leading ===
 Chords: C - F - G - C
-Total voice movement: 9.00 semitones
-Quality score: 95.2%
+Total cost: 39.00
+Valid solution: True
 
 Voicings:
-Chord    S    A    T    B
-----------------------------
-C        G4   E4   C4   C3
-F        A4   F4   C4   F2
-G        B4   G4   D4   G2
-C        C5   G4   E4   C3
+#   Bass   Tenor  Alto   Soprano
+------------------------------
+1   G2     C3     C4     E4    
+2   A2     C3     C4     F4    
+3   G2     D3     B3     G4    
+4   G2     E3     C4     G4    
 
-=== Voice Leading Rules ===
-Parallel fifths: 0
-Parallel octaves: 0
-Hidden parallels: 0
-Voice crossing: 0
-Spacing issues: 0
-Range violations: 0
+SATB VoicePart Leading:
+═══════════════════════════════════════
+
+     Bass      Tenor     Alto      Soprano
+     ────      ─────     ────      ───────
+ 1.  G2        C3        C4        E4       
+ 2.  A2        C3        C4        F4       
+ 3.  G2        D3        B3        G4       
+ 4.  G2        E3        C4        G4       
+
+Total voice leading cost: 39.0
+
+
+=== Custom Strategy Harmonization ===
+  0: C Major
+  1/4: C Major
+  1/2: C Major
+  3/4: G Major
+  1: G Major
+  5/4: G Major
+
+=== Strict Voice Leading ===
+Total cost: 55.00
+  [E2, C3, A3, A4]
+  [F2, D3, A3, A4]
+  [F2, D3, B3, G4]
+  [E2, C3, C4, G4]
 
 === Figured Bass Realization ===
 C (root position):
-  C3, G3, C4, E4
+  C4, E4, G4
 
 C/E (6):
-  E3, C4, E4, G4
+  E4, G4, C5
 
 C/G (6/4):
-  G3, C4, E4, G4
+  G4, C5, E5
 
 G7 (7):
-  G3, B3, D4, F4
+  G4, B4, D5, F5
+
+D (6#):
+  D4, F4, C5
+
+=== Figured Bass Sequence ===
+C4 (root): C4, E4, G4
+E4 (6): E4, G4, C5
+G4 (6/4): G4, C5, E5
+G4 (7): G4, B4, D5, F5
+C4 (root): C4, E4, G4
 
 */

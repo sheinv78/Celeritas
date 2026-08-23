@@ -36,7 +36,8 @@ MusicXmlIo.Export(buffer, "out.musicxml", new TimeSignature(3, 4));
 
 Notes are divided into measures of the given meter (4/4 by default), and a note
 crossing a barline is split into tied notes — the exact inverse of import's tie
-merge. **Round-trips exactly** — import → export → import yields the same notes:
+merge. **Round-trips exactly** (with one exception, below) — import → export →
+import yields the same notes:
 
 ```csharp
 using var original = MusicXmlIo.Import("score.musicxml");
@@ -44,22 +45,34 @@ using var again    = MusicXmlIo.Parse(MusicXmlIo.ToXml(original));
 // `again` has the same pitches, offsets, and durations as `original`.
 ```
 
+The exception is a **zero-duration** note. It is clamped to one `<divisions>`
+unit on export, so the pitch and onset come back but the zero duration does not —
+see [Boundaries](#boundaries).
+
 ## What maps to what
 
 | MusicXML | Celeritas |
 | --- | --- |
 | `<pitch>` step + octave + `<alter>` | MIDI pitch (`NoteEvent.Pitch`); octave 4 = middle C (60) |
-| `<duration>` in `<divisions>` | whole-note [`Rational`](xref:Celeritas.Core.Rational); a quarter = `1/4` |
+| `<duration>` in `<divisions>` | whole-note [`Rational`](xref:Celeritas.Core.Rational); a quarter = `1/4`. Fractional values are accepted and converted exactly — `<duration>1.5</duration>` at `<divisions>3</divisions>` imports as exactly `1/8` |
 | `<rest>` | advances time, emits no note |
 | `<chord/>` | notes sharing an onset |
-| `<tie>` chain (or `<notations><tied>`) | merged into one sustained note |
+| `<tie>` chain (or `<notations><tied>`) | merged into one sustained note; matched **per voice**, so two voices tying the same pitch stay independent |
 | multiple `<part>`s, `<backup>`/`<forward>` | merged onto one timeline |
 | voices (via `<backup>`) | overlapping notes; exported back as `<voice>` lines |
 | `<dynamics>` marks / `<sound dynamics>` | note velocity (`NoteEvent.Velocity`) |
 
-On export, pitches are spelled with **sharps**, `<divisions>` is chosen so every
-duration lands on an exact integer, chords share an onset, gaps become rests, and
-overlapping lines are split into voices.
+On export, pitches are spelled with **sharps**, `<divisions>` is chosen so that
+every offset, every duration **and the measure length** land on an exact integer,
+chords share an onset, gaps become rests, and overlapping lines are split into
+voices.
+
+Folding the measure length into that choice is what lets irregular meters bar and
+round-trip without truncation: a whole note exported into 7/8 picks
+`<divisions>2</divisions>` and splits into `<duration>7</duration>` tied to
+`<duration>1</duration>`. Sizing `<divisions>` from the notes alone would have
+picked `1`, and the tail segment — an eighth, half a division — would have
+truncated to `<duration>0</duration>`.
 
 ## Conventions to keep in mind
 
@@ -81,6 +94,12 @@ approximations, spelled out:
 - **`score-timewise`** is transposed to partwise on import and read normally.
 - **Dynamics on export** are written for single-voice music only; polyphonic
   velocity is left at the default.
+- **Zero-duration notes** do not survive export intact. A note of duration `0`
+  would occupy no measure segment at all and vanish from the score, so it is
+  clamped to one `<divisions>` unit: the pitch and onset round-trip, the zero
+  duration does not. How long that unit is depends on the score — `1/4` when the
+  export settles on `<divisions>1</divisions>`, `1/12` when a triplet elsewhere in
+  the buffer forces `<divisions>3</divisions>`.
 
 ## From the command line
 

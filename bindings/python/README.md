@@ -12,6 +12,39 @@ pip install -e ./bindings/python
 pip install celeritas
 ```
 
+The `ctypes` fast path needs a NativeAOT build of `Celeritas.Native`. Published wheels are
+platform-tagged and bundle that library, so `pip install celeritas` is all you need. A
+repo checkout does **not** ship it — `celeritas/native/` is git-ignored — so after
+`pip install -e ./bindings/python` on a fresh clone, `import celeritas` raises
+`RuntimeError: Could not load the Celeritas native library.` until you build it.
+
+## Building the Native Library
+
+Build it once after cloning (and again whenever the C# sources change):
+
+Quick path (recommended):
+
+```bash
+# From repo root
+pwsh ./scripts/build-python-native.ps1 -Configuration Release -Runtime win-x64
+```
+
+Or by hand:
+
+```bash
+# Build for Windows
+dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64
+
+# Build for Linux
+dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r linux-x64
+
+# Build for macOS
+dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r osx-x64
+
+# Copy to package folder (Windows example)
+cp ../../src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/Celeritas.Native.dll celeritas/native/
+```
+
 ## Quick Start
 
 ```python
@@ -90,6 +123,13 @@ import celeritas
     - Raises `CeleritasError` if the native call fails
 - `parse_chord_symbol(symbol: str, max_pitches: int = 32) -> Optional[List[int]]`
     - Parses chord symbols like `C7(b9,#11)`, `C/E`, `C|G`
+    - Since 0.10.0: an unsupported alteration or added degree returns `None` instead of a
+      best-effort voicing — `parse_chord_symbol("C7(b7)")` and `parse_chord_symbol("Cadd15")`
+      are both `None`, where supported ones such as `C7(b9,#11)` still parse
+    - Since 0.10.0: `CM7`, `CΔ` and `CmΔ` parse as major sevenths — `CΔ` gives
+      `[60, 64, 67, 71]` and `CmΔ` gives `[60, 63, 67, 71]`
+    - Since 0.10.0: augmented and diminished-seventh chords are rooted on the bass note —
+      `Bdim7` gives `[71, 74, 77, 80]` (B D F A♭) and `Baug7` gives `[71, 75, 79, 81]`
 - `native_version() -> str`
     - Returns the version reported by the native library (e.g. `0.10.0`)
 
@@ -153,7 +193,8 @@ export CELERITAS_DOTNET_ASSEMBLY=/abs/path/to/Celeritas.dll
 ## Requirements
 
 - Python 3.8+
-- Celeritas native library (included in package)
+- Celeritas native library — bundled in published wheels; built locally when installing
+  from the repo (see [Building the Native Library](#building-the-native-library))
 
 ## Performance
 
@@ -200,31 +241,6 @@ pytest test_celeritas.py --cov=celeritas --cov-report=html
 ```
 
 **Test Coverage:** 47 tests covering NoteEvent, parsing, transpose (SIMD), chord/key detection, ornaments (trills, mordents, exact rational timing), native version reporting, and integration scenarios.
-
-### Building Native Library
-
-The Python bindings require a native library built with NativeAOT:
-
-Quick path (recommended):
-
-```bash
-# From repo root
-pwsh ./scripts/build-python-native.ps1 -Configuration Release -Runtime win-x64
-```
-
-```bash
-# Build for Windows
-dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r win-x64
-
-# Build for Linux
-dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r linux-x64
-
-# Build for macOS
-dotnet publish ../../src/Celeritas.Native/Celeritas.Native.csproj -c Release -r osx-x64
-
-# Copy to package folder (Windows example)
-cp ../../src/Celeritas.Native/bin/Release/net10.0/win-x64/publish/Celeritas.Native.dll celeritas/native/
-```
 
 ## Documentation
 

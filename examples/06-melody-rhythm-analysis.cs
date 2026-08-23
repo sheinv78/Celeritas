@@ -15,7 +15,7 @@ class MelodyRhythmAnalysis
         // Rising melody
         var rising = MusicNotation.Parse("C4/4 D4/4 E4/4 F4/4 G4/4 A4/4 B4/4 C5/2");
         var contour1 = MelodyAnalyzer.Analyze(rising.Select(n => n.Pitch).ToArray());
-        Console.WriteLine($"Contour: {contour1.Contour}");  // Rising
+        Console.WriteLine($"Contour: {contour1.Contour}");  // Ascending
         Console.WriteLine($"Net movement: {contour1.Ambitus} semitones");
         Console.WriteLine($"Description: {contour1.ContourDescription}");
 
@@ -33,7 +33,7 @@ class MelodyRhythmAnalysis
         // Wave (undulating)
         var wave = MusicNotation.Parse("C4/4 E4/4 D4/4 F4/4 E4/4 G4/4 F4/4 A4/4");
         var contour4 = MelodyAnalyzer.Analyze(wave.Select(n => n.Pitch).ToArray());
-        Console.WriteLine($"\nContour: {contour4.Contour}");  // Wave
+        Console.WriteLine($"\nContour: {contour4.Contour}");  // Complex - too jagged for Wave
 
         // ===== Ambitus (Range) =====
 
@@ -50,8 +50,10 @@ class MelodyRhythmAnalysis
         var melodicIntervals = MusicNotation.Parse("C4/4 E4/4 D4/4 G4/4 F4/4 C5/4");
         var intervals = MelodyAnalyzer.Analyze(melodicIntervals.Select(n => n.Pitch).ToArray());
         Console.WriteLine($"\nInterval statistics:");
-        Console.WriteLine($"  Steps (1-2 semitones): {intervals.Statistics.StepPercent:P1}");
-        Console.WriteLine($"  Leaps (3+ semitones): {intervals.Statistics.LeapPercent:P1}");
+        // StepPercent / LeapPercent already come back on a 0-100 scale, so format them with
+        // F1 and a literal "%" - ":P1" would multiply by 100 again and report 4,000.0 %.
+        Console.WriteLine($"  Steps (1-2 semitones): {intervals.Statistics.StepPercent:F1}%");
+        Console.WriteLine($"  Leaps (3+ semitones): {intervals.Statistics.LeapPercent:F1}%");
         Console.WriteLine($"  Average interval: {intervals.Statistics.AverageInterval:F2} semitones");
         Console.WriteLine($"  Max leap: {intervals.Statistics.LargestLeap} semitones");
 
@@ -120,8 +122,8 @@ class MelodyRhythmAnalysis
         var full = MelodyAnalyzer.Analyze(completeMelody.Select(n => n.Pitch).ToArray());
         Console.WriteLine($"\n=== Complete Melody Analysis ===");
         Console.WriteLine($"Contour: {full.Contour} ({full.ContourDescription})");
-        Console.WriteLine($"Range: {full.Ambitus} semitones");  // Note: AmbitusCharacterization doesn't exist
-        Console.WriteLine($"Movement: {full.Statistics.StepPercent:P0} steps, {full.Statistics.LeapPercent:P0} leaps");
+        Console.WriteLine($"Range: {full.Ambitus} semitones");
+        Console.WriteLine($"Movement: {full.Statistics.StepPercent:F0}% steps, {full.Statistics.LeapPercent:F0}% leaps");
         Console.WriteLine($"Motifs: {full.Motifs.Count} recurring patterns");
 
         using var rhythmBuffer = new NoteBuffer(completeMelody.Length);
@@ -133,7 +135,7 @@ class MelodyRhythmAnalysis
 
 /* Expected Output:
 
-Contour: Rising
+Contour: Ascending
 Net movement: 12 semitones
 Description: Rising melody (net +12 semitones)
 
@@ -142,22 +144,53 @@ Contour: Descending
 Contour: Arch
 Peak: 72
 
-Contour: Wave
+Contour: Complex
 
 Ambitus:
   Range: 31 semitones
   Lowest: 48 (C3)
   Highest: 79 (G5)
-  Characterization: Very wide (Heroic)
+  Characterization: very wide range: C3 to G5 (2 octave(s) + P5)
 
 Interval statistics:
-  Steps (1-2 semitones): 60.0%
-  Leaps (3+ semitones): 40.0%
-  Average interval: 3.20 semitones
+  Steps (1-2 semitones): 40.0%
+  Leaps (3+ semitones): 60.0%
+  Average interval: 4.00 semitones
   Max leap: 7 semitones
 
-Pattern: Tresillo
-  Origin: Cuban/Latin
-  Confidence: 95.2%
+  Interval histogram:
+    2 semitones: 2 times
+    4 semitones: 1 times
+    5 semitones: 1 times
+    7 semitones: 1 times
+
+Motifs found: 3
+  Pattern (intervals): +4 +3 -7
+  Occurrences: 2
+  At times: 0, 8
+  Pattern (intervals): +4 +3
+  Occurrences: 2
+  At times: 0, 8
+  Pattern (intervals): +3 -7
+  Occurrences: 2
+  At times: 1, 9
+
+Rhythm analysis:
+  Texture: Dense, busy rhythmic texture, featuring Syncopated pattern, (Jazz/Funk style).
+  Density: 2.00 notes/beat
+  Syncopation level: 0.00
+
+Syncopation:
+  Syncopation level: 0.00
+
+Groove:
+  Density: 2.00
+
+=== Complete Melody Analysis ===
+Contour: Wave (Undulating/wave-like contour)
+Range: 12 semitones
+Movement: 50% steps, 43% leaps
+Motifs: 1 recurring patterns
+Rhythm: Moderate rhythmic activity, featuring Straight Quarters pattern, (Classical style).
 
 */

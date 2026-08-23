@@ -58,7 +58,10 @@ public sealed class ProgressionReport
     /// <summary>Detected modulations and tonicizations</summary>
     public required IReadOnlyList<ModulationInfo> Modulations { get; init; }
 
-    /// <summary>Overall progression pattern (e.g., "i - VI - iv - i - V")</summary>
+    /// <summary>
+    /// Overall progression pattern (e.g., "i - VI - iv - i - V"); a chromatic chord with no
+    /// diatonic numeral appears as "?".
+    /// </summary>
     public required string Pattern { get; init; }
 
     /// <summary>Short human-readable summary.</summary>

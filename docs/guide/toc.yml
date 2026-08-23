@@ -6,3 +6,5 @@
   href: python.md
 - name: Notation interop (MusicXML)
   href: musicxml.md
+- name: Upgrading to 0.10
+  href: upgrading-to-0.10.md

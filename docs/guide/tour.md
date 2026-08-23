@@ -29,7 +29,7 @@ using var buffer = new NoteBuffer(notes.Length);
 foreach (var n in notes)
     buffer.Add(n);
 
-buffer.Sort();                       // order by offset
+buffer.Sort();                       // required before GetChords()
 Console.WriteLine(buffer.Count);
 ```
 

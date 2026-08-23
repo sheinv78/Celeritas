@@ -82,7 +82,7 @@ public static class NativeExports
     }
 
     /// <summary>
-    /// Write the native library version (e.g. "0.9.0") into the buffer as
+    /// Write the native library version (e.g. "1.2.3") into the buffer as
     /// NUL-terminated UTF-8. Returns 1 on success, 0 on failure.
     /// </summary>
     [UnmanagedCallersOnly(EntryPoint = "celeritas_version", CallConvs = [typeof(CallConvCdecl)])]

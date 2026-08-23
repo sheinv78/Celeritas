@@ -105,7 +105,8 @@ public static class ProgressionAdvisor
 
     /// <summary>
     /// Detect the type of cadence formed by the last two chords in a progression.
-    /// Returns the cadence type and description.
+    /// Returns the cadence type only; for a human-readable description, read
+    /// <see cref="ProgressionReport.Cadences"/> and its <see cref="CadenceInfo.Description"/>.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="chordSymbols"/> is <see langword="null"/>.</exception>
     public static CadenceType DetectCadence(string[] chordSymbols, KeySignature? key = null)

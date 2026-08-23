@@ -23,7 +23,9 @@ namespace Celeritas.Core.Notation;
 /// Compressed <c>.mxl</c> archives are unwrapped and the <c>score-timewise</c> layout is transposed
 /// to partwise on import; grace notes are approximated as short notes at the following beat.
 /// Remaining boundary: tuplet grouping metadata (<c>&lt;time-modification&gt;</c>) is ignored, though
-/// tuplet <em>durations</em> import exactly. Export writes a single measure.
+/// tuplet <em>durations</em> import exactly. Export bars the timeline into measures of the
+/// requested meter (4/4 unless one is given) and splits notes crossing a barline into tied
+/// segments.
 /// </para>
 /// </summary>
 public static class MusicXmlIo
@@ -99,11 +101,15 @@ public static class MusicXmlIo
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
+    /// <exception cref="InvalidOperationException">The offsets and durations use denominators
+    /// whose least common multiple overflows the 64-bit <c>&lt;divisions&gt;</c> value.</exception>
     public static string ToXml(NoteBuffer buffer) => ToXml(buffer, CommonTime);
 
     /// <inheritdoc cref="ToXml(NoteBuffer)"/>
     /// <param name="buffer">The notes to serialize.</param>
     /// <param name="timeSignature">The meter to bar the notes into.</param>
+    /// <exception cref="InvalidOperationException">The offsets and durations use denominators
+    /// whose least common multiple overflows the 64-bit <c>&lt;divisions&gt;</c> value.</exception>
     public static string ToXml(NoteBuffer buffer, TimeSignature timeSignature)
     {
         ArgumentNullException.ThrowIfNull(buffer);
@@ -123,11 +129,15 @@ public static class MusicXmlIo
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML (4/4) to <paramref name="path"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
+    /// <exception cref="InvalidOperationException">The offsets and durations use denominators
+    /// whose least common multiple overflows the 64-bit <c>&lt;divisions&gt;</c> value.</exception>
     public static void Export(NoteBuffer buffer, string path) => Export(buffer, path, CommonTime);
 
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML, barred into <paramref name="timeSignature"/>, to a file.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
+    /// <exception cref="InvalidOperationException">The offsets and durations use denominators
+    /// whose least common multiple overflows the 64-bit <c>&lt;divisions&gt;</c> value.</exception>
     public static void Export(NoteBuffer buffer, string path, TimeSignature timeSignature)
     {
         ArgumentNullException.ThrowIfNull(buffer);
@@ -139,11 +149,15 @@ public static class MusicXmlIo
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML (4/4) to a stream.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="stream"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
+    /// <exception cref="InvalidOperationException">The offsets and durations use denominators
+    /// whose least common multiple overflows the 64-bit <c>&lt;divisions&gt;</c> value.</exception>
     public static void Export(NoteBuffer buffer, Stream stream) => Export(buffer, stream, CommonTime);
 
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML, barred into <paramref name="timeSignature"/>, to a stream.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="stream"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A note has a negative offset, which MusicXML cannot represent.</exception>
+    /// <exception cref="InvalidOperationException">The offsets and durations use denominators
+    /// whose least common multiple overflows the 64-bit <c>&lt;divisions&gt;</c> value.</exception>
     public static void Export(NoteBuffer buffer, Stream stream, TimeSignature timeSignature)
     {
         ArgumentNullException.ThrowIfNull(buffer);

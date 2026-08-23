@@ -123,7 +123,9 @@ public static class VoiceSeparator
     private const double StepwiseCostFactor = 0.25;
 
     /// <summary>
-    /// Separate notes into voices using pitch-proximity algorithm.
+    /// Separate notes into voices using pitch-proximity algorithm. Notes that overlap in time are
+    /// forced into different voices; the <see cref="VoiceSeparatorOptions"/> overload adds
+    /// voice-crossing and stepwise-motion penalties on top of that.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static VoiceSeparationResult Separate(NoteBuffer buffer, int maxVoices = 4)
@@ -203,7 +205,11 @@ public static class VoiceSeparator
     }
 
     /// <summary>
-    /// Separate notes into voices with custom options.
+    /// Separate notes into voices with custom options. Assignment is driven by pitch proximity,
+    /// with notes that overlap in time forced into different voices;
+    /// <see cref="VoiceSeparatorOptions"/> adds a penalty for voice-order violations when
+    /// <see cref="VoiceSeparatorOptions.AllowCrossings"/> is false and a superlinear penalty for
+    /// motion beyond a whole step when <see cref="VoiceSeparatorOptions.PreferStepwise"/> is set.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
     public static VoiceSeparationResult Separate(NoteBuffer buffer, int maxVoices, VoiceSeparatorOptions options)

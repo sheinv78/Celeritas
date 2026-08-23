@@ -457,8 +457,18 @@ public class FiguredBassOptions
     public int MinPitch { get; init; } = 48;
 
     /// <summary>
-    /// Maximum pitch for upper voices (default: C6)
+    /// Preferred ceiling for upper voices (default: C6)
     /// </summary>
+    /// <remarks>
+    /// Best-effort, not a hard bound. <see cref="VoiceLeadingStyle.Free"/> (and the per-symbol
+    /// <see cref="FiguredBassRealizer.RealizeSymbol"/>) clamps every upper voice into
+    /// [<see cref="MinPitch"/>, MaxPitch]. The default <see cref="VoiceLeadingStyle.Smooth"/> and
+    /// <see cref="VoiceLeadingStyle.Strict"/> paths may exceed it: the first chord — and any chord
+    /// where the voice count changes — is stacked upward from the bass without consulting it, and
+    /// later chords fall back to the lowest placement above the bass when the range cannot hold the
+    /// required pitch class. With the defaults (MinPitch 48, MaxPitch 84) a root-position bass of 83
+    /// realizes as 83, 86, 89. <see cref="MinPitch"/> is honored on every path.
+    /// </remarks>
     public int MaxPitch { get; init; } = 84;
 
     /// <summary>

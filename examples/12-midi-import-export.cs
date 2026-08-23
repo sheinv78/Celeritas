@@ -30,7 +30,7 @@ class MidiExamples
 
         // ===== Load MIDI File =====
 
-        var loaded = MidiIo.Import("output.mid");
+        using var loaded = MidiIo.Import("output.mid");
         Console.WriteLine($"\n=== Loaded MIDI File ===");
         Console.WriteLine($"Notes loaded: {loaded.Count}");
 
@@ -96,7 +96,7 @@ class MidiExamples
 
         using var chordBuffer = new NoteBuffer(withChords.Length);
         chordBuffer.AddRange(withChords);
-        MidiIo.Export(chordBuffer, "chords.mid");
+        MidiIo.Export(chordBuffer, "chords.mid", new MidiExportOptions(Bpm: 100));
 
         Console.WriteLine($"\n=== MIDI with Chords ===");
         Console.WriteLine($"Total notes: {withChords.Length}");
@@ -128,32 +128,19 @@ class MidiExamples
 Notes: 8
 Saved to output.mid
 Tempo: 120 BPM
-Tracks: 1
 
 === Loaded MIDI File ===
-Tempo: 120 BPM
-Time signature: 4/4
-Duration: 4/1
-Total events: 24
-
-=== Converted to NoteEvents ===
-Total notes: 8
-First 5 notes:
-  C4 at 0, duration 1/4
-  E4 at 1/4, duration 1/4
-  G4 at 1/2, duration 1/4
-  C5 at 3/4, duration 1/2
-  B4 at 5/4, duration 1/4
+Notes loaded: 8
 
 === Analysis ===
-Detected key: C major
+Detected key: C Major (confidence: 21%)
 Contour: Arch
 Range: 12 semitones
 
 === Transposition ===
-Original key: C major
+Original key: C Major
 Transposed +5 semitones
-New key: F major
+New key: F Major
 Saved to transposed.mid
 
 === Multi-Track MIDI ===
@@ -161,5 +148,17 @@ Tracks: 2
   Track 1: Melody (4 notes)
   Track 2: Bass (2 notes)
 Saved to multitrack.mid
+
+=== MIDI with Chords ===
+Total notes: 13
+Tempo: 100 BPM
+Saved to chords.mid
+
+=== MIDI Best Practices ===
+1. Always set tempo before saving (default: 120 BPM)
+2. Use velocity (0.0-1.0) for dynamics, not separate events
+3. Quantize if needed: gridSize = 1/16 or 1/32 for tight timing
+4. For analysis, convert to NoteEvents first
+5. Multi-track files preserve voice separation
 
 */

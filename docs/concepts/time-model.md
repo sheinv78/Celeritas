@@ -15,7 +15,8 @@ Every offset and duration is a `Rational` where **1 means one whole note**:
 | `Rational.Quarter` = `1/4` | a quarter note |
 | `Rational.Eighth` = `1/8` | an eighth note |
 | `new Rational(3, 8)` | a dotted quarter |
-| `new Rational(1, 3)` | one triplet-eighth (a third of a half) |
+| `new Rational(1, 3)` | a triplet-half (a third of a whole note) |
+| `new Rational(1, 12)` | a triplet-eighth (a third of a quarter) |
 
 There are no "ticks" and no beats-per-measure baked into a note. A
 [`NoteEvent`](xref:Celeritas.Core.NoteEvent) at `Offset = 1/2` starts halfway
@@ -55,8 +56,8 @@ approximation (for a UI, say):
 
 ```csharp
 var barLength = Rational.Whole;                 // 4/4 measure
-var swungEighth = new Rational(2, 3) * Rational.Half;   // 1/3
-double seconds = (Rational.Quarter).ToDouble() * 2.0;   // at 120 BPM, a quarter = 0.5 s
+var swungEighth = new Rational(2, 3) * Rational.Quarter;  // 1/6 - two thirds of a beat
+double seconds = (Rational.Quarter).ToDouble() * 2.0;     // at 120 BPM, a quarter = 0.5 s
 ```
 
 Because a whole note is the unit, converting to and from clock time is just a

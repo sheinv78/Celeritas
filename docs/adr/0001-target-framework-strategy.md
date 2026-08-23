@@ -23,7 +23,8 @@ We did not estimate the multi-targeting cost — we ran it. Both the library and
 project were temporarily switched to `<TargetFrameworks>net10.0;net8.0</TargetFrameworks>`:
 
 - The library **compiled clean for net8.0 with zero source changes**.
-- The full suite — **543/543 tests — passed on the net8.0 runtime**.
+- The full suite as it stood at the time — the 0.9 line's **543 tests — passed on the net8.0
+  runtime**. (A July 2026 snapshot of that run, not a running count.)
 - The only build noise was three TFM-support warnings from build-time-only MSBuild
   packages (`PrivateAssets="all"`, never shipped), suppressible via
   `SuppressTfmSupportBuildWarnings`.

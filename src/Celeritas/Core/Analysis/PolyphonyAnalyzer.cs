@@ -196,7 +196,8 @@ public sealed record PolyphonyAnalysisResult
     /// <summary>Overall polyphony quality score (0-1).</summary>
     public float QualityScore { get; init; }
 
-    /// <summary>Texture density (average notes sounding simultaneously).</summary>
+    /// <summary>Texture density: the time-weighted average number of voices sounding simultaneously
+    /// (each segment between successive note starts/ends counts in proportion to its length).</summary>
     public float TextureDensity { get; init; }
 
     /// <summary>Voice independence score (0-1, higher = more independent voices).</summary>

@@ -17,5 +17,9 @@ The complete public surface of Celeritas, generated from source XML docs.
 - **`Celeritas.Core.FiguredBass`** — figured-bass realization.
 - **`Celeritas.Core.Accompaniment`** — accompaniment generation.
 - **`Celeritas.Core.Midi`** — MIDI import/export and tempo/time-signature events.
+- **`Celeritas.Core.Notation`** — MusicXML import/export ([`MusicXmlIo`](Celeritas.Core.Notation.MusicXmlIo.yml)),
+  including compressed `.mxl` archives.
+- **`Celeritas.Core.Simd`** — SIMD capability detection ([`SimdInfo`](Celeritas.Core.Simd.SimdInfo.yml),
+  [`SimdInstructionSet`](Celeritas.Core.Simd.SimdInstructionSet.yml)) and the pitch-transformer dispatch behind it.
 
 Browse the full tree in the sidebar.

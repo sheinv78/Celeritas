@@ -28,13 +28,34 @@ Console.WriteLine(pitches.Length);                         // 3
 ## Capacity is fixed; Count grows
 
 The constructor takes a **capacity** and allocates once. `Add`/`AddNote`/`AddRange`
-append up to that capacity and advance `Count`; they do not grow the buffer. Size
-it when you create it:
+append and advance `Count`; they never grow the buffer, and going past `Capacity`
+throws <xref:System.InvalidOperationException>. Size it when you create it:
 
 ```csharp
 using var buffer = new NoteBuffer(notes.Length);
 buffer.AddRange(notes);
 Console.WriteLine($"{buffer.Count} of {buffer.Capacity}");
+```
+
+`AddRange` checks the whole batch against the remaining room *before* it appends
+anything, so a batch that doesn't fit is rejected outright rather than partially
+applied — `Count` is exactly where it was:
+
+```csharp
+using var buffer = new NoteBuffer(3);
+buffer.AddNote(60, Rational.Zero, Rational.Quarter);
+
+NoteEvent[] batch =
+[
+    new NoteEvent(62, Rational.Quarter, Rational.Quarter),
+    new NoteEvent(64, Rational.Half, Rational.Quarter),
+    new NoteEvent(65, new Rational(3, 4), Rational.Quarter),
+];
+
+try { buffer.AddRange(batch); }                 // 1 + 3 > 3
+catch (InvalidOperationException ex) { Console.WriteLine(ex.Message); }   // Buffer full
+
+Console.WriteLine(buffer.Count);                // 1 - none of the batch landed
 ```
 
 `Clear()` resets `Count` to zero and lets you refill without reallocating.
@@ -70,16 +91,22 @@ share the immutable view (`PitchesReadOnly` and friends) for concurrent reads.
 
 ## Spans are windows, not copies
 
-The span properties (`PitchesReadOnly`, `PitchSpan`, `VelocitiesReadOnly`, …)
-point *into* the buffer's native memory. That makes them free, but it also means:
+The span properties (`Pitches`, `PitchesReadOnly`, `Velocities`,
+`VelocitiesReadOnly`, …) point *into* the buffer's native memory. That makes them
+free, but it also means:
 
-- A span is only valid while the buffer is alive and not resized. Don't hold one
-  past a `Dispose()`.
-- The writable spans (`PitchSpan`, `Velocities`) let you edit in place — useful,
+- A span is only valid while the buffer is alive, and disposal fails in two very
+  different ways. A span you captured *before* `Dispose()` still points at memory
+  that has been handed back — it dangles, silently, with no exception to warn you.
+  Fetching a span *after* `Dispose()` is the safe case: the property throws
+  <xref:System.ObjectDisposedException>. Don't hold a span past a `Dispose()`.
+- The writable spans (`Pitches`, `Velocities`) let you edit in place — useful,
   but there's no validation on that path, so keep MIDI pitches in range yourself.
 
 ## See also
 
 - [`NoteBuffer`](xref:Celeritas.Core.NoteBuffer) — the full API.
+  `GetChords` requires a buffer sorted by offset — call `Sort()` first (appending in
+  nondecreasing offset order counts as sorted); it throws otherwise.
 - [The whole-note time model](time-model.md) — what the offsets and durations mean.
 - [SIMD dispatch](simd.md) — why the layout looks the way it does.

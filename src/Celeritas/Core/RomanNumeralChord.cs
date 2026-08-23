@@ -176,7 +176,10 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
             _ => numeral
         };
 
-        // Add quality suffix (same vocabulary as ToNashville where a symbol exists).
+        // Add quality suffix. Minor-ness is already carried by the numeral's case above, so the
+        // minor qualities take shorter suffixes than ToNashville does ("", "7", "ø7", "maj7" for
+        // Minor/Minor7/HalfDim7/MinorMajor7 instead of "m", "m7", "m7b5", "m(maj7)"); every other
+        // quality shares ToNashville's vocabulary.
         var suffix = Quality switch
         {
             ChordQuality.Dominant7 => "7",

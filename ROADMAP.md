@@ -1,7 +1,7 @@
 # Celeritas Roadmap
 
 > Direction and milestones for Celeritas. A living document — priorities may shift.
-> Last updated: 2026-07-17.
+> Last updated: 2026-08-23.
 
 ## North Star
 
@@ -25,9 +25,10 @@ Celeritas already covers most of the symbolic-music core, all under test:
   pitch-class-set (Forte).
 - **Generation** — melody harmonization (Viterbi/DP), accompaniment, orchestration
   mapping, SATB voice-leading solver, ornamentation, figured-bass realization.
-- **I/O & surface** — MIDI import/export (DryWetMIDI), a ~17-command CLI, Python bindings
-  (ctypes fast path + pythonnet full API), NativeAOT, NuGet / dotnet-tool / PyPI
-  packaging, multi-platform CI/CD.
+- **I/O & surface** — MIDI import/export (DryWetMIDI), MusicXML import
+  (`score-partwise`, `score-timewise`, compressed `.mxl`) and `score-partwise` export,
+  a 19-command CLI, Python bindings (ctypes fast path + pythonnet full API), NativeAOT,
+  NuGet / dotnet-tool / PyPI packaging, multi-platform CI/CD.
 - **Performance** — SIMD across AVX-512 / AVX2 / SSE2 / NEON (WASM SIMD experimental),
   exact rational time arithmetic, structure-of-arrays `NoteBuffer`.
 
@@ -47,14 +48,20 @@ Celeritas already covers most of the symbolic-music core, all under test:
 
 **✅ Shipped.** Correctness bugs fixed, public API curated and CI-gated against a baseline.
 
-- Audit and curate the public API surface: make internal what should be internal, seal
+- ✅ Audit and curate the public API surface: make internal what should be internal, seal
   where appropriate, reconcile naming and namespaces.
-- Adopt `Microsoft.CodeAnalysis.PublicApiAnalyzers` with `PublicAPI.Shipped.txt` /
-  `PublicAPI.Unshipped.txt`; enforce the baseline in CI so every API change is deliberate.
-- Consistent argument validation and documented exception contracts across public entry
-  points.
-- Broaden property-based tests (CsCheck) and fuzzing (MIDI already fuzzed) for edge cases:
+- ✅ Adopt `Microsoft.CodeAnalysis.PublicApiAnalyzers`: the whole public surface is
+  declared in `PublicAPI.Unshipped.txt`, and because `TreatWarningsAsErrors` is on, an
+  addition or removal that is not recorded there breaks the build (RS0016/RS0017) —
+  locally and in CI. Nothing is promoted to `PublicAPI.Shipped.txt` yet: the surface is
+  *tracked*, not frozen. Drawing the shipped baseline is a 1.0 step.
+- ✅ Consistent argument validation and documented exception contracts across public entry
+  points — see [ADR 0002](docs/adr/0002-argument-validation-conventions.md).
+- ✅ Broaden property-based tests (CsCheck) and fuzzing (MIDI already fuzzed) for edge cases:
   empty inputs, extreme magnitudes, malformed data.
+- ✅ Library-wide correctness sweep: an audit of analysis, generation and I/O found and
+  fixed the bugs that returned confident wrong answers instead of failing loudly; the
+  test suite grew from 754 to 966 tests. See [CHANGELOG.md](CHANGELOG.md).
 - ~~**Decide target frameworks.**~~ **Decided: `net10.0` only** — see
   [ADR 0001](docs/adr/0001-target-framework-strategy.md). Multi-targeting net8 was measured,
   not estimated (it builds and passes 543/543 unchanged), but .NET 8 leaves support on

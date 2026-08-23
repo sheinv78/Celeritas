@@ -122,7 +122,12 @@ public static class KeyProfiler
     /// Uses SIMD-accelerated correlation with Krumhansl-Schmuckler profiles.
     /// </summary>
     /// <param name="pitchClassCounts">Array of 12 floats representing normalized pitch class frequencies</param>
-    /// <returns>Detected key and confidence (0-1)</returns>
+    /// <returns>
+    /// Detected key and confidence — the margin between the best key's score and the runner-up's,
+    /// relative to the best. It measures how cleanly the winner separates from the field, not how
+    /// well the music fits the key, so it is not a goodness-of-fit: a clear detection typically
+    /// lands around 0.1-0.35, and a value below 0.5 is not "low confidence".
+    /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static KeyDetectionResult Detect(ReadOnlySpan<float> pitchClassCounts)
     {
@@ -293,7 +298,8 @@ public static class KeyProfiler
     }
 
     /// <summary>
-    /// Normalize distribution to zero mean and unit variance (for Pearson correlation).
+    /// Normalize distribution to zero mean and unit variance — the z-scoring the pseudo-correlation
+    /// below expects (see the NOTE on correlation bias).
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void NormalizeDistribution(ReadOnlySpan<float> input, Span<float> output)
@@ -331,7 +337,8 @@ public static class KeyProfiler
 
     /// <summary>
     /// AVX-512 optimized correlation computation.
-    /// Computes Pearson correlation of input with all 24 key profiles in parallel.
+    /// Scores the z-scored input against all 24 raw key profiles in parallel. This is a
+    /// pseudo-correlation, not a true Pearson correlation — see the NOTE on correlation bias below.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void ComputeCorrelationsAvx512(ReadOnlySpan<float> input, Span<float> correlations)
@@ -355,7 +362,6 @@ public static class KeyProfiler
                 // AVX-512 doesn't have direct horizontal add, so we reduce
                 var sum = HorizontalSumAvx512(vProduct);
 
-                // Normalize by profile std dev (precomputed, all profiles have similar variance)
                 pCorrelations[key] = sum / 12f;
             }
         }
@@ -378,7 +384,7 @@ public static class KeyProfiler
     }
 
     /// <summary>
-    /// AVX2 fallback for correlation computation.
+    /// AVX2 fallback for the same pseudo-correlation (see the NOTE on correlation bias below).
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void ComputeCorrelationsAvx2(ReadOnlySpan<float> input, Span<float> correlations)
@@ -442,7 +448,8 @@ public static class KeyProfiler
     // major-biased.
 
     /// <summary>
-    /// Scalar fallback for systems without SIMD.
+    /// Scalar fallback for systems without SIMD. Computes the same pseudo-correlation
+    /// (see the NOTE on correlation bias above).
     /// </summary>
     private static void ComputeCorrelationsScalar(ReadOnlySpan<float> input, Span<float> correlations)
     {
@@ -588,7 +595,12 @@ public static class KeyProfiler
 /// Result of key detection analysis.
 /// </summary>
 /// <param name="Key">The most likely key.</param>
-/// <param name="Confidence">Confidence in the detection, from 0 to 1.</param>
+/// <param name="Confidence">
+/// Margin between the best key's score and the runner-up's, relative to the best (clamped to 0-1).
+/// It is a separation measure, not a goodness-of-fit: it says how cleanly the winner beat the
+/// field, not how well the music fits the key. A clear detection typically lands around 0.1-0.35,
+/// so a value below 0.5 is not "low confidence".
+/// </param>
 /// <param name="AllCorrelations">All 24 key correlations, sorted most likely first.</param>
 public readonly record struct KeyDetectionResult(
     KeySignature Key,

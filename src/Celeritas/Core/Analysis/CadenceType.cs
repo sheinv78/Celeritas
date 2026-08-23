@@ -39,7 +39,9 @@ public enum CadenceType
     /// <summary>any → V - creates expectation, phrase ends on tension</summary>
     Half,
 
-    /// <summary>iv → V in minor - common half cadence</summary>
+    /// <summary>iv6 → V in minor - the subdominant in first inversion leaning into the dominant.
+    /// Wherever the analyzer sees the voicing, a root-position iv → V is reported as
+    /// <see cref="Half"/> instead; degree-only analysis cannot tell the two apart.</summary>
     Phrygian
 }
 

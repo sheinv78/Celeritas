@@ -25,7 +25,7 @@ using Celeritas.Core;
 
 var melody = MusicNotation.Parse("C4/4 E4/4 G4/4 B4/2 C5/2");
 var key = KeyAnalyzer.DetectKey(melody);
-Console.WriteLine($"Key: {key}");  // Output: C major
+Console.WriteLine($"Key: {key}");  // Output: C Major
 ```
 
 ### Identify a chord progression
@@ -41,9 +41,9 @@ var chords = new[] {
 foreach (var chord in chords)
 {
     var info = ChordAnalyzer.Identify(chord);
-    Console.WriteLine(info.Symbol);
+    Console.WriteLine(info);
 }
-// Output: C, Dm, G7, C
+// Output: C Major, D Minor, G Dominant7, C Major
 ```
 
 ---
@@ -112,7 +112,7 @@ Console.WriteLine(string.Join(" ", turnaround.Select(c => c.Symbol())));
 
 var circle = FunctionalProgressions.Circle(cMajor, DiatonicChordType.Triad);
 Console.WriteLine(string.Join(" ", circle.Select(c => c.Symbol(preferSharps: false))));
-// C F Bb Eb Ab Db Gb B
+// C F Bdim Em Am Dm G C   (diatonic descending fifths: I IV vii° iii vi ii V I)
 
 var aMinor = new KeySignature(PitchClass.A.Value, isMajor: false);
 var minorCadence = FunctionalProgressions.TwoFiveOne(aMinor, DiatonicChordType.Seventh, minorDominant: MinorDominantStyle.Harmonic);
@@ -123,7 +123,7 @@ var chain = FunctionalProgressions.ThreeSixTwoFiveOne(cMajor, DiatonicChordType.
 Console.WriteLine(string.Join(" ", chain.Select(c => c.Symbol())));
 // Em7 Am7 Dm7 G7 Cmaj7
 
-var vOfIi = FunctionalProgressions.SecondaryDominantTo(cMajor, ScaleDegree.II, DiatonicChordType.Seventh);
+var vOfIi = FunctionalProgressions.SecondaryDominantTo(cMajor, ScaleDegree.Ii, DiatonicChordType.Seventh);
 Console.WriteLine($"{vOfIi.RomanNumeral} = {vOfIi.Symbol()}");
 // V7/ii = A7
 ```
@@ -142,7 +142,7 @@ var music = MusicNotation.Parse(@"
 
 ```csharp
 var original = "@bpm 120 @dynamics mf [C4 E4 G4]/4 E4/4 G4/2";
-var parsed = MusicNotationAntlrParser.Parse(original);
+var parsed = MusicNotation.ParseFull(original);
 var formatted = MusicNotation.FormatWithDirectives(
     parsed.Notes, parsed.Directives, groupChords: true);
 // formatted == original
@@ -154,14 +154,8 @@ var formatted = MusicNotation.FormatWithDirectives(
 // Piano: bass + melody
 var piano = MusicNotation.Parse("<< C2/1 | C4/4 D4/4 E4/4 F4/4 >>");
 
-// SATB choir
-var satb = MusicNotation.Parse(@"
-    << 
-        C5/2 |  // Soprano
-        G4/2 |  // Alto
-        E4/2 |  // Tenor
-        C3/2    // Bass
-    >>");
+// SATB choir - voices in score order: soprano, alto, tenor, bass
+var satb = MusicNotation.Parse("<< C5/2 | G4/2 | E4/2 | C3/2 >>");
 ```
 
 ---
@@ -170,42 +164,59 @@ var satb = MusicNotation.Parse(@"
 
 ### Analyze chord with inversions
 
+`ChordAnalyzer.Identify` works on the pitch-class set, so every voicing of C-E-G
+identifies as the same chord and no slash notation is ever produced. Ask
+`ProgressionAdvisor` for the inversion instead.
+
 ```csharp
-var rootPosition = ChordAnalyzer.Identify("C4 E4 G4");
-Console.WriteLine(rootPosition.Symbol);  // Output: C
+using Celeritas.Core;
+using Celeritas.Core.Analysis;
 
-var firstInversion = ChordAnalyzer.Identify("E3 G3 C4");
-Console.WriteLine(firstInversion.Symbol);  // Output: C/E
+Console.WriteLine(ChordAnalyzer.Identify("C4 E4 G4"));  // Output: C Major
+Console.WriteLine(ChordAnalyzer.Identify("E3 G3 C4"));  // Output: C Major
+Console.WriteLine(ChordAnalyzer.Identify("G3 C4 E4"));  // Output: C Major
 
-var secondInversion = ChordAnalyzer.Identify("G3 C4 E4");
-Console.WriteLine(secondInversion.Symbol);  // Output: C/G
+// GetInversion compares the bass note against the identified root:
+foreach (var voicing in new[] { "C4 E4 G4", "E3 G3 C4", "G3 C4 E4" })
+{
+    int[] pitches = MusicNotation.Parse(voicing).Select(n => n.Pitch).ToArray();
+    var inversion = ProgressionAdvisor.GetInversion(pitches);
+    Console.WriteLine($"{ChordAnalyzer.Identify(pitches)} ({ProgressionAdvisor.GetInversionName(inversion)})");
+}
+// Output: C Major (root position)
+//         C Major (1st inversion)
+//         C Major (2nd inversion)
 ```
 
 ### Analyze jazz chords
 
 ```csharp
 var dm7 = ChordAnalyzer.Identify("D4 F4 A4 C5");
-Console.WriteLine(dm7.Symbol);  // Output: Dm7
+Console.WriteLine(dm7);  // Output: D Minor7
 
 var g7 = ChordAnalyzer.Identify("G3 B3 D4 F4");
-Console.WriteLine(g7.Symbol);  // Output: G7
+Console.WriteLine(g7);  // Output: G Dominant7
 
 var cmaj7 = ChordAnalyzer.Identify("C4 E4 G4 B4");
-Console.WriteLine(cmaj7.Symbol);  // Output: Cmaj7
+Console.WriteLine(cmaj7);  // Output: C Major7
 
 var am7 = ChordAnalyzer.Identify("A3 C4 E4 G4");
-Console.WriteLine(am7.Symbol);  // Output: Am7
+Console.WriteLine(am7);  // Output: A Minor7
 ```
 
 ### Get detailed chord information
 
 ```csharp
-var chord = ChordAnalyzer.Identify("C4 E4 G4 B4 D5");
-Console.WriteLine($"Symbol: {chord.Symbol}");      // Cmaj9
-Console.WriteLine($"Root: {chord.Root}");          // C
-Console.WriteLine($"Quality: {chord.Quality}");    // Major7
-Console.WriteLine($"Bass: {chord.Bass}");          // C
+var chord = ChordAnalyzer.Identify("C4 E4 G4 B4");
+Console.WriteLine($"Root: {chord.Root}");                      // C
+Console.WriteLine($"RootPitchClass: {chord.RootPitchClass}");  // 0
+Console.WriteLine($"Quality: {chord.Quality}");                // Major7
+Console.WriteLine(chord);                                      // C Major7
 ```
+
+`ChordLibrary` registers templates of at most four notes, so a five-note stack such
+as `"C4 E4 G4 B4 D5"` comes back as `C Unknown`. Fold the extension into four notes
+instead - `"C4 E4 G4 D5"` identifies as `C Add9`.
 
 ### Nashville Number System
 
@@ -250,7 +261,7 @@ Console.WriteLine(pcs.IntervalVectorText);  // <1,0,1,2,2,0>
 ```csharp
 var melody = MusicNotation.Parse("C4/4 D4/4 E4/4 F4/4 G4/4 A4/4 B4/4 C5/2");
 var key = KeyAnalyzer.DetectKey(melody);
-Console.WriteLine(key);  // C major
+Console.WriteLine(key);  // C Major
 ```
 
 ### Detect mode with hint
@@ -260,19 +271,20 @@ using Celeritas.Core.Analysis;
 
 var dorianScale = MusicNotation.Parse("D4 E4 F4 G4 A4 B4 C5 D5");
 var (mode, confidence) = ModeLibrary.DetectModeWithRoot(dorianScale, rootHint: 2); // D = 2
-Console.WriteLine($"{mode} (confidence: {confidence:P0})");  // D Dorian (confidence: 95%)
+Console.WriteLine($"{mode} (confidence: {confidence:P0})");  // D Dorian (confidence: 18%)
 ```
 
 ### Analyze scale degrees
 
 ```csharp
 var key = new KeySignature("C", isMajor: true);
+var scale = key.GetScale();   // the key's diatonic pitch classes, in degree order
 var notes = MusicNotation.Parse("C4 E4 G4");
 
 foreach (var note in notes)
 {
-    var degree = ScaleDegree.FromPitch(note.Pitch, key);
-    Console.WriteLine($"{note.Pitch} = {degree}");
+    var degree = Array.IndexOf(scale, note.Pitch % 12) + 1;   // 0 = not in the key
+    Console.WriteLine($"{MusicNotation.ToNotation(note.Pitch)} = {degree}");
 }
 // C4 = 1, E4 = 3, G4 = 5
 ```
@@ -294,8 +306,14 @@ var result = harmonizer.Harmonize(melody, key);
 
 foreach (var chord in result.Chords)
 {
-    Console.WriteLine($"{chord.Time}: {chord.Symbol}");
+    Console.WriteLine($"{chord.Start}: {chord.Chord}");
 }
+// 0: C Major
+// 1/4: G Major
+// 1/2: C Major
+// 3/4: F Major
+// 1: G Major
+// 5/4: C Major
 ```
 
 ### Generate figured bass realization
@@ -313,7 +331,9 @@ var symbol = new FiguredBassSymbol
 };
 
 var voicing = realizer.RealizeSymbol(symbol);
-// Returns SATB voicing for C first inversion
+// NoteEvent[] { C4, E4, A4 } - the bass plus the intervals the figure asks for.
+// The voice count follows the figure, so it is not always four: [6] yields three
+// notes, [7] yields four (C4 E4 G4 B4).
 ```
 
 ### Voice leading for chord progression
@@ -467,7 +487,7 @@ celeritas musicxml analyze --in score.musicxml
 ```csharp
 using Celeritas.Core;
 
-var buffer = new NoteBuffer(capacity: 10000);
+using var buffer = new NoteBuffer(capacity: 10000);
 
 // Add notes efficiently
 foreach (var note in largeSequence)
@@ -476,6 +496,11 @@ foreach (var note in largeSequence)
 // SIMD-accelerated transpose (processes 16 notes at once)
 MusicMath.Transpose(buffer, semitones: 5);
 ```
+
+A `NoteBuffer` tracks whether it is still sorted by offset. If you fill it in
+arbitrary order - as the batch recipe below does with `Clear` + `AddRange` - call
+`Sort()` before `GetChords()`, which otherwise throws `InvalidOperationException`
+("the buffer is not sorted by offset").
 
 ### Batch chord analysis
 
@@ -488,7 +513,7 @@ foreach (var measureNotes in measures)
     buffer.Clear();
     buffer.AddRange(measureNotes);
     if (buffer.Count >= 3)
-        chords.Add(ChordAnalyzer.Identify(buffer).Symbol);
+        chords.Add(ChordAnalyzer.Identify(buffer).ToString());
 }
 ```
 
@@ -499,7 +524,7 @@ using System.Linq;
 
 var results = chordSequences
     .AsParallel()
-    .Select(pitches => ChordAnalyzer.Identify(pitches).Symbol)
+    .Select(pitches => ChordAnalyzer.Identify(pitches).ToString())
     .ToList();
 ```
 
@@ -525,8 +550,8 @@ Console.WriteLine(formatted);  // Human-readable output
 
 ```csharp
 // Automatically uses AVX-512 / AVX2 / SSE2 / NEON
-if (notes.Length > 1000)
-    MusicMath.Transpose(notes, 3);
+if (buffer.Count > 1000)
+    MusicMath.Transpose(buffer, 3);
 ```
 
 ### 4. Cache key signatures

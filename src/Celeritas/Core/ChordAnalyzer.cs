@@ -108,8 +108,13 @@ public static unsafe class ChordAnalyzer
         GetMask(new ReadOnlySpan<int>(pitches, count));
 
     /// <summary>Identifies the chord formed by the given MIDI pitches (lowest pitch treated as bass).</summary>
-    /// <param name="pitches">MIDI pitches; the minimum is used as the bass for sus/quartal disambiguation.</param>
+    /// <param name="pitches">MIDI pitches; the minimum is used as the bass, both for sus/quartal
+    /// disambiguation and to root the fully symmetric augmented and diminished-seventh chords.</param>
     /// <returns>The identified chord's root and quality.</returns>
+    /// <remarks>
+    /// The root of a symmetric chord is therefore voicing-dependent: C-E-G# identifies as C
+    /// augmented, E-G#-C as E augmented.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChordInfo Identify(ReadOnlySpan<int> pitches)
     {

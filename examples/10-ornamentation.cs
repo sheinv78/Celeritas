@@ -78,7 +78,10 @@ class OrnamentationExamples
 
         var turnExpanded = trillWithTurn.Expand();
         Console.WriteLine($"\n=== Trill with Turn Ending ===");
-        Console.WriteLine($"Last notes: {string.Join(" ", turnExpanded.TakeLast(4).Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
+        // The turn ending dips to the lower auxiliary Bb3. MusicMath.MidiToNoteName always
+        // spells sharps, so ask MusicNotation.ToNotation for flats where flats are the point.
+        Console.WriteLine($"Last notes: {string.Join(" ", turnExpanded.TakeLast(4).Select(n => MusicNotation.ToNotation(n.Pitch, preferSharps: false)))}");
+        // Output: C4 D4 Bb3 C4
 
         // ===== Mordents =====
 
@@ -107,7 +110,7 @@ class OrnamentationExamples
 
         var lowerExpanded = lowerMordent.Expand();
         Console.WriteLine($"\n=== Lower Mordent ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", lowerExpanded.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", lowerExpanded.Select(n => MusicNotation.ToNotation(n.Pitch, preferSharps: false)))}");
         // Output: C4 Bb3 C4
 
         // Double mordent (more alternations)
@@ -137,7 +140,7 @@ class OrnamentationExamples
 
         var turnExpanded2 = turn.Expand();
         Console.WriteLine($"\n=== Normal Turn ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", turnExpanded2.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", turnExpanded2.Select(n => MusicNotation.ToNotation(n.Pitch, preferSharps: false)))}");
         // Output: D4 C4 Bb3 C4
 
         // Inverted turn (lower-main-upper-main)
@@ -151,7 +154,7 @@ class OrnamentationExamples
 
         var invertedExpanded = invertedTurn.Expand();
         Console.WriteLine($"\n=== Inverted Turn ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", invertedExpanded.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", invertedExpanded.Select(n => MusicNotation.ToNotation(n.Pitch, preferSharps: false)))}");
         // Output: Bb3 C4 D4 C4
 
         // Turn with different intervals
@@ -165,7 +168,7 @@ class OrnamentationExamples
 
         var chromaticExpanded = chromaticTurn.Expand();
         Console.WriteLine($"\n=== Chromatic Turn ===");
-        Console.WriteLine($"Pattern: {string.Join(" ", chromaticExpanded.Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Pattern: {string.Join(" ", chromaticExpanded.Select(n => MusicNotation.ToNotation(n.Pitch, preferSharps: false)))}");
         // Output: Db4 C4 B3 C4
 
         // ===== Appoggiaturas =====
@@ -195,7 +198,7 @@ class OrnamentationExamples
 
         var shortExpanded = acciaccatura.Expand();
         Console.WriteLine($"\n=== Acciaccatura ===");
-        Console.WriteLine($"Notes: {string.Join(" ", shortExpanded.Select(n => $"{MusicMath.MidiToNoteName(n.Pitch)}({n.Duration})"))}");
+        Console.WriteLine($"Notes: {string.Join(" ", shortExpanded.Select(n => $"{MusicNotation.ToNotation(n.Pitch, preferSharps: false)}({n.Duration})"))}");
         // Bb3 very brief, then C4 takes most of duration
 
         // ===== Parsing Ornaments from Notation =====
@@ -219,7 +222,7 @@ class OrnamentationExamples
         // Turn notation: C4/4{turn}
         var turnNotation = MusicNotation.Parse("C4/4{turn}");
         Console.WriteLine($"\n=== Parsed Turn ===");
-        Console.WriteLine($"Notes: {string.Join(" ", turnNotation.Take(4).Select(n => MusicMath.MidiToNoteName(n.Pitch)))}");
+        Console.WriteLine($"Notes: {string.Join(" ", turnNotation.Take(4).Select(n => MusicNotation.ToNotation(n.Pitch, preferSharps: false)))}");
 
         // ===== Applying Ornaments to Melody =====
 
@@ -293,6 +296,9 @@ Total notes: 32
 === Upper-Start Trill ===
 First notes: D4 C4 D4 C4
 
+=== Trill with Turn Ending ===
+Last notes: C4 D4 Bb3 C4
+
 === Upper Mordent ===
 Pattern: C4 D4 C4
 
@@ -308,13 +314,41 @@ Pattern: D4 C4 Bb3 C4
 === Inverted Turn ===
 Pattern: Bb3 C4 D4 C4
 
+=== Chromatic Turn ===
+Pattern: Db4 C4 B3 C4
+
 === Long Appoggiatura ===
 Notes: D4(1/4) C4(1/4)
+
+=== Acciaccatura ===
+Notes: Bb3(1/32) C4(15/32)
+
+=== Parsed Trill ===
+Expanded to 8 notes
+
+=== Parsed Trill (custom) ===
+Half-step, 16 notes per quarter
+Total notes: 16
+
+=== Parsed Mordent ===
+Notes: C4 D4 C4
+
+=== Parsed Turn ===
+Notes: D4 C4 Bb3 C4
+
+=== Ornamented Melody ===
+Original: 4 notes
+With trill on first note: 11 notes
 
 === Batch Ornamentation ===
 Original melody: 4 notes
 Ornaments applied: 2
-Result: 21 notes
+Result: 13 notes
+
+=== Performance Note ===
+Long trill (4 whole notes at 16 notes/quarter):
+  Would expand to ~256 notes
+  Consider using Speed=8 or lower for playback
 
 */
 

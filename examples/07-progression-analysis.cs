@@ -35,33 +35,43 @@ class ProgressionAnalysis
         var analysis3 = ProgressionAdvisor.AnalyzeFromSymbols(tensionProgression);
 
         Console.WriteLine($"\nTension curve:");
-        for (int i = 0; i < analysis3.TensionCurve.Length; i++)
+        // TensionCurve is nullable: a report whose chords all failed to parse has none.
+        var tensionCurve = analysis3.TensionCurve ?? [];
+        for (int i = 0; i < tensionCurve.Length; i++)
         {
-            var bar = new string('█', (int)(analysis3.TensionCurve[i] * 20));
-            Console.WriteLine($"  {tensionProgression[i],6}: {bar} ({analysis3.TensionCurve[i]:P0})");
+            var bar = new string('█', (int)(tensionCurve[i] * 20));
+            Console.WriteLine($"  {tensionProgression[i],6}: {bar} ({tensionCurve[i]:P0})");
         }
 
         // ===== Cadence Detection =====
 
+        // Given no key, DetectCadence infers one from the chords it was handed - and a
+        // two-chord fragment is thin evidence. "F - C" alone reads as F major, i.e. I - V,
+        // which is a half cadence, not a plagal one. Pass the key to pin it down.
+        var cadenceKey = new KeySignature("C", true);
+
         // Authentic cadence (V - I)
         var authentic = new[] { "G7", "C" };
-        var cadence1 = ProgressionAdvisor.DetectCadence(authentic);
+        var cadence1 = ProgressionAdvisor.DetectCadence(authentic, cadenceKey);
         Console.WriteLine($"\n{string.Join(" - ", authentic)}: {cadence1}");  // Authentic
 
         // Plagal cadence (IV - I)
         var plagal = new[] { "F", "C" };
-        var cadence2 = ProgressionAdvisor.DetectCadence(plagal);
+        var cadence2 = ProgressionAdvisor.DetectCadence(plagal, cadenceKey);
         Console.WriteLine($"{string.Join(" - ", plagal)}: {cadence2}");  // Plagal (Amen)
 
         // Deceptive cadence (V - vi)
         var deceptive = new[] { "G7", "Am" };
-        var cadence3 = ProgressionAdvisor.DetectCadence(deceptive);
+        var cadence3 = ProgressionAdvisor.DetectCadence(deceptive, cadenceKey);
         Console.WriteLine($"{string.Join(" - ", deceptive)}: {cadence3}");  // Deceptive
 
         // Half cadence (ends on V)
         var half = new[] { "C", "Dm", "G" };
-        var cadence4 = ProgressionAdvisor.DetectCadence(half);
+        var cadence4 = ProgressionAdvisor.DetectCadence(half, cadenceKey);
         Console.WriteLine($"{string.Join(" - ", half)}: {cadence4}");  // Half
+
+        // The same three chords with no key: heard in G major as IV - v - I, an authentic cadence
+        Console.WriteLine($"{string.Join(" - ", half)} (key inferred): {ProgressionAdvisor.DetectCadence(half)}");
 
         // ===== Chord Character Classification =====
 
@@ -190,32 +200,77 @@ class ProgressionAnalysis
 /* Expected Output:
 
 Progression: Dm7 - G7 - Cmaj7
-Key: C major
-Summary: Classic ii-V-I in C major
-Character: Smooth, jazzy resolution
+Key: C Major
+Pattern: ii7 - V7 - Imaj7
 
 C - G - Am - F:
-Roman numerals: I - V - vi - IV
-Functions: Tonic - Dominant - Tonic - Subdominant
+Pattern: I - V - vi - IV
 
 Tension curve:
-       C: (0%)
-      Am: ██ (10%)
-       F: ████ (20%)
-       G: ████████████ (60%)
-       C: (0%)
+       C: ████ (20 %)
+      Am: ████████ (40 %)
+       F: █████ (25 %)
+       G: █████████████████ (85 %)
+       C: ████ (20 %)
 
 G7 - C: Authentic
-F - C: Plagal (Amen)
+F - C: Plagal
 G7 - Am: Deceptive
+C - Dm - G: Half
+C - Dm - G (key inferred): Authentic
 
 Chord characters:
-      C: Bright (Stable, Major)
-  Cmaj7: Dreamy (Stable, Major)
-     Cm: Melancholic (Stable, Minor)
-   Cdim: Tense (Unstable, Dark)
-     C7: Bluesy (Tension, Mixed)
-   Caug: Mysterious (Unstable, Bright)
+       C: Bright (80 %, 85 %)
+   Cmaj7: Dreamy (60 %, 70 %)
+      Cm: Melancholic (60 %, 30 %)
+    Cdim: Dark (25 %, 20 %)
+      C7: Tense (30 %, 45 %)
+    Caug: Mysterious (40 %, 55 %)
+
+=== Progression Report ===
+Imaj7 - vi7 - ii7 - V7 - iii7 - VI7 - ii7 - V7 - Imaj7 in C Major (tension 49%, complexity 48%)
+
+Key: C Major
+Complexity: 0.48194444
+Overall tension: 49.4 %
+
+Highlights:
+  • Cadences: Authentic
+  • Modulations/tonicizations: 1
+
+After C - Am - F, try:
+       B - Subdominant to dominant (score: 1.00)
+       C - Plagal cadence (score: 0.95)
+      Dm - Retrograde progression (score: 0.70)
+      Fm - Mediant for color (score: 0.65)
+
+=== Harmonic Color Analysis ===
+Chromatic notes: 0
+
+Modal turns: 0
+
+Non-chord tones: 4
+  PassingTone - D4 at 1/4
+  OtherNonChordTone - F4 at 3/4
+  PassingTone - A4 at 5/4
+  OtherNonChordTone - C5 at 7/4
+
+Color assessment: 1.5/10
+Description: Mostly diatonic and stable.
+
+C - A7 - Dm - G7 - C:
+Secondary dominants: True
+  A7 → Dm (V/ii)
+
+C - Fm - C - G7 - C:
+Borrowed chords: True
+  Fm from C Minor
+
+C - F - G - C voice leading:
+  Smoothness: 61.1 %
+  Average movement: 4.67 semitones
+  Parallel fifths: 3
+  Parallel octaves: 0
+  Quality: Rough
 
 */
-

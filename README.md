@@ -40,7 +40,7 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 Issues and PRs are welcome.
 
 Current version: **v0.10.0** (August 2026)  
-Extensive test suite: **950+ C# tests** and **40 Python tests**
+Extensive test suite: **950+ C# tests** and **47 Python tests**
 
 ## Python API Coverage
 
@@ -156,7 +156,7 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 - **🎹 Chord Recognition** — Common chord qualities (triads, sevenths, sus, power/quartal, add9/add11, 7♭5), plus inversions
 - **🧾 Chord Symbols (ANTLR)** — Parse chord symbols into pitches: `Dm7`, `C7(b9,#11)`, `C7+5`, `C|G`, `C/E`
 - **🎼 Key Detection** — Krumhansl-Schmuckler profiling, parallel keys, relative keys
-- **🔄 Modulation Analysis** — Distinguish tonicization vs modulation (direct, via dominant, enharmonic)
+- **🔄 Modulation Analysis** — Distinguish tonicization from modulation (pivot chord, direct, sequential, chromatic, enharmonic, modal interchange)
 - **🎭 Modal System** — 19 modes (Ionian→Locrian, melodic/harmonic minor, blues scales)
 - **📊 Progression Analysis** — Roman numerals, tension curves, chord recommendations
 - **🧭 Harmony Utilities** — Circle of fifths + functional progressions (ii–V–I, turnaround, full circle, secondary dominants)
@@ -169,6 +169,18 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 - **🔌 Pluggable Strategies** — Custom chord candidates, transition scoring, harmonic rhythm
 - **⚖️ Cost Optimization** — Balances melody fit, voice leading, and harmonic function
 
+### Composition & Arrangement
+
+- **🔢 Figured Bass** — Realize figures (`6`, `6/4`, `7`) over a bass line into upper voices, with accidentals
+- **🎹 Accompaniment** — Turn a chord plan into a playable part: `Block` or `Arpeggio` patterns
+- **🎻 Orchestration** — Map a score onto instrument parts (Bass / Harmony) with per-instrument ranges
+
+### Ornamentation
+
+- **🎵 Ornaments** — Trill, Mordent, Turn, Appoggiatura, Grace Note, Glissando
+- **🎯 Articulation** — Staccato, Staccatissimo, Tenuto, Accent, Marcato, Legato
+- **🧩 Applier** — `OrnamentApplier` expands ornaments into note sequences in place
+
 ### Counterpoint & Voice Leading
 
 - **🎤 Voice Separation** — Automatic polyphonic voice separation (SATB)
@@ -179,8 +191,8 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 ### Rhythm Analysis
 
 - **🥁 Meter Detection** — Auto-detect time signature (4/4, 3/4, 6/8...) with confidence
-- **🎵 Pattern Recognition** — Tresillo, Habanera, Clave, Shuffle, Bossa Nova
-- **📈 Prediction** — Markov chains for style-based rhythm generation (classical, jazz, rock, latin)
+- **🎵 Pattern Recognition** — 13 built-in patterns: straight quarters/eighths/sixteenths, dotted quarter-eighth, triplet, syncopated, Habanera, Tresillo, Clave 3-2, Charleston, Shuffle, Backbeat, Waltz
+- **📈 Prediction** — Markov chains for style-based rhythm generation (classical, jazz, rock, latin, waltz)
 - **🔀 Syncopation** — Syncopation and swing analysis
 - **🎚️ Groove** — Groove feel (Straight/Swing/Shuffle/Latin/Compound) and drive (0-1)
 
@@ -204,6 +216,13 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 - **📤 Export** — Save NoteBuffer to Standard MIDI files
 - **🧩 Utilities** — Clone, merge, split (track/channel), and statistics
 - **⏱️ Timing Events** — Tempo and time signature events read/write
+
+### MusicXML I/O
+
+- **📥 Import** — `score-partwise` and `score-timewise`: pitches, rests, chords, ties, multiple voices/parts
+- **📤 Export** — Write `score-partwise`, with import → export → import round-trip fidelity tests
+- **🗜️ Compressed Scores** — Read `.mxl` archives (with a decompression safety limit)
+- **🔊 Dynamics** — `<dynamics>` marks and `<sound dynamics>` set note velocity; single-voice export writes velocity back out
 
 ### Pitch Class Set Analysis
 
@@ -260,8 +279,9 @@ var notes = MusicNotation.Parse("C4 E4 G4 B4");
 // With durations and chords
 var melody = MusicNotation.Parse("C4/4 [E4 G4]/4 G4/2.");
 
-// Time signatures and measures
-var song = MusicNotation.Parse("4/4: C4/4 E4/4 G4/4 C5/4 | D4/1");
+// Time signatures and measures (validated against the meter)
+var song = MusicNotation.Parse(
+    "4/4: C4/4 E4/4 G4/4 C5/4 | D4/1", validateMeasures: true);
 
 // With directives (tempo, dynamics)
 var result = MusicNotation.ParseFull(
@@ -362,8 +382,25 @@ celeritas mode --notes C D Eb F G A Bb
 # Progression analysis
 celeritas progression --chords Dm7 G7 Cmaj7 Am7
 
+# SATB voice leading
+celeritas voicelead --chords Dm7 G7 Cmaj7
+
+# Melodic contour, intervals, motifs
+celeritas melody --notes C4 E4 G4 F4 D4
+
+# Rhythm analysis + style-based prediction
+celeritas rhythm --durations 1/4 1/8 1/8 1/4 1/4 --style jazz --predict 4
+
+# Polyphonic texture and voice separation
+celeritas polyphony --notes "4/4: [C4 E4 G4]/4 [D4 F4 A4]/4 [E4 G4 B4]/2"
+
+# Pitch class set analysis (normal order, prime form, interval vector)
+celeritas pcset --notes C4 E4 G4 B4
+
 # MIDI file analysis
 celeritas midi analyze --in song.mid
+celeritas midi info --in song.mid
+celeritas midi import --in song.mid
 
 # Transpose notes or MIDI
 celeritas transpose --semitones 5 --notes C4 E4 G4
@@ -371,6 +408,11 @@ celeritas midi transpose --in song.mid --out transposed.mid --semitones 2
 
 # Export to MIDI
 celeritas midi export --out output.mid --notes "4/4: C4/4 E4/4 G4/4"
+
+# MusicXML: convert either way (direction inferred from extensions), or summarize
+celeritas musicxml convert --in song.mid --out score.musicxml
+celeritas musicxml convert --in score.musicxml --out score.mid
+celeritas musicxml analyze --in score.musicxml
 
 # System info
 celeritas info
@@ -411,7 +453,7 @@ cd bindings/python
 python test_celeritas.py
 ```
 
-**Current:** 950+ C# tests and 40 Python tests, all passing
+**Current:** 950+ C# tests and 47 Python tests, all passing
 
 ## 🎉 Recent Updates (v0.10.0 - August 2026)
 
@@ -438,19 +480,22 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list, including breaking changes.
 
 ### 📊 SIMD Platform Support
 
-| Platform        | SIMD     | Status | Bulk transpose throughput          |
-|-----------------|----------|--------|------------------------------------|
-| x64 Intel/AMD   | AVX-512  | ✅     | ~35–38 billion notes/sec (3D V-Cache) |
-| x64 Intel/AMD   | AVX2     | ✅     | ~14 billion notes/sec (est.)       |
-| x64 Intel/AMD   | SSE2     | ✅     | ~10 billion notes/sec (est.)       |
-| ARM64           | NEON     | ✅     | ~10–15 billion notes/sec (est.)    |
-| WebAssembly     | SIMD128  | 🧪 experimental, not yet CI-tested | ~5–10 billion notes/sec (est.) |
-| Fallback        | Scalar   | ✅     | ~1 billion notes/sec               |
+| Platform        | SIMD     | Status | `int` lanes per operation |
+|-----------------|----------|--------|---------------------------|
+| x64 Intel/AMD   | AVX-512  | ✅     | 16                        |
+| x64 Intel/AMD   | AVX2     | ✅     | 8                         |
+| x64 Intel/AMD   | SSE2     | ✅     | 4                         |
+| ARM64           | NEON     | ✅     | 4                         |
+| WebAssembly     | SIMD128  | 🧪 experimental, not yet CI-tested | 4      |
+| Fallback        | Scalar   | ✅     | 1                         |
 
-Only the AVX-512 and scalar rows are measured: the AVX-512 figure follows from
-`Transpose_1M_Notes` (28.6 µs) and `Transpose_10M_Notes` (261 µs) in the benchmark
-table above, and the scalar figure from the same workload with
-`DOTNET_EnableHWIntrinsic=0`. The remaining rows are estimates scaled by vector width.
+Lane counts are a property of the instruction set; throughput is not, so this table
+no longer guesses at one. The measured figure is the benchmark above:
+`Transpose_1M_Notes` runs 1M notes in 28.6 µs on AVX-512 — about 35 billion
+notes/sec — in steady state with the buffer resident in cache. A single cold run,
+such as `celeritas benchmark` or `examples/11-performance-simd.cs`, includes JIT and
+cold caches and will report roughly an order of magnitude less; that is a different
+measurement, not a contradiction.
 
 ## 📄 License
 

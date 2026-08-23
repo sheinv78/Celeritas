@@ -59,7 +59,7 @@ public sealed class ChordAnalysisDetail
     /// <summary>Notes in the chord</summary>
     public required string[] Notes { get; init; }
 
-    /// <summary>Roman numeral in key (e.g., "i", "VI", "V")</summary>
+    /// <summary>Roman numeral in key (e.g., "i", "VI", "V"), or "?" if non-diatonic.</summary>
     public required string RomanNumeral { get; init; }
 
     /// <summary>Nashville Number System label in key (e.g., "6m", "1", "5"), or "?" if non-diatonic.</summary>

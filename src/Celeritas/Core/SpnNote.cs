@@ -124,9 +124,13 @@ public readonly record struct SpnNote(PitchClass PitchClass, int Octave)
     public override string ToString() => ToNotation(preferSharps: true);
 
     /// <summary>Transposes <paramref name="note"/> up by <paramref name="interval"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="note"/> itself, or the
+    /// transposed result, falls outside the MIDI range 0..127.</exception>
     public static SpnNote operator +(SpnNote note, ChromaticInterval interval) => note.Transpose(interval);
 
     /// <summary>Transposes <paramref name="note"/> down by <paramref name="interval"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="note"/> itself, or the
+    /// transposed result, falls outside the MIDI range 0..127.</exception>
     public static SpnNote operator -(SpnNote note, ChromaticInterval interval) => note.Transpose(-interval);
 
     /// <summary>

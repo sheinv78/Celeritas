@@ -110,11 +110,25 @@ reading, so rule 4 applies rather than the folding rule above.
 `Enum.IsDefined` rejects legitimate ones. That covers `SimdInstructionSet` and
 `VoiceLeadingViolation`, whose `False` for an unknown bit is already the right answer.
 
-### An existing clamp we kept
+### Existing deviations we kept
 
 `RhythmPredictor(int order)` does `_order = Math.Max(1, order)`. That is a deliberate, explicit
 clamp, and nothing it returns is wrong — an order of -5 is meaningless, and order 1 is the nearest
 thing that isn't. Rule 4 governs how to *reject* a value, not a ban on clamping, so this stays.
+
+`FiguredBassRealizerOptions.MaxVoiceMovement` is unvalidated, and that is also deliberate: it is a
+*soft preference*, not a constraint. The realizer always places each upper voice at the octave of
+the required pitch class closest to that voice's previous pitch — inherently the minimum movement
+available, so the limit is honoured whenever any placement can honour it. When none can
+(`MaxVoiceMovement = 0` across a chord change), the closest placement is used rather than failing
+mid-progression. An unsatisfiable limit is therefore a fact about the music, not a caller bug, and
+there is nothing to reject.
+
+A **negative** limit follows from that and is worth stating plainly: it is neither clamped nor
+rejected. `MaxVoiceMovement = -5` is accepted, is stored as `-5`, and changes nothing — it is
+simply unsatisfiable everywhere, so the realization is identical to the one you get from `null`.
+Measured on a three-symbol figured bass, `null`, `2`, `0` and `-5` all realize to the same nine
+pitches (`48 52 55 / 55 59 64 / 53 59 62`).
 
 ### Two deliberate exceptions
 
@@ -134,7 +148,39 @@ exactly as `Dictionary.TryGetValue(null)` does.
 cannot parse", which could be read as covering `null`. It does not. *"Anything it cannot
 parse"* means a string that is not a chord — bad **data**. `null` is not bad data; it is the
 absence of an argument, which is bad **code**. Bad data deserves an empty result; bad code
-deserves an exception.
+deserves an exception — with one refinement, recorded below, for the case where an empty result
+stops reading as empty.
+
+### The refinement: an empty result that would be laundered
+
+The line above holds at a **parser** boundary, where an empty result is still legible as *"nothing
+parsed"*. It stops holding one level up, at an analysis entry point that consumes the empty result
+instead of returning it.
+
+`ProgressionAdvisor.ParseChordSymbol` is the parser and is unchanged — bad data, empty answer:
+
+- `ParseChordSymbol("H7#nonsense")` → `[]`, an empty `int[]`.
+- `TryParseChordSymbol("H7#nonsense", out _)` → `false`.
+
+`HarmonicColorAnalyzer.Analyze` cannot pass that empty array along, because further down the
+pipeline it stops looking empty and starts looking like an answer. An empty pitch set produces a
+**zero chord mask**; against a zero mask no melody note is a chord tone, so every note in the
+melody is classified `OtherNonChordTone` and the caller receives a well-formed, confident analysis
+of a chord the engine never understood. That is precisely the laundering this ADR exists to stop,
+arriving by a different route: not `null` slipping into the empty branch, but an empty branch
+being read as a musical fact.
+
+So the analysis entry point rejects it:
+
+- `Analyze(melody, [("H7#nonsense", Rational.Zero)], key)` → **`ArgumentException`**: *"Unparseable
+  chord symbol 'H7#nonsense' at index 0 of the chord progression. (Parameter 'chordProgression')"*
+
+The refinement, stated once: **a parser returns an empty result for input it cannot parse; an
+analysis entry point that would turn that empty result into a confident wrong answer throws
+instead.** Rule 3 — empty is not null — is untouched: an empty *progression* is still a legitimate
+input with a legitimate answer. What is rejected is an entry that claims to name a chord and does
+not. The test to apply is not "data or code?" but "after this call, can the caller still tell
+*nothing matched* from *nothing was there*?"
 
 ## Consequences
 

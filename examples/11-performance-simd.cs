@@ -16,7 +16,7 @@ class PerformanceExamples
     {
         // ===== NoteBuffer Basics =====
 
-        var buffer = new NoteBuffer(capacity: 1000);
+        using var buffer = new NoteBuffer(capacity: 1000);
         Console.WriteLine($"=== NoteBuffer ===");
         Console.WriteLine($"Initial capacity: {buffer.Capacity}");
         Console.WriteLine($"Count: {buffer.Count}");
@@ -54,7 +54,7 @@ class PerformanceExamples
         // ===== SIMD Performance Benchmark =====
 
         const int noteCount = 1_000_000;
-        var largeBuffer = new NoteBuffer(noteCount);
+        using var largeBuffer = new NoteBuffer(noteCount);
 
         // Fill with notes
         for (int i = 0; i < noteCount; i++)
@@ -67,6 +67,7 @@ class PerformanceExamples
             ));
         }
 
+        // Figures below were measured with a Release build (dotnet run -c Release).
         Console.WriteLine($"\n=== Performance Benchmark ===");
         Console.WriteLine($"Notes: {noteCount:N0}");
 
@@ -76,12 +77,18 @@ class PerformanceExamples
 
         Console.WriteLine($"SIMD transpose: {sw.Elapsed.TotalMicroseconds:F2} μs");
         Console.WriteLine($"Per note: {sw.Elapsed.TotalMicroseconds / noteCount * 1000:F2} ns");
-        Console.WriteLine($"Throughput: ~{noteCount / sw.Elapsed.TotalSeconds / 1_000_000:F1}M notes/sec");
+        Console.WriteLine($"Throughput: ~{noteCount / sw.Elapsed.TotalSeconds / 1_000_000_000:F2} billion notes/sec (single cold run)");
 
         // ===== SIMD Detection =====
-        // SimdInfo API is available (see README.md for overview)
+        // SimdInfo probes the hardware. Never hardcode a tier - ask for what is available.
 
         Console.WriteLine($"\n=== SIMD Capabilities ===");
+        Console.WriteLine($"Detected: {SimdInfo.GetDescription()}");
+        Console.WriteLine($"Best available: {SimdInfo.GetBest()}");
+        Console.WriteLine($"AVX-512: {SimdInfo.IsSupported(SimdInstructionSet.Avx512F)}");
+        Console.WriteLine($"AVX2: {SimdInfo.IsSupported(SimdInstructionSet.Avx2)}");
+        Console.WriteLine($"SSE2: {SimdInfo.IsSupported(SimdInstructionSet.Sse2)}");
+        Console.WriteLine($"NEON (ARM): {SimdInfo.IsSupported(SimdInstructionSet.Neon)}");
         Console.WriteLine($"Vector<int>.Count: {System.Numerics.Vector<int>.Count}");
         Console.WriteLine($"Hardware acceleration: {System.Numerics.Vector.IsHardwareAccelerated}");
 
@@ -94,7 +101,7 @@ class PerformanceExamples
         Console.WriteLine($"Input: {string.Join(", ", pitchClasses)}");
         Console.WriteLine($"Normal order: {string.Join(", ", pcSet.NormalOrder)}");
         Console.WriteLine($"Prime form: {string.Join(", ", pcSet.PrimeForm)}");
-        Console.WriteLine($"Interval vector: {pcSet.IntervalVector}");
+        Console.WriteLine($"Interval vector: {pcSet.IntervalVectorText}");
         // Forte/Carter labeling is intentionally pluggable (no built-in Forte table).
         // For examples, we use a tiny inline catalog.
         var pcSetCatalogJson = """
@@ -186,7 +193,7 @@ class PerformanceExamples
         // ===== Memory-Efficient Operations =====
 
         // Reuse NoteBuffer instead of creating new arrays
-        var reusableBuffer = new NoteBuffer(100);
+        using var reusableBuffer = new NoteBuffer(100);
 
         Console.WriteLine($"\n=== Memory Efficiency ===");
         Console.WriteLine($"Reusing buffer for multiple operations:");
@@ -252,6 +259,9 @@ class PerformanceExamples
 
 /* Expected Output:
 
+Timings and the SIMD capability list depend on the machine; the AVX-512
+figures below come from a Ryzen 9 9950X3D. Everything else is stable.
+
 === NoteBuffer ===
 Initial capacity: 1000
 Count: 0
@@ -259,7 +269,7 @@ After adding 3 notes: 3
 
 First note:
   Pitch: 60
-  Time: 0
+  Offset: 0
   Duration: 1/4
 
 === SIMD Transpose ===
@@ -269,24 +279,60 @@ After -3 semitones: D4 F#4 A4 D5 F#5 A5
 
 === Performance Benchmark ===
 Notes: 1,000,000
-SIMD transpose: 29.50 μs
-Per note: 0.03 ns
-Throughput: ~33.9M notes/sec
+SIMD transpose: 178.10 μs
+Per note: 0.18 ns
+Throughput: ~5.61 billion notes/sec (single cold run)
 
 === SIMD Capabilities ===
+Detected: AVX-512, AVX2, SSE2
+Best available: Avx512F
 AVX-512: True
 AVX2: True
 SSE2: True
 NEON (ARM): False
-Active: AVX512
-Vector size: 16 elements
+Vector<int>.Count: 8
+Hardware acceleration: True
 
 === Pitch Class Set Analysis ===
 Input: 0, 4, 7
 Normal order: 0, 4, 7
 Prime form: 0, 3, 7
-Interval vector: <001110>
+Interval vector: <0,0,1,1,1,0>
 Forte number: 3-11
 Carter number: 37
+
+T2: 2, 6, 9
+I: 0, 5, 8
+Complement: 1, 2, 3, 5, 6, 8, 9, 10, 11
+
+=== Set Similarity ===
+Set 1: 0, 1, 4
+Set 2: 0, 3, 4
+Similarity: 100.0 %
+
+=== Batch Chord Analysis ===
+Analyzed 4 chords: C Major, D Minor, E Minor, F Major
+Time: 2151.70 μs
+Per chord: 537.92 μs
+
+=== Memory Efficiency ===
+Reusing buffer for multiple operations:
+  Op 1: 3 notes
+  Op 2: 3 notes
+  Same buffer, zero allocations
+
+=== Parallel Processing ===
+Analyzing 10,000 chords...
+Sequential: 1.05 ms
+Parallel: 8.86 ms
+Speedup: 0.12x
+
+=== Performance Tips ===
+1. Use NoteBuffer for large sequences (avoids array reallocations)
+2. SIMD works best with 16+ notes (especially AVX-512: 16 notes at once)
+3. Reuse buffers when possible to reduce GC pressure
+4. Use AsParallel() for batch operations on 1000+ items
+5. Rational arithmetic is already optimized (auto-normalized)
+6. ChordAnalyzer.Identify is ~2ns - can analyze millions of chords/sec
 
 */

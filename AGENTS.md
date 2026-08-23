@@ -8,11 +8,16 @@
 src/Celeritas/          # Core library (NuGet: Celeritas)
 src/Celeritas.CLI/      # CLI tool (dotnet tool: celeritas)
 src/Celeritas.Native/   # NativeAOT shared library for Python ctypes bindings
-tests/Celeritas.Tests/  # xUnit tests (extensive suite, 360+ tests)
+tests/Celeritas.Tests/  # xUnit tests (extensive suite, 950+ tests)
 bindings/python/        # Python package (ctypes fast path + pythonnet full API)
 ```
 
-**Data flow:** Music notation strings → `MusicNotation`/`MusicNotationAntlrParser` → `NoteEvent[]`/`NoteBuffer` → analysis classes in `Core/Analysis/` → results/reports.
+**Data flow:** three entry points feed the same model —
+- Music notation strings → `MusicNotation`/`MusicNotationAntlrParser`
+- MIDI files → `MidiIo.Import` (`Core/Midi/`)
+- MusicXML / `.mxl` → `MusicXmlIo.Import`/`Parse` (`Core/Notation/`)
+
+— each producing `NoteEvent[]`/`NoteBuffer` → analysis classes in `Core/Analysis/` → results/reports. `MidiIo.Export` and `MusicXmlIo.Export` write the model back out.
 
 ## Key Abstractions
 
@@ -37,7 +42,7 @@ Two grammars live in `src/Celeritas/Grammar/`:
 - `MusicNotation.g4` — full notation: notes, chords `[C4 E4 G4]/4`, rests `R/4`, ties `~`, polyphony `<< bass | melody >>`, directives `@bpm`, `@dynamics`
 - `ChordSymbol.g4` — chord symbols: `Dm7`, `C7(b9,#11)`, `C/E`, `C|G`
 
-Generated visitors land in `Core/Grammar/`. The *hand-rolled* `MusicNotation` class handles the common subset without ANTLR overhead; use `MusicNotationAntlrParser` when directives or polyphony are needed.
+The ANTLR build task emits the generated lexer/parser/visitor `.cs` files into `obj/<Config>/<TFM>/` (never checked in) under the namespace `Celeritas.Core.Grammar`. `src/Celeritas/Core/Grammar/` holds the *hand-written* wrappers around them — `MusicNotationAntlrParser.cs` and `ChordSymbolAntlrParser.cs`. The *hand-rolled* `MusicNotation` class handles the common subset without ANTLR overhead; use `MusicNotationAntlrParser` when directives or polyphony are needed.
 
 ## Python Bindings
 
@@ -70,7 +75,7 @@ dotnet publish src/Celeritas.CLI -c Release -r win-x64
 
 ## Project-Specific Conventions
 
-- **Namespaces:** `Celeritas.Core` (primitives), `Celeritas.Core.Analysis` (analyzers), `Celeritas.Core.Simd` (SIMD), `Celeritas.Core.Grammar` (ANTLR generated). Always match namespace to folder structure.
+- **Namespaces:** `Celeritas.Core` (primitives, notation, harmony core), `Celeritas.Core.Analysis` (analyzers), `Celeritas.Core.Simd` (SIMD), `Celeritas.Core.Midi` (MIDI I/O), `Celeritas.Core.Notation` (MusicXML I/O), `Celeritas.Core.Harmonization` (melody harmonizer + strategy interfaces), `Celeritas.Core.VoiceLeading` (SATB solver and rules), `Celeritas.Core.FiguredBass`, `Celeritas.Core.Accompaniment`, `Celeritas.Core.Orchestration`, `Celeritas.Core.Ornamentation`, `Celeritas.Core.Grammar` (ANTLR generated, emitted to `obj/`). Match namespace to folder structure — with one exception: the hand-written wrappers in `Core/Grammar/` (`MusicNotationAntlrParser.cs`, `ChordSymbolAntlrParser.cs`) declare `Celeritas.Core`, because `Celeritas.Core.Grammar` is reserved for the generated code they wrap.
 - **Unsafe code:** `AllowUnsafeBlocks` is enabled. Raw pointer access is used inside `NoteBuffer` and all `IPitchTransformer` implementations — keep `unsafe` surface minimal to those files.
 - **`OptimizationPreference>Speed`** is set at the MSBuild level; don't add redundant `[MethodImpl(MethodImplOptions.AggressiveInlining)]` unless profiling confirms a benefit.
 - **Tests use xUnit `[Theory]` + `[InlineData]`** throughout. New tests must follow the same naming pattern: `MethodName_Condition_ExpectedBehavior`.
@@ -83,7 +88,8 @@ dotnet publish src/Celeritas.CLI -c Release -r win-x64
 - `src/Celeritas/Core/MusicNotation.cs` — hand-rolled parser (fast path)
 - `src/Celeritas/Core/Grammar/MusicNotationAntlrParser.cs` — full ANTLR parser
 - `src/Celeritas/Core/Analysis/ProgressionAdvisor.cs` — chord symbol parsing + progression reports
-- `src/Celeritas/Core/Analysis/KeyAnalyzer.cs` — Krumhansl-Schmuckler key detection
+- `src/Celeritas/Core/KeyAnalyzer.cs` — functional / Roman-numeral harmony: 12-bit scale masks rotated per root, scale-degree lookup, `Analyze(pitches, key) -> RomanNumeralChord`, plus a fast mask-matching `IdentifyKey`/`DetectKey`
+- `src/Celeritas/Core/Analysis/KeyProfiler.cs` — Krumhansl-Schmuckler key detection: correlates a pitch-class histogram against the Krumhansl-Kessler profiles (SIMD-dispatched), and `AnalyzeModulations` for key trajectories
 - `src/Celeritas/Core/Simd/PitchTransformerFactory.cs` — SIMD dispatch
 - `src/Celeritas.Native/NativeExports.cs` — all C-ABI exports for Python ctypes
 - `examples/` — numbered `.cs` files showing end-to-end usage patterns
