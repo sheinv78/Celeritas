@@ -255,6 +255,13 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         var duration = context.duration() != null ? ParseDuration(context.duration()) : Rational.Quarter; // Default to quarter note
         var hasTie = context.tie() != null;
 
+        // A tie binds only ADJACENT same-pitch notes. Any intervening different-pitch
+        // note flushes the pending tie: the tied note stays as already emitted (plain),
+        // and this note starts fresh. Without this, "C4/4~ D4/4 C4/4" would merge the
+        // two C4s across the D4.
+        if (_pendingTies.Count > 0 && !_pendingTies.Contains(pitch))
+            _pendingTies.Clear();
+
         // Create base note
         var baseNote = new NoteEvent(pitch, _currentTime, duration);
 
@@ -304,6 +311,9 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
 
     public override NoteEvent[] VisitChord(MusicNotationParser.ChordContext context)
     {
+        // A chord is not a single-note continuation: it flushes any pending tie.
+        _pendingTies.Clear();
+
         // Chord duration is optional - use it as default if no individual durations
         Rational? chordDuration = context.duration() != null
             ? global::Celeritas.Core.MusicNotationVisitorImpl.ParseDuration(context.duration())
@@ -345,6 +355,9 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
 
     public override NoteEvent[] VisitRest(MusicNotationParser.RestContext context)
     {
+        // A rest breaks a tie: the pending note stays as already emitted (plain).
+        _pendingTies.Clear();
+
         var duration = context.duration() != null ? ParseDuration(context.duration()) : Rational.Quarter; // Default to quarter rest
         _notes.Add(new NoteEvent(MusicNotation.RestPitch, _currentTime, duration));
         _currentTime += duration;
@@ -378,11 +391,19 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
                 accidentalOffset = -1;
         }
 
-        // Get octave
-        var octave = int.Parse(context.octave().INT().GetText());
+        // Get octave. TryParse + long arithmetic: a huge octave must surface as the
+        // parser's documented ArgumentException, not an OverflowException.
+        var octaveText = context.octave().INT().GetText();
+        if (!int.TryParse(octaveText, out var octave))
+            throw new ArgumentException($"Invalid octave in '{context.GetText()}': {octaveText}");
 
-        // Calculate MIDI pitch: C4 = 60
-        return ((octave + 1) * 12) + pitchClass + accidentalOffset;
+        // Calculate MIDI pitch: C4 = 60. Validate the MIDI range so "C99/4" fails
+        // instead of producing an impossible pitch.
+        var midi = ((octave + 1L) * 12) + pitchClass + accidentalOffset;
+        if (midi is < 0 or > 127)
+            throw new ArgumentException($"Pitch '{context.GetText()}' is outside the MIDI range 0-127.");
+
+        return (int)midi;
     }
 
     private static Rational ParseDuration(MusicNotationParser.DurationContext context)
@@ -693,7 +714,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
     {
         if (context.DYNAMICS_LEVEL() != null)
         {
-            return context.DYNAMICS_LEVEL().GetText().ToLower();
+            return context.DYNAMICS_LEVEL().GetText().ToLowerInvariant();
         }
 
         if (context.IDENT() != null)

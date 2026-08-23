@@ -176,7 +176,7 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
             _ => numeral
         };
 
-        // Add quality suffix
+        // Add quality suffix (same vocabulary as ToNashville where a symbol exists).
         var suffix = Quality switch
         {
             ChordQuality.Dominant7 => "7",
@@ -187,6 +187,14 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
             ChordQuality.Diminished => "°",
             ChordQuality.Diminished7 => "°7",
             ChordQuality.MinorMajor7 => "maj7",
+            ChordQuality.Augmented => "+",
+            ChordQuality.Augmented7 => "+7",
+            ChordQuality.Sus2 => "sus2",
+            ChordQuality.Sus4 => "sus4",
+            ChordQuality.Add9 => "add9",
+            ChordQuality.Add11 => "add11",
+            ChordQuality.Power => "5",
+            ChordQuality.Quartal => "quartal",
             _ => ""
         };
 
@@ -231,6 +239,10 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
             ChordQuality.Augmented7 => "+7",
             ChordQuality.Sus2 => "sus2",
             ChordQuality.Sus4 => "sus4",
+            ChordQuality.Add9 => "add9",
+            ChordQuality.Add11 => "add11",
+            ChordQuality.Power => "5",
+            ChordQuality.Quartal => "quartal",
             _ => ""
         };
 

@@ -71,6 +71,7 @@ public class FunctionalProgressionsTests
         var sd = FunctionalProgressions.SecondaryDominantTo(key, ScaleDegree.V);
 
         Assert.Equal("D7", sd.Symbol(preferSharps: true));
-        Assert.Equal("V7/v", sd.RomanNumeral);
+        // Target case follows the target degree's diatonic quality: V is major in C major.
+        Assert.Equal("V7/V", sd.RomanNumeral);
     }
 }

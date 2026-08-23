@@ -110,7 +110,8 @@ ADD         : [aA][dD][dD] ;
 NO          : [nN][oO] ;
 OMIT        : [oO][mM][iI][tT] ;
 
-MAJ         : [mM][aA][jJ] | [mM][aA][jJ][oO][rR] ;
+// A lone uppercase 'M' means major ("CM7" = Cmaj7); lowercase 'm' stays MIN.
+MAJ         : [mM][aA][jJ] | [mM][aA][jJ][oO][rR] | 'M' ;
 MIN         : [mM][iI][nN] | [mM][iI][nN][oO][rR] | 'm' ;
 DIM         : [dD][iI][mM] | 'o' | '°' ;
 AUG         : [aA][uU][gG] | '+' ;

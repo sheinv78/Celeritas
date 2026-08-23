@@ -105,6 +105,10 @@ public static class ChordLibrary
             (ChordQuality.Major,      [0, 4, 7]),
             (ChordQuality.Minor,      [0, 3, 7]),
             (ChordQuality.Diminished, [0, 3, 6]),
+            // NOTE: Augmented (and Diminished7 below) are fully symmetric: all rotations
+            // of one chord share the SAME pitch-class set, so the mask lookup can only
+            // ever answer the lowest registered root (C for {C,E,G#} etc.).
+            // ChordAnalyzer.Identify re-roots them on the actual bass note.
             (ChordQuality.Augmented,  [0, 4, 8]),
             // NOTE: Sus2, Sus4 and Quartal are rotations of the SAME pitch-class set
             // ({r,r+2,r+7} == {r+7,r,r+2} as sus4 == {r+2,r+7,r+12} as quartal), so a bare

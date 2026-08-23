@@ -85,8 +85,21 @@ internal static class ChordSymbolAntlrParser
             return false;
         }
 
-        var visitor = new ChordSymbolVisitorImpl();
-        pitches = visitor.Visit(tree);
+        try
+        {
+            var visitor = new ChordSymbolVisitorImpl();
+            pitches = visitor.Visit(tree);
+        }
+        catch (ChordSymbolParseException ex)
+        {
+            // Semantic errors the grammar cannot express (out-of-range numbers,
+            // unsupported alteration/add degrees) are ordinary parse failures.
+            pitches = [];
+            mutableErrors.Add(ex.Message);
+            errors = mutableErrors;
+            return false;
+        }
+
         errors = [];
         return true;
     }
@@ -144,6 +157,14 @@ internal static class ChordSymbolAntlrParser
             .Replace('♭', 'b');
     }
 }
+
+/// <summary>
+/// Signals a chord-symbol input the grammar accepts but the builder cannot give a
+/// meaning to (out-of-range numbers, unsupported alteration/add degrees). Caught in
+/// <see cref="ChordSymbolAntlrParser.TryParsePitches(string, out int[], out IReadOnlyList{string})"/>
+/// and reported as an ordinary parse failure.
+/// </summary>
+internal sealed class ChordSymbolParseException(string message) : Exception(message);
 
 internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
 {
@@ -228,12 +249,12 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
         {
             var qText = q.GetText();
 
-            // "Cmmaj7" / "C-maj7": a bare maj/Δ AFTER an explicit minor marks the major seventh
-            // instead of overwriting the minor third (same rule as the parenthesized m(maj7) path).
+            // "Cmmaj7" / "C-maj7" / "CmM7": a bare maj/M/Δ AFTER an explicit minor marks the major
+            // seventh instead of overwriting the minor third (same rule as the parenthesized m(maj7) path).
             if (builder.IsMinorTriad &&
                 (string.Equals(qText, "maj", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(qText, "major", StringComparison.OrdinalIgnoreCase) ||
-                 qText == "Δ"))
+                 qText is "Δ" or "M"))
             {
                 builder.MarkMajorSeventh();
                 return;
@@ -252,7 +273,7 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
                 return;
             }
 
-            var n = int.Parse(extText);
+            var n = ParseDegree(extText, extText);
 
             // Special-case: "sus2" / "sus4" is often written as SUS + 2/4.
             if (builder.SusPending && n is 2 or 4)
@@ -271,25 +292,27 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
             var accidental = altText.StartsWith("#", StringComparison.Ordinal) ? "#" : "b";
             var num = new string([.. altText.Where(char.IsDigit)]);
             if (num.Length > 0)
-                builder.ApplyAlteration(accidental, int.Parse(num));
+                builder.ApplyAlteration(accidental, ParseDegree(num, altText));
             return;
         }
 
         if (suffix.addTone() is { } add)
         {
             // add9, add2, add11...
-            var num = new string([.. add.GetText().Where(char.IsDigit)]);
+            var addText = add.GetText();
+            var num = new string([.. addText.Where(char.IsDigit)]);
             if (num.Length > 0)
-                builder.ApplyAdd(int.Parse(num));
+                builder.ApplyAdd(ParseDegree(num, addText));
             return;
         }
 
         if (suffix.omitTone() is { } omit)
         {
             // no3, omit5...
-            var num = new string([.. omit.GetText().Where(char.IsDigit)]);
+            var omitText = omit.GetText();
+            var num = new string([.. omitText.Where(char.IsDigit)]);
             if (num.Length > 0)
-                builder.ApplyOmit(int.Parse(num));
+                builder.ApplyOmit(ParseDegree(num, omitText));
             return;
         }
 
@@ -318,23 +341,24 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
             {
                 case ChordSymbolParser.AddToneContext add:
                     // add9/add11...
-                    var addNum = new string([.. add.GetText().Where(char.IsDigit)]);
+                    var addText = add.GetText();
+                    var addNum = new string([.. addText.Where(char.IsDigit)]);
                     if (addNum.Length > 0)
-                        builder.ApplyAdd(int.Parse(addNum));
+                        builder.ApplyAdd(ParseDegree(addNum, addText));
                     return;
                 case ChordSymbolParser.OmitToneContext omit:
                     // Supports: omit3 / no3
                     var omitText = omit.GetText().ToLowerInvariant();
                     var omitNum = new string([.. omitText.Where(char.IsDigit)]);
                     if (omitNum.Length > 0)
-                        builder.ApplyOmit(int.Parse(omitNum));
+                        builder.ApplyOmit(ParseDegree(omitNum, omitText));
                     return;
                 case ChordSymbolParser.AlterationContext alt:
                     var altText = alt.GetText();
                     var accidental = altText.StartsWith("#", StringComparison.Ordinal) ? "#" : "b";
                     var num = new string([.. altText.Where(char.IsDigit)]);
                     if (num.Length > 0)
-                        builder.ApplyAlteration(accidental, int.Parse(num));
+                        builder.ApplyAlteration(accidental, ParseDegree(num, altText));
                     return;
                 case ChordSymbolParser.ExtensionContext ext:
                     var extText = ext.GetText();
@@ -343,12 +367,12 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
                         builder.ApplySixNine();
                         continue;
                     }
-                    builder.ApplyExtension(int.Parse(extText));
+                    builder.ApplyExtension(ParseDegree(extText, extText));
                     continue;
                 case ChordSymbolParser.QualityContext q:
                     // Allows things like m(maj7) or (Δ9)
                     var qText = q.GetText();
-                    if (builder.IsMinorTriad && (string.Equals(qText, "maj", StringComparison.OrdinalIgnoreCase) || string.Equals(qText, "major", StringComparison.OrdinalIgnoreCase) || qText == "Δ"))
+                    if (builder.IsMinorTriad && (string.Equals(qText, "maj", StringComparison.OrdinalIgnoreCase) || string.Equals(qText, "major", StringComparison.OrdinalIgnoreCase) || qText is "Δ" or "M"))
                     {
                         builder.MarkMajorSeventh();
                         continue;
@@ -357,6 +381,17 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
                     continue;
             }
         }
+    }
+
+    /// <summary>
+    /// Parses a degree/extension number, rejecting values that do not fit an int
+    /// (e.g. "C99999999999999999999") as parse errors instead of overflowing.
+    /// </summary>
+    private static int ParseDegree(string digits, string source)
+    {
+        if (!int.TryParse(digits, out var value))
+            throw new ChordSymbolParseException($"Number out of range in '{source}'.");
+        return value;
     }
 
     private static int ParsePitchClass(ChordSymbolParser.NoteContext note)
@@ -440,10 +475,20 @@ internal sealed class ChordBuildState
         var t = text.Trim();
 
         // Normalize common variants.
+        // A bare Δ implies the major seventh even without an extension ("CΔ" = Cmaj7).
         if (t is "Δ" or "△")
         {
             _explicitMajor = true;
             _wantsMajorSeventh = true;
+            return;
+        }
+
+        // Single uppercase 'M' is major ("CM" = C triad, "CM7" = Cmaj7); it must be
+        // matched before lowercasing, which would turn it into the minor marker.
+        if (t == "M")
+        {
+            _triad = TriadQuality.Major;
+            _explicitMajor = true;
             return;
         }
 
@@ -453,9 +498,10 @@ internal sealed class ChordBuildState
         {
             case "maj":
             case "major":
+                // "Cmaj" is a plain major triad; _explicitMajor still makes a following
+                // extension use the major seventh ("Cmaj7"/"Cmaj9").
                 _triad = TriadQuality.Major;
                 _explicitMajor = true;
-                _wantsMajorSeventh = true;
                 break;
             case "min":
             case "minor":
@@ -514,11 +560,17 @@ internal sealed class ChordBuildState
 
     public void ApplyExtension(int n)
     {
+        if (n == 0)
+            throw new ChordSymbolParseException("Extension 0 is not a valid chord extension.");
+
         _extension = Math.Max(_extension ?? 0, n);
     }
 
     public void ApplyAdd(int n)
     {
+        if (n is not (2 or 4 or 6 or 9 or 11 or 13))
+            throw new ChordSymbolParseException($"Unsupported add degree: add{n} (expected 2, 4, 6, 9, 11 or 13).");
+
         _adds.Add(MapAddDegreeToSemitones(n));
     }
 
@@ -557,6 +609,8 @@ internal sealed class ChordBuildState
             case 13:
                 _alteredThirteenth = semitones;
                 break;
+            default:
+                throw new ChordSymbolParseException($"Unsupported altered degree: {accidental}{degree} (expected 5, 9, 11 or 13).");
         }
     }
 
@@ -623,9 +677,14 @@ internal sealed class ChordBuildState
 
     private void AddExtensionsAndAdds(HashSet<int> intervals)
     {
-        if (_extension.HasValue)
+        // A bare Δ or maj-after-minor ("CΔ", "CmΔ", "Cmmaj") marks the major seventh
+        // without an explicit extension: default the extension to 7 so the seventh is
+        // actually emitted instead of collapsing to a plain triad.
+        var extension = _extension ?? (_wantsMajorSeventh ? 7 : (int?)null);
+
+        if (extension.HasValue)
         {
-            var ext = _extension.Value;
+            var ext = extension.Value;
 
             if (ext == 6)
             {

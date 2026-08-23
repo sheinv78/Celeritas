@@ -116,10 +116,11 @@ public static unsafe class ChordAnalyzer
         var mask = GetMask(pitches);
         var info = ChordLibrary.GetChord(mask);
 
-        // Sus2/Sus4/Quartal share one pitch-class set (rotations of {0,2,7}), so the mask
-        // lookup always answers Sus2. Use the actual bass note to disambiguate:
-        // bass == r+7 of the Sus2 root => Sus4 on the bass; bass == r+2 => Quartal on the bass.
-        if (info.Quality == ChordQuality.Sus2 && !pitches.IsEmpty)
+        // Qualities whose pitch-class set is shared by several rotations can only get one
+        // answer from the mask lookup (the lowest registered root). Use the actual bass
+        // note to disambiguate.
+        if (!pitches.IsEmpty &&
+            info.Quality is ChordQuality.Sus2 or ChordQuality.Augmented or ChordQuality.Diminished7)
         {
             var bass = pitches[0];
             foreach (var p in pitches)
@@ -128,10 +129,28 @@ public static unsafe class ChordAnalyzer
             }
 
             var bassPc = PitchMath.Fold(bass);
-            if (bassPc == (info.RootPitchClass + 7) % 12)
-                return new ChordInfo((byte)bassPc, ChordQuality.Sus4);
-            if (bassPc == (info.RootPitchClass + 2) % 12)
-                return new ChordInfo((byte)bassPc, ChordQuality.Quartal);
+
+            switch (info.Quality)
+            {
+                // Sus2/Sus4/Quartal share one pitch-class set (rotations of {0,2,7}), so the
+                // mask lookup always answers Sus2. bass == r+7 of the Sus2 root => Sus4 on
+                // the bass; bass == r+2 => Quartal on the bass.
+                case ChordQuality.Sus2:
+                    if (bassPc == (info.RootPitchClass + 7) % 12)
+                        return new ChordInfo((byte)bassPc, ChordQuality.Sus4);
+                    if (bassPc == (info.RootPitchClass + 2) % 12)
+                        return new ChordInfo((byte)bassPc, ChordQuality.Quartal);
+                    break;
+
+                // Augmented ({0,4,8}) and dim7 ({0,3,6,9}) are fully symmetric: every chord
+                // tone is a valid root and all rotations share one mask, so the lookup always
+                // answers the lowest registered root. Prefer the rotation rooted on the bass.
+                case ChordQuality.Augmented:
+                case ChordQuality.Diminished7:
+                    if (bassPc != info.RootPitchClass)
+                        return new ChordInfo((byte)bassPc, info.Quality);
+                    break;
+            }
         }
 
         return info;
