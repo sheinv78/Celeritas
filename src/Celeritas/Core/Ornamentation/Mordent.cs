@@ -21,9 +21,12 @@ public sealed class Mordent : Ornament
     public int Alternations { get; init; } = 1;
 
     /// <summary>Expands into an alternation of the main note and its neighbor, ending on the main note.</summary>
-    /// <exception cref="ArgumentOutOfRangeException"><see cref="Alternations"/> is less than 1.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="Type"/> is not a defined <see cref="MordentType"/> value, or <see cref="Alternations"/> is less than 1.</exception>
     public override NoteEvent[] Expand()
     {
+        if (!Enum.IsDefined(Type))
+            throw new ArgumentOutOfRangeException(nameof(Type), Type, "Not a defined MordentType value.");
+
         if (Alternations < 1)
             throw new ArgumentOutOfRangeException(nameof(Alternations), Alternations, "Alternations must be at least 1");
 

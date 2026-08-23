@@ -22,8 +22,12 @@ public sealed class Appoggiatura : Ornament
     public int Direction { get; init; } = 0;
 
     /// <summary>Expands into two notes: the appoggiatura then the resolved main note.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><see cref="Type"/> is not a defined <see cref="AppogiaturaType"/> value.</exception>
     public override NoteEvent[] Expand()
     {
+        if (!Enum.IsDefined(Type))
+            throw new ArgumentOutOfRangeException(nameof(Type), Type, "Not a defined AppogiaturaType value.");
+
         var signedInterval = Direction == 0
             ? Interval
             : Math.Sign(Direction) * Math.Abs(Interval);

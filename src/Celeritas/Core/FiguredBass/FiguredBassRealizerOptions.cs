@@ -15,8 +15,12 @@ public sealed class FiguredBassRealizerOptions : FiguredBassOptions
     public bool AllowVoiceCrossing { get; init; } = false;
 
     /// <summary>
-    /// Maximum allowed movement per upper voice in semitones between successive symbols.
-    /// If null, no movement constraint is enforced.
+    /// Maximum desired movement per upper voice in semitones between successive symbols.
+    /// This is a soft constraint: the realizer always chooses the octave placement of
+    /// the required pitch class closest to the voice's previous pitch, which satisfies
+    /// the limit whenever it is satisfiable. When no placement can honor the limit
+    /// (e.g. <c>MaxVoiceMovement = 0</c> across a chord change), the closest placement
+    /// is used instead of failing. If null, no movement preference is implied.
     /// </summary>
     public int? MaxVoiceMovement { get; init; } = null;
 }

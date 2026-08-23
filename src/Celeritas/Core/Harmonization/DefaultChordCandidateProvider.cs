@@ -71,10 +71,24 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
             var pitches = new int[chordIntervals.Length];
             ushort chordMask = 0;
 
+            // Root-position voicing: the root in octave 4, then each subsequent chord
+            // tone in the nearest octave strictly above the previous pitch (a bare
+            // 60 + pc per tone produced arbitrary inversions, e.g. vii° as D-F-B).
+            var previous = 0;
             for (var i = 0; i < chordIntervals.Length; i++)
             {
                 var pc = (root + chordIntervals[i]) % 12;
-                pitches[i] = 60 + pc; // Octave 4
+                if (i == 0)
+                {
+                    previous = 60 + pc;
+                }
+                else
+                {
+                    var delta = ((pc - (previous % 12)) + 12) % 12;
+                    previous += delta == 0 ? 12 : delta;
+                }
+
+                pitches[i] = previous;
                 chordMask |= (ushort)(1 << pc);
             }
 
@@ -106,7 +120,6 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
             // Bonus if melody note is chord tone (root/3rd/5th)
             var melodyInChord = CountMatchingBits(melodyMask, chordMask);
             baseCost -= melodyInChord * 0.1f;
-            _ = ToRomanNumeral(degree, key.IsMajor);
             yield return new ChordCandidate(chord, pitches, baseCost);
         }
     }
@@ -125,13 +138,5 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
     private static int CountMatchingBits(ushort a, ushort b)
     {
         return BitOperations.PopCount((uint)(a & b));
-    }
-
-    private static string ToRomanNumeral(int degree, bool isMajor)
-    {
-        var numerals = isMajor
-            ? new[] { "I", "ii", "iii", "IV", "V", "vi", "vii°" }
-            : ["i", "ii°", "III", "iv", "v", "VI", "VII"];
-        return numerals[degree];
     }
 }
