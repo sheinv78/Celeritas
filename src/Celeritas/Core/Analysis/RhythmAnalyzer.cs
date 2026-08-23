@@ -877,26 +877,26 @@ public static class RhythmAnalyzer
         switch (pattern.Name)
         {
             case "Waltz":
-            {
-                if (meter.BeatsPerMeasure != 3 || meter.BeatUnit != 4)
-                    return false;
-                return OnsetsAlignToBeats(onsets, startIndex, 3, meter);
-            }
+                {
+                    if (meter.BeatsPerMeasure != 3 || meter.BeatUnit != 4)
+                        return false;
+                    return OnsetsAlignToBeats(onsets, startIndex, 3, meter);
+                }
 
             case "Backbeat":
-            {
-                if (meter.BeatsPerMeasure != 4 || meter.BeatUnit != 4)
-                    return false;
-                if (!OnsetsAlignToBeats(onsets, startIndex, 4, meter))
-                    return false;
+                {
+                    if (meter.BeatsPerMeasure != 4 || meter.BeatUnit != 4)
+                        return false;
+                    if (!OnsetsAlignToBeats(onsets, startIndex, 4, meter))
+                        return false;
 
-                const float accentMargin = 0.01f;
-                var v1 = velocities[onsets[startIndex].index];
-                var v2 = velocities[onsets[startIndex + 1].index];
-                var v3 = velocities[onsets[startIndex + 2].index];
-                var v4 = velocities[onsets[startIndex + 3].index];
-                return v2 > v1 + accentMargin && v4 > v3 + accentMargin;
-            }
+                    const float accentMargin = 0.01f;
+                    var v1 = velocities[onsets[startIndex].index];
+                    var v2 = velocities[onsets[startIndex + 1].index];
+                    var v3 = velocities[onsets[startIndex + 2].index];
+                    var v4 = velocities[onsets[startIndex + 3].index];
+                    return v2 > v1 + accentMargin && v4 > v3 + accentMargin;
+                }
 
             default:
                 return true;

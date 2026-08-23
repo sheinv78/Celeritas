@@ -22,6 +22,15 @@ public static class ChordCharacterClassifier
         try
         {
             var pitches = ProgressionAdvisor.ParseChordSymbol(chordSymbol.Trim());
+            if (pitches.Length == 0)
+            {
+                // ParseChordSymbol yields an empty array for anything it cannot parse.
+                // Falling through would build a zero mask, and ChordLibrary.GetChord(0)
+                // lands on the quality switch's default arm — reporting unparsable input
+                // as a maximally stable chord instead of Unknown.
+                return ChordCharacterClassification.Unknown;
+            }
+
             var mask = ChordAnalyzer.GetMask(pitches);
             var info = ChordLibrary.GetChord(mask);
             return FromQuality(info.Quality);

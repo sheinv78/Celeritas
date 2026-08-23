@@ -278,4 +278,35 @@ public class HarmonyGrammarReviewFixTests
         Assert.Equal(expectedQuality, info.Quality);
         Assert.Equal((byte)expectedRoot, info.RootPitchClass);
     }
+
+    // ---------- Unparsable symbols must not classify as a stable chord ----------
+    //
+    // ParseChordSymbol returns an empty array for anything it cannot parse. Every
+    // other caller checks for that; ChordCharacterClassifier did not, so a zero mask
+    // reached ChordLibrary.GetChord and came back on the quality switch's default
+    // arm as Stable/0.90 — the most consonant answer the type can give. Tightening
+    // the parser widened this: "C7b6" and "Cadd5" used to parse (silently dropping
+    // the unsupported degree) and now fail, so they landed on it too.
+
+    [Theory]
+    [InlineData("Zzz")]
+    [InlineData("C7b6")]
+    [InlineData("Cadd5")]
+    [InlineData("Cadd7")]
+    [InlineData("C0")]
+    [InlineData("C99999999999999999999")]
+    public void Classify_UnparsableSymbol_IsUnknown_NotStable(string symbol)
+    {
+        var classification = ChordCharacterClassifier.Classify(symbol);
+
+        Assert.Equal(ChordCharacterClassification.Unknown.Stability, classification.Stability);
+        Assert.NotEqual(ChordCharacterClassifier.Classify("C").Stability, classification.Stability);
+    }
+
+    [Theory]
+    [InlineData("C", ChordCharacter.Bright)]
+    [InlineData("Cm7", ChordCharacter.Warm)]
+    [InlineData("CΔ", ChordCharacter.Dreamy)]
+    public void Classify_ParsableSymbol_StillClassifies(string symbol, ChordCharacter expected) =>
+        Assert.Equal(expected, ChordCharacterClassifier.Classify(symbol).Character);
 }
