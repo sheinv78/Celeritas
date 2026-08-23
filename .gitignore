@@ -47,3 +47,6 @@ docs/_site/
 docs/api/*.yml
 docs/api/.manifest
 docs/**/.docfxignore
+
+# Claude Code agent worktrees (transient, never committed)
+.claude/worktrees/
