@@ -264,28 +264,31 @@ var melody = MusicNotation.Parse("C4/4 [E4 G4]/4 G4/2.");
 var song = MusicNotation.Parse("4/4: C4/4 E4/4 G4/4 C5/4 | D4/1");
 
 // With directives (tempo, dynamics)
-var result = MusicNotationAntlrParser.Parse(
+var result = MusicNotation.ParseFull(
     "@bpm 120 @dynamics mf C4/4 E4/4 G4/4");
 ```
 
 **Analyze chords and keys:**
 
 ```csharp
+using Celeritas.Core;
 using Celeritas.Core.Analysis;
 
 // Chord identification
 var chord = ChordAnalyzer.Identify("C4 E4 G4 B4");
-Console.WriteLine(chord);  // Output: Cmaj7
+Console.WriteLine(chord);  // Output: C Major7
 
 // Key detection
 var melody = MusicNotation.Parse("C4/4 D4/4 E4/4 F4/4 G4/4");
 var key = KeyAnalyzer.DetectKey(melody);
-Console.WriteLine(key);  // Output: C major
+Console.WriteLine(key);  // Output: C Major
 
 // Modal analysis
 var scale = MusicNotation.Parse("D4 E4 F4 G4 A4 B4 C5 D5");
-var mode = ModeLibrary.DetectModeWithRoot(scale);
-Console.WriteLine(mode);  // Output: D Dorian
+var (mode, confidence) = ModeLibrary.DetectModeWithRoot(scale);
+Console.WriteLine(mode);        // Output: D Dorian
+Console.WriteLine(confidence);  // Output: 0.18 - confidence is the margin over
+                                // the runner-up mode, not a goodness-of-fit score
 ```
 
 **Parse chord symbols (ANTLR):**
@@ -435,14 +438,19 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list, including breaking changes.
 
 ### 📊 SIMD Platform Support
 
-| Platform        | SIMD     | Status | Performance                       |
-|-----------------|----------|--------|-----------------------------------|
-| x64 Intel/AMD   | AVX-512  | ✅     | ~35–38M notes/sec (3D V-Cache)    |
-| x64 Intel/AMD   | AVX2     | ✅     | ~14M notes/sec                    |
-| x64 Intel/AMD   | SSE2     | ✅     | ~10M notes/sec                    |
-| ARM64           | NEON     | ✅     | ~10-15M notes/sec                 |
-| WebAssembly     | SIMD128  | 🧪 experimental, not yet CI-tested | ~5-10M notes/sec (est.) |
-| Fallback        | Scalar   | ✅     | ~1M notes/sec                     |
+| Platform        | SIMD     | Status | Bulk transpose throughput          |
+|-----------------|----------|--------|------------------------------------|
+| x64 Intel/AMD   | AVX-512  | ✅     | ~35–38 billion notes/sec (3D V-Cache) |
+| x64 Intel/AMD   | AVX2     | ✅     | ~14 billion notes/sec (est.)       |
+| x64 Intel/AMD   | SSE2     | ✅     | ~10 billion notes/sec (est.)       |
+| ARM64           | NEON     | ✅     | ~10–15 billion notes/sec (est.)    |
+| WebAssembly     | SIMD128  | 🧪 experimental, not yet CI-tested | ~5–10 billion notes/sec (est.) |
+| Fallback        | Scalar   | ✅     | ~1 billion notes/sec               |
+
+Only the AVX-512 and scalar rows are measured: the AVX-512 figure follows from
+`Transpose_1M_Notes` (28.6 µs) and `Transpose_10M_Notes` (261 µs) in the benchmark
+table above, and the scalar figure from the same workload with
+`DOTNET_EnableHWIntrinsic=0`. The remaining rows are estimates scaled by vector width.
 
 ## 📄 License
 
