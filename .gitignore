@@ -50,3 +50,11 @@ docs/**/.docfxignore
 
 # Claude Code agent worktrees (transient, never committed)
 .claude/worktrees/
+
+# Scratch output from running the documented CLI commands and examples/ from the
+# repo root (see README "MIDI Processing" and examples/12). Root-anchored so the
+# tracked fixtures under test-data/ are unaffected.
+/*.mid
+/*.midi
+/*.musicxml
+/*.mxl
