@@ -198,7 +198,13 @@ public static class MelodyAnalyzer
             var note = buffer.Get(i);
             notes.Add((note.Pitch, note.Offset));
         }
-        notes.Sort((a, b) => a.Time.CompareTo(b.Time));
+        // Pitch tie-break: chord notes share an onset, and an offset-only sort would
+        // leave their order (and thus the interval sequence) insertion-order dependent.
+        notes.Sort((a, b) =>
+        {
+            var cmp = a.Time.CompareTo(b.Time);
+            return cmp != 0 ? cmp : a.Pitch.CompareTo(b.Pitch);
+        });
 
         var pitches = notes.Select(n => n.Pitch).ToArray();
         var times = notes.Select(n => n.Time).ToArray();
@@ -334,13 +340,34 @@ public static class MelodyAnalyzer
             return MelodicContour.Static;
         }
 
-        // Find turning points
+        // Find turning points, comparing each pitch against the nearest DIFFERENT
+        // neighboring pitches so plateau peaks/troughs (C D E E D C) are detected —
+        // strict immediate-neighbor comparison saw no turn at either E and called
+        // the whole arch "static". A plateau is evaluated once, at its first note.
         var turningPoints = new List<int>();
         for (int i = 1; i < pitches.Length - 1; i++)
         {
-            var prev = pitches[i - 1];
             var curr = pitches[i];
-            var next = pitches[i + 1];
+            if (curr == pitches[i - 1])
+            {
+                continue; // Interior of a plateau: already evaluated at its start.
+            }
+
+            var prev = pitches[i - 1];
+
+            // Next different pitch (skip over the plateau, if any).
+            int j = i + 1;
+            while (j < pitches.Length && pitches[j] == curr)
+            {
+                j++;
+            }
+
+            if (j >= pitches.Length)
+            {
+                break; // Plateau extends to the end: no turn.
+            }
+
+            var next = pitches[j];
 
             // Local maximum
             if (curr > prev && curr > next)

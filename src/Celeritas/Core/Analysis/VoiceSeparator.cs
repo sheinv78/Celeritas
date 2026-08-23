@@ -101,6 +101,28 @@ public static class VoiceSeparator
     private const int SeedContinuityPenalty = 4;
 
     /// <summary>
+    /// Assignment cost that makes a voice whose previous note still sounds at the new
+    /// onset effectively unavailable: temporally overlapping notes are different voices
+    /// by definition. Large enough to lose to ANY pitch-distance alternative (so a free
+    /// voice is opened instead), yet finite so the min-cost fallback still assigns the
+    /// note (never drops it) when every voice is sounding at maxVoices.
+    /// </summary>
+    private const double OverlapPenalty = 10_000;
+
+    /// <summary>
+    /// Soft penalty per voice-order violation when <see cref="VoiceSeparatorOptions.AllowCrossings"/>
+    /// is false. Large enough to dominate ordinary pitch distances, small enough that a
+    /// forced crossing still beats an overlap (notes are never dropped).
+    /// </summary>
+    private const double CrossingPenalty = 50;
+
+    /// <summary>
+    /// Superlinear cost factor applied to melodic motion beyond a whole step when
+    /// <see cref="VoiceSeparatorOptions.PreferStepwise"/> is set: cost += (distance-2)^2 * factor.
+    /// </summary>
+    private const double StepwiseCostFactor = 0.25;
+
+    /// <summary>
     /// Separate notes into voices using pitch-proximity algorithm.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
@@ -243,6 +265,10 @@ public static class VoiceSeparator
         // Tracks whether a voice contains real notes yet; voiceLastPitch starts with
         // synthetic register seeds which must not count as crossing partners.
         var voiceHasNotes = new bool[maxVoices];
+        // End time of each voice's latest note: a voice still sounding at a new onset
+        // must not swallow that onset (overlapping notes are different voices).
+        var voiceLastEnd = new Rational[maxVoices];
+        Array.Fill(voiceLastEnd, Rational.Zero);
         var voiceCrossings = 0;
 
         // Initialize voice pitches based on typical ranges
@@ -251,10 +277,11 @@ public static class VoiceSeparator
         // Process each time slice
         var timeSlices = GroupByOnset(notes);
 
-        foreach (var slice in timeSlices)
+        foreach (var sliceNotes in timeSlices)
         {
-            // Sort notes in this slice by pitch (high to low)
-            var sliceNotes = slice.OrderByDescending(n => n.note.Pitch).ToList();
+            // Slice notes are already ordered by pitch (high to low): the global sort
+            // orders by onset, then pitch descending, and grouping preserves it.
+            var sliceOnset = sliceNotes[0].note.Offset;
 
             if (sliceNotes.Count <= maxVoices)
             {
@@ -263,18 +290,9 @@ public static class VoiceSeparator
                 // so a monophonic line stays in the voice nearest its register.
                 var assignment = MinCostIncreasingAssignment(
                     sliceNotes.Count, maxVoices,
-                    (i, v) =>
-                    {
-                        var distance = Math.Abs(sliceNotes[i].note.Pitch - voiceLastPitch[v]);
-                        if (distance > options.MaxMelodicInterval)
-                            distance += options.LargeJumpPenalty;
-                        // Prefer continuing a voice with real notes over starting a
-                        // fresh voice whose "last pitch" is just a synthetic seed —
-                        // otherwise a monophonic line drifts across voices on ties.
-                        if (!voiceHasNotes[v])
-                            distance += SeedContinuityPenalty;
-                        return distance;
-                    });
+                    (i, v) => AssignmentCost(
+                        sliceNotes[i].note.Pitch, sliceOnset, v,
+                        voiceLastPitch, voiceLastEnd, voiceHasNotes, maxVoices, options));
 
                 for (int i = 0; i < sliceNotes.Count; i++)
                 {
@@ -293,6 +311,8 @@ public static class VoiceSeparator
 
                     voiceLastPitch[voiceIdx] = note.Pitch;
                     voiceHasNotes[voiceIdx] = true;
+                    if (note.End > voiceLastEnd[voiceIdx])
+                        voiceLastEnd[voiceIdx] = note.End;
                 }
             }
             else
@@ -304,13 +324,25 @@ public static class VoiceSeparator
                 // taken, overflow notes go to the voice with the nearest last pitch.
                 foreach (var (note, origIndex) in sliceNotes)
                 {
-                    var voiceIdx = FindBestVoice(note.Pitch, voiceLastPitch, usedVoices, maxVoices, options);
+                    var voiceIdx = FindBestVoice(
+                        note.Pitch, sliceOnset,
+                        voiceLastPitch, voiceLastEnd, voiceHasNotes,
+                        usedVoices, maxVoices, options);
 
                     voices[voiceIdx].Notes.Add(note);
                     noteToVoice[origIndex] = voiceIdx;
                     usedVoices[voiceIdx] = true;
+
+                    // Count crossings here too (previously only the <= maxVoices branch did)
+                    if (voiceIdx > 0 && voiceHasNotes[voiceIdx - 1] && note.Pitch > voiceLastPitch[voiceIdx - 1])
+                        voiceCrossings++;
+                    if (voiceIdx < maxVoices - 1 && voiceHasNotes[voiceIdx + 1] && note.Pitch < voiceLastPitch[voiceIdx + 1])
+                        voiceCrossings++;
+
                     voiceLastPitch[voiceIdx] = note.Pitch;
                     voiceHasNotes[voiceIdx] = true;
+                    if (note.End > voiceLastEnd[voiceIdx])
+                        voiceLastEnd[voiceIdx] = note.End;
                 }
             }
         }
@@ -443,25 +475,93 @@ public static class VoiceSeparator
         return assignment;
     }
 
-    private static int FindBestVoice(int pitch, int[] voiceLastPitch, bool[] usedVoices,
-        int maxVoices, VoiceSeparatorOptions options)
+    /// <summary>
+    /// Cost of assigning a note to a candidate voice: pitch distance from the voice's
+    /// last pitch, plus penalties for large jumps, synthetic seeds, non-stepwise motion
+    /// (<see cref="VoiceSeparatorOptions.PreferStepwise"/>), temporal overlap with the
+    /// voice's still-sounding note, and order violations against currently sounding
+    /// voices (<see cref="VoiceSeparatorOptions.AllowCrossings"/> = false).
+    /// </summary>
+    private static double AssignmentCost(
+        int pitch,
+        Rational onset,
+        int voiceIdx,
+        int[] voiceLastPitch,
+        Rational[] voiceLastEnd,
+        bool[] voiceHasNotes,
+        int maxVoices,
+        VoiceSeparatorOptions options)
+    {
+        var distance = Math.Abs(pitch - voiceLastPitch[voiceIdx]);
+        double cost = distance;
+
+        if (distance > options.MaxMelodicInterval)
+            cost += options.LargeJumpPenalty;
+
+        if (!voiceHasNotes[voiceIdx])
+        {
+            // Prefer continuing a voice with real notes over starting a fresh voice
+            // whose "last pitch" is just a synthetic seed — otherwise a monophonic
+            // line drifts across voices on ties.
+            cost += SeedContinuityPenalty;
+        }
+        else
+        {
+            // PreferStepwise: superlinear cost for melodic motion beyond a whole step,
+            // so a leaping continuation loses to a nearer (or free) voice. Synthetic
+            // seed distances are not melodic motion and are exempt.
+            if (options.PreferStepwise && distance > 2)
+                cost += (distance - 2) * (distance - 2) * StepwiseCostFactor;
+
+            // A voice whose latest note still sounds at this onset cannot take the
+            // note without collapsing simultaneous notes into one line; make it
+            // effectively unavailable, but keep the cost finite so the min-cost
+            // fallback still assigns (never drops) the note when ALL voices overlap.
+            if (voiceLastEnd[voiceIdx] > onset)
+                cost += OverlapPenalty;
+        }
+
+        if (!options.AllowCrossings)
+        {
+            // Soft penalty for ordering the note above a higher voice's currently
+            // sounding pitch, or below a lower one's. Soft: a crossing remains
+            // possible when no crossing-free assignment exists.
+            for (int other = 0; other < maxVoices; other++)
+            {
+                if (other == voiceIdx || !voiceHasNotes[other] || voiceLastEnd[other] <= onset)
+                    continue;
+                if ((other < voiceIdx && pitch > voiceLastPitch[other]) ||
+                    (other > voiceIdx && pitch < voiceLastPitch[other]))
+                {
+                    cost += CrossingPenalty;
+                }
+            }
+        }
+
+        return cost;
+    }
+
+    private static int FindBestVoice(
+        int pitch,
+        Rational onset,
+        int[] voiceLastPitch,
+        Rational[] voiceLastEnd,
+        bool[] voiceHasNotes,
+        bool[] usedVoices,
+        int maxVoices,
+        VoiceSeparatorOptions options)
     {
         var bestVoice = -1;
-        var minDistance = int.MaxValue;
+        var minCost = double.MaxValue;
 
         for (int v = 0; v < maxVoices; v++)
         {
             if (usedVoices[v]) continue;
 
-            var distance = Math.Abs(pitch - voiceLastPitch[v]);
-
-            // Penalize large jumps
-            if (distance > options.MaxMelodicInterval)
-                distance += options.LargeJumpPenalty;
-
-            if (distance < minDistance)
+            var cost = AssignmentCost(pitch, onset, v, voiceLastPitch, voiceLastEnd, voiceHasNotes, maxVoices, options);
+            if (cost < minCost)
             {
-                minDistance = distance;
+                minCost = cost;
                 bestVoice = v;
             }
         }
@@ -470,8 +570,10 @@ public static class VoiceSeparator
             return bestVoice;
 
         // All voices already used in this slice (overflow): distribute the extra note
-        // to the voice with the nearest last pitch instead of dumping it into voice 0.
+        // to the voice with the nearest last pitch instead of dumping it into voice 0
+        // (min-cost fallback: a note is never dropped).
         bestVoice = 0;
+        var minDistance = int.MaxValue;
         for (int v = 0; v < maxVoices; v++)
         {
             var distance = Math.Abs(pitch - voiceLastPitch[v]);
@@ -568,9 +670,18 @@ public sealed class VoiceSeparatorOptions
     /// <summary>Penalty for jumps larger than MaxMelodicInterval.</summary>
     public int LargeJumpPenalty { get; init; } = 12;
 
-    /// <summary>Prefer stepwise motion.</summary>
+    /// <summary>
+    /// Prefer stepwise motion: melodic motion beyond a whole step (2 semitones) within a
+    /// voice incurs a superlinear extra cost, so a large leap favors a nearer voice (or
+    /// opening a free one) over continuing the same line.
+    /// </summary>
     public bool PreferStepwise { get; init; } = true;
 
-    /// <summary>Allow voice crossings.</summary>
+    /// <summary>
+    /// Allow voice crossings. When <see langword="false"/>, an assignment that would put
+    /// a note above the currently sounding pitch of a higher voice (or below a lower
+    /// one's) pays a large soft penalty: crossings are avoided whenever an alternative
+    /// assignment exists, but notes are never dropped.
+    /// </summary>
     public bool AllowCrossings { get; init; } = true;
 }

@@ -331,14 +331,9 @@ public static class RhythmAnalyzer
             };
         }
 
-        var onsets = new List<(Rational offset, Rational duration, int index)>(buffer.Count);
-        for (int i = 0; i < buffer.Count; i++)
-        {
-            onsets.Add((buffer.GetOffset(i), buffer.GetDuration(i), i));
-        }
-        onsets.Sort((a, b) => a.offset.CompareTo(b.offset));
+        var onsets = CollectSortedOnsets(buffer);
 
-        return DetectMeterInternal(onsets);
+        return DetectMeterInternal(onsets, CollectVelocities(buffer));
     }
 
     /// <summary>
@@ -367,14 +362,11 @@ public static class RhythmAnalyzer
         if (buffer.Count == 0)
             return null;
 
-        var onsets = new List<(Rational offset, Rational duration, int index)>(buffer.Count);
-        for (int i = 0; i < buffer.Count; i++)
-        {
-            onsets.Add((buffer.GetOffset(i), buffer.GetDuration(i), i));
-        }
-        onsets.Sort((a, b) => a.offset.CompareTo(b.offset));
+        var onsets = CollectSortedOnsets(buffer);
+        var velocities = CollectVelocities(buffer);
 
-        var matches = DetectPatterns(onsets);
+        var meter = DetectMeterInternal(onsets, velocities).TimeSignature;
+        var matches = DetectPatterns(onsets, meter, velocities);
         return matches.OrderByDescending(m => m.MatchQuality).FirstOrDefault();
     }
 
@@ -406,13 +398,9 @@ public static class RhythmAnalyzer
             return EmptyResult();
         }
 
-        // Collect onsets - pre-allocate exact size
-        var onsets = new List<(Rational offset, Rational duration, int index)>(buffer.Count);
-        for (int i = 0; i < buffer.Count; i++)
-        {
-            onsets.Add((buffer.GetOffset(i), buffer.GetDuration(i), i));
-        }
-        onsets.Sort((a, b) => a.offset.CompareTo(b.offset));
+        // Collect onsets in deterministic order
+        var onsets = CollectSortedOnsets(buffer);
+        var velocities = CollectVelocities(buffer);
 
         // Detect or use known meter
         var meter = knownMeter.HasValue
@@ -424,13 +412,13 @@ public static class RhythmAnalyzer
                 Alternatives = [],
                 Reasoning = "User-specified meter"
             }
-            : DetectMeterInternal(onsets);
+            : DetectMeterInternal(onsets, velocities);
 
         // Analyze each event in metrical context
         var events = AnalyzeEvents(onsets, meter.TimeSignature);
 
         // Detect patterns
-        var patterns = DetectPatterns(onsets);
+        var patterns = DetectPatterns(onsets, meter.TimeSignature, velocities);
 
         // Calculate statistics
         var stats = CalculateStatistics(events);
@@ -486,7 +474,48 @@ public static class RhythmAnalyzer
         TextureDescription = "No rhythmic content"
     };
 
-    private static MeterDetectionResult DetectMeterInternal(List<(Rational offset, Rational duration, int index)> onsets)
+    /// <summary>Score margin below which two meters are considered tied.</summary>
+    private const float MeterTieEpsilon = 0.01f;
+
+    /// <summary>
+    /// Collects (offset, duration, buffer index) tuples sorted by onset time with a
+    /// pitch (then index) tie-break, so simultaneous chord notes are ordered
+    /// deterministically regardless of buffer insertion order.
+    /// </summary>
+    private static List<(Rational offset, Rational duration, int index)> CollectSortedOnsets(NoteBuffer buffer)
+    {
+        var onsets = new List<(Rational offset, Rational duration, int index)>(buffer.Count);
+        for (int i = 0; i < buffer.Count; i++)
+        {
+            onsets.Add((buffer.GetOffset(i), buffer.GetDuration(i), i));
+        }
+
+        onsets.Sort((a, b) =>
+        {
+            var cmp = a.offset.CompareTo(b.offset);
+            if (cmp != 0)
+                return cmp;
+            cmp = buffer.PitchAt(a.index).CompareTo(buffer.PitchAt(b.index));
+            return cmp != 0 ? cmp : a.index.CompareTo(b.index);
+        });
+
+        return onsets;
+    }
+
+    private static float[] CollectVelocities(NoteBuffer buffer)
+    {
+        var velocities = new float[buffer.Count];
+        for (int i = 0; i < buffer.Count; i++)
+        {
+            velocities[i] = buffer.GetVelocity(i);
+        }
+
+        return velocities;
+    }
+
+    private static MeterDetectionResult DetectMeterInternal(
+        List<(Rational offset, Rational duration, int index)> onsets,
+        float[] velocities)
     {
         if (onsets.Count < 2)
         {
@@ -521,7 +550,9 @@ public static class RhythmAnalyzer
             };
         }
 
-        // Find the most common IOI (likely the beat)
+        // The most common IOI approximates the surface pulse. It anchors the accent
+        // model: an onset arriving after a gap well beyond the pulse (following a
+        // long note or a rest) is heard as accented.
         var ioiCounts = new Dictionary<Rational, int>();
         foreach (var ioi in iois)
         {
@@ -529,6 +560,12 @@ public static class RhythmAnalyzer
             ioiCounts[ioi] = count + 1;
         }
 
+        var commonIoi = ioiCounts
+            .OrderByDescending(kv => kv.Value)
+            .ThenBy(kv => kv.Key.ToDouble())
+            .First().Key;
+
+        var accentWeights = ComputeAccentWeights(onsets, velocities, commonIoi);
 
         // Score different meters
         var meters = new[]
@@ -544,56 +581,130 @@ public static class RhythmAnalyzer
         var scores = new Dictionary<TimeSignature, float>();
         foreach (var m in meters)
         {
-            scores[m] = ScoreMeter(onsets, m);
+            scores[m] = ScoreMeter(onsets, m, accentWeights);
         }
 
-        var best = scores.OrderByDescending(kv => kv.Value).First();
-        var alternatives = scores
-            .Where(kv => kv.Key != best.Key && kv.Value > 0.3f)
-            .OrderByDescending(kv => kv.Value)
-            .Select(kv => kv.Key)
+        // Accent-free (uniform) input fits every meter equally well by construction,
+        // so ties are common; resolve them with a deterministic preference for the
+        // least surprising meters: 4/4, then 3/4, 6/8, 2/4, then the rest.
+        var bestScore = scores.Values.Max();
+        var best = meters
+            .Where(m => scores[m] >= bestScore - MeterTieEpsilon)
+            .OrderBy(MeterPreferenceRank)
+            .First();
+        var bestConfidence = scores[best];
+
+        var alternatives = meters
+            .Where(m => m != best && scores[m] > 0.3f)
+            .OrderByDescending(m => scores[m])
+            .ThenBy(MeterPreferenceRank)
             .Take(3)
             .ToList();
 
-        var reasoning = best.Key.IsCompound
+        var reasoning = best.IsCompound
             ? "Compound meter detected - notes group in threes"
             : "Simple meter - beats divide in two";
 
-        if (best.Value < 0.5f)
+        if (bestConfidence < 0.5f)
             reasoning += " (low confidence)";
 
         return new MeterDetectionResult
         {
-            TimeSignature = best.Key,
-            Confidence = best.Value,
+            TimeSignature = best,
+            Confidence = bestConfidence,
             Tempo = new Rational(120, 1), // Would need audio for real tempo
             Alternatives = alternatives,
             Reasoning = reasoning
         };
     }
 
-    private static float ScoreMeter(List<(Rational offset, Rational duration, int index)> onsets, TimeSignature meter)
+    private static int MeterPreferenceRank(TimeSignature meter) => (meter.BeatsPerMeasure, meter.BeatUnit) switch
     {
-        float score = 0;
-        var measureDur = meter.MeasureDuration;
+        (4, 4) => 0,
+        (3, 4) => 1,
+        (6, 8) => 2,
+        (2, 4) => 3,
+        _ => 4
+    };
 
-        foreach (var (offset, _, _) in onsets)
+    /// <summary>
+    /// Perceptual accent weight per onset. Longer-than-average notes, louder-than-average
+    /// notes (only when velocities actually vary), and onsets entering after a gap well
+    /// beyond the common pulse all read as accents. Uniform input yields uniform weights.
+    /// </summary>
+    private static double[] ComputeAccentWeights(
+        List<(Rational offset, Rational duration, int index)> onsets,
+        float[] velocities,
+        Rational commonIoi)
+    {
+        var weights = new double[onsets.Count];
+
+        double durationSum = 0, velocitySum = 0;
+        var minVelocity = float.MaxValue;
+        var maxVelocity = float.MinValue;
+        foreach (var (_, duration, index) in onsets)
         {
-            // Calculate position within measure
-            var measurePos = GetPositionInMeasure(offset, measureDur);
-            var strength = GetBeatStrength(measurePos, meter);
-
-            // Reward notes on strong beats
-            score += strength switch
-            {
-                BeatStrength.Strong => 1.0f,
-                BeatStrength.Medium => 0.6f,
-                BeatStrength.Weak => 0.3f,
-                _ => 0.1f
-            };
+            durationSum += duration.ToDouble();
+            var velocity = velocities[index];
+            velocitySum += velocity;
+            minVelocity = Math.Min(minVelocity, velocity);
+            maxVelocity = Math.Max(maxVelocity, velocity);
         }
 
-        return score / onsets.Count;
+        var meanDuration = durationSum / onsets.Count;
+        var meanVelocity = velocitySum / onsets.Count;
+        var velocityVaries = maxVelocity - minVelocity > 0.001f;
+        var gapThreshold = commonIoi.ToDouble() * 1.5;
+
+        for (int i = 0; i < onsets.Count; i++)
+        {
+            double weight = 1;
+            if (meanDuration > 0)
+                weight *= Math.Clamp(onsets[i].duration.ToDouble() / meanDuration, 0.5, 2.0);
+            if (velocityVaries && meanVelocity > 0)
+                weight *= Math.Clamp(velocities[onsets[i].index] / meanVelocity, 0.5, 2.0);
+            if (i > 0 && (onsets[i].offset - onsets[i - 1].offset).ToDouble() >= gapThreshold)
+                weight *= 1.5;
+            weights[i] = weight;
+        }
+
+        return weights;
+    }
+
+    private static float ScoreMeter(
+        List<(Rational offset, Rational duration, int index)> onsets,
+        TimeSignature meter,
+        double[] accentWeights)
+    {
+        // Raw strength sums are not comparable across meters: a meter with a denser
+        // strong-beat grid (2/4 vs 4/4, 6/8 vs 3/4) scores higher on ANY input, so
+        // 4/4 and 3/4 could never win. Instead measure whether ACCENTED onsets sit
+        // on metrically strong positions: the accent-weighted mean strength minus
+        // the unweighted mean over the same onsets. Accent-free input scores the
+        // baseline 0.5 for every meter (a tie, resolved by the preference order);
+        // accents on strong beats push the score above 0.5, contradicting accents
+        // push it below. The result is a meaningful 0-1 confidence.
+        var measureDur = meter.MeasureDuration;
+        double weightedSum = 0, weightSum = 0, plainSum = 0;
+
+        for (int i = 0; i < onsets.Count; i++)
+        {
+            var measurePos = GetPositionInMeasure(onsets[i].offset, measureDur);
+            var strength = GetBeatStrength(measurePos, meter) switch
+            {
+                BeatStrength.Strong => 1.0,
+                BeatStrength.Medium => 0.6,
+                BeatStrength.Weak => 0.3,
+                _ => 0.1
+            };
+
+            weightedSum += accentWeights[i] * strength;
+            weightSum += accentWeights[i];
+            plainSum += strength;
+        }
+
+        var accentAlignment = (weightedSum / weightSum) - (plainSum / onsets.Count);
+        return Math.Clamp(0.5f + (float)accentAlignment, 0f, 1f);
     }
 
     private static Rational GetPositionInMeasure(Rational offset, Rational measureDuration)
@@ -670,8 +781,24 @@ public static class RhythmAnalyzer
     private static Rational GetNextStrongBeat(Rational offset, TimeSignature meter)
     {
         var beatDur = meter.BeatDuration;
+        var measureDur = meter.MeasureDuration;
         var currentBeat = (long)(offset.ToDouble() / beatDur.ToDouble());
-        return beatDur * (currentBeat + 1);
+
+        // Scan forward for the next metrically STRONG position (Strong or Medium).
+        // Returning just the next beat of any strength made every weak-beat note
+        // longer than a beat "syncopated" (e.g. a half note on beat 2 of 3/4).
+        for (var beat = currentBeat + 1; beat <= currentBeat + meter.BeatsPerMeasure + 1; beat++)
+        {
+            var beatTime = beatDur * beat;
+            var strength = GetBeatStrength(GetPositionInMeasure(beatTime, measureDur), meter);
+            if (strength is BeatStrength.Strong or BeatStrength.Medium)
+                return beatTime;
+        }
+
+        // Unreachable for well-formed meters (every measure has a strong downbeat);
+        // fall back to the next downbeat.
+        var currentMeasure = (long)(offset.ToDouble() / measureDur.ToDouble());
+        return measureDur * (currentMeasure + 1);
     }
 
     private static bool IsSyncopated(BeatStrength strength, Rational offset, Rational duration, TimeSignature meter)
@@ -684,7 +811,9 @@ public static class RhythmAnalyzer
     }
 
     private static List<RhythmPatternMatch> DetectPatterns(
-        List<(Rational offset, Rational duration, int index)> onsets)
+        List<(Rational offset, Rational duration, int index)> onsets,
+        TimeSignature meter,
+        float[] velocities)
     {
         // Estimate: patterns are typically 4-8 notes, not many matches expected
         var matches = new List<RhythmPatternMatch>(onsets.Count / 4);
@@ -694,6 +823,9 @@ public static class RhythmAnalyzer
             // Slide pattern over onsets
             for (int i = 0; i <= onsets.Count - pattern.Durations.Length; i++)
             {
+                if (!MeetsPatternRequirements(pattern, onsets, i, meter, velocities))
+                    continue;
+
                 var quality = MatchPattern(onsets, i, pattern);
                 if (quality > 0.8f)
                 {
@@ -709,12 +841,84 @@ public static class RhythmAnalyzer
             }
         }
 
-        // Remove overlapping matches, keep best
+        // Remove overlapping matches: keep the best quality and, on equal quality,
+        // the most specific pattern (Waltz/Backbeat carry extra metric/velocity
+        // requirements that duration-identical Straight Quarters lacks).
         matches = [.. matches
             .GroupBy(m => m.StartIndex / 4) // Group by approximate position
-            .Select(g => g.OrderByDescending(m => m.MatchQuality).First())];
+            .Select(g => g
+                .OrderByDescending(m => m.MatchQuality)
+                .ThenByDescending(m => PatternSpecificity(m.Pattern))
+                .First())];
 
         return matches;
+    }
+
+    private static int PatternSpecificity(RhythmPattern pattern) => pattern.Name switch
+    {
+        "Waltz" or "Backbeat" => 1,
+        _ => 0
+    };
+
+    /// <summary>
+    /// Extra requirements for patterns whose duration sequences alone are ambiguous
+    /// (both are duration-identical to Straight Quarters and could otherwise never win):
+    /// Waltz is quarter-quarter-quarter ONLY in 3/4 aligned to beats 1-2-3, and Backbeat
+    /// is four quarters ONLY in 4/4 with velocity accents on beats 2 and 4 (with uniform
+    /// velocities, Backbeat is simply not reported).
+    /// </summary>
+    private static bool MeetsPatternRequirements(
+        RhythmPattern pattern,
+        List<(Rational offset, Rational duration, int index)> onsets,
+        int startIndex,
+        TimeSignature meter,
+        float[] velocities)
+    {
+        switch (pattern.Name)
+        {
+            case "Waltz":
+            {
+                if (meter.BeatsPerMeasure != 3 || meter.BeatUnit != 4)
+                    return false;
+                return OnsetsAlignToBeats(onsets, startIndex, 3, meter);
+            }
+
+            case "Backbeat":
+            {
+                if (meter.BeatsPerMeasure != 4 || meter.BeatUnit != 4)
+                    return false;
+                if (!OnsetsAlignToBeats(onsets, startIndex, 4, meter))
+                    return false;
+
+                const float accentMargin = 0.01f;
+                var v1 = velocities[onsets[startIndex].index];
+                var v2 = velocities[onsets[startIndex + 1].index];
+                var v3 = velocities[onsets[startIndex + 2].index];
+                var v4 = velocities[onsets[startIndex + 3].index];
+                return v2 > v1 + accentMargin && v4 > v3 + accentMargin;
+            }
+
+            default:
+                return true;
+        }
+    }
+
+    /// <summary>Whether <paramref name="count"/> onsets from <paramref name="startIndex"/> sit exactly on beats 1..count of a measure.</summary>
+    private static bool OnsetsAlignToBeats(
+        List<(Rational offset, Rational duration, int index)> onsets,
+        int startIndex,
+        int count,
+        TimeSignature meter)
+    {
+        var measureDur = meter.MeasureDuration;
+        var beatDur = meter.BeatDuration;
+        for (int k = 0; k < count; k++)
+        {
+            if (GetPositionInMeasure(onsets[startIndex + k].offset, measureDur) != beatDur * k)
+                return false;
+        }
+
+        return true;
     }
 
     private static float MatchPattern(
@@ -787,27 +991,42 @@ public static class RhythmAnalyzer
 
     private static float DetectSwing(List<(Rational offset, Rational duration, int index)> onsets)
     {
-        // Look for pairs of notes that should be equal but aren't
-        // Swing = ratio of first to second in a pair
-        var pairs = new List<(double first, double second)>();
+        // Group onsets into quarter-note beats and pair the on-beat onset with the
+        // following offbeat onset in the same beat. Pairing by absolute even/odd
+        // index breaks as soon as a pickup or chord shifts the parity: every
+        // subsequent pair inverts and swung music reads as "reverse swing".
+        var beatDur = Rational.Quarter;
+        var beatDurDouble = beatDur.ToDouble();
+        var ratios = new List<double>();
 
-        for (int i = 0; i < onsets.Count - 1; i += 2)
+        int i = 0;
+        while (i < onsets.Count)
         {
-            var d1 = onsets[i].duration.ToDouble();
-            var d2 = i + 1 < onsets.Count ? onsets[i + 1].duration.ToDouble() : d1;
+            var beatIndex = (long)Math.Floor(onsets[i].offset.ToDouble() / beatDurDouble);
+            var beatStart = beatDur * beatIndex;
+            var beatEnd = beatDur * (beatIndex + 1);
 
-            // Only consider pairs that sum to roughly a beat
-            if (Math.Abs(d1 + d2 - 0.5) < 0.1 || Math.Abs(d1 + d2 - 0.25) < 0.05)
+            // Collect all onsets inside this beat.
+            int j = i;
+            while (j < onsets.Count && onsets[j].offset < beatEnd)
+                j++;
+
+            // A swing pair is exactly two onsets: one on the beat, one after it.
+            // Beats with any other onset count carry no swing information.
+            if (j - i == 2 &&
+                onsets[i].offset == beatStart &&
+                onsets[i + 1].offset > onsets[i].offset)
             {
-                pairs.Add((d1, d2));
+                ratios.Add((onsets[i + 1].offset - beatStart).ToDouble() / beatDurDouble);
             }
+
+            i = j;
         }
 
-        if (pairs.Count == 0)
-            return 0.5f; // No swing detected (straight)
+        if (ratios.Count == 0)
+            return 0.5f; // No swing pairs detected (straight)
 
-        var avgRatio = pairs.Average(p => p.first / (p.first + p.second));
-        return (float)avgRatio;
+        return (float)Math.Clamp(ratios.Average(), 0.0, 1.0);
     }
 
     private static float CalculateSyncopation(List<RhythmEvent> events)

@@ -34,6 +34,10 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
     // This keeps repeated Train() calls accumulating correctly (normalizing in
     // place would mix probabilities with subsequent raw counts).
     private readonly Dictionary<string, Dictionary<Rational, float>> _transitions = [];
+    // Shorter-suffix contexts (orders 1.._order-1), recorded during Train so that
+    // Predict/Generate can fall back when the full-order context was never seen —
+    // storing only full-order keys made the fallback path dead code.
+    private readonly Dictionary<string, Dictionary<Rational, float>> _suffixTransitions = [];
     private readonly int _order = Math.Max(1, order);
     private readonly Random _random = seed.HasValue ? new Random(seed.Value) : new Random();
 
@@ -45,24 +49,32 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
     {
         ArgumentNullException.ThrowIfNull(durations);
 
-        if (durations.Count <= _order)
+        if (durations.Count < 2)
         {
             return;
         }
 
-        for (int i = _order; i < durations.Count; i++)
+        for (int i = 1; i < durations.Count; i++)
         {
-            var context = GetContext(durations, i - _order, _order);
             var next = durations[i];
 
-            if (!_transitions.TryGetValue(context, out var dist))
+            // Record the full-order context plus every shorter suffix (orders
+            // 1.._order-1, kept in a separate table so full-order statistics
+            // stay unpolluted).
+            for (int contextOrder = Math.Min(_order, i); contextOrder >= 1; contextOrder--)
             {
-                dist = [];
-                _transitions[context] = dist;
-            }
+                var table = contextOrder == _order ? _transitions : _suffixTransitions;
+                var context = GetContext(durations, i - contextOrder, contextOrder);
 
-            dist.TryGetValue(next, out var count);
-            dist[next] = count + 1;
+                if (!table.TryGetValue(context, out var dist))
+                {
+                    dist = [];
+                    table[context] = dist;
+                }
+
+                dist.TryGetValue(next, out var count);
+                dist[next] = count + 1;
+            }
         }
     }
 
@@ -193,7 +205,9 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
         {
             Order = _order,
             UniqueContexts = _transitions.Count,
-            TotalTransitions = _transitions.Values.Sum(d => d.Count),
+            // Sum the accumulated counts: d.Count is the number of DISTINCT
+            // successors, not how many transitions were observed.
+            TotalTransitions = (int)Math.Round(_transitions.Values.Sum(d => d.Values.Sum())),
             MostCommonDurations = [.. _transitions
                 .SelectMany(kv => kv.Value)
                 .GroupBy(kv => kv.Key)
@@ -226,11 +240,11 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
 
         if (!_transitions.TryGetValue(key, out var dist) || dist.Count == 0)
         {
-            // Try shorter context
+            // Try shorter context (recorded in the suffix table during Train)
             for (int o = _order - 1; o >= 1; o--)
             {
                 key = GetContext(context, context.Count - o, o);
-                if (_transitions.TryGetValue(key, out dist) && dist.Count > 0)
+                if (_suffixTransitions.TryGetValue(key, out dist) && dist.Count > 0)
                 {
                     break;
                 }
@@ -270,7 +284,7 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
             }
 
             var context = GetContext(recentDurations, recentDurations.Count - o, o);
-            if (_transitions.TryGetValue(context, out var dist) && dist.Count > 0)
+            if (_suffixTransitions.TryGetValue(context, out var dist) && dist.Count > 0)
             {
                 var total = dist.Values.Sum();
                 var sorted = dist.OrderByDescending(kv => kv.Value).ToList();

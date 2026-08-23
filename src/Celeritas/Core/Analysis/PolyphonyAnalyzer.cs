@@ -355,10 +355,9 @@ public static class PolyphonyAnalyzer
             return ImitationDetectionResult.None;
         }
 
-        // Build interval sequences for each voice.
+        // Build interval sequences for each voice (Voice.Notes are already time-ordered).
         var sequences = voices.Voices
             .Select(v => v.Notes
-                .OrderBy(n => n.Offset)
                 .Select(n => n.Pitch)
                 .ToArray())
             .ToArray();
@@ -383,18 +382,34 @@ public static class PolyphonyAnalyzer
                 }
 
                 var i2 = PolyphonyAnalyzerHelpers.ToIntervals(s2);
-                var match = PolyphonyAnalyzerHelpers.FindIntervalMatch(i1, i2, motifLen - 1);
-                if (match.HasValue)
+                foreach (var (start1, start2) in PolyphonyAnalyzerHelpers.FindIntervalMatches(i1, i2, motifLen - 1))
                 {
-                    var (start1, start2) = match.Value;
+                    // A real imitation needs a distinctive motif: a run of identical
+                    // intervals (any shared scale fragment) matches trivially and is
+                    // not a canon.
+                    if (!PolyphonyAnalyzerHelpers.HasDistinctIntervals(i1, start1, motifLen - 1, minDistinct: 2))
+                    {
+                        continue;
+                    }
+
                     var p1 = s1[start1];
                     var p2 = s2[start2];
                     var interval = p2 - p1;
 
-                    // Estimate time delay using note offsets.
-                    var t1 = voices.Voices[v1].Notes.OrderBy(n => n.Offset).ElementAt(start1).Offset;
-                    var t2 = voices.Voices[v2].Notes.OrderBy(n => n.Offset).ElementAt(start2).Offset;
+                    // Time delay between the two entries; either voice may lead, but a
+                    // zero delay is simultaneous (parallel) motion, not imitation.
+                    var t1 = voices.Voices[v1].Notes[start1].Offset;
+                    var t2 = voices.Voices[v2].Notes[start2].Offset;
                     var delay = t2 - t1;
+                    if (delay == Rational.Zero)
+                    {
+                        continue;
+                    }
+
+                    if (delay < Rational.Zero)
+                    {
+                        delay = -delay;
+                    }
 
                     return new ImitationDetectionResult
                     {
@@ -448,7 +463,7 @@ public static class PolyphonyAnalyzer
         var motions = AnalyzeMotions(voices, timePoints);
 
         // Detect counterpoint violations
-        var violations = DetectViolations(motions, intervals);
+        var violations = DetectViolations(motions, intervals, voices);
 
         // Calculate statistics
         var motionStats = CalculateMotionStats(motions);
@@ -497,6 +512,8 @@ public static class PolyphonyAnalyzer
         VoiceSeparationResult voices,
         List<Rational> timePoints)
     {
+        // PERF: O(timePoints × notes) sweep via GetSoundingNotes; a sweep-line over
+        // note start/end events would bring this down to O(N log N).
         // Estimate capacity: avg 2-3 intervals per time point for typical polyphony
         var intervals = new List<VoiceInterval>(timePoints.Count * 3);
 
@@ -570,6 +587,8 @@ public static class PolyphonyAnalyzer
         VoiceSeparationResult voices,
         List<Rational> timePoints)
     {
+        // PERF: O(timePoints × notes) sweep via GetSoundingNotes; a sweep-line over
+        // note start/end events would bring this down to O(N log N).
         var motions = new List<VoiceMotion>();
 
         for (int t = 0; t < timePoints.Count - 1; t++)
@@ -659,7 +678,8 @@ public static class PolyphonyAnalyzer
 
     private static List<CounterpointViolation> DetectViolations(
         List<VoiceMotion> motions,
-        List<VoiceInterval> intervals)
+        List<VoiceInterval> intervals,
+        VoiceSeparationResult voices)
     {
         // Pre-allocate assuming few violations (optimistic case)
         var violations = new List<CounterpointViolation>(motions.Count / 10);
@@ -737,28 +757,55 @@ public static class PolyphonyAnalyzer
             }
         }
 
-        // Check for unresolved dissonances
-        for (int i = 0; i < intervals.Count - 1; i++)
+        // Check for unresolved dissonances. Evaluate a voice-pair interval only at
+        // time points where at least one of the pair's notes has its ONSET: the
+        // interval list re-samples every sounding pair at EVERY global time point,
+        // so a single sustained dissonance beside a moving third voice would
+        // otherwise be re-counted once per time point.
+        var onsetTimes = new HashSet<Rational>[voices.Voices.Count];
+        for (int v = 0; v < voices.Voices.Count; v++)
         {
-            if (intervals[i].Quality == IntervalQuality.SharpDissonance)
-            {
-                // Check if resolved in next time slice
-                var nextInSameVoices = intervals.Skip(i + 1)
-                    .FirstOrDefault(iv => iv.Voice1 == intervals[i].Voice1 &&
-                                          iv.Voice2 == intervals[i].Voice2);
+            onsetTimes[v] = [.. voices.Voices[v].Notes.Select(n => n.Offset)];
+        }
 
-                if (nextInSameVoices.Quality == IntervalQuality.SharpDissonance)
+        for (int i = 0; i < intervals.Count; i++)
+        {
+            var current = intervals[i];
+            if (current.Quality != IntervalQuality.SharpDissonance)
+            {
+                continue;
+            }
+
+            if (!onsetTimes[current.Voice1].Contains(current.Time) &&
+                !onsetTimes[current.Voice2].Contains(current.Time))
+            {
+                continue; // Sustained state, already evaluated at its onset.
+            }
+
+            // Resolution check via the pair's next interval (index scan; the interval
+            // list is ordered by time). No later interval means the dissonance was
+            // never resolved.
+            var resolved = false;
+            for (int j = i + 1; j < intervals.Count; j++)
+            {
+                if (intervals[j].Voice1 == current.Voice1 && intervals[j].Voice2 == current.Voice2)
                 {
-                    violations.Add(new CounterpointViolation
-                    {
-                        Type = "Unresolved Dissonance",
-                        Description = $"Sharp dissonance ({intervals[i]}) not resolved by step",
-                        Time = intervals[i].Time,
-                        Voice1 = intervals[i].Voice1,
-                        Voice2 = intervals[i].Voice2,
-                        Severity = "Warning"
-                    });
+                    resolved = intervals[j].Quality != IntervalQuality.SharpDissonance;
+                    break;
                 }
+            }
+
+            if (!resolved)
+            {
+                violations.Add(new CounterpointViolation
+                {
+                    Type = "Unresolved Dissonance",
+                    Description = $"Sharp dissonance ({current}) not resolved by step",
+                    Time = current.Time,
+                    Voice1 = current.Voice1,
+                    Voice2 = current.Voice2,
+                    Severity = "Warning"
+                });
             }
         }
 
@@ -780,18 +827,40 @@ public static class PolyphonyAnalyzer
     private static IntervalStatistics CalculateIntervalStats(List<VoiceInterval> intervals)
     {
         var counts = new int[12];
+        int perfect = 0, imperfect = 0, mild = 0, sharp = 0;
         foreach (var iv in intervals)
         {
             counts[iv.Interval]++;
+            switch (iv.Quality)
+            {
+                case IntervalQuality.PerfectConsonance:
+                    perfect++;
+                    break;
+                case IntervalQuality.ImperfectConsonance:
+                    imperfect++;
+                    break;
+                case IntervalQuality.MildDissonance:
+                    mild++;
+                    break;
+                default:
+                    sharp++;
+                    break;
+            }
         }
 
-        return new IntervalStatistics
+        var stats = new IntervalStatistics
         {
-            PerfectConsonances = intervals.Count(i => i.Quality == IntervalQuality.PerfectConsonance),
-            ImperfectConsonances = intervals.Count(i => i.Quality == IntervalQuality.ImperfectConsonance),
-            MildDissonances = intervals.Count(i => i.Quality == IntervalQuality.MildDissonance),
-            SharpDissonances = intervals.Count(i => i.Quality == IntervalQuality.SharpDissonance)
+            PerfectConsonances = perfect,
+            ImperfectConsonances = imperfect,
+            MildDissonances = mild,
+            SharpDissonances = sharp
         };
+
+        // IntervalCounts is a fixed get-only array on the stats object; fill it in
+        // place (the local histogram used to be built and then dropped, leaving the
+        // property permanently all zeros).
+        counts.CopyTo(stats.IntervalCounts, 0);
+        return stats;
     }
 
     private static float CalculateTextureDensity(VoiceSeparationResult voices, List<Rational> timePoints)
@@ -801,25 +870,34 @@ public static class PolyphonyAnalyzer
             return voices.Voices.Count;
         }
 
-        float totalDensity = 0;
+        // PERF: O(timePoints × notes) sweep; a sweep-line over note start/end events
+        // would bring this down to O(N log N).
+        double weightedSum = 0;
+        double totalLength = 0;
 
         for (int i = 0; i < timePoints.Count - 1; i++)
         {
-            var midpoint = timePoints[i];
+            // Time points include every note start and end, so the set of sounding
+            // voices is constant across the segment; sample it at the segment start
+            // and weight by the segment's length (an unweighted per-segment average
+            // would let eight sixteenth-note segments outvote one whole-note chord).
+            var segmentStart = timePoints[i];
+            var segmentLength = (timePoints[i + 1] - segmentStart).ToDouble();
             var sounding = 0;
 
             foreach (var voice in voices.Voices)
             {
-                if (voice.Notes.Any(n => n.Offset <= midpoint && n.End > midpoint))
+                if (voice.Notes.Any(n => n.Offset <= segmentStart && n.End > segmentStart))
                 {
                     sounding++;
                 }
             }
 
-            totalDensity += sounding;
+            weightedSum += sounding * segmentLength;
+            totalLength += segmentLength;
         }
 
-        return totalDensity / (timePoints.Count - 1);
+        return totalLength > 0 ? (float)(weightedSum / totalLength) : voices.Voices.Count;
     }
 
     private static float CalculateVoiceIndependence(List<VoiceMotion> motions)
@@ -1027,11 +1105,11 @@ static file class PolyphonyAnalyzerHelpers
         return ints;
     }
 
-    public static (int start1, int start2)? FindIntervalMatch(int[] a, int[] b, int len)
+    public static IEnumerable<(int start1, int start2)> FindIntervalMatches(int[] a, int[] b, int len)
     {
         if (a.Length < len || b.Length < len)
         {
-            return null;
+            yield break;
         }
 
         for (var i = 0; i <= a.Length - len; i++)
@@ -1050,11 +1128,37 @@ static file class PolyphonyAnalyzerHelpers
 
                 if (ok)
                 {
-                    return (i, j);
+                    yield return (i, j);
                 }
             }
         }
+    }
 
-        return null;
+    /// <summary>
+    /// Whether the interval window [start, start+len) contains at least
+    /// <paramref name="minDistinct"/> distinct interval values.
+    /// </summary>
+    public static bool HasDistinctIntervals(int[] intervals, int start, int len, int minDistinct)
+    {
+        var distinct = 0;
+        for (var i = start; i < start + len; i++)
+        {
+            var seen = false;
+            for (var j = start; j < i; j++)
+            {
+                if (intervals[j] == intervals[i])
+                {
+                    seen = true;
+                    break;
+                }
+            }
+
+            if (!seen && ++distinct >= minDistinct)
+            {
+                return true;
+            }
+        }
+
+        return distinct >= minDistinct;
     }
 }
