@@ -36,11 +36,11 @@ Celeritas is a high-performance **symbolic music analysis and generation engine*
 🚧 **Active Development** — Experimental / Research Project  
 ⚠️ **API is not stable yet** — Breaking changes may occur
 
-**Maintainer status (2026-05-05):** v0.9.0 is the current stable release. Benchmarks refreshed May 2026.  
+**Maintainer status (2026-08-23):** v0.10.0 is the current stable release. Benchmarks refreshed May 2026.  
 Issues and PRs are welcome.
 
-Current version: **v0.9.0** (December 2025)  
-Extensive test suite: **360+ C# tests** and **40 Python tests**
+Current version: **v0.10.0** (August 2026)  
+Extensive test suite: **950+ C# tests** and **40 Python tests**
 
 ## Python API Coverage
 
@@ -408,18 +408,22 @@ cd bindings/python
 python test_celeritas.py
 ```
 
-**Current:** 360+ C# tests and 40 Python tests, all passing
+**Current:** 950+ C# tests and 40 Python tests, all passing
 
-## 🎉 Recent Updates (v0.9.0 - December 2025)
+## 🎉 Recent Updates (v0.10.0 - August 2026)
 
-Highlights:
+A correctness release: a full audit of the library found and fixed a class of bugs
+that returned confident wrong answers instead of failing loudly. Highlights:
 
-- ✅ **Ornamentation** - Trills, mordents, turns, appoggiaturas
-- ✅ **Figured Bass** - Baroque chord notation realization
-- ✅ **ARM NEON SIMD** - High-performance on Apple Silicon and ARM64
-- 🧪 **WebAssembly SIMD** - Browser-based music processing (experimental, not yet CI-tested)
-- ✅ **Python Bindings** - Full ctypes wrapper with a dedicated test suite
-- ✅ **Round-Trip Formatting** - Export notes with directives back to notation
+- ✅ **Meter detection** - 4/4 and 3/4 are reachable again (scoring made 2/4 and 6/8 always win)
+- ✅ **Voice separation** - overlapping notes stay in separate voices, so polyphony analyzes as polyphony
+- ✅ **Progression analysis** - chromatic chords are no longer treated as tonic `I`, removing false cadences
+- ✅ **Modulation detection** - the confidence gate now matches how confidence is actually defined
+- ✅ **Figured bass** - upper voices sound above the bass; the natural (`n`) figure works outside C major
+- ✅ **MusicXML** - irregular meters (3/8, 7/8) round-trip exactly; per-voice tie tracking
+- ✅ **Parsing** - `ParseKey` and the chord-symbol parser reject garbage instead of guessing
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list, including breaking changes.
 
 ## 🔭 Next Ideas
 
@@ -510,8 +514,8 @@ Releases are automated via GitHub Actions:
 2. **Stable releases** - Create a tag:
 
    ```bash
-   git tag v0.9.0
-   git push origin v0.9.0
+   git tag v0.10.0
+   git push origin v0.10.0
    ```
 
 This triggers:

@@ -6,7 +6,7 @@
 
   <PropertyGroup>
     <!-- Single source of truth for the version. CI overrides with -p:Version=X on tagged releases. -->
-    <Version>0.9.0</Version>
+    <Version>0.10.0</Version>
 
     <!-- Language / nullability -->
     <LangVersion>latest</LangVersion>

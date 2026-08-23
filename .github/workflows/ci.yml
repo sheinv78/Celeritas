@@ -268,7 +268,7 @@ jobs:
         if [[ $GITHUB_REF == refs/tags/v* ]]; then
           VERSION=${GITHUB_REF#refs/tags/v}
         else
-          VERSION="0.9.0-preview.$(date +%Y%m%d%H%M%S)"
+          VERSION="0.10.0-preview.$(date +%Y%m%d%H%M%S)"
         fi
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
     
