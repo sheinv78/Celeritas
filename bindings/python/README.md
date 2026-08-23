@@ -91,7 +91,7 @@ import celeritas
 - `parse_chord_symbol(symbol: str, max_pitches: int = 32) -> Optional[List[int]]`
     - Parses chord symbols like `C7(b9,#11)`, `C/E`, `C|G`
 - `native_version() -> str`
-    - Returns the version reported by the native library (e.g. `0.9.0`)
+    - Returns the version reported by the native library (e.g. `0.10.0`)
 
 ### Errors
 

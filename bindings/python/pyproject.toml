@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 # Keep this version in sync with <Version> in the repo-root Directory.Build.props.
 [project]
 name = "celeritas"
-version = "0.9.0"
+version = "0.10.0"
 description = "High-Performance Music Engine - Python bindings for Celeritas"
 readme = "README.md"
 authors = [

@@ -22,7 +22,7 @@
         <RepositoryType>git</RepositoryType>
         <PackageTags>music;midi;simd;audio;daw;chord;harmony;analysis;avx512;avx2;neon;voice-leading;key-detection;rhythm;melody;counterpoint</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageReleaseNotes>v0.9.0: Ornaments, Figured Bass, ARM NEON SIMD, WebAssembly SIMD, Python bindings</PackageReleaseNotes>
+        <PackageReleaseNotes>v0.10.0: library-wide correctness fixes across analysis, parsing and I/O; see CHANGELOG.md</PackageReleaseNotes>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>

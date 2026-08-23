@@ -31,7 +31,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>music;midi;cli;tool;analysis;chord;harmony;transpose;dotnet-tool</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>v0.9.0: Added MIDI processing commands (transpose, analyze, info)</PackageReleaseNotes>
+    <PackageReleaseNotes>v0.10.0: correctness fixes inherited from the Celeritas library; see CHANGELOG.md</PackageReleaseNotes>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
   

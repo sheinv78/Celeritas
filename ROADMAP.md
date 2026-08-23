@@ -15,7 +15,7 @@ and open-source-adoption paths do not diverge — both require the same foundati
 frozen public API, real documentation, notation interop, and reliability across a broad
 corpus.
 
-## Where we are (v0.9.0)
+## Where we are (v0.10.0)
 
 Celeritas already covers most of the symbolic-music core, all under test:
 

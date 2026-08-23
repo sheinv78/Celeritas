@@ -1,6 +1,6 @@
 ﻿# AGENTS.md — Celeritas Codebase Guide
 
-> High-Performance Symbolic Music Engine for .NET (v0.9.0, .NET 10)
+> High-Performance Symbolic Music Engine for .NET (v0.10.0, .NET 10)
 
 ## Architecture Overview
 
