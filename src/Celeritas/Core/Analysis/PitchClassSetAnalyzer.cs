@@ -311,7 +311,9 @@ public static class PitchClassSetAnalyzer
         var mask = 0;
         foreach (var pc in pitchClasses)
         {
-            mask |= 1 << (pc % 12);
+            // Fold, not `%`: `%` keeps the sign, so a negative pitch class shifted by a
+            // negative amount (1 << -n sets bit 31) and produced a wrong 12-tone complement.
+            mask |= 1 << PitchMath.Fold(pc);
         }
 
         var complementMask = ~mask & 0xFFF;
