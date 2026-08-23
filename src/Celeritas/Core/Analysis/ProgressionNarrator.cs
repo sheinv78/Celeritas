@@ -52,7 +52,8 @@ internal static class ProgressionNarrator
         List<CadenceInfo> cadences,
         KeySignature key,
         bool usesHarmonicMinor,
-        List<ModulationInfo> modulations)
+        List<ModulationInfo> modulations,
+        RomanNumeralChord[] romans)
     {
         var sb = new StringBuilder();
 
@@ -98,27 +99,34 @@ internal static class ProgressionNarrator
 
         sb.AppendLine(string.Join(" → ", phases) + ".");
 
-        // Comment on ending
-        if (cadences.Count > 0)
+        // Comment on ending. A cadence only describes the ENDING when its position
+        // is the final chord pair — the last detected cadence may sit mid-progression.
+        var endingCadence = cadences.Count > 0 && cadences[^1].Position == chords.Count - 2
+            ? cadences[^1].Type
+            : CadenceType.None;
+
+        if (endingCadence != CadenceType.None)
         {
-            var lastCadence = cadences[^1];
-            if (lastCadence.Type == CadenceType.Deceptive)
+            if (endingCadence == CadenceType.Deceptive)
             {
                 sb.AppendLine("Note: The ending uses a deceptive cadence - instead of resolving home, it takes an unexpected turn. This creates a 'to be continued' feeling.");
             }
-            else if (lastCadence.Type == CadenceType.Half)
+            else if (endingCadence is CadenceType.Half or CadenceType.Phrygian)
             {
                 sb.AppendLine("Note: The progression ends on dominant - this creates unresolved tension, like an open question.");
             }
-            else if (lastCadence.Type == CadenceType.Authentic)
+            else if (endingCadence == CadenceType.Authentic)
             {
                 sb.AppendLine("The authentic cadence at the end provides a satisfying, conclusive finish.");
             }
         }
         else if (chords.Count > 0)
         {
-            var last = chords[^1];
-            if (last.RomanNumeral.ToUpperInvariant().StartsWith("I") && last.Character == ChordCharacter.Stable)
+            // Ends-on-tonic is a scale-degree question: a minor-key i (Melancholic)
+            // resolves home just as a major-key I (Stable) does. The old check
+            // required Character == Stable and so called minor endings unresolved.
+            var lastRoman = romans[^1];
+            if (lastRoman.IsValid && lastRoman.Degree == ScaleDegree.I)
             {
                 sb.AppendLine("The progression ends on the tonic, providing a sense of completion.");
             }
@@ -136,6 +144,7 @@ internal static class ProgressionNarrator
         List<CadenceInfo> cadences,
         KeySignature key,
         List<ParsedChord> parsedChords,
+        RomanNumeralChord[] romans,
         List<ModulationInfo> modulations)
     {
         var suggestions = new List<string>();
@@ -145,8 +154,7 @@ internal static class ProgressionNarrator
             return suggestions;
         }
 
-        var lastParsed = parsedChords[^1];
-        var lastRoman = KeyAnalyzer.Analyze(lastParsed.Pitches, key);
+        var lastRoman = romans[^1];
         var tonicSymbol = key.IsMajor ? ChordLibrary.NoteNames[key.Root] : ChordLibrary.NoteNames[key.Root] + "m";
 
         // Modulation suggestions
@@ -168,16 +176,22 @@ internal static class ProgressionNarrator
         // Track what we've already suggested to avoid duplicates
         var suggestedResolution = false;
 
+        // A cadence only describes the ENDING when its position is the final chord
+        // pair — cadences.LastOrDefault() alone may be a mid-progression cadence,
+        // and treating it as the ending contradicted the ending suggestions below.
+        var lastCadence = cadences.Count > 0 && cadences[^1].Position == parsedChords.Count - 2
+            ? cadences[^1]
+            : default;
+
         // Check for deceptive cadence at end
-        var lastCadence = cadences.LastOrDefault();
         if (lastCadence.Type == CadenceType.Deceptive)
         {
             suggestions.Add($"The deceptive cadence (V→vi) creates surprise and openness. For a conclusive finish, resolve to {tonicSymbol}.");
             suggestedResolution = true;
         }
 
-        // Check for half cadence at end (ends on V)
-        if (lastCadence.Type == CadenceType.Half)
+        // Check for half cadence at end (ends on V; Phrygian is a half cadence too)
+        if (lastCadence.Type is CadenceType.Half or CadenceType.Phrygian)
         {
             suggestions.Add($"Ending on the dominant (V) creates suspense. Add {tonicSymbol} for complete resolution.");
             suggestedResolution = true;
@@ -197,10 +211,12 @@ internal static class ProgressionNarrator
             suggestions.Add("Strong authentic cadence provides satisfying resolution.");
         }
 
-        // If not ending on tonic and we haven't already suggested resolution
-        if (!suggestedResolution && lastRoman.Degree != ScaleDegree.I)
+        // If not ending on tonic and we haven't already suggested resolution.
+        // An invalid (chromatic) final chord is NOT the tonic even though
+        // Invalid's default Degree is ScaleDegree.I.
+        if (!suggestedResolution && (!lastRoman.IsValid || lastRoman.Degree != ScaleDegree.I))
         {
-            if (lastRoman.Degree == ScaleDegree.V)
+            if (lastRoman.IsValid && lastRoman.Degree == ScaleDegree.V)
             {
                 suggestions.Add($"The progression ends on the dominant. Add {tonicSymbol} for full closure.");
             }
@@ -215,9 +231,9 @@ internal static class ProgressionNarrator
         }
 
         // Suggest ii-V-I if ending on I but coming from non-dominant
-        if (lastRoman.Degree == ScaleDegree.I && chords.Count >= 2)
+        if (lastRoman.IsValid && lastRoman.Degree == ScaleDegree.I && chords.Count >= 2)
         {
-            var secondLast = KeyAnalyzer.Analyze(parsedChords[^2].Pitches, key);
+            var secondLast = romans[^2];
             if (secondLast.Degree != ScaleDegree.V)
             {
                 var iiRoot = (key.Root + 2) % 12;

@@ -27,18 +27,19 @@ public class ProgressionAdvisorCharacterizationTests
 
         Assert.Equal("C Major", r.Key.ToString());
         Assert.Equal("I - V - vi - IV", r.Pattern);
-        Assert.Equal("I - V - vi - IV in C Major (tension 28%, complexity 39%)", r.Summary);
+        Assert.Equal("I - V - vi - IV in C Major (tension 42%, complexity 40%)", r.Summary);
         Assert.False(r.UsesHarmonicMinor);
         Assert.False(r.HasModalMixture);
-        Assert.Equal(0.3875f, r.Complexity);
-        Assert.Equal(0.275f, r.AverageTension);
-        Assert.Equal([0.2f, 0.25f, 0.4f, 0.25f], r.TensionCurve!);
+        Assert.Equal(0.4f, r.Complexity);
+        Assert.Equal(0.425f, r.AverageTension);
+        // V (major-key dominant) is now Tense (0.85) so the dominant out-ranks IV.
+        Assert.Equal([0.2f, 0.85f, 0.4f, 0.25f], r.TensionCurve!);
         Assert.Equal(3, r.ParallelFifths);
         Assert.Equal("Rough", r.QualityRating);
 
         Assert.Equal(["I", "V", "vi", "IV"], r.Chords.Select(c => c.RomanNumeral));
         Assert.Equal(
-            [ChordCharacter.Stable, ChordCharacter.Bright, ChordCharacter.Melancholic, ChordCharacter.Bright],
+            [ChordCharacter.Stable, ChordCharacter.Tense, ChordCharacter.Melancholic, ChordCharacter.Bright],
             r.Chords.Select(c => c.Character));
         Assert.Equal("Tonic (home/stable)", r.Chords[0].Function);
         Assert.Equal("Dominant (tension/pull to resolve)", r.Chords[1].Function);
@@ -52,15 +53,17 @@ public class ProgressionAdvisorCharacterizationTests
             r.Cadences[0].Description);
         Assert.Equal(["Cadences: Deceptive"], r.Highlights);
 
+        // The deceptive cadence is mid-progression (G->Am), and the piece actually
+        // ends on IV — the narrative and suggestions now describe the real ending.
         Assert.Equal(
             "This progression is in C Major, giving it a bright and optimistic character.\n"
             + "The harmonic journey: establishes home → creates strong pull to resolve → establishes home → builds tension.\n"
-            + "Note: The ending uses a deceptive cadence - instead of resolving home, it takes an unexpected turn. This creates a 'to be continued' feeling.",
+            + "The progression doesn't resolve to tonic at the end, leaving it somewhat open.",
             r.Narrative.ReplaceLineEndings("\n"));
 
         Assert.Equal(
             [
-                "The deceptive cadence (V→vi) creates surprise and openness. For a conclusive finish, resolve to C.",
+                "Ending on IV (subdominant) feels unresolved. Try IV→V→C for complete cadence.",
                 "Try Fm (borrowed iv) for emotional color.",
             ],
             r.Suggestions);
@@ -154,7 +157,7 @@ public class ProgressionAdvisorCharacterizationTests
 
         Assert.Single(r.BorrowedChords);
         Assert.Equal("E", r.BorrowedChords[0].Chord);
-        Assert.Equal("A Minor major", r.BorrowedChords[0].SourceKey);
+        Assert.Equal("A Major", r.BorrowedChords[0].SourceKey); // parallel key, was "A Minor major"
 
         Assert.Equal(
             [
@@ -211,7 +214,8 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal("C Major", r.Key.ToString());
         Assert.Equal(0, r.Key.Root);
         Assert.True(r.Key.IsMajor);
-        Assert.Equal("I - I - IV - I", r.Pattern);
+        // Ab is chromatic in C major — marked "?" instead of masquerading as I.
+        Assert.Equal("I - ? - IV - I", r.Pattern);
         Assert.True(r.HasModalMixture);
 
         Assert.True(r.Chords[1].IsBorrowed);
@@ -222,11 +226,11 @@ public class ProgressionAdvisorCharacterizationTests
 
         Assert.Single(r.BorrowedChords);
         Assert.Equal("Ab", r.BorrowedChords[0].Chord);
-        Assert.Equal("C Major minor", r.BorrowedChords[0].SourceKey);
+        Assert.Equal("C Minor", r.BorrowedChords[0].SourceKey); // parallel key, was "C Major minor"
 
         Assert.Equal(
             "This progression is in C Major, giving it a bright and optimistic character.\n"
-            + "The harmonic journey: establishes home → establishes home → builds tension → establishes home.",
+            + "The harmonic journey: establishes home → adds color → builds tension → establishes home.",
             r.Narrative.ReplaceLineEndings("\n"));
 
         Assert.Equal(
@@ -248,7 +252,8 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal("i - iv - V", r.Pattern);
         Assert.Equal(["F", "D", "A"], r.Chords[1].Notes);
         Assert.Equal(ChordCharacter.Heroic, r.Chords[2].Character);
-        Assert.Equal(CadenceType.Half, r.Cadences[0].Type);
+        // iv6 -> V in minor is Phrygian here too, matching the public DetectCadence.
+        Assert.Equal(CadenceType.Phrygian, r.Cadences[0].Type);
         Assert.Equal(0f, r.ParallelFifths);
         Assert.Equal("Rough", r.QualityRating);
 
@@ -312,8 +317,9 @@ public class ProgressionAdvisorCharacterizationTests
     public void SuggestNext_Dm7_G7()
     {
         var s = ProgressionAdvisor.SuggestNext(["Dm7", "G7"]);
-        Assert.Equal(["C", "Edim", "G"], s.Select(x => x.Chord));
-        Assert.Equal([1.0f, 0.7f, 0.65f], s.Select(x => x.Score));
+        // C#dim: the correct leading-tone diminished suggestion for the detected minor key.
+        Assert.Equal(["C", "Edim", "G", "C#dim"], s.Select(x => x.Chord));
+        Assert.Equal([1.0f, 0.7f, 0.65f, 0.55f], s.Select(x => x.Score));
     }
 
     [Fact]

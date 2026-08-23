@@ -264,9 +264,9 @@ public class FormAnalyzerTests
         Assert.Equal(3, result.Phrases.Count);
         Assert.Equal(3, result.Sections.Count);
         Assert.Equal("A B A", result.FormLabel);
-        Assert.Equal('A', result.Sections[0].Label);
-        Assert.Equal('B', result.Sections[1].Label);
-        Assert.Equal('A', result.Sections[2].Label);
+        Assert.Equal("A", result.Sections[0].Label);
+        Assert.Equal("B", result.Sections[1].Label);
+        Assert.Equal("A", result.Sections[2].Label);
     }
 
     [Fact]

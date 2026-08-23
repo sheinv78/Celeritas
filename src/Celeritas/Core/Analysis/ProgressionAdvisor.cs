@@ -84,7 +84,7 @@ public static class ProgressionAdvisor
         {
             0 => 0,   // Root position
             3 or 4 => 1,   // First inversion (3rd in bass)
-            7 => 2,   // Second inversion (5th in bass)
+            6 or 7 or 8 => 2,   // Second inversion (5th in bass: dim, perfect, or aug 5th)
             10 or 11 => 3,  // Third inversion (7th in bass)
             _ => 0
         };
@@ -146,6 +146,14 @@ public static class ProgressionAdvisor
 
         var prevRoman = KeyAnalyzer.Analyze(prev.Pitches, detectedKey);
         var currRoman = KeyAnalyzer.Analyze(curr.Pitches, detectedKey);
+
+        // A chromatic chord yields RomanNumeralChord.Invalid, whose default Degree
+        // (ScaleDegree.I) would otherwise masquerade as the tonic and fabricate
+        // cadences (e.g. G -> Ab read as an authentic V -> I).
+        if (!prevRoman.IsValid || !currRoman.IsValid)
+        {
+            return CadenceType.None;
+        }
 
         // Detect cadence patterns
         if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.I)
@@ -230,8 +238,10 @@ public static class ProgressionAdvisor
 
         var suggestions = new List<ChordSuggestion>();
 
-        // Build chord suggestions based on the last chord's function
-        var lastDegree = lastRoman.Degree;
+        // Build chord suggestions based on the last chord's function. A chromatic
+        // last chord yields RomanNumeralChord.Invalid, whose default Degree is
+        // ScaleDegree.I — route it to the generic arm instead of the tonic arm.
+        var lastDegree = lastRoman.IsValid ? lastRoman.Degree : (ScaleDegree)(-1);
 
         switch (lastDegree)
         {
@@ -295,7 +305,30 @@ public static class ProgressionAdvisor
         if (suggestions.Count < maxSuggestions)
         {
             AddSuggestion(suggestions, key, ScaleDegree.Iii, "Mediant for color", 0.65f);
-            AddSuggestion(suggestions, key, ScaleDegree.Vii, "Leading tone diminished", 0.6f);
+
+            if (key.IsMajor)
+            {
+                AddSuggestion(suggestions, key, ScaleDegree.Vii, "Leading tone diminished", 0.6f);
+            }
+            else
+            {
+                // Natural-minor degree VII is the subtonic MAJOR triad (e.g. G in
+                // A minor), not a leading-tone diminished chord — label it as such.
+                var names = UseFlatsForKey(key) ? NoteNamesFlat : NoteNames;
+                var subtonicSymbol = names[(key.Root + 10) % 12];
+                if (!suggestions.Any(s => s.Chord == subtonicSymbol))
+                {
+                    suggestions.Add(new ChordSuggestion(subtonicSymbol, "Subtonic (natural minor)", 0.6f));
+                }
+
+                // The actual leading-tone diminished chord uses the RAISED 7th
+                // (harmonic minor), so it is always spelled with sharps.
+                var leadingToneSymbol = NoteNames[(key.Root + 11) % 12] + "dim";
+                if (!suggestions.Any(s => s.Chord == leadingToneSymbol))
+                {
+                    suggestions.Add(new ChordSuggestion(leadingToneSymbol, "Leading tone diminished", 0.55f));
+                }
+            }
         }
 
         // Sort by score and return top suggestions
@@ -370,25 +403,41 @@ public static class ProgressionAdvisor
             return EmptyReport();
         }
 
-        // Parse chords
+        // Parse chords, recording every symbol we cannot parse together with its
+        // index in the ORIGINAL input (all Position fields in the report refer to
+        // the parsed sequence, which may be shorter).
         var parsedChords = new List<ParsedChord>();
-        foreach (var symbol in chordSymbols)
+        var skippedSymbols = new List<(int Index, string Symbol)>();
+        for (var i = 0; i < chordSymbols.Length; i++)
         {
-            var pitches = ParseChordSymbol(symbol);
+            var pitches = ParseChordSymbol(chordSymbols[i]);
             if (pitches.Length > 0)
             {
                 var info = ChordAnalyzer.Identify(pitches);
-                parsedChords.Add(new ParsedChord(symbol, pitches, info));
+                parsedChords.Add(new ParsedChord(chordSymbols[i], pitches, info));
+            }
+            else
+            {
+                skippedSymbols.Add((i, chordSymbols[i]));
             }
         }
 
         if (parsedChords.Count == 0)
         {
-            return EmptyReport();
+            return EmptyReport(skippedSymbols);
         }
 
         // Detect key using improved algorithm
         var (key, keyConfidence) = DetectKeyFromProgression(parsedChords);
+
+        // Roman-numeral analysis computed once per chord here and threaded through
+        // AnalyzeChord / DetectCadences / the narrator, instead of re-running
+        // KeyAnalyzer.Analyze at every consumer.
+        var romans = new RomanNumeralChord[parsedChords.Count];
+        for (var i = 0; i < parsedChords.Count; i++)
+        {
+            romans[i] = KeyAnalyzer.Analyze(parsedChords[i].Pitches, key);
+        }
 
         // Check for harmonic minor (raised 7th in minor key)
         var usesHarmonicMinor = false;
@@ -436,7 +485,7 @@ public static class ProgressionAdvisor
         for (var i = 0; i < parsedChords.Count; i++)
         {
             var (symbol, pitches, info) = parsedChords[i];
-            var detail = AnalyzeChord(symbol, pitches, info, key, i, parsedChords.Count, alteredNotes);
+            var detail = AnalyzeChord(symbol, pitches, info, romans[i], key, i, parsedChords.Count, alteredNotes);
             chordDetails.Add(detail);
 
             if (i > 0) patternSb.Append(" - ");
@@ -457,7 +506,7 @@ public static class ProgressionAdvisor
         var variety = BitOperations.PopCount((uint)charBits);
 
         // Detect cadences
-        var cadences = DetectCadences(parsedChords, key);
+        var cadences = DetectCadences(parsedChords, romans, key);
 
         // Detect modulations and tonicizations
         var modulations = DetectModulations(parsedChords, key);
@@ -474,10 +523,10 @@ public static class ProgressionAdvisor
             (hasAltered ? 0.10f : 0f));
 
         // Generate narrative
-        var narrative = ProgressionNarrator.GenerateNarrative(chordDetails, cadences, key, usesHarmonicMinor, modulations);
+        var narrative = ProgressionNarrator.GenerateNarrative(chordDetails, cadences, key, usesHarmonicMinor, modulations, romans);
 
         // Generate suggestions (including modulation advice)
-        var suggestions = ProgressionNarrator.GenerateSuggestions(chordDetails, cadences, key, parsedChords, modulations);
+        var suggestions = ProgressionNarrator.GenerateSuggestions(chordDetails, cadences, key, parsedChords, romans, modulations);
 
         // Highlights — bitmask dedup for cadence types instead of LINQ Distinct
         var highlights = new List<string>();
@@ -532,15 +581,16 @@ public static class ProgressionAdvisor
                 Chord = sdChord,
                 Target = sdTarget,
                 TargetDegree = m.Position + 1 < parsedChords.Count
-                    ? FormatRomanNumeral(KeyAnalyzer.Analyze(parsedChords[m.Position + 1].Pitches, key),
-                                         parsedChords[m.Position + 1].Info.Quality)
+                    ? FormatRomanNumeral(romans[m.Position + 1], parsedChords[m.Position + 1].Info.Quality)
                     : null
             });
         }
 
-        // Borrowed chords — loop, sourceKey computed once
+        // Borrowed chords — loop, sourceKey computed once. The source of a borrowed
+        // chord is the PARALLEL key (same tonic, flipped mode): "C Minor", not the
+        // former "{key} minor" which rendered as "C Major minor".
         var borrowedChords = new List<BorrowedChordInfo>();
-        var borrowedSourceKey = key.IsMajor ? $"{key} minor" : $"{key} major";
+        var borrowedSourceKey = key.GetParallelKey().ToString();
         for (var i = 0; i < chordDetails.Count; i++)
         {
             if (!chordDetails[i].IsBorrowed) continue;
@@ -591,7 +641,8 @@ public static class ProgressionAdvisor
             AverageMovement = avgMove,
             ParallelFifths = p5,
             ParallelOctaves = p8,
-            QualityRating = qualityRating
+            QualityRating = qualityRating,
+            SkippedSymbols = skippedSymbols
         };
     }
 
@@ -703,17 +754,27 @@ public static class ProgressionAdvisor
         string symbol,
         int[] pitches,
         ChordInfo info,
+        RomanNumeralChord roman,
         KeySignature key,
         int position,
         int totalChords,
         List<(int position, string note)> alteredNotes)
     {
-        var roman = KeyAnalyzer.Analyze(pitches, key);
+        // A chromatic chord yields RomanNumeralChord.Invalid, whose default Degree
+        // (ScaleDegree.I) would otherwise present it as the tonic. Surface it as
+        // "?" / chromatic instead, deriving the character from the chord quality.
         var romanStr = FormatRomanNumeral(roman, info.Quality);
         // Nashville uses the actual chord quality (info.Quality), matching the roman numeral above.
-        var nashvilleStr = new RomanNumeralChord(roman.Degree, info.Quality, roman.Function).ToNashville();
-        var function = ProgressionNarrator.GetFunctionName(roman.Function);
-        var character = DetermineCharacter(info.Quality, roman.Function, key);
+        var nashvilleStr = roman.IsValid
+            ? new RomanNumeralChord(roman.Degree, info.Quality, roman.Function).ToNashville()
+            : "?";
+        var function = roman.IsValid
+            ? ProgressionNarrator.GetFunctionName(roman.Function)
+            : "Chromatic (outside the key)";
+        var character = DetermineCharacter(
+            info.Quality,
+            roman.IsValid ? roman.Function : HarmonicFunction.Chromatic,
+            key);
         var description = ProgressionNarrator.GetCharacterDescription(character, position, totalChords);
 
         // Check for special features
@@ -735,10 +796,12 @@ public static class ProgressionAdvisor
         // and indexes backwards out of NoteNames.
         var noteNames = pitches.Select(p => NoteNames[PitchMath.Fold(p)]).Distinct().ToArray();
 
-        // Borrowed (modal mixture): not diatonic to the key, but diatonic to the
+        // Borrowed (modal mixture): a chromatic (invalid) analysis is outside the
+        // key by definition; otherwise not diatonic to the key, but diatonic to the
         // parallel mode. (KeyAnalyzer returns Invalid — never HarmonicFunction.Chromatic —
         // for non-diatonic roots, so checking Function alone would never fire.)
-        var isBorrowed = roman.Function == HarmonicFunction.Chromatic
+        var isBorrowed = !roman.IsValid
+            || roman.Function == HarmonicFunction.Chromatic
             || (!IsDiatonicChord(pitches, key)
                 && IsDiatonicChord(pitches, new KeySignature(key.Root, !key.IsMajor)));
 
@@ -760,6 +823,13 @@ public static class ProgressionAdvisor
 
     private static string FormatRomanNumeral(RomanNumeralChord roman, ChordQuality quality)
     {
+        // Chromatic chords have no diatonic roman numeral — mark them "?" instead of
+        // leaking Invalid's default Degree (ScaleDegree.I) as a fake tonic.
+        if (!roman.IsValid)
+        {
+            return "?";
+        }
+
         var numeral = roman.Degree switch
         {
             ScaleDegree.I => "I",
@@ -804,6 +874,10 @@ public static class ProgressionAdvisor
         {
             // Major dominant in minor key = heroic
             false when function == HarmonicFunction.Dominant && quality == ChordQuality.Major => ChordCharacter.Heroic,
+            // Major-key dominant-function major triad (V) = tense pull toward the tonic.
+            // Without this arm V fell through to Bright (0.25 tension) and was
+            // indistinguishable from IV in the tension curve.
+            true when function == HarmonicFunction.Dominant && quality == ChordQuality.Major => ChordCharacter.Tense,
             _ => quality switch
             {
                 ChordQuality.Major when function == HarmonicFunction.Tonic => ChordCharacter.Stable,
@@ -826,6 +900,7 @@ public static class ProgressionAdvisor
 
     private static List<CadenceInfo> DetectCadences(
         List<ParsedChord> chords,
+        RomanNumeralChord[] romans,
         KeySignature key)
     {
         var cadences = new List<CadenceInfo>();
@@ -835,9 +910,16 @@ public static class ProgressionAdvisor
             var prev = chords[i - 1];
             var curr = chords[i];
 
-            var prevRoman = KeyAnalyzer.Analyze(prev.Pitches, key);
-            var currRoman = KeyAnalyzer.Analyze(curr.Pitches, key);
+            var prevRoman = romans[i - 1];
+            var currRoman = romans[i];
 
+            // A chromatic chord yields RomanNumeralChord.Invalid, whose default
+            // Degree (ScaleDegree.I) would otherwise fabricate cadences
+            // (e.g. G -> Ab read as an authentic V -> I).
+            if (!prevRoman.IsValid || !currRoman.IsValid)
+            {
+                continue;
+            }
 
             // V -> I = Authentic
             if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.I)
@@ -860,6 +942,17 @@ public static class ProgressionAdvisor
                     CadenceType.Deceptive, i - 1, prev.Symbol, curr.Symbol,
                     "Deceptive cadence (V->vi): Unexpected turn! Instead of resolving home, we go elsewhere. Like a comma or ellipsis instead of a period."));
             }
+            // iv6 -> V in minor = Phrygian half cadence. Mirrors the public
+            // DetectCadence entry point so both give the same answer, and must be
+            // checked BEFORE the generic "any -> V = Half" arm, which would
+            // otherwise shadow it.
+            else if (!key.IsMajor && prevRoman.Degree == ScaleDegree.Iv && currRoman.Degree == ScaleDegree.V
+                     && i == chords.Count - 1 && GetInversion(prev.Pitches) == 1)
+            {
+                cadences.Add(new CadenceInfo(
+                    CadenceType.Phrygian, i - 1, prev.Symbol, curr.Symbol,
+                    "Phrygian half cadence (iv6->V): The iv chord in first inversion leans into the dominant. A classic, dramatic minor-key half close."));
+            }
             // any -> V = Half
             else if (currRoman.Degree == ScaleDegree.V && i == chords.Count - 1)
             {
@@ -872,6 +965,9 @@ public static class ProgressionAdvisor
         return cadences;
     }
 
+    // PERF: CountChordsInKey / FindBetterKey inside the loop make this O(n²) in the
+    // chord count. Progressions are short (typically < 32 chords), so this is fine;
+    // revisit only if profiling shows it hot.
     private static List<ModulationInfo> DetectModulations(
         List<ParsedChord> chords,
         KeySignature mainKey)
@@ -912,8 +1008,12 @@ public static class ProgressionAdvisor
                         // If it's not diatonic to main key, it's likely a secondary dominant
                         if (!IsDiatonicChord(curr.Pitches, mainKey))
                         {
+                            // Dominant-family targets are MAJOR-mode keys: a V7/V
+                            // chain resolving to G7 tonicizes G MAJOR, not G minor.
                             var tonicizedKey = new KeySignature((byte)nextRoot,
-                                next.Info.Quality is ChordQuality.Major or ChordQuality.Major7);
+                                next.Info.Quality is ChordQuality.Major or ChordQuality.Major7
+                                    or ChordQuality.Dominant7 or ChordQuality.Dominant7Flat5
+                                    or ChordQuality.Augmented7);
 
                             // Determine if this is tonicization or modulation
                             // Check how many subsequent chords fit the new key
@@ -1260,7 +1360,7 @@ public static class ProgressionAdvisor
         return (key, confidence);
     }
 
-    private static ProgressionReport EmptyReport() => new()
+    private static ProgressionReport EmptyReport(IReadOnlyList<(int Index, string Symbol)>? skippedSymbols = null) => new()
     {
         Key = new KeySignature(0, true),
         KeyConfidence = 0,
@@ -1269,6 +1369,7 @@ public static class ProgressionAdvisor
         Modulations = [],
         Pattern = "",
         Suggestions = [],
-        Narrative = "No chords provided."
+        Narrative = "No chords provided.",
+        SkippedSymbols = skippedSymbols ?? []
     };
 }

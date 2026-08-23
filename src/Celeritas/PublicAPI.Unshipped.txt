@@ -163,14 +163,12 @@ Celeritas.Core.Analysis.FormAnalysisOptions.DetectCadences.get -> bool
 Celeritas.Core.Analysis.FormAnalysisOptions.DetectCadences.init -> void
 Celeritas.Core.Analysis.FormAnalysisOptions.DetectSections.get -> bool
 Celeritas.Core.Analysis.FormAnalysisOptions.DetectSections.init -> void
-Celeritas.Core.Analysis.FormAnalysisOptions.FormAnalysisOptions(Celeritas.Core.Rational MinRestForPhraseBoundary, int MinNotesPerPhrase = 2, Celeritas.Core.Rational PeriodLengthTolerance = default(Celeritas.Core.Rational), bool DetectCadences = true, Celeritas.Core.KeySignature? Key = null, bool DetectSections = true, float SectionSimilarityThreshold = 0.7) -> void
 Celeritas.Core.Analysis.FormAnalysisOptions.Key.get -> Celeritas.Core.KeySignature?
 Celeritas.Core.Analysis.FormAnalysisOptions.Key.init -> void
 Celeritas.Core.Analysis.FormAnalysisOptions.MinNotesPerPhrase.get -> int
 Celeritas.Core.Analysis.FormAnalysisOptions.MinNotesPerPhrase.init -> void
 Celeritas.Core.Analysis.FormAnalysisOptions.MinRestForPhraseBoundary.get -> Celeritas.Core.Rational
 Celeritas.Core.Analysis.FormAnalysisOptions.MinRestForPhraseBoundary.init -> void
-Celeritas.Core.Analysis.FormAnalysisOptions.PeriodLengthTolerance.get -> Celeritas.Core.Rational
 Celeritas.Core.Analysis.FormAnalysisOptions.PeriodLengthTolerance.init -> void
 Celeritas.Core.Analysis.FormAnalysisOptions.SectionSimilarityThreshold.get -> float
 Celeritas.Core.Analysis.FormAnalysisOptions.SectionSimilarityThreshold.init -> void
@@ -423,11 +421,8 @@ Celeritas.Core.Analysis.ModalTurnEvent.Confidence.init -> void
 Celeritas.Core.Analysis.ModalTurnEvent.EndChordIndex.get -> int
 Celeritas.Core.Analysis.ModalTurnEvent.EndChordIndex.init -> void
 Celeritas.Core.Analysis.ModalTurnEvent.ModalTurnEvent() -> void
-Celeritas.Core.Analysis.ModalTurnEvent.ModalTurnEvent(int StartChordIndex, int EndChordIndex, Celeritas.Core.Analysis.Mode Mode, double Confidence, byte[]! OutOfKeyPitchClasses) -> void
 Celeritas.Core.Analysis.ModalTurnEvent.Mode.get -> Celeritas.Core.Analysis.Mode
 Celeritas.Core.Analysis.ModalTurnEvent.Mode.init -> void
-Celeritas.Core.Analysis.ModalTurnEvent.OutOfKeyPitchClasses.get -> byte[]!
-Celeritas.Core.Analysis.ModalTurnEvent.OutOfKeyPitchClasses.init -> void
 Celeritas.Core.Analysis.ModalTurnEvent.StartChordIndex.get -> int
 Celeritas.Core.Analysis.ModalTurnEvent.StartChordIndex.init -> void
 Celeritas.Core.Analysis.Mode
@@ -811,12 +806,10 @@ Celeritas.Core.Analysis.Section.End.get -> Celeritas.Core.Rational
 Celeritas.Core.Analysis.Section.End.init -> void
 Celeritas.Core.Analysis.Section.EndPhraseIndex.get -> int
 Celeritas.Core.Analysis.Section.EndPhraseIndex.init -> void
-Celeritas.Core.Analysis.Section.Label.get -> char
 Celeritas.Core.Analysis.Section.Label.init -> void
 Celeritas.Core.Analysis.Section.Length.get -> Celeritas.Core.Rational
 Celeritas.Core.Analysis.Section.PhraseCount.get -> int
 Celeritas.Core.Analysis.Section.Section() -> void
-Celeritas.Core.Analysis.Section.Section(char Label, int StartPhraseIndex, int EndPhraseIndex, Celeritas.Core.Rational Start, Celeritas.Core.Rational End) -> void
 Celeritas.Core.Analysis.Section.Start.get -> Celeritas.Core.Rational
 Celeritas.Core.Analysis.Section.Start.init -> void
 Celeritas.Core.Analysis.Section.StartPhraseIndex.get -> int
@@ -1911,7 +1904,6 @@ Celeritas.Core.Analysis.CounterpointViolation.<Clone>$() -> Celeritas.Core.Analy
 Celeritas.Core.Analysis.CounterpointViolation.CounterpointViolation() -> void
 Celeritas.Core.Analysis.CounterpointViolation.Equals(Celeritas.Core.Analysis.CounterpointViolation? other) -> bool
 Celeritas.Core.Analysis.FormAnalysisOptions.<Clone>$() -> Celeritas.Core.Analysis.FormAnalysisOptions!
-Celeritas.Core.Analysis.FormAnalysisOptions.Deconstruct(out Celeritas.Core.Rational MinRestForPhraseBoundary, out int MinNotesPerPhrase, out Celeritas.Core.Rational PeriodLengthTolerance, out bool DetectCadences, out Celeritas.Core.KeySignature? Key, out bool DetectSections, out float SectionSimilarityThreshold) -> void
 Celeritas.Core.Analysis.FormAnalysisOptions.Equals(Celeritas.Core.Analysis.FormAnalysisOptions? other) -> bool
 Celeritas.Core.Analysis.FormAnalysisResult.<Clone>$() -> Celeritas.Core.Analysis.FormAnalysisResult!
 Celeritas.Core.Analysis.FormAnalysisResult.Equals(Celeritas.Core.Analysis.FormAnalysisResult? other) -> bool
@@ -1938,7 +1930,6 @@ Celeritas.Core.Analysis.ModalProgression.Deconstruct(out string! Name, out strin
 Celeritas.Core.Analysis.ModalProgression.Equals(Celeritas.Core.Analysis.ModalProgression other) -> bool
 Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.<Clone>$() -> Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord!
 Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord.Equals(Celeritas.Core.Analysis.ModalProgressions.ModalMixtureChord? other) -> bool
-Celeritas.Core.Analysis.ModalTurnEvent.Deconstruct(out int StartChordIndex, out int EndChordIndex, out Celeritas.Core.Analysis.Mode Mode, out double Confidence, out byte[]! OutOfKeyPitchClasses) -> void
 Celeritas.Core.Analysis.ModalTurnEvent.Equals(Celeritas.Core.Analysis.ModalTurnEvent other) -> bool
 Celeritas.Core.Analysis.Period.Deconstruct(out int FirstPhraseIndex, out int SecondPhraseIndex, out Celeritas.Core.Rational LengthA, out Celeritas.Core.Rational LengthB) -> void
 Celeritas.Core.Analysis.Period.Equals(Celeritas.Core.Analysis.Period other) -> bool
@@ -1965,7 +1956,6 @@ Celeritas.Core.Analysis.RhythmStatistics.RhythmStatistics() -> void
 Celeritas.Core.Analysis.SatbSeparationResult.<Clone>$() -> Celeritas.Core.Analysis.SatbSeparationResult!
 Celeritas.Core.Analysis.SatbSeparationResult.Equals(Celeritas.Core.Analysis.SatbSeparationResult? other) -> bool
 Celeritas.Core.Analysis.SatbSeparationResult.SatbSeparationResult() -> void
-Celeritas.Core.Analysis.Section.Deconstruct(out char Label, out int StartPhraseIndex, out int EndPhraseIndex, out Celeritas.Core.Rational Start, out Celeritas.Core.Rational End) -> void
 Celeritas.Core.Analysis.Section.Equals(Celeritas.Core.Analysis.Section other) -> bool
 Celeritas.Core.Analysis.VoiceNote.Equals(Celeritas.Core.Analysis.VoiceNote other) -> bool
 Celeritas.Core.Analysis.VoiceSeparationResult.<Clone>$() -> Celeritas.Core.Analysis.VoiceSeparationResult!
@@ -2284,3 +2274,15 @@ virtual Celeritas.Core.NotationDirective.Equals(Celeritas.Core.NotationDirective
 virtual Celeritas.Core.NotationDirective.PrintMembers(System.Text.StringBuilder! builder) -> bool
 static Celeritas.Core.SpnNote.TryParse(System.ReadOnlySpan<char> notation, out Celeritas.Core.SpnNote note) -> bool
 Celeritas.Core.Analysis.KeyTrajectory.Points.get -> System.Collections.Generic.IReadOnlyList<(Celeritas.Core.Rational Position, Celeritas.Core.Analysis.KeyDetectionResult Result)>!
+Celeritas.Core.Analysis.FormAnalysisOptions.Deconstruct(out Celeritas.Core.Rational MinRestForPhraseBoundary, out int MinNotesPerPhrase, out Celeritas.Core.Rational? PeriodLengthTolerance, out bool DetectCadences, out Celeritas.Core.KeySignature? Key, out bool DetectSections, out float SectionSimilarityThreshold) -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.FormAnalysisOptions(Celeritas.Core.Rational MinRestForPhraseBoundary, int MinNotesPerPhrase = 2, Celeritas.Core.Rational? PeriodLengthTolerance = null, bool DetectCadences = true, Celeritas.Core.KeySignature? Key = null, bool DetectSections = true, float SectionSimilarityThreshold = 0.7) -> void
+Celeritas.Core.Analysis.FormAnalysisOptions.PeriodLengthTolerance.get -> Celeritas.Core.Rational?
+Celeritas.Core.Analysis.ModalTurnEvent.Deconstruct(out int StartChordIndex, out int EndChordIndex, out Celeritas.Core.Analysis.Mode Mode, out double Confidence, out int OutOfKeyPitchClassMask) -> void
+Celeritas.Core.Analysis.ModalTurnEvent.ModalTurnEvent(int StartChordIndex, int EndChordIndex, Celeritas.Core.Analysis.Mode Mode, double Confidence, int OutOfKeyPitchClassMask) -> void
+Celeritas.Core.Analysis.ModalTurnEvent.OutOfKeyPitchClassMask.get -> int
+Celeritas.Core.Analysis.ModalTurnEvent.OutOfKeyPitchClassMask.init -> void
+Celeritas.Core.Analysis.ProgressionReport.SkippedSymbols.get -> System.Collections.Generic.IReadOnlyList<(int Index, string! Symbol)>!
+Celeritas.Core.Analysis.ProgressionReport.SkippedSymbols.init -> void
+Celeritas.Core.Analysis.Section.Deconstruct(out string! Label, out int StartPhraseIndex, out int EndPhraseIndex, out Celeritas.Core.Rational Start, out Celeritas.Core.Rational End) -> void
+Celeritas.Core.Analysis.Section.Label.get -> string!
+Celeritas.Core.Analysis.Section.Section(string! Label, int StartPhraseIndex, int EndPhraseIndex, Celeritas.Core.Rational Start, Celeritas.Core.Rational End) -> void
