@@ -151,9 +151,17 @@ public sealed unsafe class NoteBuffer : IDisposable
 
     private bool _disposed;
 
+    // Sortedness tracking: true while notes have only ever been appended in nondecreasing
+    // offset order (or after Sort()). _maxOffsetNum/_maxOffsetDen hold the largest offset
+    // appended so far (valid only when Count > 0).
+    private bool _sorted = true;
+    private long _maxOffsetNum;
+    private long _maxOffsetDen = 1;
+
     /// <summary>Allocates a buffer that can hold up to <paramref name="capacity"/> notes.</summary>
     /// <param name="capacity">Maximum number of notes; must be positive.</param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is not positive.</exception>
+    /// <exception cref="OutOfMemoryException">The required allocation exceeds the process address space.</exception>
     public NoteBuffer(int capacity)
     {
         if (capacity <= 0)
@@ -161,13 +169,21 @@ public sealed unsafe class NoteBuffer : IDisposable
 
         Capacity = capacity;
 
-        // Multiply in nuint (64-bit) — capacity * sizeof(long) overflows int for capacity > 268M
-        PitchPtr = (int*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(int), 64);
-        OffsetsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(long), 64);
-        OffsetsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(long), 64);
-        DurationsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(long), 64);
-        DurationsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(long), 64);
-        VelocityPtr = (float*)NativeMemory.AlignedAlloc((nuint)capacity * sizeof(float), 64);
+        // Compute byte counts in ulong: capacity * sizeof(long) overflows int for capacity > 268M,
+        // and on a 32-bit process (nuint)capacity * sizeof(long) wraps for capacity >= 2^29, which
+        // would silently under-allocate and corrupt the native heap. Guard before casting to nuint.
+        var longBytes = (ulong)capacity * sizeof(long);
+        var intBytes = (ulong)capacity * sizeof(int);
+        if (longBytes > nuint.MaxValue)
+            throw new OutOfMemoryException(
+                $"Capacity {capacity} requires a {longBytes}-byte allocation, which exceeds the address space of this process.");
+
+        PitchPtr = (int*)NativeMemory.AlignedAlloc((nuint)intBytes, 64);
+        OffsetsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)longBytes, 64);
+        OffsetsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)longBytes, 64);
+        DurationsNumPtr = (long*)NativeMemory.AlignedAlloc((nuint)longBytes, 64);
+        DurationsDenPtr = (long*)NativeMemory.AlignedAlloc((nuint)longBytes, 64);
+        VelocityPtr = (float*)NativeMemory.AlignedAlloc((nuint)intBytes, 64);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -197,6 +213,25 @@ public sealed unsafe class NoteBuffer : IDisposable
         DurationsNumPtr[idx] = duration.Numerator;
         DurationsDenPtr[idx] = duration.Denominator;
         VelocityPtr[idx] = velocity;
+
+        // Track sortedness: appending in nondecreasing offset order keeps the buffer sorted;
+        // an offset below the current maximum invalidates it (exact 128-bit cross-multiplication,
+        // denominators are always positive).
+        if (idx == 0)
+        {
+            _maxOffsetNum = offset.Numerator;
+            _maxOffsetDen = offset.Denominator;
+        }
+        else if ((Int128)offset.Numerator * _maxOffsetDen < (Int128)_maxOffsetNum * offset.Denominator)
+        {
+            _sorted = false;
+        }
+        else
+        {
+            _maxOffsetNum = offset.Numerator;
+            _maxOffsetDen = offset.Denominator;
+        }
+
         Count = idx + 1;
     }
 
@@ -224,18 +259,66 @@ public sealed unsafe class NoteBuffer : IDisposable
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowBufferFull() => throw new InvalidOperationException("Buffer full");
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowUnsorted() => throw new InvalidOperationException(
+        "The buffer is not sorted by offset; GetChords requires sorted input. Call Sort() first.");
+
+    /// <summary>
+    /// Called by kernels that rewrite offsets in place through an order-preserving (monotone)
+    /// mapping, such as quantization: sortedness is unaffected, but the max-offset tracker
+    /// consulted by <see cref="AddNote"/> must be refreshed from the rewritten data.
+    /// </summary>
+    internal void RefreshMaxOffset()
+    {
+        if (Count == 0) return;
+
+        if (_sorted)
+        {
+            _maxOffsetNum = OffsetsNumPtr[Count - 1];
+            _maxOffsetDen = OffsetsDenPtr[Count - 1];
+            return;
+        }
+
+        var maxNum = OffsetsNumPtr[0];
+        var maxDen = OffsetsDenPtr[0];
+        for (var i = 1; i < Count; i++)
+        {
+            if ((Int128)OffsetsNumPtr[i] * maxDen > (Int128)maxNum * OffsetsDenPtr[i])
+            {
+                maxNum = OffsetsNumPtr[i];
+                maxDen = OffsetsDenPtr[i];
+            }
+        }
+        _maxOffsetNum = maxNum;
+        _maxOffsetDen = maxDen;
+    }
+
     /// <summary>
     /// Fast reset for reuse (does not zero memory)
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Clear() => Count = 0;
+    public void Clear()
+    {
+        Count = 0;
+        _sorted = true;
+        _maxOffsetNum = 0;
+        _maxOffsetDen = 1;
+    }
 
-    /// <summary>Sorts the notes in place by ascending start offset (stable on ties).</summary>
+    /// <summary>
+    /// Sorts the notes in place by ascending start offset (stable on ties).
+    /// Sorting (or appending notes only in nondecreasing offset order) makes the buffer
+    /// eligible for <see cref="GetChords()"/> and its span overload.
+    /// </summary>
     /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
     public void Sort()
     {
         ThrowIfDisposed();
-        if (Count <= 1) return;
+        if (Count <= 1)
+        {
+            _sorted = true;
+            return;
+        }
 
         // Use stackalloc for small buffers to avoid heap allocation
         Span<int> indices = Count <= 1024
@@ -256,6 +339,10 @@ public sealed unsafe class NoteBuffer : IDisposable
         ApplyPermutationLong(indices, DurationsNumPtr);
         ApplyPermutationLong(indices, DurationsDenPtr);
         ApplyPermutationFloat(indices, VelocityPtr);
+
+        _sorted = true;
+        _maxOffsetNum = OffsetsNumPtr[Count - 1];
+        _maxOffsetDen = OffsetsDenPtr[Count - 1];
     }
 
     private readonly struct OffsetIndexComparer(long* nums, long* dens) : IComparer<int>
@@ -351,11 +438,24 @@ public sealed unsafe class NoteBuffer : IDisposable
     }
 
     /// <summary>
-    /// Zero-allocation chord analysis
+    /// Zero-allocation chord analysis. Groups consecutive notes that share the same start
+    /// offset into one chord per offset. Requires the buffer to be sorted by offset — call
+    /// <see cref="Sort"/> first (appending notes only in nondecreasing offset order also counts
+    /// as sorted).
+    /// <para>
+    /// If <paramref name="output"/> is shorter than the number of distinct offsets, the result
+    /// is silently truncated to <c>output.Length</c> chords (span-API convention); the return
+    /// value is the number of chords actually written. Size <paramref name="output"/> to
+    /// <see cref="Count"/> to guarantee no truncation.
+    /// </para>
     /// </summary>
+    /// <returns>The number of chords written to <paramref name="output"/>.</returns>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">The buffer is not sorted by offset.</exception>
     public int GetChords(Span<(Rational Time, ushort Mask)> output)
     {
         ThrowIfDisposed();
+        if (!_sorted) ThrowUnsorted();
         var resultCount = 0;
         var i = 0;
 
@@ -379,11 +479,17 @@ public sealed unsafe class NoteBuffer : IDisposable
     }
 
     /// <summary>
-    /// Legacy method that allocates a List
+    /// Legacy chord analysis that allocates a <see cref="List{T}"/>. Groups consecutive notes
+    /// that share the same start offset into one chord per offset. Requires the buffer to be
+    /// sorted by offset — call <see cref="Sort"/> first (appending notes only in nondecreasing
+    /// offset order also counts as sorted).
     /// </summary>
+    /// <exception cref="ObjectDisposedException">The buffer has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">The buffer is not sorted by offset.</exception>
     public List<(Rational Time, ushort Mask)> GetChords()
     {
         ThrowIfDisposed();
+        if (!_sorted) ThrowUnsorted();
         // Pre-size: at most Count unique timestamps
         var result = new List<(Rational Time, ushort Mask)>(Math.Min(Count, 256));
         var i = 0;

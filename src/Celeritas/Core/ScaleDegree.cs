@@ -119,8 +119,13 @@ public readonly record struct KeySignature
     {
         var steps = IsMajor ? MajorScaleSteps : MinorScaleSteps;
 
-        byte b = Root;
-        return steps.Aggregate<byte, ushort>(0, (current, t) => (ushort)(current | (ushort)(1 << ((b + t) % 12))));
+        ushort mask = 0;
+        for (var i = 0; i < steps.Length; i++)
+        {
+            mask |= (ushort)(1 << ((Root + steps[i]) % 12));
+        }
+
+        return mask;
     }
 
     /// <summary>

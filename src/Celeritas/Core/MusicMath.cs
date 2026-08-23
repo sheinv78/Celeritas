@@ -121,8 +121,11 @@ public static unsafe class MusicMath
                 var rounded = shifted >= 0
                     ? shifted / valDen
                     : -((-shifted + valDen - 1) / valDen);
-                offsetsNum[i] = rounded * gNum;
-                offsetsDen[i] = gDen;
+                // Construct through Rational so the stored num/den stay in lowest terms
+                // (rounded may share a factor with gDen, e.g. 2 * 1/6 must store 1/3).
+                var snapped = new Rational(rounded * gNum, gDen);
+                offsetsNum[i] = snapped.Numerator;
+                offsetsDen[i] = snapped.Denominator;
                 continue;
             }
 
@@ -133,9 +136,14 @@ public static unsafe class MusicMath
             var rounded128 = shifted128 >= 0
                 ? shifted128 / valDen128
                 : -((-shifted128 + valDen128 - 1) / valDen128);
-            offsetsNum[i] = checked((long)(rounded128 * gNum));
-            offsetsDen[i] = gDen;
+            var snapped128 = new Rational(checked((long)(rounded128 * gNum)), gDen);
+            offsetsNum[i] = snapped128.Numerator;
+            offsetsDen[i] = snapped128.Denominator;
         }
+
+        // Rounding to a grid is monotone, so relative order (and sortedness) is preserved,
+        // but the buffer's max-offset tracker must be resynced with the rewritten offsets.
+        buffer.RefreshMaxOffset();
 
         GC.KeepAlive(buffer);
     }

@@ -95,17 +95,17 @@ public readonly record struct Rational : IComparable<Rational>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rational operator +(Rational a, Rational b)
     {
-        // Optimization: if denominators are equal, no need to multiply
+        // Optimization: if denominators are equal, no need to multiply. The unchecked add plus
+        // sign test keeps the fast path branch-cheap; on 64-bit overflow the exact result may
+        // still be representable after reduction, so fall through to the exact path.
         if (a.Denominator == b.Denominator)
-            return new Rational(checked(a.Numerator + b.Numerator), a.Denominator);
+        {
+            var sum = unchecked(a.Numerator + b.Numerator);
+            if (((a.Numerator ^ sum) & (b.Numerator ^ sum)) >= 0)
+                return new Rational(sum, a.Denominator);
+        }
 
-        // Reduce by the GCD of the denominators first to keep cross-products small
-        var g = Gcd(a.Denominator, b.Denominator);
-        var bScale = b.Denominator / g;
-        var aScale = a.Denominator / g;
-        return new Rational(
-            checked((a.Numerator * bScale) + (b.Numerator * aScale)),
-            checked(a.Denominator * bScale));
+        return AddExact(a.Numerator, a.Denominator, b.Numerator, b.Denominator);
     }
 
     /// <summary>Subtracts <paramref name="b"/> from <paramref name="a"/> exactly.</summary>
@@ -114,14 +114,36 @@ public readonly record struct Rational : IComparable<Rational>
     public static Rational operator -(Rational a, Rational b)
     {
         if (a.Denominator == b.Denominator)
-            return new Rational(checked(a.Numerator - b.Numerator), a.Denominator);
+        {
+            var diff = unchecked(a.Numerator - b.Numerator);
+            if (((a.Numerator ^ b.Numerator) & (a.Numerator ^ diff)) >= 0)
+                return new Rational(diff, a.Denominator);
+        }
 
-        var g = Gcd(a.Denominator, b.Denominator);
-        var bScale = b.Denominator / g;
-        var aScale = a.Denominator / g;
-        return new Rational(
-            checked((a.Numerator * bScale) - (b.Numerator * aScale)),
-            checked(a.Denominator * bScale));
+        return AddExact(a.Numerator, a.Denominator, -(Int128)b.Numerator, b.Denominator);
+    }
+
+    /// <summary>
+    /// Exact addition via Knuth's reduced algorithm (TAOCP 4.5.1): with g = gcd(den1, den2),
+    /// the cross-term sum t (kept in 128 bits, so it cannot overflow) can only share the factor
+    /// gcd(t, g) with the combined denominator. Dividing it out yields the result already in
+    /// lowest terms, so an <see cref="OverflowException"/> is thrown only when the true reduced
+    /// result is genuinely unrepresentable in a 64-bit rational.
+    /// </summary>
+    private static Rational AddExact(long aNum, long aDen, Int128 bNum, long bDen)
+    {
+        var g = Gcd(aDen, bDen);
+        var bScale = bDen / g;
+        var aScale = aDen / g;
+        var t = ((Int128)aNum * bScale) + (bNum * aScale);
+        if (t == 0)
+            return Zero;
+
+        // gcd(t, g) fits in long because |t % g| < g
+        var g2 = Gcd((long)(t % g), g);
+        var num = t / g2;
+        var den = (Int128)aScale * (bDen / g2);
+        return new Rational(checked((long)num), checked((long)den));
     }
 
     /// <summary>Returns the negation of <paramref name="a"/>.</summary>

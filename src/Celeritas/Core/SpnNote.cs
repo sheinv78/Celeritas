@@ -82,7 +82,11 @@ public readonly record struct SpnNote(PitchClass PitchClass, int Octave)
         return note;
     }
 
-    private static bool TryParse(ReadOnlySpan<char> notation, out SpnNote note)
+    /// <summary>Attempts to parse a note in scientific pitch notation such as "C4" or "F#5".</summary>
+    /// <param name="notation">The note text to parse.</param>
+    /// <param name="note">On success, the parsed note; otherwise <see langword="default"/>.</param>
+    /// <returns><see langword="true"/> if parsing succeeded; otherwise <see langword="false"/>.</returns>
+    public static bool TryParse(ReadOnlySpan<char> notation, out SpnNote note)
     {
         if (!MusicNotation.TryParseNote(notation, out var midi))
         {
@@ -108,11 +112,15 @@ public readonly record struct SpnNote(PitchClass PitchClass, int Octave)
 
     private SpnNote Transpose(ChromaticInterval interval) => FromMidi(MidiPitch.Transpose(interval));
 
-    /// <summary>Renders this note in scientific pitch notation (e.g. "C4").</summary>
+    /// <summary>
+    /// Renders this note in scientific pitch notation (e.g. "C4"). Formats directly from the
+    /// pitch class and octave, so it never throws — even for notes outside the MIDI 0..127
+    /// range (e.g. "A9" or "C-2").
+    /// </summary>
     /// <param name="preferSharps">When <see langword="true"/>, spell black keys with sharps; otherwise flats.</param>
-    public string ToNotation(bool preferSharps = true) => MusicNotation.ToNotation(MidiPitch, preferSharps);
+    public string ToNotation(bool preferSharps = true) => $"{PitchClass.ToName(preferSharps)}{Octave}";
 
-    /// <summary>Returns the sharp-preferring scientific pitch notation.</summary>
+    /// <summary>Returns the sharp-preferring scientific pitch notation. Never throws, even outside MIDI range.</summary>
     public override string ToString() => ToNotation(preferSharps: true);
 
     /// <summary>Transposes <paramref name="note"/> up by <paramref name="interval"/>.</summary>
@@ -121,6 +129,11 @@ public readonly record struct SpnNote(PitchClass PitchClass, int Octave)
     /// <summary>Transposes <paramref name="note"/> down by <paramref name="interval"/>.</summary>
     public static SpnNote operator -(SpnNote note, ChromaticInterval interval) => note.Transpose(-interval);
 
-    /// <summary>The signed chromatic interval in semitones from <paramref name="from"/> to <paramref name="to"/>.</summary>
-    public static ChromaticInterval operator -(SpnNote to, SpnNote from) => new(to.MidiPitch - from.MidiPitch);
+    /// <summary>
+    /// The signed chromatic interval in semitones from <paramref name="from"/> to <paramref name="to"/>.
+    /// Computed from the pitch-class and octave components, so it never throws — even when an
+    /// operand falls outside the MIDI 0..127 range.
+    /// </summary>
+    public static ChromaticInterval operator -(SpnNote to, SpnNote from) =>
+        new(((to.Octave - from.Octave) * 12) + (to.PitchClass.Value - from.PitchClass.Value));
 }

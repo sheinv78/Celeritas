@@ -2282,3 +2282,4 @@ static Celeritas.Core.VoiceLeading.VoiceLeadingCheck.operator ==(Celeritas.Core.
 virtual Celeritas.Core.NotationDirective.EqualityContract.get -> System.Type!
 virtual Celeritas.Core.NotationDirective.Equals(Celeritas.Core.NotationDirective? other) -> bool
 virtual Celeritas.Core.NotationDirective.PrintMembers(System.Text.StringBuilder! builder) -> bool
+static Celeritas.Core.SpnNote.TryParse(System.ReadOnlySpan<char> notation, out Celeritas.Core.SpnNote note) -> bool
