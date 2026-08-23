@@ -81,7 +81,7 @@ public class HarmonicColorAnalyzerTests
 
         Assert.True(analysis.ModalTurns.Count > 0);
         Assert.Contains(analysis.ModalTurns, t => t.Mode == Mode.Mixolydian);
-        Assert.Contains(analysis.ModalTurns, t => t.OutOfKeyPitchClasses.Contains((byte)10)); // Bb
+        Assert.Contains(analysis.ModalTurns, t => (t.OutOfKeyPitchClassMask & (1 << 10)) != 0); // Bb
     }
 
     private static ChordAssignment ChordAt(int index, string symbol)

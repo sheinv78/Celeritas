@@ -11,7 +11,7 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 /// <param name="MinRestForPhraseBoundary">Minimum rest (whole-note units) after a note that starts a new phrase.</param>
 /// <param name="MinNotesPerPhrase">Minimum notes a run must contain to count as a phrase.</param>
-/// <param name="PeriodLengthTolerance">Maximum length difference (whole-note units) for two adjacent phrases to form a period; <c>default</c> falls back to the value from <c>Default</c>.</param>
+/// <param name="PeriodLengthTolerance">Maximum length difference (whole-note units) for two adjacent phrases to form a period; <see langword="null"/> falls back to the value from <c>Default</c> (1/4). An explicit <see cref="Rational.Zero"/> is honored and requires exactly equal phrase lengths.</param>
 /// <param name="DetectCadences">Whether to classify the cadence at each phrase end (requires <paramref name="Key"/>).</param>
 /// <param name="Key">Key context for cadence detection; no cadences are detected when <see langword="null"/>.</param>
 /// <param name="DetectSections">Whether to group phrases into lettered sections (A/B/A').</param>
@@ -19,7 +19,7 @@ namespace Celeritas.Core.Analysis;
 public sealed record FormAnalysisOptions(
     Rational MinRestForPhraseBoundary,
     int MinNotesPerPhrase = 2,
-    Rational PeriodLengthTolerance = default,
+    Rational? PeriodLengthTolerance = null,
     bool DetectCadences = true,
     KeySignature? Key = null,
     bool DetectSections = true,
@@ -63,10 +63,11 @@ public readonly record struct Phrase(
 public readonly record struct Period(int FirstPhraseIndex, int SecondPhraseIndex, Rational LengthA, Rational LengthB);
 
 /// <summary>
-/// A formal section identified by a letter label (A, B, C, etc.)
+/// A formal section identified by a letter label ("A", "B", ... "Z"; after 26
+/// distinct sections the letters wrap with a numeric suffix: "A2", "B2", ...).
 /// </summary>
 public readonly record struct Section(
-    char Label,
+    string Label,
     int StartPhraseIndex,
     int EndPhraseIndex,
     Rational Start,
@@ -173,7 +174,11 @@ public static class FormAnalyzer
                 phraseEndTime = currentEnd;
 
             var nextStart = notes[i + 1].Offset;
-            var rest = nextStart - currentEnd;
+            // Measure the rest from the TRACKED phrase end (max end of all notes so
+            // far), not from notes[i]'s own end: a still-sounding earlier note (held
+            // pedal) fills the gap and must prevent a phrase boundary. Using
+            // notes[i] alone split phrases that then overlapped the sustained note.
+            var rest = nextStart - phraseEndTime;
 
             if (rest >= options.MinRestForPhraseBoundary)
             {
@@ -221,7 +226,9 @@ public static class FormAnalyzer
         var totalEnd = phrases.Count > 0 ? phrases[^1].End : phraseEndTime;
         var totalLength = phrases.Count > 0 ? totalEnd - phrases[0].Start : Rational.Zero;
 
-        var periods = DetectPeriods(phrases, options.PeriodLengthTolerance == default ? FormAnalysisOptions.Default.PeriodLengthTolerance : options.PeriodLengthTolerance);
+        // null → Default's 1/4; an explicit Rational.Zero is honored (exact match).
+        // The old "== default" check silently replaced a deliberate Zero tolerance.
+        var periods = DetectPeriods(phrases, options.PeriodLengthTolerance ?? new Rational(1, 4));
 
         // Detect sections (A/B/A' patterns) based on phrase similarity
         var (sections, formLabel) = options.DetectSections
@@ -410,7 +417,7 @@ public static class FormAnalyzer
         if (phrases.Count == 1)
         {
             var p = phrases[0];
-            return ([new Section('A', 0, 0, p.Start, p.End)], "A");
+            return ([new Section("A", 0, 0, p.Start, p.End)], "A");
         }
 
         // Compute pitch-class set for each phrase
@@ -469,7 +476,7 @@ public static class FormAnalyzer
             if (i == phrases.Count || sectionLabels[i] != currentLabel)
             {
                 var sectionEnd = i - 1;
-                var label = (char)('A' + currentLabel);
+                var label = SectionLabel(currentLabel);
                 sections.Add(new Section(
                     label,
                     sectionStart,
@@ -486,9 +493,21 @@ public static class FormAnalyzer
         }
 
         // Build form label string (e.g., "A B A" or "A A B A")
-        var formLabel = string.Join(" ", sections.Select(s => s.Label.ToString()));
+        var formLabel = string.Join(" ", sections.Select(s => s.Label));
 
         return (sections, formLabel);
+    }
+
+    /// <summary>
+    /// Label for the n-th distinct section: "A".."Z", then wrapping with a numeric
+    /// suffix ("A2".."Z2", "A3", ...). The old <c>(char)('A' + n)</c> walked past
+    /// 'Z' into '[' for the 27th section.
+    /// </summary>
+    private static string SectionLabel(int index)
+    {
+        var letter = (char)('A' + (index % 26));
+        var cycle = index / 26;
+        return cycle == 0 ? letter.ToString() : $"{letter}{cycle + 1}";
     }
 
     /// <summary>

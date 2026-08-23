@@ -1479,9 +1479,7 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
         {
             foreach (var turn in color.ModalTurns.Take(10))
             {
-                var pcs = turn.OutOfKeyPitchClasses.Length == 0
-                    ? ""
-                    : $" (out-of-key: {string.Join(", ", turn.OutOfKeyPitchClasses.Select(pc => ChordLibrary.NoteNames[pc]))})";
+                var pcs = FormatOutOfKeyPitchClasses(turn.OutOfKeyPitchClassMask);
                 Console.WriteLine($"  Chords {turn.StartChordIndex + 1}-{turn.EndChordIndex + 1}: {turn.Mode} (confidence {turn.Confidence:F2}){pcs}");
             }
         }
@@ -1535,9 +1533,7 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
             Console.WriteLine($"  Modal turns: {color.ModalTurns.Count}");
             foreach (var turn in color.ModalTurns.Take(10))
             {
-                var pcs = turn.OutOfKeyPitchClasses.Length == 0
-                    ? ""
-                    : $" (out-of-key: {string.Join(", ", turn.OutOfKeyPitchClasses.Select(pc => ChordLibrary.NoteNames[pc]))})";
+                var pcs = FormatOutOfKeyPitchClasses(turn.OutOfKeyPitchClassMask);
                 Console.WriteLine($"    Chords {turn.StartChordIndex + 1}-{turn.EndChordIndex + 1}: {turn.Mode} (confidence {turn.Confidence:F2}){pcs}");
             }
         }
@@ -1579,9 +1575,7 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
 
                 var startOffset = chords[startChord].Start;
                 var endOffset = chords[endChord].End;
-                var pcs = turn.OutOfKeyPitchClasses.Length == 0
-                    ? ""
-                    : $" (out-of-key: {string.Join(", ", turn.OutOfKeyPitchClasses.Select(pc => ChordLibrary.NoteNames[pc]))})";
+                var pcs = FormatOutOfKeyPitchClasses(turn.OutOfKeyPitchClassMask);
 
                 items.Add((startOffset, $"Modal turn start: {turn.Mode} (confidence {turn.Confidence:F2}){pcs}"));
                 items.Add((endOffset, $"Modal turn end: {turn.Mode}"));
@@ -1640,6 +1634,21 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
         while (index > 0 && time < chords[index].Start)
             index--;
         return index;
+    }
+
+    static string FormatOutOfKeyPitchClasses(int mask)
+    {
+        if (mask == 0)
+            return "";
+
+        var names = new List<string>(12);
+        for (var pc = 0; pc < 12; pc++)
+        {
+            if ((mask & (1 << pc)) != 0)
+                names.Add(ChordLibrary.NoteNames[pc]);
+        }
+
+        return $" (out-of-key: {string.Join(", ", names)})";
     }
 }));
 

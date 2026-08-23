@@ -14,10 +14,20 @@ public enum CadenceType
     /// <summary>V → I (or V7 → I) - strongest resolution, "full stop"</summary>
     Authentic,
 
-    /// <summary>V → I with soprano on tonic - most conclusive</summary>
+    /// <summary>
+    /// V → I with soprano on tonic - most conclusive.
+    /// Reserved for future voicing-aware analysis: distinguishing perfect from
+    /// imperfect authentic cadences requires knowing the soprano voice, which the
+    /// current chord-symbol analyzers do not track — they report <see cref="Authentic"/>.
+    /// </summary>
     PerfectAuthentic,
 
-    /// <summary>V → I with soprano not on tonic</summary>
+    /// <summary>
+    /// V → I with soprano not on tonic.
+    /// Reserved for future voicing-aware analysis: distinguishing perfect from
+    /// imperfect authentic cadences requires knowing the soprano voice, which the
+    /// current chord-symbol analyzers do not track — they report <see cref="Authentic"/>.
+    /// </summary>
     ImperfectAuthentic,
 
     /// <summary>IV → I - "amen cadence", softer resolution</summary>

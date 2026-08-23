@@ -49,6 +49,7 @@ public static class HarmonicColorAnalyzer
     /// and the last chord defaults to a duration of 1 whole note.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="chordProgression"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A chord symbol in <paramref name="chordProgression"/> cannot be parsed.</exception>
     public static HarmonicColorAnalysisResult Analyze(
         ReadOnlySpan<NoteEvent> melody,
         IReadOnlyList<(string Chord, Rational Start)> chordProgression,
@@ -68,6 +69,7 @@ public static class HarmonicColorAnalyzer
     /// Analyze melody + a tuple-based chord progression (as used in examples).
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="melody"/> or <paramref name="chordProgression"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A chord symbol in <paramref name="chordProgression"/> cannot be parsed.</exception>
     public static HarmonicColorAnalysisResult Analyze(
         NoteEvent[] melody,
         (string Chord, Rational Start)[] chordProgression,
@@ -97,6 +99,15 @@ public static class HarmonicColorAnalyzer
                 end = start + Rational.Whole;
 
             var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
+            if (pitches.Length == 0)
+            {
+                // A silent empty pitch set would produce a zero chord mask, making
+                // every melody note over this chord an "OtherNonChordTone".
+                throw new ArgumentException(
+                    $"Unparseable chord symbol '{symbol}' at index {i} of the chord progression.",
+                    nameof(chordProgression));
+            }
+
             var mask = ChordAnalyzer.GetMask(pitches);
             var info = ChordLibrary.GetChord(mask);
 
@@ -345,7 +356,7 @@ public static class HarmonicColorAnalyzer
                 EndChordIndex: end,
                 Mode: bestMode,
                 Confidence: improvement,
-                OutOfKeyPitchClasses: MaskToPitchClasses(outOfBase)));
+                OutOfKeyPitchClassMask: outOfBase));
         }
 
         return result;
@@ -410,21 +421,6 @@ public static class HarmonicColorAnalyzer
     {
         var pc = pitch % 12;
         return pc < 0 ? pc + 12 : pc;
-    }
-
-    private static byte[] MaskToPitchClasses(ushort mask)
-    {
-        if (mask == 0)
-            return [];
-
-        var result = new List<byte>(12);
-        for (byte pc = 0; pc < 12; pc++)
-        {
-            if ((mask & (1 << pc)) != 0)
-                result.Add(pc);
-        }
-
-        return [.. result];
     }
 
     private static string DescribeAlteration(KeySignature key, int pitchClass)
@@ -608,13 +604,13 @@ public readonly record struct ChromaticPitchEvent(
 /// <param name="EndChordIndex">Index of the last chord in the segment.</param>
 /// <param name="Mode">The mode that best explains the segment.</param>
 /// <param name="Confidence">Coverage improvement over the base mode.</param>
-/// <param name="OutOfKeyPitchClasses">Pitch classes used that lie outside the base key.</param>
+/// <param name="OutOfKeyPitchClassMask">12-bit pitch-class mask (bit n = pitch class n) of pitch classes used that lie outside the base key. A mask (not an array) keeps this record struct's value equality meaningful.</param>
 public readonly record struct ModalTurnEvent(
     int StartChordIndex,
     int EndChordIndex,
     Mode Mode,
     double Confidence,
-    byte[] OutOfKeyPitchClasses);
+    int OutOfKeyPitchClassMask);
 
 /// <summary>
 /// Classification of a melody note in harmonic context.

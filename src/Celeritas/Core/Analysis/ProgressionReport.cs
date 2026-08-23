@@ -31,6 +31,13 @@ public sealed class ChordSuggestion
 /// <summary>
 /// Complete analysis report for a chord progression.
 /// </summary>
+/// <remarks>
+/// Chord symbols that cannot be parsed are skipped (see <see cref="SkippedSymbols"/>),
+/// so all Position/index fields in this report (<see cref="Chords"/>,
+/// <see cref="Cadences"/>, <see cref="Modulations"/>, <see cref="SecondaryDominants"/>,
+/// <see cref="BorrowedChords"/>, <see cref="TensionCurve"/>) refer to the PARSED
+/// sequence, which may be shorter than the input array.
+/// </remarks>
 public sealed class ProgressionReport
 {
     // Produced by ProgressionAdvisor; not constructible by consumers (#18 API freeze).
@@ -110,6 +117,13 @@ public sealed class ProgressionReport
 
     /// <summary>Overall voice-leading quality rating (free-form).</summary>
     public string QualityRating { get; init; } = "";
+
+    /// <summary>
+    /// Input chord symbols that could not be parsed and were skipped, with their
+    /// indices in the ORIGINAL input array. All Position fields elsewhere in the
+    /// report refer to the parsed sequence (with these symbols removed).
+    /// </summary>
+    public IReadOnlyList<(int Index, string Symbol)> SkippedSymbols { get; init; } = [];
 
     /// <summary>
     /// Convenience factory matching the examples.
