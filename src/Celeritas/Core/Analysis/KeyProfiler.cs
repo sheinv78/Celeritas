@@ -257,10 +257,23 @@ public static class KeyProfiler
         Span<int> pitches = notes.Length <= StackAlloc.MaxInts
             ? stackalloc int[notes.Length]
             : new int[notes.Length];
-        for (var i = 0; i < notes.Length; i++)
-            pitches[i] = notes[i].Pitch;
 
-        return DetectFromPitches(pitches);
+        // Skip rests. MusicNotation.Parse marks them with RestPitch (-1), and folding that
+        // into a pitch class made every rest a B: "C4/4 R/4 E4/4 G4/4" came back as E minor
+        // on four pitch classes instead of C major on three.
+        var count = 0;
+        for (var i = 0; i < notes.Length; i++)
+        {
+            if (notes[i].Pitch == MusicNotation.RestPitch)
+                continue;
+
+            pitches[count++] = notes[i].Pitch;
+        }
+
+        if (count == 0)
+            return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0, AllCorrelations = [] };
+
+        return DetectFromPitches(pitches[..count]);
     }
 
     /// <summary>
@@ -280,10 +293,23 @@ public static class KeyProfiler
         Span<int> pitches = notes.Length <= StackAlloc.MaxInts
             ? stackalloc int[notes.Length]
             : new int[notes.Length];
-        for (var i = 0; i < notes.Length; i++)
-            pitches[i] = notes[i].Pitch;
 
-        return DetectFromPitches(pitches);
+        // Skip rests. MusicNotation.Parse marks them with RestPitch (-1), and folding that
+        // into a pitch class made every rest a B: "C4/4 R/4 E4/4 G4/4" came back as E minor
+        // on four pitch classes instead of C major on three.
+        var count = 0;
+        for (var i = 0; i < notes.Length; i++)
+        {
+            if (notes[i].Pitch == MusicNotation.RestPitch)
+                continue;
+
+            pitches[count++] = notes[i].Pitch;
+        }
+
+        if (count == 0)
+            return new KeyDetectionResult { Key = new KeySignature(0, true), Confidence = 0, AllCorrelations = [] };
+
+        return DetectFromPitches(pitches[..count]);
     }
 
     /// <summary>

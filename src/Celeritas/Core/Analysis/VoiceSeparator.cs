@@ -234,10 +234,17 @@ public static class VoiceSeparator
             };
         }
 
-        // Collect notes with indices - pre-allocate exact size
+        // Collect notes with indices - pre-allocate exact size.
+        //
+        // Rests are skipped: MusicNotation.Parse marks them with RestPitch (-1), and a buffer
+        // filled straight from it would give every rest a voice of its own, an octave below
+        // the lowest real note, skewing the register assignment and the crossing count.
         var notes = new List<(VoiceNote note, int index)>(buffer.Count);
         for (int i = 0; i < buffer.Count; i++)
         {
+            if (buffer.PitchAt(i) == MusicNotation.RestPitch)
+                continue;
+
             notes.Add((new VoiceNote
             {
                 Pitch = buffer.PitchAt(i),
@@ -246,6 +253,18 @@ public static class VoiceSeparator
                 Velocity = buffer.GetVelocity(i),
                 OriginalIndex = i
             }, i));
+        }
+
+        if (notes.Count == 0)
+        {
+            return new VoiceSeparationResult
+            {
+                Voices = [],
+                TotalNotes = buffer.Count,
+                VoiceCrossings = 0,
+                SeparationQuality = 1.0f,
+                NoteToVoice = []
+            };
         }
 
         // Sort by onset time, then by pitch (high to low for voice assignment)

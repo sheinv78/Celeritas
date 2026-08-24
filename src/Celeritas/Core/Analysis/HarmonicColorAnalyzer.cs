@@ -450,7 +450,17 @@ public static class HarmonicColorAnalyzer
         if (melody.IsEmpty)
             return [];
 
-        // Fast path if already ordered.
+        // Drop rests while ordering. MusicNotation.Parse marks them with RestPitch (-1), which
+        // folds to a B, so a rest used to be reported as a melody note — an OtherNonChordTone
+        // at pitch -1 that no one played.
+        var rests = 0;
+        for (var i = 0; i < melody.Length; i++)
+        {
+            if (melody[i].Pitch == MusicNotation.RestPitch)
+                rests++;
+        }
+
+        // Fast path if already ordered and rest-free.
         var ordered = true;
         for (var i = 1; i < melody.Length; i++)
         {
@@ -461,11 +471,20 @@ public static class HarmonicColorAnalyzer
             }
         }
 
-        if (ordered)
+        if (ordered && rests == 0)
             return melody.ToArray();
 
-        var copy = melody.ToArray();
-        Array.Sort(copy, static (a, b) => a.Offset.CompareTo(b.Offset));
+        var copy = new NoteEvent[melody.Length - rests];
+        var next = 0;
+        for (var i = 0; i < melody.Length; i++)
+        {
+            if (melody[i].Pitch != MusicNotation.RestPitch)
+                copy[next++] = melody[i];
+        }
+
+        if (!ordered)
+            Array.Sort(copy, static (a, b) => a.Offset.CompareTo(b.Offset));
+
         return copy;
     }
 }

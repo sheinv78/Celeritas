@@ -42,16 +42,26 @@ public sealed class MelodyHarmonizer(
             return new HarmonizationResult { Key = new KeySignature(0, true), TotalCost = 0 };
         }
 
-        // Detect key from melody pitches
+        // Detect key from melody pitches, skipping rests: RestPitch (-1) folds to a B and
+        // would vote for a note that is not in the melody at all.
         Span<int> pitches = melody.Length <= StackAlloc.MaxInts
             ? stackalloc int[melody.Length]
             : new int[melody.Length];
+        var pitchCount = 0;
         for (var i = 0; i < melody.Length; i++)
         {
-            pitches[i] = melody[i].Pitch;
+            if (melody[i].Pitch == MusicNotation.RestPitch)
+                continue;
+
+            pitches[pitchCount++] = melody[i].Pitch;
         }
 
-        var key = KeyAnalyzer.IdentifyKey(pitches);
+        if (pitchCount == 0)
+        {
+            return new HarmonizationResult { Key = new KeySignature(0, true), TotalCost = 0 };
+        }
+
+        var key = KeyAnalyzer.IdentifyKey(pitches[..pitchCount]);
         return Harmonize(melody, key);
     }
 
@@ -64,6 +74,17 @@ public sealed class MelodyHarmonizer(
         {
             return new HarmonizationResult { Key = key, TotalCost = 0 };
         }
+
+        // Rests are not harmonized. MusicNotation.Parse marks them with RestPitch (-1), which
+        // folds to a B, so a rest used to take a slice of its own and be given a chord built
+        // on a note nobody played.
+        var sounding = WithoutRests(melody);
+        if (sounding.Length == 0)
+        {
+            return new HarmonizationResult { Key = key, TotalCost = 0 };
+        }
+
+        melody = sounding;
 
         // 1. Segment melody into time slices
         var slices = _rhythmStrategy.Segment(melody);
@@ -203,6 +224,33 @@ public sealed class MelodyHarmonizer(
     /// <summary>
     /// Harmonize from a NoteBuffer with a specified key.
     /// </summary>
+    /// <summary>
+    /// Returns the melody with rests removed, or the original span when it has none (the
+    /// common case, which then costs no allocation).
+    /// </summary>
+    private static ReadOnlySpan<NoteEvent> WithoutRests(ReadOnlySpan<NoteEvent> melody)
+    {
+        var rests = 0;
+        for (var i = 0; i < melody.Length; i++)
+        {
+            if (melody[i].Pitch == MusicNotation.RestPitch)
+                rests++;
+        }
+
+        if (rests == 0)
+            return melody;
+
+        var sounding = new NoteEvent[melody.Length - rests];
+        var next = 0;
+        for (var i = 0; i < melody.Length; i++)
+        {
+            if (melody[i].Pitch != MusicNotation.RestPitch)
+                sounding[next++] = melody[i];
+        }
+
+        return sounding;
+    }
+
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public HarmonizationResult Harmonize(NoteBuffer buffer, KeySignature key)
     {
