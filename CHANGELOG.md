@@ -17,6 +17,12 @@ covered by a regression test (the suite grew from 754 to 957 tests).
 
 #### Analysis
 
+- Key detection is transposition-equivariant. Where the input is genuinely undecidable —
+  a diminished seventh, an augmented triad, any symmetric set — several candidates score
+  identically and the tie-break decides. It used to take the lowest root, an absolute
+  position, so the same chord moved up a semitone reported a key a fourth away. The tied
+  candidate rooted nearest above the bass now wins, and transposing a passage transposes
+  the answer with it
 - `DetectKey` / `IdentifyKey` tell a key from its relative. Scoring ran on a
   12-bit pitch-class set, and a key and its relative have identical sets, so the
   two always tied and iteration order decided: unambiguous G-major material
