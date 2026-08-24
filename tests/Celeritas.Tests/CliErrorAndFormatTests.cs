@@ -476,4 +476,165 @@ public class CliErrorAndFormatTests : IDisposable
         Assert.Contains("Mixolydian", output, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("A#", output, StringComparison.Ordinal);   // the out-of-key pitch class
     }
+    // ---------- pcset and its optional Forte catalog ----------
+
+    [Fact]
+    public void PcSet_WithNoNotes_SaysHowToUseIt()
+    {
+        var (exit, output) = Run("pcset", "--notes", " ");
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("celeritas pcset", output, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void PcSet_WithAMissingCatalog_SaysTheCatalogIsMissing()
+    {
+        var (exit, output) = Run(
+            "pcset", "--notes", "C4 E4 G4", "--catalog", Path.Combine(_work, "nope.json"));
+
+        Assert.Equal(0, exit);
+        Assert.Contains("catalog file not found", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PcSet_WithACatalogHoldingTheSet_NamesIt()
+    {
+        var catalog = Path.Combine(_work, "forte.json");
+        File.WriteAllText(catalog, """
+            [ { "forte": "3-11", "primeForm": [0,3,7], "name": "Major/Minor Triad" } ]
+            """);
+
+        var (exit, output) = Run("pcset", "--notes", "C4 E4 G4", "--catalog", catalog);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Forte: 3-11", output, StringComparison.Ordinal);
+        Assert.Contains("Major/Minor Triad", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PcSet_WithACatalogThatDoesNotHoldTheSet_SaysSo()
+    {
+        var catalog = Path.Combine(_work, "sparse.json");
+        File.WriteAllText(catalog, """[ { "forte": "4-1", "primeForm": [0,1,2,3] } ]""");
+
+        var (exit, output) = Run("pcset", "--notes", "C4 E4 G4", "--catalog", catalog);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("not found in catalog", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PcSet_WithAnUnreadableCatalog_ReportsTheErrorWithoutFalling()
+    {
+        var catalog = Path.Combine(_work, "broken.json");
+        File.WriteAllText(catalog, "{ this is not a catalog");
+
+        var (exit, output) = Run("pcset", "--notes", "C4 E4 G4", "--catalog", catalog);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("catalog error", output, StringComparison.Ordinal);
+    }
+
+    // ---------- musicxml ----------
+
+    [Fact]
+    public void MusicXmlConvert_MissingInput_SaysWhichOne()
+    {
+        var (exit, output) = Run(
+            "musicxml", "convert",
+            "--in", Path.Combine(_work, "nope.musicxml"),
+            "--out", Path.Combine(_work, "out.mid"));
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("not found", output, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MusicXmlConvert_BetweenTwoFormatsItDoesNotKnow_SaysSo()
+    {
+        var midi = MidiFileOf("4/4: C4/4 E4/4 G4/4 C5/4");
+
+        var (exit, output) = Run(
+            "musicxml", "convert", "--in", midi, "--out", Path.Combine(_work, "copy.mid"));
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("Unsupported conversion", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MusicXmlAnalyze_MissingInput_SaysWhichOne()
+    {
+        var (exit, output) = Run("musicxml", "analyze", "--in", Path.Combine(_work, "nope.musicxml"));
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("not found", output, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MusicXmlAnalyze_OfAScoreWithNoNotes_SaysItIsEmpty()
+    {
+        var path = Path.Combine(_work, "empty.musicxml");
+        File.WriteAllText(path, """
+            <score-partwise version="4.0">
+              <part-list><score-part id="P1"/></part-list>
+              <part id="P1"><measure number="1"><attributes><divisions>1</divisions></attributes></measure></part>
+            </score-partwise>
+            """);
+
+        var (exit, output) = Run("musicxml", "analyze", "--in", path);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("(empty score)", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MusicXmlAnalyze_OfALongScore_SaysHowMuchItDidNotPrint()
+    {
+        var notation = "4/4: " + string.Join(" ", Enumerable.Range(0, 30).Select(i => $"{MusicNotation.ToNotation(48 + (i % 24))}/8"));
+        var midi = MidiFileOf(notation);
+        var xml = Path.Combine(_work, "long.musicxml");
+        Assert.Equal(0, Run("musicxml", "convert", "--in", midi, "--out", xml).ExitCode);
+
+        var (exit, output) = Run("musicxml", "analyze", "--in", xml);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("more", output, StringComparison.Ordinal);
+    }
+
+    // ---------- note tokens ----------
+
+    [Fact]
+    public void ANoteNumberOffTheKeyboard_IsRefusedByName()
+    {
+        var (exit, output) = Run("analyze", "--notes", "200");
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("outside the valid MIDI range 0-127", output, StringComparison.Ordinal);
+    }
+
+    // Note: polyphony and `midi export` read their --notes option without the list expander,
+    // so their "no notes provided" branches need an empty option array, which the parser never
+    // produces for a required option. Their reachable failure is "No valid notes parsed.",
+    // asserted above.
+
+    [Fact]
+    public void Transpose_WithNoNotes_SaysHowToUseIt()
+    {
+        var (exit, output) = Run("transpose", "--semitones", "2", "--notes", " ");
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("celeritas transpose", output, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Melody_OfALongLine_SaysHowManyIntervalsItDidNotPrint()
+    {
+        var notes = string.Join(" ", Enumerable.Range(0, 20).Select(i => MusicNotation.ToNotation(60 + (i % 12))));
+
+        var (exit, output) = Run("melody", "--notes", notes);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("more", output, StringComparison.Ordinal);
+    }
 }
