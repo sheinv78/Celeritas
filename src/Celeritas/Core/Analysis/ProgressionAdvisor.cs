@@ -1016,16 +1016,23 @@ public static class ProgressionAdvisor
                     // Secondary dominant targets: ii, iii, IV, V, vi (not I)
                     if (targetDegree != 0) // Not tonic
                     {
-                        // If it's not diatonic to main key, it's likely a secondary dominant
-                        if (!IsDiatonicChord(curr.Pitches, mainKey))
-                        {
-                            // Dominant-family targets are MAJOR-mode keys: a V7/V
-                            // chain resolving to G7 tonicizes G MAJOR, not G minor.
-                            var tonicizedKey = new KeySignature((byte)nextRoot,
-                                next.Info.Quality is ChordQuality.Major or ChordQuality.Major7
-                                    or ChordQuality.Dominant7 or ChordQuality.Dominant7Flat5
-                                    or ChordQuality.Augmented7);
+                        // Dominant-family targets are MAJOR-mode keys: a V7/V
+                        // chain resolving to G7 tonicizes G MAJOR, not G minor.
+                        var tonicizedKey = new KeySignature((byte)nextRoot,
+                            next.Info.Quality is ChordQuality.Major or ChordQuality.Major7
+                                or ChordQuality.Dominant7 or ChordQuality.Dominant7Flat5
+                                or ChordQuality.Augmented7);
 
+                        // If it's not diatonic to main key, it's likely a secondary dominant.
+                        //
+                        // The second half matters once the music has already moved: a chord
+                        // cannot tonicize the key it is already in. After an earlier modulation
+                        // sets currentKey to G major, D → G is simply V → I there, but the
+                        // diatonic test only rules out secondary dominants of the MAIN key, so
+                        // the report gained an entry reading "Modulation to G Major (same key)"
+                        // — a modulation from a key to itself, and one more on the count.
+                        if (!IsDiatonicChord(curr.Pitches, mainKey) && !KeysEqual(tonicizedKey, currentKey))
+                        {
                             // Determine if this is tonicization or modulation
                             // Check how many subsequent chords fit the new key
                             var durationInNewKey = CountChordsInKey(chords, i + 1, tonicizedKey);

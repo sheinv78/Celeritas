@@ -115,7 +115,12 @@ public sealed class ProgressionReport
     /// <summary>Approximate count of parallel fifths detected between adjacent chords.</summary>
     public int ParallelFifths { get; init; }
 
-    /// <summary>Approximate count of parallel octaves/unisons detected between adjacent chords.</summary>
+    /// <summary>
+    /// Approximate count of parallel octaves/unisons detected between adjacent chords. An
+    /// octave needs a chord to sound one pitch class twice, and a chord symbol never does
+    /// — a slash bass moves the note rather than doubling it — so this is 0 for symbol
+    /// input. It is <see cref="ParallelFifths"/> that carries the signal here.
+    /// </summary>
     public int ParallelOctaves { get; init; }
 
     /// <summary>Overall voice-leading quality rating (free-form).</summary>
