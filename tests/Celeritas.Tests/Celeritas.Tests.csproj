@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Celeritas\Celeritas.csproj" />
+    <ProjectReference Include="..\..\src\Celeritas.CLI\Celeritas.CLI.csproj" />
   </ItemGroup>
 
 </Project>
