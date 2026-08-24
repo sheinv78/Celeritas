@@ -250,7 +250,8 @@ public static class ProgressionAdvisor
                 // After tonic: IV, V, vi are common
                 AddSuggestion(suggestions, key, ScaleDegree.Iv, "Subdominant progression", 1.0f);
                 AddSuggestion(suggestions, key, ScaleDegree.V, "Move to dominant", 0.95f);
-                AddSuggestion(suggestions, key, ScaleDegree.Vi, "Relative minor for contrast", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.Vi,
+                    key.IsMajor ? "Relative minor for contrast" : "Submediant for contrast", 0.9f);
                 AddSuggestion(suggestions, key, ScaleDegree.Iii, "Mediant for color", 0.7f);
                 break;
 
@@ -263,7 +264,8 @@ public static class ProgressionAdvisor
 
             case ScaleDegree.Iii:
                 // iii can go to vi, IV, or ii
-                AddSuggestion(suggestions, key, ScaleDegree.Vi, "Descending to relative minor", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.Vi,
+                    key.IsMajor ? "Descending to relative minor" : "Descending to submediant", 0.9f);
                 AddSuggestion(suggestions, key, ScaleDegree.Iv, "Move to subdominant", 0.85f);
                 AddSuggestion(suggestions, key, ScaleDegree.Ii, "Jazz-style descending", 0.8f);
                 break;
@@ -315,12 +317,10 @@ public static class ProgressionAdvisor
             {
                 // Natural-minor degree VII is the subtonic MAJOR triad (e.g. G in
                 // A minor), not a leading-tone diminished chord — label it as such.
-                var names = UseFlatsForKey(key) ? NoteNamesFlat : NoteNames;
-                var subtonicSymbol = names[(key.Root + 10) % 12];
-                if (!suggestions.Any(s => s.Chord == subtonicSymbol))
-                {
-                    suggestions.Add(new ChordSuggestion(subtonicSymbol, "Subtonic (natural minor)", 0.6f));
-                }
+                // Spelled through the same degree->symbol path as every other
+                // suggestion rather than by hand, so there is one place that can
+                // get a degree wrong.
+                AddSuggestion(suggestions, key, ScaleDegree.Vii, "Subtonic (natural minor)", 0.6f);
 
                 // The actual leading-tone diminished chord uses the RAISED 7th
                 // (harmonic minor), so it is always spelled with sharps.
@@ -347,22 +347,32 @@ public static class ProgressionAdvisor
         }
     }
 
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="degree"/> is not a defined <see cref="ScaleDegree"/> value.</exception>
     private static string GetChordSymbolForDegree(KeySignature key, ScaleDegree degree)
     {
-        var scalePos = (int)degree - 1;
-        var intervals = key.IsMajor ? new[] { 0, 2, 4, 5, 7, 9, 11 } : [0, 2, 3, 5, 7, 8, 10];
-
-        if (scalePos < 0 || scalePos >= intervals.Length)
-        {
-            return "C";
-        }
-
-        var rootPc = (key.Root + intervals[scalePos]) % 12;
+        // ScaleDegree values are SEMITONE OFFSETS (I=0, Ii=2, Iii=4, Iv=5, V=7,
+        // Vi=9, Vii=11), not 1-based ordinals. Indexing a scale-interval table with
+        // `(int)degree - 1` therefore read the wrong step for nearly every degree
+        // (the dominant of C major came back as "B", the subdominant as "G") and
+        // fell out of range for I, Vi and Vii, where a hardcoded "C" fallback
+        // silently turned them into C major in EVERY key.
+        //
+        // KeySignature.GetScaleDegreePitchClass does this mapping correctly for
+        // major and natural minor. It throws on an undefined degree rather than
+        // guessing; that is deliberate here. This method is private and every call
+        // site passes a literal defined ScaleDegree, so such a throw would mark a
+        // bug in this file, not bad user input — SuggestNext's chromatic sentinel
+        // ((ScaleDegree)(-1)) is only ever a switch subject and never reaches here.
+        var rootPc = key.GetScaleDegreePitchClass(degree);
         var rootName = UseFlatsForKey(key) ? NoteNamesFlat[rootPc] : NoteNames[rootPc];
 
+        // Triad qualities mirror FunctionalHarmony.MakeDiatonic (DiatonicChordType.Triad):
+        //   major: I IV V major, ii iii vi minor, vii diminished;
+        //   minor: i iv minor, ii diminished, III VI VII major, and V major — the
+        //          raised-7th (harmonic) dominant, which is the library-wide default
+        //          (MinorDominantStyle.Harmonic).
         return key.IsMajor switch
         {
-            // Determine quality based on degree
             true => degree switch
             {
                 ScaleDegree.I or ScaleDegree.Iv or ScaleDegree.V => rootName,
@@ -375,7 +385,7 @@ public static class ProgressionAdvisor
                 ScaleDegree.I or ScaleDegree.Iv => rootName + "m",
                 ScaleDegree.Iii or ScaleDegree.Vi or ScaleDegree.Vii => rootName,
                 ScaleDegree.Ii => rootName + "dim",
-                ScaleDegree.V => rootName, // Often major in minor keys
+                ScaleDegree.V => rootName, // Harmonic-minor dominant: major triad
                 _ => rootName
             }
         };

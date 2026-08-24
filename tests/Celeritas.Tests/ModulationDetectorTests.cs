@@ -86,4 +86,92 @@ public class ModulationDetectorTests
         Assert.Empty(result.Modulations);
         Assert.Equal(startKey, result.EndKey);
     }
+
+    // ---------------------------------------------------------------------------
+    // Ambiguity gating. A window sliding across a key change necessarily holds both keys
+    // in near-equal measure, and DetectKeyInWindow used to hand back such a window's bare
+    // point estimate as a key change. That produced a burst of spurious events — a C->G
+    // passage reported three, one of them a G->C running BACKWARDS in time, at offset 2
+    // after a C->G already stood at offset 4. Detection now gates on two margins: the
+    // window must be decided at all, and it must point away from the current key.
+    //
+    // These cases passed before only because the pre-fix IdentifyKey was degenerate enough
+    // to return the same stale key for every ambiguous window, so they were skipped by
+    // accident rather than by design. They are pinned here deliberately.
+    // ---------------------------------------------------------------------------
+
+    private static readonly int[] FMaj = [65, 69, 72];
+    private static readonly int[] GMaj = [67, 71, 74];
+    private static readonly int[] D7 = [62, 66, 69, 72];
+
+    private static NoteEvent[] Progression(int[][] chords, Rational spacing)
+    {
+        var notes = new List<NoteEvent>();
+        for (var i = 0; i < chords.Length; i++)
+            AddTriad(notes, chords[i], spacing * i, spacing);
+        return notes.ToArray();
+    }
+
+    [Fact]
+    public void Analyze_MusicThatNeverLeavesTheKey_ReportsNoModulation()
+    {
+        // Four turns of I-IV-V-I in C major. Nothing here is foreign to C, so no window
+        // may be read as a key change however the margins fall.
+        int[][] chords = new int[16][];
+        for (var i = 0; i < 16; i++)
+            chords[i] = (i % 4) switch { 0 => CMaj, 1 => FMaj, 2 => GMaj, _ => CMaj };
+
+        var result = ModulationDetector.Analyze(
+            Progression(chords, new Rational(1, 2)), new KeySignature("C", true));
+
+        Assert.Empty(result.Modulations);
+        Assert.Equal(new KeySignature("C", true), result.EndKey);
+    }
+
+    [Fact]
+    public void Analyze_SecondaryDominant_IsNotReadAsAKeyChange()
+    {
+        // C: I - IV - V/V - V - I - IV - V - I. The D7 tonicizes G for a single chord and
+        // its F# tips a straddling window toward G, but the passage never leaves C major.
+        int[][] chords = [CMaj, FMaj, D7, GMaj, CMaj, FMaj, GMaj, CMaj];
+
+        var result = ModulationDetector.Analyze(
+            Progression(chords, new Rational(1, 2)), new KeySignature("C", true));
+
+        Assert.Empty(result.Modulations);
+        Assert.Equal(new KeySignature("C", true), result.EndKey);
+    }
+
+    [Fact]
+    public void Analyze_ModulationEvents_AreChronologicalAndHonestlyScored()
+    {
+        // A clear C -> G modulation: eight C-major chords, then eight G-major ones led by
+        // D7. Two invariants that the ungated detector broke.
+        int[][] chords =
+        [
+            CMaj, FMaj, GMaj, CMaj, FMaj, GMaj, FMaj, CMaj,
+            D7, GMaj, D7, GMaj, D7, GMaj, D7, GMaj
+        ];
+
+        var result = ModulationDetector.Analyze(
+            Progression(chords, new Rational(1, 2)), new KeySignature("C", true));
+
+        Assert.NotEmpty(result.Modulations);
+
+        // Events run forward in time. FindModulationBoundary scans back to the start of the
+        // evidence window, which reaches behind an already-emitted boundary unless floored.
+        var offsets = result.Modulations.Select(m => m.Offset).ToList();
+        for (var i = 1; i < offsets.Count; i++)
+            Assert.True(offsets[i] >= offsets[i - 1],
+                $"Event {i} at offset {offsets[i]} precedes event {i - 1} at {offsets[i - 1]}");
+
+        // Confidence is a margin and must honor its documented range. It used to report
+        // MeasureKeyStability, which answers "are the following chords in the new scale" —
+        // so a window that chose its key by a 0.043 margin still shipped as 1.0.
+        Assert.All(result.Modulations, m =>
+        {
+            Assert.InRange(m.Confidence, 0f, 1f);
+            Assert.True(m.Confidence > 0f, "A reported modulation must carry a positive margin");
+        });
+    }
 }

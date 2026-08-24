@@ -203,7 +203,11 @@ public class ProgressionFormReviewFixTests
         // In A minor the natural degree VII is the subtonic major triad (G).
         // It was previously labeled "Leading tone diminished"; the actual leading
         // tone chord is G#dim (raised 7th).
-        var s = ProgressionAdvisor.SuggestNext(["Am", "E"]);
+        // maxSuggestions is raised past the default 5 because the diatonic
+        // suggestions are now distinct chords (they used to collapse onto a
+        // hardcoded "C") and fill the default list, pushing G#dim (0.55) past the
+        // cut. The assertions themselves are unchanged.
+        var s = ProgressionAdvisor.SuggestNext(["Am", "E"], 8);
 
         Assert.Contains(s, x => x.Chord == "G" && x.Reason == "Subtonic (natural minor)");
         Assert.Contains(s, x => x.Chord == "G#dim" && x.Reason == "Leading tone diminished");

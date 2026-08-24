@@ -303,33 +303,54 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal([1.0f, 0.9f, 0.85f, 0.8f, 0.75f], s.Select(x => x.Score));
     }
 
+    // The three SuggestNext expectations below were re-pinned when
+    // GetChordSymbolForDegree was corrected: ScaleDegree values are semitone
+    // offsets (I=0 .. Vii=11), not 1-based ordinals, so the old scale-table
+    // indexing named the wrong chord for nearly every degree and silently
+    // returned a hardcoded "C" for I, vi and vii in every key. The old expected
+    // values are quoted in each test so the correction is auditable.
+
     [Fact]
     public void SuggestNext_C_G()
     {
+        // After V in C major: I=C, deceptive vi=Am, mediant iii=Em, IV=F, vii°=Bdim.
+        // Was ["C", "Fm", "G"] — "Fm" for iii, "G" for IV, and vi/vii both collapsed
+        // onto the hardcoded "C" (deduped away against the real tonic).
         var s = ProgressionAdvisor.SuggestNext(["C", "G"]);
-        Assert.Equal(["C", "Fm", "G"], s.Select(x => x.Chord));
-        Assert.Equal(["Perfect authentic cadence", "Mediant for color", "Avoid resolution, continue tension"],
-            s.Select(x => x.Reason));
-        Assert.Equal([1.0f, 0.65f, 0.6f], s.Select(x => x.Score));
+        Assert.Equal(["C", "Am", "Em", "F", "Bdim"], s.Select(x => x.Chord));
+        Assert.Equal(["Perfect authentic cadence", "Deceptive cadence", "Mediant for color",
+            "Avoid resolution, continue tension", "Leading tone diminished"], s.Select(x => x.Reason));
+        Assert.Equal([1.0f, 0.9f, 0.65f, 0.6f, 0.6f], s.Select(x => x.Score));
     }
 
     [Fact]
     public void SuggestNext_Dm7_G7()
     {
+        // D minor, last chord G7 = iv: V=A, i=Dm, ii°=Edim, III=F, subtonic VII=C.
+        // Was ["C", "Edim", "G", "C#dim"] — "C" for the dominant (the hardcoded
+        // fallback), "G" for the mediant. C#dim (harmonic-minor leading-tone
+        // diminished, 0.55) now falls just past the 5-suggestion cut because the
+        // five diatonic suggestions above it are finally distinct chords; it is
+        // still produced, and SuggestNext_Dm7_G7_LeadingToneDim_StillOfferedBeyondCut
+        // in ProgressionAdvisorFixesTests pins that.
         var s = ProgressionAdvisor.SuggestNext(["Dm7", "G7"]);
-        // C#dim: the correct leading-tone diminished suggestion for the detected minor key.
-        Assert.Equal(["C", "Edim", "G", "C#dim"], s.Select(x => x.Chord));
-        Assert.Equal([1.0f, 0.7f, 0.65f, 0.55f], s.Select(x => x.Score));
+        Assert.Equal(["A", "Dm", "Edim", "F", "C"], s.Select(x => x.Chord));
+        Assert.Equal(["Subdominant to dominant", "Plagal cadence", "Retrograde progression",
+            "Mediant for color", "Subtonic (natural minor)"], s.Select(x => x.Reason));
+        Assert.Equal([1.0f, 0.95f, 0.7f, 0.65f, 0.6f], s.Select(x => x.Score));
     }
 
     [Fact]
     public void SuggestNext_C_Am_F()
     {
+        // C major, last chord F = IV: V=G, I=C, ii=Dm, iii=Em, vii°=Bdim.
+        // Was ["B", "C", "Dm", "Fm"] — "B" for the dominant (the leading-tone
+        // interval read as V) and "Fm" for the mediant.
         var s = ProgressionAdvisor.SuggestNext(["C", "Am", "F"]);
-        Assert.Equal(["B", "C", "Dm", "Fm"], s.Select(x => x.Chord));
-        Assert.Equal(["Subdominant to dominant", "Plagal cadence", "Retrograde progression", "Mediant for color"],
-            s.Select(x => x.Reason));
-        Assert.Equal([1.0f, 0.95f, 0.7f, 0.65f], s.Select(x => x.Score));
+        Assert.Equal(["G", "C", "Dm", "Em", "Bdim"], s.Select(x => x.Chord));
+        Assert.Equal(["Subdominant to dominant", "Plagal cadence", "Retrograde progression",
+            "Mediant for color", "Leading tone diminished"], s.Select(x => x.Reason));
+        Assert.Equal([1.0f, 0.95f, 0.7f, 0.65f, 0.6f], s.Select(x => x.Score));
     }
 
     // ---------- ParseChordSymbol / GetInversion / GetInversionName ----------
