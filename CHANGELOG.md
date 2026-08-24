@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.10.0] - 2026-08-23
+## [0.10.0] - 2026-08-25
 
 A correctness release. A full audit of the library surfaced a class of bugs that
 returned confident wrong answers rather than failing loudly; every fix below is
-covered by a regression test (the suite grew from 754 to 957 tests).
+covered by a regression test, and the suite grew from 754 to 1501 tests --
+including property-based tests over the changed logic, which is what found the
+transposition defect listed first below.
 
 ### Fixed
 
