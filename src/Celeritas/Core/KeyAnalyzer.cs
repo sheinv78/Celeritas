@@ -228,9 +228,14 @@ public static class KeyAnalyzer
     /// minor). The Krumhansl-Kessler weights lean that way for an evenly-weighted diatonic set;
     /// the margin is thin, and callers who need the distinction must supply material that
     /// emphasizes a tonic.</description></item>
-    /// <item><description>An input that leaves every candidate scoring identically — all twelve
-    /// pitch classes sounded equally often, say — returns <c>C major</c>: on an exact tie the
-    /// lowest root wins, major before minor.</description></item>
+    /// <item><description>An input that leaves several candidates scoring identically — a
+    /// diminished seventh, an augmented triad, all twelve pitch classes sounded equally often —
+    /// is settled by the bass: the tied key rooted nearest above the lowest sounding note wins,
+    /// major before minor at equal distance. That keeps the answer <em>equivariant</em>, so
+    /// transposing the passage transposes the answer with it. An earlier rule took the lowest
+    /// root, which made the answer depend on absolute position: a diminished seventh moved up a
+    /// semitone reported a key a fourth away. A chromatic run beginning on C still returns
+    /// <c>C major</c>.</description></item>
     /// </list>
     /// <para>
     /// This method returns a bare <see cref="KeySignature"/> and so cannot report how thin the
@@ -254,6 +259,8 @@ public static class KeyAnalyzer
         counts.Clear();
         ushort mask = 0;
 
+        var lowestPitch = int.MaxValue;
+
         foreach (var pitch in pitches)
         {
             // Fold rather than `%`: `%` keeps the sign in C#, so a pitch below zero would index
@@ -262,16 +269,21 @@ public static class KeyAnalyzer
             var pitchClass = PitchMath.Fold(pitch);
             counts[pitchClass]++;
             mask |= (ushort)(1 << pitchClass);
+
+            if (pitch < lowestPitch)
+                lowestPitch = pitch;
         }
 
-        return IdentifyKey(mask, counts);
+        // The bass only settles a tie, but it has to be carried this far to do it: the
+        // mask and the counts have both forgotten which note was lowest.
+        return IdentifyKey(mask, counts, PitchMath.Fold(lowestPitch));
     }
 
     /// <summary>
     /// Identify a key from a pitch-class mask plus the pitch-class counts behind it.
     /// The mask selects the candidates; the counts choose between them.
     /// </summary>
-    private static KeySignature IdentifyKey(ushort mask, ReadOnlySpan<int> counts)
+    private static KeySignature IdentifyKey(ushort mask, ReadOnlySpan<int> counts, int bassPitchClass)
     {
         // Pass 1: the historical prefilter. How many of the input's pitch classes does the best
         // scale contain? Every candidate reaching that number stays in the running -- the old
@@ -301,6 +313,11 @@ public static class KeyAnalyzer
         var bestRoot = 0;
         var bestIsMajor = true;
         var bestScore = float.NegativeInfinity;
+        var bestDistance = int.MaxValue;
+
+        // Scores are profile correlations of order 1-20; anything closer than this is the
+        // same score arrived at by a different rounding path, not a real preference.
+        const float TieEpsilon = 1e-4f;
 
         for (var root = 0; root < 12; root++)
         {
@@ -313,9 +330,28 @@ public static class KeyAnalyzer
                     continue;
 
                 var score = ProfileScore(counts, meanCount, root, isMajor);
-                if (score > bestScore)
+
+                // A symmetric set -- a diminished seventh, an augmented triad, a whole-tone
+                // scale -- correlates identically with several keys, so the profile settles
+                // nothing and the tie-break becomes the answer. Taking the lowest root there made
+                // that answer depend on absolute position: the same chord moved up a semitone
+                // reported a key a fourth away, cycling with the symmetry instead of transposing
+                // with the music.
+                //
+                // Distance from the bass is the same for every transposition of a passage, so
+                // preferring the tied candidate nearest above the bass keeps the answer
+                // equivariant. It is also the musical reading: with nothing else to go on, the
+                // lowest sounding note is the likeliest tonic. Inputs the profile can separate
+                // never reach this.
+                var distance = PitchMath.Fold(root - bassPitchClass);
+
+                var beatsBest = score > bestScore + TieEpsilon;
+                var tiesBest = !beatsBest && score > bestScore - TieEpsilon;
+
+                if (beatsBest || (tiesBest && distance < bestDistance))
                 {
-                    bestScore = score;
+                    bestScore = MathF.Max(score, bestScore);
+                    bestDistance = distance;
                     bestRoot = root;
                     bestIsMajor = isMajor;
                 }
