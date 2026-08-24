@@ -17,6 +17,31 @@ covered by a regression test (the suite grew from 754 to 957 tests).
 
 #### Analysis
 
+- `DetectKey` / `IdentifyKey` tell a key from its relative. Scoring ran on a
+  12-bit pitch-class set, and a key and its relative have identical sets, so the
+  two always tied and iteration order decided: unambiguous G-major material
+  answered E minor. The pitch multiset the caller passes is now used — candidates
+  that tie on scale overlap are separated by correlating pitch-class counts
+  against the Krumhansl-Kessler profiles, so tonic emphasis decides, as it does
+  for a listener. Where the input genuinely cannot decide (a bare scale, an empty
+  input) the answer is now a documented convention rather than an artifact of
+  loop order
+- Chord suggestions name the right scale degree. `ScaleDegree` values are
+  semitone offsets, but the degree-to-symbol helper indexed a scale table with
+  them as if they were ordinals: in C major the dominant suggestion came back as
+  B, the mediant as F minor, and degrees I, VI and VII fell out of range into a
+  hardcoded "C" — which was silently C major in every key
+- `ModulationEvent.Confidence` stays within its documented 0.0–1.0. A key distant
+  from the current one correlates negatively with the window, which pushed the
+  ratio past 1 (a C → B major jump reported 1.13). It is also no longer stability
+  alone: a window that chose its key by a hair could report 1.0, so the margin by
+  which the evidence chose that key is now a factor. Like every margin in this
+  library it reads on a modest scale — a confident modulation lands near 0.2–0.4
+- Modulation events are chronological. Boundary attribution could scan back
+  behind an already-reported boundary, so the list could read "C → G at 4"
+  followed by "G → C at 2"
+- Suggestion labels follow the mode: degree VI is the relative minor only in a
+  major key; in a minor key it is the submediant, and a major triad
 - Key detection no longer crashes on notes with a negative MIDI pitch
 - Modulation detection reports genuine key changes: the confidence gate had been
   calibrated as if confidence were a goodness-of-fit score rather than the margin
