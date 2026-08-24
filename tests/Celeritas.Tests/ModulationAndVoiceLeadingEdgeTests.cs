@@ -181,4 +181,79 @@ public class ModulationAndVoiceLeadingEdgeTests
         Assert.DoesNotContain("Warnings:", score, StringComparison.Ordinal);
         Assert.Contains("Total voice leading cost:", score, StringComparison.Ordinal);
     }
+    // ---------- every diatonic degree the detector can meet ----------
+
+    [Fact]
+    public void ADiatonicTourOfTheKey_IsReadWithoutModulating()
+    {
+        // One chord on each degree of C major: the detector has to map every scale index to
+        // its roman numeral, and none of them is a key change.
+        NoteEvent[] notes =
+        [
+            .. Chord(0, 60, 64, 67),    // I
+            .. Chord(1, 62, 65, 69),    // ii
+            .. Chord(2, 64, 67, 71),    // iii
+            .. Chord(3, 65, 69, 72),    // IV
+            .. Chord(4, 67, 71, 74),    // V
+            .. Chord(5, 69, 72, 76),    // vi
+            .. Chord(6, 71, 74, 77),    // vii
+            .. Chord(7, 60, 64, 67),    // I
+        ];
+
+        var result = ModulationDetector.Analyze(notes, CMajor);
+
+        Assert.Equal(CMajor, result.StartKey);
+        Assert.Equal(CMajor, result.EndKey);
+        Assert.Equal(1, result.KeyCount);
+    }
+
+    [Fact]
+    public void SingleNotesAreNotChords()
+    {
+        // One pitch class per beat: nothing to identify, so nothing to modulate to.
+        NoteEvent[] notes = [.. Chord(0, 60), .. Chord(1, 62), .. Chord(2, 64), .. Chord(3, 65)];
+
+        var result = ModulationDetector.Analyze(notes, CMajor);
+
+        Assert.Empty(result.Modulations);
+    }
+
+    [Fact]
+    public void AChordOnANoteOutsideTheKey_IsPassedOver()
+    {
+        // F sharp major has no place in C major's scale, so the detector cannot give it a
+        // degree — and must not invent one.
+        NoteEvent[] notes =
+        [
+            .. Chord(0, 60, 64, 67),
+            .. Chord(1, 66, 70, 73),
+            .. Chord(2, 60, 64, 67),
+            .. Chord(3, 67, 71, 74),
+        ];
+
+        var result = ModulationDetector.Analyze(notes, CMajor);
+
+        Assert.Equal(CMajor, result.StartKey);
+        Assert.All(result.Modulations, m => Assert.NotEqual(m.FromKey, m.ToKey));
+    }
+
+    [Fact]
+    public void EveryModulationIsPlacedInTimeWithAMeasuredConfidence()
+    {
+        NoteEvent[] notes =
+        [
+            .. Chord(0, 60, 64, 67), .. Chord(1, 65, 69, 72), .. Chord(2, 67, 71, 74), .. Chord(3, 60, 64, 67),
+            .. Chord(4, 62, 66, 69), .. Chord(5, 67, 71, 74), .. Chord(6, 69, 73, 76), .. Chord(7, 62, 66, 69),
+            .. Chord(8, 62, 66, 69), .. Chord(9, 69, 73, 76), .. Chord(10, 62, 66, 69),
+        ];
+
+        var result = ModulationDetector.Analyze(notes, CMajor);
+
+        Assert.All(result.Modulations, m =>
+        {
+            Assert.True(m.Offset >= Rational.Zero, "a modulation was placed before the music started");
+            Assert.InRange(m.Confidence, 0f, 1f);
+            Assert.NotEqual(m.FromKey, m.ToKey);
+        });
+    }
 }

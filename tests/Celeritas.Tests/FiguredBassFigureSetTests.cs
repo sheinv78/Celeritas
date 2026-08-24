@@ -187,4 +187,127 @@ public class FiguredBassFigureSetTests
 
         Assert.All(notes.Skip(1), n => Assert.InRange(n.Pitch, 60, 72));
     }
+    // ---------- accidentals in the figures ----------
+
+    private static NoteEvent[] RealizeWith(int bass, int[] figures, Dictionary<int, char> accidentals) =>
+        new FiguredBassRealizer(new FiguredBassOptions { Key = CMajor }).Realize(
+            [new FiguredBassSymbol
+            {
+                BassPitch = bass,
+                Figures = figures,
+                Accidentals = accidentals,
+                Duration = Rational.Quarter,
+                Time = Rational.Zero,
+            }]);
+
+    [Fact]
+    public void AFlatInTheFiguresLowersThatDegree()
+    {
+        // Figure 6 realizes as 3 and 6, so it is the last voice that carries the sixth.
+        var plain = Realize(62, 6);
+        var flattened = RealizeWith(62, [6], new Dictionary<int, char> { [6] = 'b' });
+
+        Assert.Equal(plain.Length, flattened.Length);
+        Assert.Equal(plain[^1].Pitch - 1, flattened[^1].Pitch);
+    }
+
+    [Fact]
+    public void AnAccidentalTheRealizerDoesNotKnow_LeavesTheDegreeAlone()
+    {
+        var plain = Realize(62, 6);
+        var odd = RealizeWith(62, [6], new Dictionary<int, char> { [6] = 'x' });
+
+        Assert.Equal(plain.Select(n => n.Pitch), odd.Select(n => n.Pitch));
+    }
+
+    [Fact]
+    public void ANaturalCancelsTheKeysAlteration()
+    {
+        // In D major the third above D is F sharp; "n3" asks for F natural instead.
+        var realizer = new FiguredBassRealizer(new FiguredBassOptions { Key = new KeySignature(2, true) });
+
+        var plain = realizer.Realize(
+            [new FiguredBassSymbol { BassPitch = 62, Figures = [3], Duration = Rational.Quarter, Time = Rational.Zero }]);
+        var natural = realizer.Realize(
+            [new FiguredBassSymbol
+            {
+                BassPitch = 62,
+                Figures = [3],
+                Accidentals = new Dictionary<int, char> { [3] = 'n' },
+                Duration = Rational.Quarter,
+                Time = Rational.Zero,
+            }]);
+
+        Assert.Equal(66, plain[1].Pitch);        // F sharp
+        Assert.Equal(65, natural[1].Pitch);      // F natural
+    }
+
+    [Fact]
+    public void ANaturalOverAChromaticBass_IsSpelledFromTheLetterBelow()
+    {
+        // C sharp is not a natural letter, so the realizer counts the degree from C.
+        var natural = RealizeWith(61, [3], new Dictionary<int, char> { [3] = 'n' });
+
+        Assert.Equal(2, natural.Length);
+        Assert.True(natural[1].Pitch > 61);
+    }
+
+    // ---------- degenerate and generic figures ----------
+
+    [Fact]
+    public void AUnisonFigureIsVoicedAnOctaveAboveTheBass()
+    {
+        // A unison is zero semitones above the bass, but an upper voice has to sound above
+        // it — so the realizer takes the next octave of the same pitch class rather than
+        // doubling the bass at the unison.
+        var notes = Realize(60, 1);
+
+        Assert.Equal(2, notes.Length);
+        Assert.Equal(60, notes[0].Pitch);
+        Assert.Equal(72, notes[1].Pitch);
+    }
+
+    [Fact]
+    public void AnOctaveFigureOverAChromaticBass_UsesTheGenericSize()
+    {
+        // 8 is not one of the shorthands, so the generic interval table answers it: an octave.
+        var notes = Realize(61, 8);
+
+        Assert.Equal(2, notes.Length);
+        Assert.Equal(73, notes[1].Pitch);
+    }
+
+    [Fact]
+    public void AFigureLargerThanTheTable_OverAChromaticBass_SoundsTheBassClassAnOctaveUp()
+    {
+        // Nothing in the generic table covers a thirteenth, so the degree collapses to zero
+        // semitones rather than being invented — and is then voiced above the bass.
+        var notes = Realize(61, 13);
+
+        Assert.Equal(2, notes.Length);
+        Assert.Equal(73, notes[1].Pitch);
+    }
+
+    // ---------- keeping voices from crossing between symbols ----------
+
+    [Fact]
+    public void ConsecutiveSymbols_KeepTheirUpperVoicesInOrder()
+    {
+        // A narrow range and a wide leap between the two chords: the realizer has to lift the
+        // crossed voice by an octave, and sort as a last resort when the ceiling blocks that.
+        var realizer = new FiguredBassRealizer(new FiguredBassOptions { MinPitch = 60, MaxPitch = 76 });
+
+        var notes = realizer.Realize(
+        [
+            new FiguredBassSymbol { BassPitch = 48, Figures = [6, 4], Duration = Rational.Quarter, Time = Rational.Zero },
+            new FiguredBassSymbol { BassPitch = 47, Figures = [6, 5], Duration = Rational.Quarter, Time = Rational.Quarter },
+            new FiguredBassSymbol { BassPitch = 52, Figures = [7], Duration = Rational.Quarter, Time = Rational.Half },
+        ]);
+
+        foreach (var group in notes.GroupBy(n => n.Offset))
+        {
+            var upper = group.Skip(1).Select(n => n.Pitch).ToArray();
+            Assert.Equal(upper.OrderBy(p => p), upper);
+        }
+    }
 }
