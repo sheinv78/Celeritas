@@ -5,6 +5,7 @@ using Celeritas.Core.Accompaniment;
 using Celeritas.Core.Analysis;
 using Celeritas.Core.FiguredBass;
 using Celeritas.Core.Harmonization;
+using Celeritas.Core.Orchestration;
 using Celeritas.Core.Simd;
 
 namespace Celeritas.Tests;
@@ -247,5 +248,43 @@ public class GenerationCoverageTests
                     StringComparison.OrdinalIgnoreCase);
             }
         }
+    }
+
+    // ---------- orchestration ----------
+
+    [Fact]
+    public void Orchestration_EmptyInput_StillReturnsBothParts()
+    {
+        // A caller reads result.Bass and result.Harmony unconditionally; an empty score must
+        // still hand back both parts with their definitions, not a half-built result.
+        var result = OrchestrationMapper.Map([]);
+
+        Assert.Empty(result.Bass.Notes);
+        Assert.Empty(result.Harmony.Notes);
+        Assert.Equal(OrchestrationPartKind.Bass, result.Bass.Definition.Kind);
+        Assert.Equal(OrchestrationPartKind.Harmony, result.Harmony.Definition.Kind);
+    }
+
+    [Fact]
+    public void Orchestration_SplitsNotesAtTheSplitPitch()
+    {
+        // Default split is F#3 (54): E2 goes to the bass, C4 and G4 to the harmony.
+        NoteEvent[] score =
+        [
+            new(40, Rational.Zero, Rational.Quarter),
+            new(60, Rational.Zero, Rational.Quarter),
+            new(67, Rational.Zero, Rational.Quarter),
+        ];
+
+        var result = OrchestrationMapper.Map(score);
+
+        Assert.Equal([40], result.Bass.Notes.Select(n => n.Pitch));
+        Assert.Equal([60, 67], result.Harmony.Notes.Select(n => n.Pitch));
+    }
+
+    [Fact]
+    public void Orchestration_NullNotes_IsRejected()
+    {
+        Assert.Throws<ArgumentNullException>(() => OrchestrationMapper.Map(null!));
     }
 }

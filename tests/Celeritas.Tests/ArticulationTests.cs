@@ -109,6 +109,8 @@ public class ArticulationTests
     [InlineData(ArticulationType.Marcato)]
     [InlineData(ArticulationType.Legato)]
     [InlineData(ArticulationType.Portato)]
+    [InlineData(ArticulationType.Sforzando)]
+    [InlineData(ArticulationType.Fermata)]
     public void FromType_EveryDefinedType_ExpandsToOnePlayableNote(ArticulationType type)
     {
         var articulation = Articulation.FromType(type, Quarter());
@@ -171,5 +173,32 @@ public class ArticulationTests
             () => Articulation.FromType((ArticulationType)99, Quarter()));
 
         Assert.Equal("type", ex.ParamName);
+    }
+
+    [Fact]
+    public void FromType_CoversEveryMemberOfTheEnum()
+    {
+        // A member added to ArticulationType without a switch arm of its own would fall to the
+        // default and silently behave as Normal. Enumerating the enum catches that; a
+        // hand-listed theory would not -- Sforzando and Fermata were missing from mine.
+        foreach (var type in Enum.GetValues<ArticulationType>())
+        {
+            var articulation = Articulation.FromType(type, Quarter());
+
+            Assert.Equal(type, articulation.Type);
+            Assert.True(articulation.DurationMultiplier > 0f, $"{type} would make Expand throw");
+            Assert.Single(articulation.Expand());
+        }
+    }
+
+    [Fact]
+    public void FromType_Sforzando_IsTheLoudest_AndFermataTheLongest()
+    {
+        var byType = Enum.GetValues<ArticulationType>()
+            .ToDictionary(t => t, t => Articulation.FromType(t, Quarter(0.5f)).Expand()[0]);
+
+        Assert.Equal(byType.Values.Max(n => n.Velocity), byType[ArticulationType.Sforzando].Velocity);
+        Assert.True(byType[ArticulationType.Fermata].Duration > Rational.Quarter,
+            "a fermata should hold longer than written");
     }
 }
