@@ -256,7 +256,6 @@ Celeritas.Core.Analysis.KeyDetectionResult.Confidence.init -> void
 Celeritas.Core.Analysis.KeyDetectionResult.Key.get -> Celeritas.Core.KeySignature
 Celeritas.Core.Analysis.KeyDetectionResult.Key.init -> void
 Celeritas.Core.Analysis.KeyDetectionResult.KeyDetectionResult() -> void
-Celeritas.Core.Analysis.KeyDetectionResult.KeyDetectionResult(Celeritas.Core.KeySignature Key, float Confidence, Celeritas.Core.Analysis.KeyCorrelation[]! AllCorrelations) -> void
 Celeritas.Core.Analysis.KeyDetectionResult.TopKeys(int n) -> System.Collections.Generic.IEnumerable<Celeritas.Core.Analysis.KeyCorrelation>!
 Celeritas.Core.Analysis.KeyProfiler
 Celeritas.Core.Analysis.KeyRelationships
@@ -1917,7 +1916,6 @@ Celeritas.Core.Analysis.ImitationDetectionResult.Equals(Celeritas.Core.Analysis.
 Celeritas.Core.Analysis.ImitationDetectionResult.ImitationDetectionResult() -> void
 Celeritas.Core.Analysis.KeyCorrelation.Deconstruct(out Celeritas.Core.KeySignature Key, out float Correlation) -> void
 Celeritas.Core.Analysis.KeyCorrelation.Equals(Celeritas.Core.Analysis.KeyCorrelation other) -> bool
-Celeritas.Core.Analysis.KeyDetectionResult.Deconstruct(out Celeritas.Core.KeySignature Key, out float Confidence, out Celeritas.Core.Analysis.KeyCorrelation[]! AllCorrelations) -> void
 Celeritas.Core.Analysis.KeyDetectionResult.Equals(Celeritas.Core.Analysis.KeyDetectionResult other) -> bool
 Celeritas.Core.Analysis.MelodicHarmonyEvent.Deconstruct(out Celeritas.Core.Rational Offset, out int Pitch, out byte PitchClass, out Celeritas.Core.Rational ChordStart, out Celeritas.Core.Rational ChordEnd, out ushort ChordMask, out bool IsChordTone, out Celeritas.Core.Analysis.MelodicHarmonyEventType Type, out string! Description) -> void
 Celeritas.Core.Analysis.MelodicHarmonyEvent.Equals(Celeritas.Core.Analysis.MelodicHarmonyEvent other) -> bool
@@ -2286,3 +2284,8 @@ Celeritas.Core.Analysis.ProgressionReport.SkippedSymbols.init -> void
 Celeritas.Core.Analysis.Section.Deconstruct(out string! Label, out int StartPhraseIndex, out int EndPhraseIndex, out Celeritas.Core.Rational Start, out Celeritas.Core.Rational End) -> void
 Celeritas.Core.Analysis.Section.Label.get -> string!
 Celeritas.Core.Analysis.Section.Section(string! Label, int StartPhraseIndex, int EndPhraseIndex, Celeritas.Core.Rational Start, Celeritas.Core.Rational End) -> void
+Celeritas.Core.Analysis.KeyDetectionResult.Deconstruct(out Celeritas.Core.KeySignature Key, out float Confidence, out Celeritas.Core.Analysis.KeyCorrelation[]! AllCorrelations, out int DistinctPitchClasses) -> void
+Celeritas.Core.Analysis.KeyDetectionResult.DistinctPitchClasses.get -> int
+Celeritas.Core.Analysis.KeyDetectionResult.DistinctPitchClasses.init -> void
+Celeritas.Core.Analysis.KeyDetectionResult.IsDecidable.get -> bool
+Celeritas.Core.Analysis.KeyDetectionResult.KeyDetectionResult(Celeritas.Core.KeySignature Key, float Confidence, Celeritas.Core.Analysis.KeyCorrelation[]! AllCorrelations, int DistinctPitchClasses = 0) -> void

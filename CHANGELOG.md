@@ -19,6 +19,12 @@ transposition defect listed first below.
 
 #### Analysis
 
+- Key detection reports how much evidence it had. `Confidence` is a margin between
+  candidates, and a margin can be wide on almost nothing: two notes a fifth apart
+  separate their winner about as cleanly as a whole phrase does, so a bare chord could
+  produce a confident-looking key. `KeyDetectionResult` now also carries
+  `DistinctPitchClasses` and `IsDecidable`, and the CLI says "undecided" rather than
+  quoting a margin when the material cannot single out a key at all
 - Key detection is transposition-equivariant. Where the input is genuinely undecidable —
   a diminished seventh, an augmented triad, any symmetric set — several candidates score
   identically and the tie-break decides. It used to take the lowest root, an absolute

@@ -90,10 +90,14 @@ public class CliCommandTests
 
         // A key must never be stated as a bare fact: four notes do not settle one.
         Assert.Contains("Detected key:", output, StringComparison.Ordinal);
+        // The qualifier is one of three: a margin when the material decides a key, "weak" when
+        // that margin is thin, and "undecided" when there are too few pitch classes to decide
+        // at all. A four-note chord is the last of those.
         Assert.True(
             output.Contains("margin", StringComparison.Ordinal) ||
-            output.Contains("weak", StringComparison.Ordinal),
-            "the detected-key line carried no qualifier:\n" + output);
+            output.Contains("weak", StringComparison.Ordinal) ||
+            output.Contains("undecided", StringComparison.Ordinal),
+            "the detected-key line carried no qualifier: " + output);
     }
 
     [Fact]

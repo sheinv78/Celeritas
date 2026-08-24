@@ -192,8 +192,9 @@ analyzeCommand.SetAction(parseResult => RunGuarded(() =>
             // A handful of notes rarely decides a key -- a lone Cmaj7 sits in C major,
             // G major, A minor and E minor alike -- so report the margin the winner was
             // chosen by rather than stating a key as settled fact.
-            var margin = KeyProfiler.DetectFromPitches(pitches).Confidence;
-            var qualifier = KeyConfidenceDescription.Describe(margin);
+            var profile = KeyProfiler.DetectFromPitches(pitches);
+            var qualifier = KeyConfidenceDescription.Describe(
+                profile.Confidence, profile.DistinctPitchClasses);
             Console.WriteLine($"Detected key: {detectedKey}{qualifier}");
         }
     }

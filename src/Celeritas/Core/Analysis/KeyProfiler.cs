@@ -181,10 +181,20 @@ public static class KeyProfiler
         }
         Array.Sort(allCorrelations, (a, b) => b.Correlation.CompareTo(a.Correlation));
 
+        // Counted here rather than at each call site: Detect is the one place that always has
+        // the distribution, so no path can forget to report its evidence.
+        var distinctPitchClasses = 0;
+        for (var i = 0; i < 12; i++)
+        {
+            if (pitchClassCounts[i] > 0f)
+                distinctPitchClasses++;
+        }
+
         return new KeyDetectionResult(
             new KeySignature((byte)root, isMajor),
             confidence,
-            allCorrelations);
+            allCorrelations,
+            distinctPitchClasses);
     }
 
     /// <summary>
@@ -602,11 +612,28 @@ public static class KeyProfiler
 /// so a value below 0.5 is not "low confidence".
 /// </param>
 /// <param name="AllCorrelations">All 24 key correlations, sorted most likely first.</param>
+/// <param name="DistinctPitchClasses">
+/// How many of the twelve pitch classes the analyzed material actually sounded, 0-12. This is
+/// the evidence behind <see cref="Confidence"/>, reported separately because the two answer
+/// different questions: a margin can be wide on almost no evidence. Two notes a fifth apart
+/// separate their winner from the field about as cleanly as a whole phrase does, because a clean
+/// separation among candidates is not the same thing as enough music to decide a key. Fewer than
+/// about five distinct pitch classes cannot single out a seven-note scale, whatever the margin
+/// reads.
+/// </param>
 public readonly record struct KeyDetectionResult(
     KeySignature Key,
     float Confidence,
-    KeyCorrelation[] AllCorrelations)
+    KeyCorrelation[] AllCorrelations,
+    int DistinctPitchClasses = 0)
 {
+    /// <summary>
+    /// Whether the material carries enough distinct pitch classes for a key to be decidable at
+    /// all. A seven-note scale cannot be singled out by fewer than five of them, however clean
+    /// the <see cref="Confidence"/> margin looks.
+    /// </summary>
+    public bool IsDecidable => DistinctPitchClasses >= 5;
+
     /// <summary>Top N most likely keys</summary>
     public IEnumerable<KeyCorrelation> TopKeys(int n) => AllCorrelations.Take(n);
 

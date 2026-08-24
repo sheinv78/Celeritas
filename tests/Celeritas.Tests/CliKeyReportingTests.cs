@@ -95,4 +95,89 @@ public class CliKeyReportingTests
         Assert.True(emphasized.Confidence > bare.Confidence,
             $"emphasized {emphasized.Confidence} should exceed bare {bare.Confidence}");
     }
+
+    // ---------- evidence, as distinct from margin ----------
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    public void Describe_TooFewPitchClasses_SaysUndecided_WhateverTheMargin(int distinct)
+    {
+        // A wide margin on thin evidence is the trap: two notes a fifth apart separate their
+        // winner about as cleanly as a whole phrase does.
+        var text = KeyConfidenceDescription.Describe(margin: 0.9f, distinctPitchClasses: distinct);
+
+        Assert.Contains("undecided", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("margin", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Describe_EnoughPitchClasses_ReportsTheMargin()
+    {
+        var text = KeyConfidenceDescription.Describe(margin: 0.2f, distinctPitchClasses: 7);
+
+        Assert.Contains("margin", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("undecided", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Describe_SingularPitchClass_ReadsGrammatically()
+    {
+        Assert.Contains("1 pitch class ", KeyConfidenceDescription.Describe(0.5f, 1), StringComparison.Ordinal);
+        Assert.Contains("2 pitch classes", KeyConfidenceDescription.Describe(0.5f, 2), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DetectionResult_ReportsHowMuchEvidenceItHad()
+    {
+        var chord = KeyProfiler.DetectFromPitches("C4 E4 G4 B4");
+        var phrase = KeyProfiler.DetectFromPitches("C4 D4 E4 F4 G4 A4 B4 C5 C5");
+
+        Assert.Equal(4, chord.DistinctPitchClasses);
+        Assert.False(chord.IsDecidable);
+
+        Assert.Equal(7, phrase.DistinctPitchClasses);
+        Assert.True(phrase.IsDecidable);
+    }
+
+    [Fact]
+    public void AWideMarginOnThinEvidence_IsStillUndecidable()
+    {
+        // The measurement that motivated this: two notes score a margin comparable to a
+        // 48-note passage. The margin is honest about what it measures; only the evidence
+        // count distinguishes the two situations.
+        var twoNotes = KeyProfiler.DetectFromPitches("C4 G4");
+
+        Assert.False(twoNotes.IsDecidable);
+        Assert.Contains("undecided",
+            KeyConfidenceDescription.Describe(twoNotes.Confidence, twoNotes.DistinctPitchClasses),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Analyze_ChordInput_SaysUndecidedRatherThanQuotingAMargin()
+    {
+        var (exit, output) = RunCli("analyze", "--notes", "C4 E4 G4 B4");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("undecided", output, StringComparison.Ordinal);
+    }
+
+    private static (int ExitCode, string Output) RunCli(params string[] args)
+    {
+        var entryPoint = typeof(KeyConfidenceDescription).Assembly.EntryPoint!;
+        var originalOut = Console.Out;
+        var captured = new StringWriter();
+        try
+        {
+            Console.SetOut(captured);
+            var result = entryPoint.Invoke(null, [args]);
+            return (result is int code ? code : 0, captured.ToString());
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
 }
