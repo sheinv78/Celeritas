@@ -131,6 +131,18 @@ public class ModalAndCharacterCoverageTests
         Assert.Equal(ChordCharacter.Suspended, ChordCharacterClassifier.Classify("Gsus4/D").Character);
     }
 
+    [Fact]
+    public void AQualityWithNoCharacterOfItsOwn_ReadsAsStable()
+    {
+        // A dominant seventh with a flattened fifth is in the chord table but not in the
+        // character table, so it falls to the neutral arm rather than being mislabelled.
+        var classification = ChordCharacterClassifier.Classify("C7b5");
+
+        Assert.Equal(ChordCharacter.Stable, classification.Character);
+        Assert.Equal(0.90f, classification.Stability);
+        Assert.Equal(0.65f, classification.Brightness);
+    }
+
     [Theory]
     [InlineData("Zzz")]
     [InlineData("")]
