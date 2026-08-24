@@ -106,7 +106,11 @@ dotnet run --project src/Celeritas.Benchmarks -c Release
 | Progression_Analyze †     |     6.54 µs  |  32.6 KB  |       n/a † |
 | Quantize_1M_Notes         |     1.27 ms  |         - |        −1%  |
 ```
-† `Progression_Analyze` is not comparable: current code computes ~23 report fields vs ~10 in Dec 2025.
+† `Progression_Analyze` is not comparable across versions: the report grew from ~10 fields in
+Dec 2025 to ~23. On the same machine it measures **7.14 µs ± 0.24 (32.9 KB)** as of v0.10.0,
+about 9% slower than the 6.54 µs above — the correctness fixes in that release added work to
+this path, chiefly the profile correlation that lets key detection tell a key from its relative.
+Every other row was re-measured unchanged.
 
 **AMD Ryzen 9 7900X** 4.70 GHz · 12 cores · AVX-512 · .NET 10.0.1 · December 2025:
 
