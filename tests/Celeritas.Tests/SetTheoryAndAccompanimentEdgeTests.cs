@@ -147,4 +147,46 @@ public class SetTheoryAndAccompanimentEdgeTests
         Assert.Equal(chordNotes.OrderBy(p => p), chordNotes.Distinct().OrderBy(p => p));
         Assert.Equal(chordNotes.Length, chordNotes.Distinct().Count());
     }
+    [Fact]
+    public void AChordWithNoDuration_IsSkipped()
+    {
+        List<ChordAssignment> zeroLength =
+        [
+            new(Rational.Zero, Rational.Zero, ChordAnalyzer.Identify([60, 64, 67]), [60, 64, 67]),
+            new(Rational.Zero, Rational.Half, ChordAnalyzer.Identify([65, 69, 72]), [65, 69, 72]),
+        ];
+
+        var notes = AccompanimentGenerator.Generate(zeroLength, AccompanimentOptions.Default);
+
+        Assert.NotEmpty(notes);
+        Assert.All(notes, n => Assert.True(n.Duration > Rational.Zero));
+    }
+
+    [Fact]
+    public void ARomanNumeralArpeggioWithNoSubdivision_FallsBackToEighths()
+    {
+        List<HarmonicRhythmItem> progression =
+            [new(new RomanNumeralChord(ScaleDegree.I, ChordQuality.Major, HarmonicFunction.Tonic), Rational.Half)];
+
+        var notes = AccompanimentGenerator.Generate(progression, new KeySignature(0, true),
+            AccompanimentOptions.Default with { Pattern = AccompanimentPattern.Arpeggio, Subdivision = Rational.Zero });
+
+        Assert.Equal(4, notes.Length);          // a half note filled with eighths
+        Assert.All(notes, n => Assert.Equal(Rational.Eighth, n.Duration));
+    }
+
+    [Fact]
+    public void ARomanNumeralItemWithNoDuration_IsSkipped()
+    {
+        List<HarmonicRhythmItem> progression =
+        [
+            new(new RomanNumeralChord(ScaleDegree.I, ChordQuality.Major, HarmonicFunction.Tonic), Rational.Zero),
+            new(new RomanNumeralChord(ScaleDegree.V, ChordQuality.Major, HarmonicFunction.Dominant), Rational.Half),
+        ];
+
+        var notes = AccompanimentGenerator.Generate(progression, new KeySignature(0, true));
+
+        Assert.NotEmpty(notes);
+        Assert.All(notes, n => Assert.True(n.Duration > Rational.Zero));
+    }
 }

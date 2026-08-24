@@ -216,4 +216,126 @@ public class HarmonicColorCoverageTests
         Assert.Equal(0d, result.ColorfulnessRating);
         Assert.Equal("Mostly diatonic and stable.", result.Description);
     }
+    // ---------- awkward chord timings ----------
+
+    [Fact]
+    public void TwoChordsStartingAtTheSameMoment_StillGiveTheFirstADuration()
+    {
+        // A zero-length chord slice would put every note outside every chord; the analyzer
+        // gives it a whole note instead.
+        NoteEvent[] melody = [Eighth(60, 0), Eighth(64, 1)];
+        (string Chord, Rational Start)[] chords = [("C", Rational.Zero), ("F", Rational.Zero)];
+
+        var events = HarmonicColorAnalyzer.Analyze(melody, chords, CMajor).MelodicHarmony;
+
+        Assert.Equal(2, events.Count);
+        Assert.All(events, e => Assert.True(e.ChordEnd > e.ChordStart));
+    }
+
+    [Fact]
+    public void ANoteBeforeTheFirstChord_IsStillGivenAChordContext()
+    {
+        // The melody starts before the harmony does: the walker has to step back rather than
+        // reading past the start of the chord list.
+        NoteEvent[] melody = [Eighth(60, 0), Eighth(64, 5)];
+        (string Chord, Rational Start)[] chords = [("C", new Rational(1, 2)), ("G", Rational.Whole)];
+
+        var result = HarmonicColorAnalyzer.Analyze(melody, chords, CMajor);
+
+        Assert.Equal(2, result.MelodicHarmony.Count);
+        Assert.All(result.MelodicHarmony, e => Assert.True(e.ChordEnd > e.ChordStart));
+    }
+
+    [Fact]
+    public void AnUnparsableChordSymbol_IsNamedRatherThanQuietlyDropped()
+    {
+        // Silently skipping it would shift every later chord's slice, so the analyzer says
+        // which symbol it could not read and where.
+        NoteEvent[] melody = [Eighth(60, 0), Eighth(64, 1)];
+        (string Chord, Rational Start)[] chords = [("C", Rational.Zero), ("Zzz", Rational.Half)];
+
+        var ex = Assert.Throws<ArgumentException>(() => HarmonicColorAnalyzer.Analyze(melody, chords, CMajor));
+
+        Assert.Contains("Zzz", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("index 1", ex.Message, StringComparison.Ordinal);
+    }
+
+    // ---------- a modal turn that is not decisive enough ----------
+
+    [Fact]
+    public void AModalTurnBelowTheImprovementThreshold_IsNotReported()
+    {
+        (string Chord, Rational Start)[] chords =
+        [
+            ("C", Rational.Zero),
+            ("Bb", new Rational(1, 4)),
+            ("F", new Rational(2, 4)),
+            ("Gm", new Rational(3, 4)),
+        ];
+        NoteEvent[] melody = [Eighth(60, 0)];
+
+        var demanding = HarmonicColorAnalyzer.Analyze(melody, chords, CMajor,
+            HarmonicColorAnalysisOptions.Default with { MinModalTurnImprovement = 0.99 });
+
+        Assert.Empty(demanding.ModalTurns);
+    }
+
+    [Fact]
+    public void AModalTurnBelowTheCoverageThreshold_IsNotReported()
+    {
+        (string Chord, Rational Start)[] chords =
+        [
+            ("C", Rational.Zero),
+            ("Bb", new Rational(1, 4)),
+            ("F", new Rational(2, 4)),
+            ("Gm", new Rational(3, 4)),
+        ];
+        NoteEvent[] melody = [Eighth(60, 0)];
+
+        var demanding = HarmonicColorAnalyzer.Analyze(melody, chords, CMajor,
+            HarmonicColorAnalysisOptions.Default with { MinModalTurnCoverage = 1.5 });
+
+        Assert.Empty(demanding.ModalTurns);
+    }
+
+    [Fact]
+    public void AModalTurnRaisesTheColourfulnessRating()
+    {
+        (string Chord, Rational Start)[] borrowed =
+        [
+            ("C", Rational.Zero),
+            ("Bb", new Rational(1, 4)),
+            ("F", new Rational(2, 4)),
+            ("Gm", new Rational(3, 4)),
+        ];
+        (string Chord, Rational Start)[] diatonic =
+        [
+            ("C", Rational.Zero),
+            ("F", new Rational(1, 4)),
+            ("G", new Rational(2, 4)),
+            ("C", new Rational(3, 4)),
+        ];
+        NoteEvent[] melody = [Eighth(60, 0), Eighth(64, 2), Eighth(67, 4), Eighth(72, 6)];
+
+        var withTurn = HarmonicColorAnalyzer.Analyze(melody, borrowed, CMajor);
+        var without = HarmonicColorAnalyzer.Analyze(melody, diatonic, CMajor);
+
+        Assert.NotEmpty(withTurn.ModalTurns);
+        Assert.True(withTurn.ColorfulnessRating > without.ColorfulnessRating);
+    }
+
+    // ---------- what a chromatic event carries ----------
+
+    [Fact]
+    public void AChromaticEventNamesTheNoteAndItsPitchClass()
+    {
+        NoteEvent[] melody = [Eighth(60, 0), Eighth(61, 1)];
+        (string Chord, Rational Start)[] chords = [("C", Rational.Zero)];
+
+        var chromatic = Assert.Single(HarmonicColorAnalyzer.Analyze(melody, chords, CMajor).ChromaticNotes);
+
+        Assert.Equal(1, chromatic.PitchClass);
+        Assert.Contains("C", chromatic.NoteName, StringComparison.Ordinal);
+        Assert.Equal(new Rational(1, 8), chromatic.Offset);
+    }
 }
