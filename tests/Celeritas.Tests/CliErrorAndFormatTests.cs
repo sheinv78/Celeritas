@@ -404,4 +404,76 @@ public class CliErrorAndFormatTests : IDisposable
         Assert.Equal(0, exit);
         Assert.Contains("more)", output, StringComparison.Ordinal);
     }
+    // ---------- the remaining report branches ----------
+
+    [Fact]
+    public void Analyze_OfACluster_SaysItDoesNotRecogniseTheChord()
+    {
+        var (exit, output) = Run("analyze", "--notes", "C4 C#4 D4 D#4");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Chord not recognized", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Progression_WithADirectModulation_NamesTheKind()
+    {
+        var (exit, output) = Run("progression", "--chords", "C,F,C,Am,D,G,Em,D,G");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("DIRECT MODULATION", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Polyphony_OfCleanCounterpoint_IsRatedWell()
+    {
+        var (exit, output) = Run("polyphony", "--notes", "4/4: [C4 E4]/4 [B3 F4]/4 [C4 E4]/4 [B3 F4]/4");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("QUALITY", output, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Polyphony_OfParallelFifths_IsRatedWorse()
+    {
+        var (exit, output) = Run("polyphony", "--notes", "4/4: [C4 G4]/4 [D4 A4]/4 [E4 B4]/4 [F4 C5]/4");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Parallel Fifths", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Polyphony_OfALongLine_TruncatesWhatItPrints()
+    {
+        var notes = "4/4: " + string.Join(" ", Enumerable.Range(0, 30).Select(i => $"{MusicNotation.ToNotation(48 + (i % 24))}/8"));
+
+        var (exit, output) = Run("polyphony", "--notes", notes);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("...", output, StringComparison.Ordinal);
+    }
+
+    // ---------- modal turns in every format ----------
+
+    // Enough C major to keep the detected key there, then a flat seventh: the window with the
+    // B flat in it fits C Mixolydian better than C major, which is what a modal turn is.
+    private const string MixolydianRun =
+        "4/4: [C4 E4 G4]/4 [C4 E4 G4]/4 [F4 A4 C5]/4 [G4 B4 D5]/4 "
+        + "[C4 E4 G4]/4 [Bb3 D4 F4]/4 [F4 A4 C5]/4 [C4 E4 G4]/4";
+
+    [Theory]
+    [InlineData("sections")]
+    [InlineData("summary")]
+    [InlineData("timeline")]
+    public void MidiAnalyze_ReportsAModalTurnInEveryFormat(string format)
+    {
+        // Every pitch fits C Mixolydian; only the B flat falls outside C major.
+        var path = MidiFileOf(MixolydianRun);
+
+        var (exit, output) = Run("midi", "analyze", "--in", path, "--format", format);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Mixolydian", output, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("A#", output, StringComparison.Ordinal);   // the out-of-key pitch class
+    }
 }
