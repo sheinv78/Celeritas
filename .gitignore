@@ -58,3 +58,6 @@ docs/**/.docfxignore
 /*.midi
 /*.musicxml
 /*.mxl
+
+# Coverage output from `dotnet test --collect`
+TestResults/
