@@ -188,7 +188,14 @@ analyzeCommand.SetAction(parseResult => RunGuarded(() =>
         {
             // Auto-detect key
             var detectedKey = KeyAnalyzer.IdentifyKey(pitches);
-            Console.WriteLine($"Detected key: {detectedKey}");
+            // A handful of notes rarely decides a key -- a lone Cmaj7 sits in C major,
+            // G major, A minor and E minor alike -- so report the margin the winner was
+            // chosen by rather than stating a key as settled fact.
+            var margin = KeyProfiler.DetectFromPitches(pitches).Confidence;
+            var qualifier = margin < 0.1f
+                ? "  (weak: this little material does not settle a key)"
+                : $"  (margin {margin:F2} over the runner-up)";
+            Console.WriteLine($"Detected key: {detectedKey}{qualifier}");
         }
     }
 }));
