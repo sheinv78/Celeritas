@@ -255,4 +255,76 @@ public class PolyphonyCounterpointTests
         Assert.InRange(result.QualityScore, 0f, 1f);
         Assert.True(result.QualityScore > 0f);
     }
+    // ---------- imitation on material too thin to be a canon ----------
+
+    [Fact]
+    public void AVoiceTooShortToCarryAMotif_IsPassedOver()
+    {
+        // The lower voice has two notes; a canon needs a four-note subject, so there is
+        // nothing to compare and nothing to claim.
+        var notes = new List<NoteEvent>
+        {
+            Q(60, 0), Q(62, 1), Q(64, 2), Q(65, 3), Q(67, 4),
+            Q(48, 0), Q(50, 1),
+        };
+
+        var result = PolyphonyAnalyzer.DetectImitation(notes);
+
+        Assert.False(result.HasImitation);
+    }
+
+    [Fact]
+    public void ASingleNoteVoice_HasNoIntervalsToMatch()
+    {
+        var notes = new List<NoteEvent> { Q(60, 0), Q(62, 1), Q(64, 2), Q(65, 3), Q(48, 0) };
+
+        var result = PolyphonyAnalyzer.DetectImitation(notes);
+
+        Assert.False(result.HasImitation);
+    }
+
+    [Fact]
+    public void TwoVoicesPlayingTheSameFigureTogether_AreNotACanon()
+    {
+        // Identical subjects entering at the same moment are parallel motion, not imitation:
+        // a canon needs the answer to come after the subject.
+        var notes = new List<NoteEvent>
+        {
+            Q(60, 0), Q(62, 1), Q(64, 2), Q(65, 3), Q(67, 4),
+            Q(48, 0), Q(50, 1), Q(52, 2), Q(53, 3), Q(55, 4),
+        };
+
+        var result = PolyphonyAnalyzer.DetectImitation(notes);
+
+        Assert.False(result.HasImitation);
+    }
+
+    [Fact]
+    public void AScaleRunIsNotADistinctiveEnoughSubject()
+    {
+        // A straight run of equal steps matches itself everywhere; the detector needs a shape
+        // with more than one interval size before it will call something a canon.
+        var notes = new List<NoteEvent>
+        {
+            Q(60, 0), Q(62, 1), Q(64, 2), Q(66, 3), Q(68, 4),
+            Q(48, 2), Q(50, 3), Q(52, 4), Q(54, 5), Q(56, 6),
+        };
+
+        var result = PolyphonyAnalyzer.DetectImitation(notes);
+
+        Assert.False(result.HasImitation);
+    }
+
+    // ---------- texture with nothing to measure over time ----------
+
+    [Fact]
+    public void ASingleSimultaneity_HasATextureButNoTimeline()
+    {
+        // Every note starts and ends together, so there is only one time point to sample.
+        var result = PolyphonyAnalyzer.CheckCounterpointRules(
+            new[] { Q(60, 0), Q(64, 0), Q(67, 0), Q(72, 0) });
+
+        Assert.Empty(result.Violations);
+        Assert.InRange(result.QualityScore, 0f, 1f);
+    }
 }

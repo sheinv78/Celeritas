@@ -226,4 +226,91 @@ public class MidiFileExtensionsEdgeTests : IDisposable
         file.Write(path);
         return MidiFile.Read(path);
     }
+    // ---------- files that hold something other than tracks ----------
+
+    /// <summary>A chunk that is not a track, so the walkers have something to step over.</summary>
+    private sealed class SpacerChunk() : MidiChunk("Spcr")
+    {
+        public override MidiChunk Clone() => new SpacerChunk();
+
+        protected override uint GetContentSize(WritingSettings settings) => 0;
+
+        protected override void ReadContent(MidiReader reader, ReadingSettings settings, uint size)
+        {
+        }
+
+        protected override void WriteContent(MidiWriter writer, WritingSettings settings)
+        {
+        }
+    }
+
+    private static MidiFile FileWithASpacer()
+    {
+        var file = new MidiFile();
+        file.AddTrack([new NoteEvent(60, Rational.Zero, Rational.Quarter), new NoteEvent(67, Rational.Quarter, Rational.Quarter)]);
+        file.Chunks.Insert(0, new SpacerChunk());
+        return file;
+    }
+
+    [Fact]
+    public void Statistics_StepOverANonTrackChunk()
+    {
+        var stats = FileWithASpacer().GetStatistics();
+
+        Assert.Equal(2, stats.NoteCount);
+        Assert.Equal(1, stats.TrackCount);
+    }
+
+    [Fact]
+    public void Splitting_StepsOverANonTrackChunk()
+    {
+        var parts = FileWithASpacer().Split(MidiSplitMode.Channel);
+
+        var part = Assert.Single(parts);
+        Assert.Equal(2, part.GetTrackChunks().Sum(t => t.Events.OfType<NoteOnEvent>().Count()));
+    }
+
+    [Fact]
+    public void MergingToOneTrack_StepsOverANonTrackChunk()
+    {
+        var merged = FileWithASpacer().MergeToSingleTrack(FileWithASpacer());
+
+        var track = Assert.Single(merged.GetTrackChunks());
+        Assert.Equal(4, track.Events.OfType<NoteOnEvent>().Count());
+    }
+
+    [Fact]
+    public void Merge_RefusesFilesWithDifferentTimeDivisions()
+    {
+        var a = new MidiFile(new TrackChunk()) { TimeDivision = new TicksPerQuarterNoteTimeDivision(96) };
+        var b = new MidiFile(new TrackChunk()) { TimeDivision = new TicksPerQuarterNoteTimeDivision(480) };
+
+        Assert.Throws<ArgumentException>(() => a.Merge(b));
+    }
+
+    [Fact]
+    public void Merge_OfSeveralFilesKeepsEveryTrack()
+    {
+        var a = new MidiFile();
+        a.AddTrack([new NoteEvent(60, Rational.Zero, Rational.Quarter)]);
+        var b = new MidiFile();
+        b.AddTrack([new NoteEvent(64, Rational.Zero, Rational.Quarter)]);
+        var c = new MidiFile();
+        c.AddTrack([new NoteEvent(67, Rational.Zero, Rational.Quarter)]);
+
+        var merged = a.Merge(b, c);
+
+        Assert.Equal(3, merged.GetTrackChunks().Count());
+    }
+
+    [Fact]
+    public void AddTrack_OnAFileClaimingZeroTicksPerQuarter_IsRefused()
+    {
+        // A tick division of zero cannot place anything in time; the writer must say so
+        // rather than dividing by it.
+        var file = new MidiFile { TimeDivision = new TicksPerQuarterNoteTimeDivision(0) };
+
+        Assert.Throws<InvalidOperationException>(
+            () => file.AddTrack([new NoteEvent(60, Rational.Zero, Rational.Quarter)]));
+    }
 }
