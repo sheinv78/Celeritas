@@ -142,8 +142,13 @@ public static class MusicXmlIo
     {
         ArgumentNullException.ThrowIfNull(buffer);
         ArgumentNullException.ThrowIfNull(path);
+
+        // Build BEFORE opening the file. File.Create truncates, so a note MusicXML cannot
+        // represent would otherwise wipe whatever was at `path` on its way to throwing.
+        var doc = BuildDocument(buffer, timeSignature);
+
         using var stream = File.Create(path);
-        Export(buffer, stream, timeSignature);
+        WriteDocument(doc, stream);
     }
 
     /// <summary>Writes a <see cref="NoteBuffer"/> as MusicXML (4/4) to a stream.</summary>
@@ -162,7 +167,11 @@ public static class MusicXmlIo
     {
         ArgumentNullException.ThrowIfNull(buffer);
         ArgumentNullException.ThrowIfNull(stream);
-        var doc = BuildDocument(buffer, timeSignature);
+        WriteDocument(BuildDocument(buffer, timeSignature), stream);
+    }
+
+    private static void WriteDocument(XDocument doc, Stream stream)
+    {
         var settings = new XmlWriterSettings { Indent = true, Encoding = new System.Text.UTF8Encoding(false) };
         using var writer = XmlWriter.Create(stream, settings);
         doc.Save(writer);

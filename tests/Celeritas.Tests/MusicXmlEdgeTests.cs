@@ -266,6 +266,33 @@ public class MusicXmlEdgeTests
     }
 
     [Fact]
+    public void AnUnexportableScoreDoesNotDestroyTheFileAtThePath()
+    {
+        // MusicXML cannot place a note before time zero. The document is built before the
+        // destination is opened, so the previous export survives the rejection.
+        var work = Directory.CreateTempSubdirectory("celeritas-mxlexport").FullName;
+        try
+        {
+            var path = System.IO.Path.Combine(work, "score.musicxml");
+
+            using var good = new NoteBuffer(1);
+            good.AddNote(60, Rational.Zero, Rational.Whole);
+            MusicXmlIo.Export(good, path);
+            var before = File.ReadAllText(path);
+
+            using var bad = new NoteBuffer(1);
+            bad.AddNote(60, new Rational(-1, 4), Rational.Whole);
+
+            Assert.Throws<ArgumentException>(() => MusicXmlIo.Export(bad, path));
+            Assert.Equal(before, File.ReadAllText(path));
+        }
+        finally
+        {
+            try { Directory.Delete(work, recursive: true); } catch (IOException) { /* best effort */ }
+        }
+    }
+
+    [Fact]
     public void AChromaticScaleSurvivesTheRoundTrip()
     {
         using var original = new NoteBuffer(12);

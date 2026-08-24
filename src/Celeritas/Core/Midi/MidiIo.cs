@@ -158,19 +158,27 @@ public static class MidiIo
     }
 
     /// <summary>Exports <paramref name="buffer"/> to a MIDI file at <paramref name="path"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">An option (ticks-per-quarter-note, channel, or BPM) is out of range.</exception>
     public static void Export(NoteBuffer buffer, string path, MidiExportOptions? options = null)
     {
+        // Build BEFORE opening the file. File.Create truncates, so a bad channel — or a note
+        // MIDI cannot represent — used to destroy whatever was already at `path` and only
+        // then throw: an argument mistake that cost the caller their previous export.
+        var opts = options ?? new MidiExportOptions();
+        ValidateExportOptions(opts);
+        var midiFile = BuildMidiFile(buffer, opts);
+
         using var stream = File.Create(path);
-        Export(buffer, stream, options);
+        midiFile.Write(stream);
     }
 
-    /// <summary>Writes <paramref name="buffer"/> as a single-track MIDI file to <paramref name="stream"/>.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">An option (ticks-per-quarter-note, channel, or BPM) is out of range.</exception>
-    /// <exception cref="ArgumentException">A note has a negative offset, which MIDI cannot represent.</exception>
-    public static void Export(NoteBuffer buffer, Stream stream, MidiExportOptions? options = null)
+    /// <summary>
+    /// Checks the export options that must hold before anything is written. Shared so the
+    /// path overload can reject bad arguments before it opens (and truncates) the file.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">An option is out of range.</exception>
+    private static void ValidateExportOptions(MidiExportOptions options)
     {
-        options ??= new MidiExportOptions();
-
         if (options.TicksPerQuarterNote <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(options), options.TicksPerQuarterNote, "TicksPerQuarterNote must be positive.");
@@ -190,7 +198,25 @@ public static class MidiIo
         {
             throw new ArgumentOutOfRangeException(nameof(options), options.Bpm, "Bpm must be positive.");
         }
+    }
 
+    /// <summary>Writes <paramref name="buffer"/> as a single-track MIDI file to <paramref name="stream"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">An option (ticks-per-quarter-note, channel, or BPM) is out of range.</exception>
+    /// <exception cref="ArgumentException">A note has a negative offset, which MIDI cannot represent.</exception>
+    public static void Export(NoteBuffer buffer, Stream stream, MidiExportOptions? options = null)
+    {
+        options ??= new MidiExportOptions();
+        ValidateExportOptions(options);
+
+        BuildMidiFile(buffer, options).Write(stream);
+    }
+
+    /// <summary>
+    /// Builds the whole file in memory. Separated from writing so a caller error cannot reach
+    /// the destination file: nothing is opened until the file is known to be buildable.
+    /// </summary>
+    private static MidiFile BuildMidiFile(NoteBuffer buffer, MidiExportOptions options)
+    {
         var midiFile = new MidiFile
         {
             TimeDivision = new TicksPerQuarterNoteTimeDivision((short)options.TicksPerQuarterNote)
@@ -249,7 +275,7 @@ public static class MidiIo
         notesManager.SaveChanges();
 
         midiFile.Chunks.Add(track);
-        midiFile.Write(stream);
+        return midiFile;
     }
 
     private static int ClampToMidiNote(int pitch) => Math.Clamp(pitch, 0, 127);
