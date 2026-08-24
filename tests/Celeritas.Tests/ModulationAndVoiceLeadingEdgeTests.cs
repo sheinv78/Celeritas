@@ -256,4 +256,78 @@ public class ModulationAndVoiceLeadingEdgeTests
             Assert.NotEqual(m.FromKey, m.ToKey);
         });
     }
+    // ---------- what the pivot search reads on its way ----------
+
+    [Fact]
+    public void APivotSearchReadsTheChordsBeforeTheModulation()
+    {
+        // C major on several degrees, then a settled stretch of A major: the detector walks
+        // back over the earlier chords looking for one that belongs to both keys.
+        NoteEvent[] notes =
+        [
+            .. Chord(0, 60, 64, 67),     // I
+            .. Chord(1, 64, 67, 71),     // iii
+            .. Chord(2, 65, 69, 72),     // IV
+            .. Chord(3, 69, 72, 76),     // vi
+            .. Chord(4, 69, 73, 76),     // A major
+            .. Chord(5, 66, 69, 73),     // D... F# minor
+            .. Chord(6, 64, 68, 71),     // E major
+            .. Chord(7, 69, 73, 76),
+            .. Chord(8, 66, 69, 73),
+            .. Chord(9, 64, 68, 71),
+            .. Chord(10, 69, 73, 76),
+        ];
+
+        var result = ModulationDetector.Analyze(notes, CMajor);
+
+        Assert.All(result.Modulations, m =>
+        {
+            Assert.NotEqual(m.FromKey, m.ToKey);
+            Assert.InRange(m.Confidence, 0f, 1f);
+        });
+    }
+
+    [Fact]
+    public void AClusterBeforeAModulation_IsNotReadAsAPivot()
+    {
+        // The chord before the key change spells nothing the library can name; the pivot
+        // search has to pass over it rather than assigning it a roman numeral.
+        NoteEvent[] notes =
+        [
+            .. Chord(0, 60, 64, 67),
+            .. Chord(1, 65, 69, 72),
+            .. Chord(2, 60, 61, 62),          // a cluster
+            .. Chord(3, 63, 67, 70),
+            .. Chord(4, 68, 72, 75),
+            .. Chord(5, 70, 74, 77),
+            .. Chord(6, 63, 67, 70),
+            .. Chord(7, 68, 72, 75),
+            .. Chord(8, 63, 67, 70),
+        ];
+
+        var result = ModulationDetector.Analyze(notes, CMajor);
+
+        Assert.All(result.Modulations, m => Assert.NotEqual(m.FromKey, m.ToKey));
+    }
+
+    [Fact]
+    public void ATurnToTheParallelMinor_IsNoticed()
+    {
+        NoteEvent[] notes =
+        [
+            .. Chord(0, 60, 64, 67), .. Chord(1, 65, 69, 72), .. Chord(2, 67, 71, 74), .. Chord(3, 60, 64, 67),
+            .. Chord(4, 60, 63, 67), .. Chord(5, 65, 68, 72), .. Chord(6, 67, 70, 74), .. Chord(7, 60, 63, 67),
+            .. Chord(8, 60, 63, 67), .. Chord(9, 65, 68, 72), .. Chord(10, 60, 63, 67),
+        ];
+
+        var result = ModulationDetector.Analyze(notes, CMajor);
+
+        Assert.NotEmpty(result.Modulations);
+        Assert.Contains(result.Modulations, m => !m.ToKey.IsMajor);
+        Assert.All(result.Modulations, m =>
+        {
+            Assert.NotEqual(m.FromKey, m.ToKey);
+            Assert.True(Enum.IsDefined(m.Type), $"{m.Type} is not a defined modulation type");
+        });
+    }
 }
