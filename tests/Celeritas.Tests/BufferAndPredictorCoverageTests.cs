@@ -262,4 +262,66 @@ public class BufferAndPredictorCoverageTests
         Assert.Throws<ArgumentOutOfRangeException>(() => RhythmModels.GetStyleModel((RhythmStyle)99));
         Assert.Throws<ArgumentNullException>(() => RhythmModels.GetStyleModel((string)null!));
     }
+    // ---------- the buffer's spans ----------
+
+    [Fact]
+    public void TheVelocitySpansSeeTheSameNotesAsTheGetters()
+    {
+        using var buffer = new NoteBuffer(3);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter, 0.25f);
+        buffer.AddNote(64, Rational.Quarter, Rational.Quarter, 0.5f);
+        buffer.AddNote(67, Rational.Half, Rational.Quarter, 0.75f);
+
+        var velocities = buffer.VelocitySpan;
+        var readOnly = buffer.VelocityReadOnlySpan;
+        var pitches = buffer.PitchReadOnlySpan;
+
+        Assert.Equal(3, velocities.Length);
+        Assert.Equal(3, readOnly.Length);
+        Assert.Equal([60, 64, 67], pitches.ToArray());
+        for (var i = 0; i < buffer.Count; i++)
+        {
+            Assert.Equal(buffer.Get(i).Velocity, velocities[i]);
+            Assert.Equal(buffer.Get(i).Velocity, readOnly[i]);
+        }
+    }
+
+    [Fact]
+    public void WritingThroughTheVelocitySpanChangesTheNotes()
+    {
+        using var buffer = new NoteBuffer(2);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter, 0.4f);
+        buffer.AddNote(64, Rational.Quarter, Rational.Quarter, 0.4f);
+
+        buffer.VelocitySpan[1] = 0.9f;
+
+        Assert.Equal(0.9f, buffer.Get(1).Velocity);
+        Assert.Equal(0.4f, buffer.Get(0).Velocity);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void ABufferMustHaveRoomForAtLeastOneNote(int capacity)
+    {
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => new NoteBuffer(capacity));
+
+        Assert.Equal("capacity", ex.ParamName);
+    }
+
+    [Fact]
+    public void QuantizingAnUnsortedBufferWhoseLastNoteIsTheLatest_ResyncsTheTracker()
+    {
+        // The max-offset tracker cannot just take the first note: here the largest offset
+        // arrives second, so the scan has to keep looking.
+        using var buffer = Buffer(
+            (60, new Rational(1, 16)),
+            (67, new Rational(9, 16)),
+            (64, new Rational(5, 16)));
+
+        MusicMath.Quantize(buffer, Rational.Quarter);
+        buffer.Sort();
+
+        Assert.Equal([Rational.Zero, Rational.Quarter, Rational.Half], buffer.GetChords().Select(c => c.Time));
+    }
 }
