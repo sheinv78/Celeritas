@@ -149,4 +149,87 @@ public class ChordSymbolParserEdgeTests
     {
         Assert.Throws<ArgumentNullException>(() => ProgressionAdvisor.ParseChordSymbol(null!));
     }
+    // ---------- modifiers inside parentheses ----------
+
+    [Fact]
+    public void AnAddedToneInsideParenthesesIsTheSameAsOutside()
+    {
+        Assert.Equal(Parse("Cadd9"), Parse("C(add9)"));
+        Assert.Equal(Parse("Cadd11"), Parse("C(add11)"));
+    }
+
+    [Fact]
+    public void AnOmittedToneInsideParenthesesIsTheSameAsOutside()
+    {
+        Assert.Equal(Parse("C7omit5"), Parse("C7(omit5)"));
+        Assert.Equal(Parse("C7no3"), Parse("C7(no3)"));
+    }
+
+    [Fact]
+    public void TheSixNineShorthandWorksInsideParenthesesToo()
+    {
+        Assert.Equal(Parse("C6/9"), Parse("C(6/9)"));
+    }
+
+    [Fact]
+    public void AnExtensionInsideParenthesesRaisesTheChord()
+    {
+        var parsed = Parse("C(9)");
+
+        Assert.Contains(74, parsed);          // the ninth
+        Assert.Contains(60, parsed);
+    }
+
+    [Fact]
+    public void AQualityInsideParenthesesIsApplied()
+    {
+        // Not the m(maj7) special case, which is tested elsewhere: a plain quality in a group.
+        Assert.Equal(Parse("Cdim"), Parse("C(dim)"));
+    }
+
+    // ---------- the quality table's later arms ----------
+
+    [Theory]
+    [InlineData("Cø")]
+    [InlineData("Chalfdim")]
+    public void HalfDiminishedIsAMinorSeventhOnADiminishedTriad(string symbol)
+    {
+        var parsed = Parse(symbol);
+
+        Assert.Equal([60, 63, 66, 70], parsed);
+    }
+
+    [Fact]
+    public void AnAlteredDominantSharpensTheFifthAndFlattensTheNinth()
+    {
+        var parsed = Parse("C7alt");
+
+        Assert.Contains(60, parsed);
+        Assert.Contains(68, parsed);          // #5
+        Assert.Contains(70, parsed);          // b7
+        Assert.Contains(73, parsed);          // b9
+        Assert.DoesNotContain(67, parsed);    // the natural fifth is gone
+    }
+
+    [Fact]
+    public void OmittingTheSeventhLeavesTheTriad()
+    {
+        var parsed = Parse("C9omit7");
+
+        Assert.DoesNotContain(70, parsed);
+        Assert.Contains(60, parsed);
+        Assert.Contains(74, parsed);          // the ninth stays
+    }
+
+    [Theory]
+    [InlineData("Cadd2", 62)]
+    [InlineData("Cadd4", 65)]
+    [InlineData("Cadd6", 69)]
+    [InlineData("Cadd9", 74)]
+    [InlineData("Cadd11", 77)]
+    [InlineData("Cadd13", 81)]
+    public void EveryAddedDegreeLandsOnItsInterval(string symbol, int expected)
+    {
+        Assert.Contains(expected, Parse(symbol));
+    }
 }
