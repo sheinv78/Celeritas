@@ -232,7 +232,16 @@ public static class MidiFileExtensions
             events.Insert(0, new SetTempoEvent(tempo.MicrosecondsPerQuarterNote) { DeltaTime = 0 });
         }
 
-        /// <summary>Returns a deep copy of the file via a write/read round-trip.</summary>
+        /// <summary>
+        /// Returns a deep copy of the file via a write/read round-trip, which also normalizes
+        /// it the way saving would.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="MidiFile"/> declares its own <c>Clone</c>, and an instance method always
+        /// beats an extension, so <c>file.Clone()</c> calls DryWetMidi's in-memory copy rather
+        /// than this one. Call <c>MidiFileExtensions.Clone(file)</c> explicitly to round-trip
+        /// through the writer instead.
+        /// </remarks>
         public MidiFile Clone()
         {
             ArgumentNullException.ThrowIfNull(file);
@@ -432,6 +441,11 @@ public static class MidiFileExtensions
                     abs += evt.DeltaTime;
                     if (evt is EndOfTrackEvent)
                     {
+                        // Belt and braces: DryWetMidi keeps the end-of-track marker out of
+                        // Events (the reader drops it, the writer re-adds it) and its
+                        // constructor is internal, so a caller cannot put one here either.
+                        // If one ever does arrive, it must not land mid-track — every other
+                        // reader would treat the merge as ending there.
                         endOfTrackPrototype ??= evt;
                         continue;
                     }
