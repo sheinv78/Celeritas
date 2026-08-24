@@ -217,4 +217,66 @@ public class MidiEventsGuardTests : IDisposable
         Assert.Equal([120, 90, 60], changes.Select(c => c.BeatsPerMinute));
         Assert.Equal([Rational.Zero, Rational.Half, Rational.Whole], changes.Select(c => c.Offset));
     }
+    // ---------- how the change records print ----------
+
+    [Fact]
+    public void ATempoChangePrintsItsBpmAndPlace()
+    {
+        var track = new TrackChunk();
+        MidiEvents.AddTempoChange(track, Rational.Half, 96, 480);
+        var path = Write(new MidiFile(track) { TimeDivision = new TicksPerQuarterNoteTimeDivision(480) });
+
+        var change = Assert.Single(MidiEvents.GetTempoChanges(path));
+
+        Assert.Equal("Tempo 96 BPM at 1/2", change.ToString());
+    }
+
+    [Fact]
+    public void ATimeSignatureChangePrintsItsMeterAndPlace()
+    {
+        var track = new TrackChunk();
+        MidiEvents.AddTimeSignatureChange(track, Rational.Zero, 6, 8, 480);
+        var path = Write(new MidiFile(track) { TimeDivision = new TicksPerQuarterNoteTimeDivision(480) });
+
+        var change = Assert.Single(MidiEvents.GetTimeSignatureChanges(path));
+
+        Assert.Equal("Time Signature 6/8 at 0", change.ToString());
+    }
+
+    [Fact]
+    public void TheMeterReaderAlsoStepsOverANonTrackChunk()
+    {
+        var file = new MidiFile(new TrackChunk());
+        MidiEvents.AddTimeSignatureChange(file.GetTrackChunks().First(), Rational.Zero, 5, 4, 480);
+        file.Chunks.Add(new SpacerChunk());
+        file.TimeDivision = new TicksPerQuarterNoteTimeDivision(480);
+
+        var path = Write(file);
+
+        var change = Assert.Single(MidiEvents.GetTimeSignatureChanges(path));
+        Assert.Equal(5, change.Numerator);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void ATempoTooSlowForTheMidiEncoding_IsRefused(int bpm)
+    {
+        // A set-tempo event stores microseconds-per-quarter in 24 bits, so anything under
+        // about 4 BPM cannot be written at all.
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(
+            () => MidiEvents.AddTempoChange(new TrackChunk(), Rational.Zero, bpm, 480));
+
+        Assert.Equal("beatsPerMinute", ex.ParamName);
+    }
+
+    [Fact]
+    public void AVeryFastTempoIsStillWritable()
+    {
+        var track = new TrackChunk();
+
+        MidiEvents.AddTempoChange(track, Rational.Zero, 960, 480);
+
+        Assert.Single(track.Events.OfType<SetTempoEvent>());
+    }
 }
