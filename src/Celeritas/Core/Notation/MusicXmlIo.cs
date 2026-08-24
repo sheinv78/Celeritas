@@ -203,7 +203,10 @@ public static class MusicXmlIo
     // Counts bytes as they are read out of a decompression stream and refuses to go past the cap.
     // Counting actual reads (rather than trusting the entry's declared Length) is deliberate:
     // the declared size in a crafted archive can lie.
-    private sealed class CappedReadStream(Stream inner, long maxBytes) : Stream
+    //
+    // internal, not private, so the cap can be tested against a small limit: proving it through
+    // Import would mean building a quarter-gigabyte fixture for every test run.
+    internal sealed class CappedReadStream(Stream inner, long maxBytes) : Stream
     {
         private long _totalRead;
 
