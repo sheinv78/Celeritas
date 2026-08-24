@@ -117,7 +117,8 @@ public class ProgressionAdvisorFixesTests
 
         Assert.Equal("Dm", s.Single(x => x.Reason == "Subdominant progression").Chord);
         Assert.Equal("E", s.Single(x => x.Reason == "Move to dominant").Chord);
-        Assert.Equal("F", s.Single(x => x.Reason == "Relative minor for contrast").Chord);
+        // VI in a minor key is the submediant, a MAJOR triad -- not a "relative minor".
+        Assert.Equal("F", s.Single(x => x.Reason == "Submediant for contrast").Chord);
         Assert.Equal("C", s.Single(x => x.Reason == "Mediant for color").Chord);
         Assert.Equal("G", s.Single(x => x.Reason == "Subtonic (natural minor)").Chord);
         Assert.Equal("G#dim", s.Single(x => x.Reason == "Leading tone diminished").Chord);

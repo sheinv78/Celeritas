@@ -153,15 +153,17 @@ public class KeyModalReviewFixTests
     // new-key duration and biasing toward Tonicization), and ModulationType.PivotChord
     // was never produced because the type was decided before FindPivotChord ran.
     //
-    // NOTE on the target key: ModulationDetector's window key detection is a
-    // pitch-class-set overlap against major and NATURAL minor scale masks, which are
-    // identical for relative keys; ties break by enumeration order, so purely diatonic
-    // G-major evidence is reported as E minor (same pitch-class collection). The
-    // asserts therefore accept the G-major collection: G major or its relative E minor.
+    // NOTE on the target key: these asserts once accepted either G major or its relative
+    // E minor, because window key detection was a pitch-class-set overlap against major and
+    // NATURAL minor masks — identical for relative keys — broken by enumeration order, so
+    // purely diatonic G-major evidence came back as E minor. IdentifyKey now separates
+    // relatives on pitch-class counts and ModulationDetector skips ambiguous windows, so
+    // G major is asserted outright: a regression back to E minor must fail here.
     // ---------------------------------------------------------------------------
 
-    private static bool IsGMajorCollection(KeySignature key)
-        => (key.Root == 7 && key.IsMajor) || (key.Root == 4 && !key.IsMajor);
+    private static void AssertGMajor(KeySignature key)
+        => Assert.True(key.Root == 7 && key.IsMajor,
+            $"Expected G major, got root {key.Root} {(key.IsMajor ? "major" : "minor")}");
 
     [Fact]
     public void Analyze_EightCChordsThenEightGChords_BoundaryAtIndex8AndTrueModulation()
@@ -192,8 +194,7 @@ public class KeyModalReviewFixTests
         var result = ModulationDetector.Analyze(notes.ToArray(), new KeySignature("C", true));
 
         var modulation = Assert.Single(result.Modulations);
-        Assert.True(IsGMajorCollection(modulation.ToKey),
-            $"Expected the G-major collection, got root {modulation.ToKey.Root} {(modulation.ToKey.IsMajor ? "major" : "minor")}");
+        AssertGMajor(modulation.ToKey);
 
         // Boundary attribution (fix 10): the new key starts at chord index 8 (offset 4).
         // The old code stamped the detection index instead (offset 7.5, almost a full
@@ -211,7 +212,7 @@ public class KeyModalReviewFixTests
         Assert.Equal(ModulationType.PivotChord, modulation.Type);
         Assert.NotNull(modulation.PivotChord);
 
-        Assert.True(IsGMajorCollection(result.EndKey));
+        AssertGMajor(result.EndKey);
     }
 
     // ---------------------------------------------------------------------------
@@ -237,9 +238,8 @@ public class KeyModalReviewFixTests
 
         // Old behavior: zero chords -> no modulations, EndKey == startKey.
         var modulation = Assert.Single(result.Modulations);
-        Assert.True(IsGMajorCollection(modulation.ToKey),
-            $"Expected the G-major collection, got root {modulation.ToKey.Root} {(modulation.ToKey.IsMajor ? "major" : "minor")}");
-        Assert.True(IsGMajorCollection(result.EndKey));
+        AssertGMajor(modulation.ToKey);
+        AssertGMajor(result.EndKey);
 
         // The boundary is attributed within the first octave of the G-major area
         // (the first unambiguous new-key note is its F#, at offset 19/4).

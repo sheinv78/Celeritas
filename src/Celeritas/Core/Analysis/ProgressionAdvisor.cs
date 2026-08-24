@@ -250,7 +250,8 @@ public static class ProgressionAdvisor
                 // After tonic: IV, V, vi are common
                 AddSuggestion(suggestions, key, ScaleDegree.Iv, "Subdominant progression", 1.0f);
                 AddSuggestion(suggestions, key, ScaleDegree.V, "Move to dominant", 0.95f);
-                AddSuggestion(suggestions, key, ScaleDegree.Vi, "Relative minor for contrast", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.Vi,
+                    key.IsMajor ? "Relative minor for contrast" : "Submediant for contrast", 0.9f);
                 AddSuggestion(suggestions, key, ScaleDegree.Iii, "Mediant for color", 0.7f);
                 break;
 
@@ -263,7 +264,8 @@ public static class ProgressionAdvisor
 
             case ScaleDegree.Iii:
                 // iii can go to vi, IV, or ii
-                AddSuggestion(suggestions, key, ScaleDegree.Vi, "Descending to relative minor", 0.9f);
+                AddSuggestion(suggestions, key, ScaleDegree.Vi,
+                    key.IsMajor ? "Descending to relative minor" : "Descending to submediant", 0.9f);
                 AddSuggestion(suggestions, key, ScaleDegree.Iv, "Move to subdominant", 0.85f);
                 AddSuggestion(suggestions, key, ScaleDegree.Ii, "Jazz-style descending", 0.8f);
                 break;
