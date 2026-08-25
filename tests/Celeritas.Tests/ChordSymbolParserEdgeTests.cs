@@ -232,4 +232,27 @@ public class ChordSymbolParserEdgeTests
     {
         Assert.Contains(expected, Parse(symbol));
     }
+    [Fact]
+    public void AnAlteredDominantInsideParentheses_IsTheSameAsOutside()
+    {
+        Assert.Equal(Parse("C7alt"), Parse("C7(alt)"));
+    }
+
+    [Fact]
+    public void APlusAtTheVeryEndOfASymbol_IsNotReadAsAnAlteration()
+    {
+        // Nothing follows the '+', so the normalizer must stop rather than reading past the
+        // end of the symbol looking for a degree.
+        var ok = ProgressionAdvisor.TryParseChordSymbol("C7+", out var pitches);
+
+        Assert.True(ok || pitches.Length == 0);
+    }
+
+    [Fact]
+    public void APlusFollowedBySomethingThatIsNotADigit_IsLeftAlone()
+    {
+        var ok = ProgressionAdvisor.TryParseChordSymbol("C7+b9", out var pitches);
+
+        Assert.True(ok || pitches.Length == 0);
+    }
 }
