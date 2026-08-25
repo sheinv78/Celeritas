@@ -87,7 +87,7 @@ public sealed class GraceNote : Ornament
         // Add grace notes
         for (int i = 0; i < graceCount; i++)
         {
-            var gracePitch = BaseNote.Pitch + Intervals[i];
+            var gracePitch = Playable(BaseNote.Pitch + Intervals[i]);
             notes[i] = new NoteEvent(gracePitch, currentOffset, graceDuration, BaseNote.Velocity * 0.8f);
             currentOffset += graceDuration;
         }

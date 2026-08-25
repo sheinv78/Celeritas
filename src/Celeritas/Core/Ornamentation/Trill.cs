@@ -41,8 +41,8 @@ public sealed class Trill : Ornament
 
         var endWithTurn = EndWithTurn || HasTurnEnding;
         var noteDuration = new Rational(1, Speed * 4); // Duration per trill note
-        var upperNote = BaseNote.Pitch + Interval;
-        var lowerNote = BaseNote.Pitch - (Interval == 2 ? 2 : 1); // For turn ending
+        var upperNote = Playable(BaseNote.Pitch + Interval);
+        var lowerNote = Playable(BaseNote.Pitch - (Interval == 2 ? 2 : 1)); // For turn ending
 
         var currentTime = BaseNote.Offset;
         var endTime = BaseNote.Offset + BaseNote.Duration;

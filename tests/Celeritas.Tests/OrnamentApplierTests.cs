@@ -234,4 +234,66 @@ public class OrnamentApplierTests
         Assert.NotEmpty(expanded);
         Assert.Equal(note.Duration, TotalDuration(expanded));
     }
+    // ---------- ornaments at the ends of the keyboard ----------
+
+    [Fact]
+    public void ALowerMordentOnTheLowestNote_StaysOnTheKeyboard()
+    {
+        // The neighbour would be MIDI -1, which is not a pitch: ToNotation refuses it and
+        // MusicXML export writes an impossible octave. It is held at the bottom instead.
+        var notes = new Mordent
+        {
+            BaseNote = new NoteEvent(0, Rational.Zero, Rational.Half),
+            Type = MordentType.Lower,
+        }.Expand();
+
+        Assert.All(notes, n => Assert.InRange(n.Pitch, 0, 127));
+        Assert.Equal(0, notes[1].Pitch);
+    }
+
+    [Fact]
+    public void AnUpperMordentOnTheHighestNote_StaysOnTheKeyboard()
+    {
+        var notes = new Mordent
+        {
+            BaseNote = new NoteEvent(127, Rational.Zero, Rational.Half),
+            Type = MordentType.Upper,
+        }.Expand();
+
+        Assert.All(notes, n => Assert.InRange(n.Pitch, 0, 127));
+        Assert.Equal(127, notes[1].Pitch);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(126)]
+    [InlineData(127)]
+    public void NoOrnamentLeavesTheKeyboard(int pitch)
+    {
+        var written = new NoteEvent(pitch, Rational.Zero, Rational.Half);
+
+        NoteEvent[][] expansions =
+        [
+            new Trill { BaseNote = written, Interval = 2 }.Expand(),
+            new Mordent { BaseNote = written, Interval = 2 }.Expand(),
+            new Mordent { BaseNote = written, Interval = 2, Type = MordentType.Lower }.Expand(),
+            new Turn { BaseNote = written }.Expand(),
+            new Turn { BaseNote = written, Type = TurnType.Inverted }.Expand(),
+            new Appoggiatura { BaseNote = written, Interval = 2, Direction = 1 }.Expand(),
+            new Appoggiatura { BaseNote = written, Interval = 2, Direction = -1 }.Expand(),
+            new GraceNote { BaseNote = written, Intervals = [2, -2, 5] }.Expand(),
+            new Glissando { BaseNote = written, TargetPitch = 12, Steps = 6 }.Expand(),
+            new Glissando { BaseNote = written, TargetPitch = -12, Steps = 6 }.Expand(),
+        ];
+
+        foreach (var notes in expansions)
+        {
+            Assert.NotEmpty(notes);
+            Assert.All(notes, n => Assert.InRange(n.Pitch, 0, 127));
+
+            // Everything the library does downstream has to accept these pitches.
+            Assert.All(notes, n => Assert.False(string.IsNullOrEmpty(MusicNotation.ToNotation(n.Pitch))));
+        }
+    }
 }

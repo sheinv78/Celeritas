@@ -33,9 +33,9 @@ public sealed class Mordent : Ornament
         var noteCount = (2 * Alternations) + 1; // Main + alternations
         var noteDuration = BaseNote.Duration / noteCount;
 
-        var neighborPitch = Type == MordentType.Upper
+        var neighborPitch = Playable(Type == MordentType.Upper
             ? BaseNote.Pitch + Interval
-            : BaseNote.Pitch - Interval;
+            : BaseNote.Pitch - Interval);
 
         var currentTime = BaseNote.Offset;
 

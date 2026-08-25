@@ -37,8 +37,8 @@ public sealed class Turn : Ornament
         if (!Enum.IsDefined(Type))
             throw new ArgumentOutOfRangeException(nameof(Type), Type, "Not a defined TurnType value.");
 
-        var upperPitch = BaseNote.Pitch + UpperInterval;
-        var lowerPitch = BaseNote.Pitch - LowerInterval;
+        var upperPitch = Playable(BaseNote.Pitch + UpperInterval);
+        var lowerPitch = Playable(BaseNote.Pitch - LowerInterval);
 
         // Anticipation compresses the ornamental notes at the start; on-beat turns use
         // four equal notes. The final principal note always absorbs the exact remainder.

@@ -32,7 +32,7 @@ public sealed class Appoggiatura : Ornament
             ? Interval
             : Math.Sign(Direction) * Math.Abs(Interval);
 
-        var appogiaturaPitch = BaseNote.Pitch + signedInterval;
+        var appogiaturaPitch = Playable(BaseNote.Pitch + signedInterval);
 
         // Appoggiatura always produces 2 notes - use stack allocation
         Span<NoteEvent> notes = stackalloc NoteEvent[2];

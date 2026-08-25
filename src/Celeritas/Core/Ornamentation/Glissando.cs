@@ -64,7 +64,7 @@ public sealed class Glissando : Ornament
         // Create intermediate steps
         for (int i = 0; i <= stepCount; i++)
         {
-            var currentPitch = BaseNote.Pitch + (int)Math.Round(pitchStep * i);
+            var currentPitch = Playable(BaseNote.Pitch + (int)Math.Round(pitchStep * i));
             notes[i] = new NoteEvent(currentPitch, currentOffset, stepDuration, BaseNote.Velocity);
             currentOffset += stepDuration;
         }
