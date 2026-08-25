@@ -360,7 +360,13 @@ public static class PitchClassSetAnalyzer
             return 0.0;
         }
 
-        return dotProduct / (Math.Sqrt(mag1) * Math.Sqrt(mag2));
+        // One square root of the product, not a product of two square roots: the latter
+        // rounded twice and left the result outside the documented 0..1 range — identical
+        // interval content scored 1.0000000000000002, and a set was 0.9999999999999998
+        // similar to itself. The clamp holds the contract for the cases rounding still
+        // reaches from the other side.
+        var similarity = dotProduct / Math.Sqrt((double)mag1 * mag2);
+        return Math.Clamp(similarity, 0.0, 1.0);
     }
 
     private static int[] ExtendedToPitchClasses(int[] extended)

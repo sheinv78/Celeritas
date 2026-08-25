@@ -189,4 +189,43 @@ public class SetTheoryAndAccompanimentEdgeTests
         Assert.NotEmpty(notes);
         Assert.All(notes, n => Assert.True(n.Duration > Rational.Zero));
     }
+    // ---------- similarity keeps to the range it documents ----------
+
+    [Fact]
+    public void ASetIsExactlyAsSimilarToItselfAsItCanBe()
+    {
+        // Computed as a product of two square roots this came back as 0.9999999999999998 for
+        // some sets and 1.0000000000000002 for others — both outside the documented 0..1.
+        foreach (int[] set in new[] { new[] { 0, 4, 7 }, [0, 1, 2], [0, 6, 8], [0, 2, 4, 6, 8, 10], [0] })
+        {
+            Assert.Equal(1d, PitchClassSetAnalyzer.Similarity(set, set));
+        }
+    }
+
+    [Fact]
+    public void SetsWithTheSameIntervalContentAreExactlySimilar()
+    {
+        // {0,6,8} and {2,6,8} have the same interval vector, so they are as similar as two
+        // different sets can be.
+        Assert.Equal(1d, PitchClassSetAnalyzer.Similarity([0, 6, 8], [2, 6, 8]));
+        Assert.Equal(1d, PitchClassSetAnalyzer.Similarity([0, 4, 7], [0, 3, 7]));
+    }
+
+    [Fact]
+    public void SimilarityNeverLeavesItsRange()
+    {
+        int[][] sets =
+        [
+            [], [0], [0, 1], [0, 4, 7], [0, 1, 2, 3], [0, 2, 4, 6, 8, 10],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        ];
+
+        foreach (var a in sets)
+        {
+            foreach (var b in sets)
+            {
+                Assert.InRange(PitchClassSetAnalyzer.Similarity(a, b), 0d, 1d);
+            }
+        }
+    }
 }
