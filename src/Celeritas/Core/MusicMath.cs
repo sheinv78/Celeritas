@@ -53,6 +53,12 @@ public static unsafe class MusicMath
     /// <summary>
     /// SIMD scaling of velocity, using a portable <see cref="Vector{T}"/> loop that the JIT
     /// widens to the platform's widest vector unit.
+    /// <para>
+    /// The result is clamped into <see cref="NoteEvent.Velocity"/>'s documented 0..1 range, so
+    /// a factor of 2 saturates rather than storing a loudness the type says cannot exist. That
+    /// makes the operation lossy at the ends: scaling up and back down does not restore the
+    /// original velocities.
+    /// </para>
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static void ScaleVelocity(NoteBuffer buffer, float factor)
@@ -67,16 +73,19 @@ public static unsafe class MusicMath
         if (Vector.IsHardwareAccelerated && count >= Vector<float>.Count)
         {
             var vFactor = new Vector<float>(factor);
+            var vZero = Vector<float>.Zero;
+            var vOne = Vector<float>.One;
             var width = Vector<float>.Count;
             ref var start = ref Unsafe.AsRef<float>(velocities);
             for (; i <= count - width; i += width)
             {
-                (Vector.LoadUnsafe(ref start, (nuint)i) * vFactor).StoreUnsafe(ref start, (nuint)i);
+                var scaled = Vector.LoadUnsafe(ref start, (nuint)i) * vFactor;
+                Vector.Min(Vector.Max(scaled, vZero), vOne).StoreUnsafe(ref start, (nuint)i);
             }
         }
 
         for (; i < count; i++)
-            velocities[i] *= factor;
+            velocities[i] = Math.Clamp(velocities[i] * factor, 0f, 1f);
 
         GC.KeepAlive(buffer);
     }

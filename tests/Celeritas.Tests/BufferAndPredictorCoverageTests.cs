@@ -324,4 +324,56 @@ public class BufferAndPredictorCoverageTests
 
         Assert.Equal([Rational.Zero, Rational.Quarter, Rational.Half], buffer.GetChords().Select(c => c.Time));
     }
+    // ---------- velocity scaling stays inside the range the type promises ----------
+
+    [Theory]
+    [InlineData(2f)]
+    [InlineData(10f)]
+    [InlineData(-1f)]
+    public void ScalingVelocityPastTheEnds_Saturates(float factor)
+    {
+        // NoteEvent documents velocity as 0..1, so scaling has to land inside it rather than
+        // storing a loudness the type says cannot exist.
+        using var buffer = new NoteBuffer(4);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter, 0.8f);
+        buffer.AddNote(62, Rational.Quarter, Rational.Quarter, 0.2f);
+        buffer.AddNote(64, Rational.Half, Rational.Quarter, 1f);
+        buffer.AddNote(65, new Rational(3, 4), Rational.Quarter, 0f);
+
+        MusicMath.ScaleVelocity(buffer, factor);
+
+        for (var i = 0; i < buffer.Count; i++)
+            Assert.InRange(buffer.Get(i).Velocity, 0f, 1f);
+    }
+
+    [Fact]
+    public void ScalingVelocityInsideTheRange_IsExact()
+    {
+        using var buffer = new NoteBuffer(2);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter, 0.8f);
+        buffer.AddNote(62, Rational.Quarter, Rational.Quarter, 0.4f);
+
+        MusicMath.ScaleVelocity(buffer, 0.5f);
+
+        Assert.Equal(0.4f, buffer.Get(0).Velocity, 5);
+        Assert.Equal(0.2f, buffer.Get(1).Velocity, 5);
+    }
+
+    [Fact]
+    public void ScalingVelocity_TreatsEveryNoteTheSameWayWhateverTheBufferLength()
+    {
+        // The vector loop handles whole widths and a scalar tail handles the rest; both have
+        // to clamp, or a buffer's last few notes would behave differently from the others.
+        for (var count = 1; count <= 40; count++)
+        {
+            using var buffer = new NoteBuffer(count);
+            for (var i = 0; i < count; i++)
+                buffer.AddNote(60, new Rational(i, 4), Rational.Quarter, 0.9f);
+
+            MusicMath.ScaleVelocity(buffer, 4f);
+
+            for (var i = 0; i < count; i++)
+                Assert.Equal(1f, buffer.Get(i).Velocity);
+        }
+    }
 }
