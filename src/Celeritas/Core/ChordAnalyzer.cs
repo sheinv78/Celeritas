@@ -125,7 +125,8 @@ public static unsafe class ChordAnalyzer
         // answer from the mask lookup (the lowest registered root). Use the actual bass
         // note to disambiguate.
         if (!pitches.IsEmpty &&
-            info.Quality is ChordQuality.Sus2 or ChordQuality.Augmented or ChordQuality.Diminished7)
+            info.Quality is ChordQuality.Sus2 or ChordQuality.Augmented or ChordQuality.Diminished7
+                or ChordQuality.Dominant7Flat5)
         {
             var bass = pitches[0];
             foreach (var p in pitches)
@@ -155,6 +156,24 @@ public static unsafe class ChordAnalyzer
                     if (bassPc != info.RootPitchClass)
                         return new ChordInfo((byte)bassPc, info.Quality);
                     break;
+
+                // A 7b5 ({0,4,6,10}) maps onto itself a tritone away, so the set has two
+                // equally valid roots sharing one mask, and the lookup can only answer the
+                // lower-numbered one. That is a fact about pitch-class numbering rather than
+                // about the music: F#7b5 came back rooted on C, and the same chord transposed
+                // reported a root that was not the transposed root.
+                //
+                // Take the candidate the bass sits nearest above — the reading in which the
+                // bass is the most root-like member of the chord (root, then third, then
+                // flat fifth, then seventh). That choice is made from the music, so it moves
+                // with it.
+                case ChordQuality.Dominant7Flat5:
+                {
+                    var partner = (byte)((info.RootPitchClass + 6) % 12);
+                    if (PitchMath.Fold(bassPc - partner) < PitchMath.Fold(bassPc - info.RootPitchClass))
+                        return new ChordInfo(partner, info.Quality);
+                    break;
+                }
             }
         }
 

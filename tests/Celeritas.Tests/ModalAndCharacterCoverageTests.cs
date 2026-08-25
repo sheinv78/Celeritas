@@ -220,4 +220,75 @@ public class ModalAndCharacterCoverageTests
         Assert.Throws<ArgumentNullException>(
             () => VoiceSeparator.SeparateIntoSatb((IEnumerable<NoteEvent>)null!));
     }
+    // ---------- chords whose pitch-class set maps onto itself ----------
+
+    [Theory]
+    [InlineData("C7b5", 0)]
+    [InlineData("F#7b5", 6)]
+    [InlineData("Gb7b5", 6)]
+    [InlineData("D7b5", 2)]
+    [InlineData("G#7b5", 8)]
+    public void ASeventhWithAFlattenedFifth_IsRootedWhereItWasWritten(string symbol, int expectedRoot)
+    {
+        // {0,4,6,10} maps onto itself a tritone away, so both roots share one mask and the
+        // lookup used to answer the lower one: F#7b5 came back rooted on C.
+        var info = ChordAnalyzer.Identify(ProgressionAdvisor.ParseChordSymbol(symbol));
+
+        Assert.Equal(ChordQuality.Dominant7Flat5, info.Quality);
+        Assert.Equal(expectedRoot, info.RootPitchClass);
+    }
+
+    [Fact]
+    public void AnInvertedSeventhWithAFlattenedFifth_KeepsItsRoot()
+    {
+        // E in the bass is the third of C7b5, and the third is nearer to C than to the
+        // tritone partner — so this stays a C chord in first inversion.
+        var info = ChordAnalyzer.Identify([64, 66, 70, 72]);
+
+        Assert.Equal(ChordQuality.Dominant7Flat5, info.Quality);
+        Assert.Equal(0, info.RootPitchClass);
+    }
+
+    [Fact]
+    public void ASeventhWithAFlattenedFifthIsReadFromItsBass()
+    {
+        // The set has two equally valid roots a tritone apart. With B flat lowest, the
+        // reading that makes the bass the third (F#7b5) is nearer than the one that makes it
+        // the seventh (C7b5), so that is the chord reported.
+        var info = ChordAnalyzer.Identify([70, 72, 76, 78]);
+
+        Assert.Equal(ChordQuality.Dominant7Flat5, info.Quality);
+        Assert.Equal(6, info.RootPitchClass);
+    }
+
+    [Fact]
+    public void ASeventhWithAFlattenedFifth_IsReadTheSameWayInEveryKey()
+    {
+        // The reading must be chosen from the music: transposing the same voicing has to
+        // transpose the root rather than jumping to the other candidate.
+        int[] voicing = [70, 72, 76, 78];
+
+        var original = ChordAnalyzer.Identify(voicing);
+
+        for (var n = 1; n <= 11; n++)
+        {
+            var shifted = ChordAnalyzer.Identify([.. voicing.Select(p => p + n)]);
+
+            Assert.Equal(PitchMath.Fold(original.RootPitchClass + n), shifted.RootPitchClass);
+        }
+    }
+
+    [Theory]
+    [InlineData("Caug", 0)]
+    [InlineData("Eaug", 4)]
+    [InlineData("G#aug", 8)]
+    [InlineData("Cdim7", 0)]
+    [InlineData("D#dim7", 3)]
+    [InlineData("F#dim7", 6)]
+    public void TheOtherSymmetricChords_AreStillRootedWhereTheyWereWritten(string symbol, int expectedRoot)
+    {
+        var info = ChordAnalyzer.Identify(ProgressionAdvisor.ParseChordSymbol(symbol));
+
+        Assert.Equal(expectedRoot, info.RootPitchClass);
+    }
 }
