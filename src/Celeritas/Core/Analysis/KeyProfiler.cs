@@ -377,7 +377,7 @@ public static class KeyProfiler
     /// pseudo-correlation, not a true Pearson correlation — see the NOTE on correlation bias below.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void ComputeCorrelationsAvx512(ReadOnlySpan<float> input, Span<float> correlations)
+    internal static unsafe void ComputeCorrelationsAvx512(ReadOnlySpan<float> input, Span<float> correlations)
     {
         fixed (float* pInput = input)
         fixed (float* pProfiles = AlignedProfiles)
@@ -423,7 +423,7 @@ public static class KeyProfiler
     /// AVX2 fallback for the same pseudo-correlation (see the NOTE on correlation bias below).
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void ComputeCorrelationsAvx2(ReadOnlySpan<float> input, Span<float> correlations)
+    internal static unsafe void ComputeCorrelationsAvx2(ReadOnlySpan<float> input, Span<float> correlations)
     {
         fixed (float* pInput = input)
         fixed (float* pProfiles = AlignedProfiles)
@@ -487,7 +487,10 @@ public static class KeyProfiler
     /// Scalar fallback for systems without SIMD. Computes the same pseudo-correlation
     /// (see the NOTE on correlation bias above).
     /// </summary>
-    private static void ComputeCorrelationsScalar(ReadOnlySpan<float> input, Span<float> correlations)
+    // internal, not private, so a test can run all three kernels side by side on whatever
+    // hardware it finds and check they agree: a SIMD kernel that drifts from the scalar
+    // reference would otherwise only be caught on the machines that select it.
+    internal static void ComputeCorrelationsScalar(ReadOnlySpan<float> input, Span<float> correlations)
     {
         for (var key = 0; key < 24; key++)
         {
