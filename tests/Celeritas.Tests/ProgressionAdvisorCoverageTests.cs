@@ -206,4 +206,41 @@ public class ProgressionAdvisorCoverageTests
 
         Assert.Equal(0, ProgressionAdvisor.Analyze(Chords("C/C", "D/D")).ParallelOctaves);
     }
+    // ---------- the key the report names moves with the music ----------
+
+    [Fact]
+    public void TheDetectedKeyTransposesWithTheProgression()
+    {
+        // "A# C# C#" ties A# major with C# major. The winner used to be whichever had the
+        // lower absolute key index, so the same three chords a major third higher answered
+        // with the other chord's root — a different scale degree for the same music.
+        var original = ProgressionAdvisor.Analyze(["A#", "C#", "C#"]);
+        var up4 = ProgressionAdvisor.Analyze(["D", "F", "F"]);
+        var up1 = ProgressionAdvisor.Analyze(["B", "D", "D"]);
+        var up7 = ProgressionAdvisor.Analyze(["F", "G#", "G#"]);
+
+        Assert.Equal(10, original.Key.Root);                    // A#
+        Assert.Equal(PitchMath.Fold(10 + 4), up4.Key.Root);
+        Assert.Equal(PitchMath.Fold(10 + 1), up1.Key.Root);
+        Assert.Equal(PitchMath.Fold(10 + 7), up7.Key.Root);
+        Assert.All(new[] { original, up4, up1, up7 }, r => Assert.True(r.Key.IsMajor));
+    }
+
+    [Fact]
+    public void ATiedKeyGoesToTheChordThatSoundsFirst()
+    {
+        // Both candidates score the same; the one whose root opens the progression wins,
+        // because that is a fact about the music rather than about pitch-class numbering.
+        var report = ProgressionAdvisor.Analyze(["A#", "C#", "C#"]);
+
+        Assert.Equal(10, report.Key.Root);
+    }
+
+    [Fact]
+    public void AClearProgressionIsUnaffectedByTheTieBreak()
+    {
+        // I - IV - V in C is not a tie, and must still answer C major.
+        Assert.Equal(0, ProgressionAdvisor.Analyze(["C", "F", "G"]).Key.Root);
+        Assert.Equal(9, ProgressionAdvisor.Analyze(["Am", "Dm", "E"]).Key.Root);
+    }
 }

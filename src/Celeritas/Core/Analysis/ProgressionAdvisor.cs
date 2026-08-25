@@ -1353,16 +1353,57 @@ public static class ProgressionAdvisor
             }
         }
 
-        // Find best key
+        // Find best key.
+        //
+        // Taking the first strict maximum breaks ties by absolute key index, which is not a
+        // property of the music: "A# C# C#" tied A# major with C# major and answered C# (the
+        // lower index), while the same progression a major third higher — "D F F" — answered
+        // D, the other chord's root. The reported key moved to a different scale degree just
+        // because the music was transposed.
+        //
+        // Ties are broken by the music instead: a candidate whose root is actually played
+        // beats one whose root is not, an earlier root beats a later one, a root nearer above
+        // the opening chord beats a further one, and the opening chord's own mode wins a
+        // major/minor tie on the same root. Every one of those moves with the music.
+        var firstHeardAt = new int[12];
+        Array.Fill(firstHeardAt, int.MaxValue);
+        for (var i = 0; i < chords.Count; i++)
+        {
+            var pc = chords[i].Info.RootPitchClass;
+            if (firstHeardAt[pc] == int.MaxValue)
+                firstHeardAt[pc] = i;
+        }
+
         var bestIndex = 0;
-        var bestScore = keyScores[0];
         for (var i = 1; i < 24; i++)
         {
-            if (keyScores[i] > bestScore)
-            {
-                bestScore = keyScores[i];
+            if (Beats(i, bestIndex))
                 bestIndex = i;
-            }
+        }
+
+        bool Beats(int candidate, int incumbent)
+        {
+            if (keyScores[candidate] != keyScores[incumbent])
+                return keyScores[candidate] > keyScores[incumbent];
+
+            var candidateRoot = candidate % 12;
+            var incumbentRoot = incumbent % 12;
+
+            if (firstHeardAt[candidateRoot] != firstHeardAt[incumbentRoot])
+                return firstHeardAt[candidateRoot] < firstHeardAt[incumbentRoot];
+
+            var candidateDistance = PitchMath.Fold(candidateRoot - firstRoot);
+            var incumbentDistance = PitchMath.Fold(incumbentRoot - firstRoot);
+            if (candidateDistance != incumbentDistance)
+                return candidateDistance < incumbentDistance;
+
+            // Same root: the opening chord's mode decides, and major decides the rest.
+            var candidateIsMinorKey = candidate >= 12;
+            var incumbentIsMinorKey = incumbent >= 12;
+            if (candidateIsMinorKey == incumbentIsMinorKey)
+                return false;
+
+            return candidateIsMinorKey == firstIsMinor && firstIsMinor;
         }
 
         var isMajorKey = bestIndex < 12;
