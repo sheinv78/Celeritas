@@ -72,7 +72,9 @@ public sealed class DefaultTransitionScorer : ITransitionScorer, IMelodyFitScore
 
         foreach (var p in melodyPitches)
         {
-            var pc = p % 12;
+            // Fold, not `%`: a melody pitch below zero — which MusicMath.Transpose documents it
+            // can produce — gave a negative shift and tested a bit belonging to another note.
+            var pc = PitchMath.Fold(p);
             var inChord = (chordMask & (1 << pc)) != 0;
 
             if (!inChord)
@@ -108,11 +110,22 @@ public sealed class DefaultTransitionScorer : ITransitionScorer, IMelodyFitScore
         };
     }
 
-    private static ushort GetChordMask(int[] pitches)
+    /// <summary>
+    /// The pitch-class mask of a candidate's tones.
+    /// </summary>
+    /// <remarks>
+    /// A <see cref="ChordCandidate"/> is a struct, so <c>default</c> is a value any caller can
+    /// hand over and its Pitches are null there — this dereferenced them. And the fold is
+    /// PitchMath.Fold rather than `%`: C# keeps the sign, so a pitch below zero shifted by a
+    /// negative amount and set a bit that has nothing to do with the note.
+    /// </remarks>
+    private static ushort GetChordMask(int[]? pitches)
     {
+        if (pitches is null) return 0;
+
         ushort mask = 0;
         foreach (var p in pitches)
-            mask |= (ushort)(1 << (p % 12));
+            mask |= (ushort)(1 << PitchMath.Fold(p));
         return mask;
     }
 }

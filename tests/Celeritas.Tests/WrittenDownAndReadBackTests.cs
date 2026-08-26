@@ -2,6 +2,7 @@
 
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
+using Celeritas.Core.Harmonization;
 using Celeritas.Core.FiguredBass;
 using Celeritas.Core.Midi;
 using Celeritas.Core.Notation;
@@ -400,6 +401,34 @@ public class WrittenDownAndReadBackTests
         Assert.Equal("{}", empty.PrimeFormText);
         Assert.Equal("<>", empty.IntervalVectorText);
         Assert.NotNull(empty.ToString());
+    }
+
+    [Fact]
+    public void ScoringADefaultChordCandidate_DoesNotDereferenceIt()
+    {
+        // ChordCandidate is a struct, so default is a value any caller can hand over, and its
+        // Pitches are null there — the mask builder dereferenced them.
+        var scorer = new DefaultTransitionScorer();
+        var real = new ChordCandidate(ChordAnalyzer.Identify([60, 64, 67]), [60, 64, 67], 0f);
+
+        scorer.ScoreTransition(default, real, new KeySignature(0, true));
+        scorer.ScoreTransition(real, default, new KeySignature(0, true));
+        scorer.ScoreFit(default, [60, 64], isStrongBeat: true);
+    }
+
+    [Fact]
+    public void ScoringAMelodyBelowZero_ReadsTheRightPitchClass()
+    {
+        // `%` keeps the sign in C#, so a pitch below zero shifted by a negative amount — and the
+        // shift count is masked to 5 bits, so the bit it set was not even in the 12-bit mask and
+        // the note counted as foreign to every chord. -5 is a G, which a C major triad contains.
+        var scorer = new DefaultTransitionScorer();
+        var cMajor = new ChordCandidate(ChordAnalyzer.Identify([60, 64, 67]), [60, 64, 67], 0f);
+
+        var below = scorer.ScoreFit(cMajor, [-5], isStrongBeat: true);
+        var above = scorer.ScoreFit(cMajor, [67], isStrongBeat: true);
+
+        Assert.Equal(above, below);
     }
 
     // ---------- a tempo ramp keeps the tempo it ramps to ----------
