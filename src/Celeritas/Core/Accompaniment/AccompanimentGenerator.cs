@@ -42,7 +42,7 @@ public static class AccompanimentGenerator
             if (duration.Numerator <= 0)
                 continue;
 
-            var chordPitchClasses = GetUniquePitchClasses(chord.Pitches, opt.MaxChordTones);
+            var chordPitchClasses = GetUniquePitchClasses(chord.Pitches, opt.MaxChordTones, chord.Chord.RootPitchClass);
             if (chordPitchClasses.Length == 0)
                 continue;
 
@@ -209,34 +209,63 @@ public static class AccompanimentGenerator
         return [.. events];
     }
 
-    private static byte[] GetUniquePitchClasses(int[] pitches, int max)
+    /// <summary>
+    /// The pitch classes of <paramref name="pitches"/>, at most <paramref name="max"/> of them,
+    /// keeping the ones that carry the chord.
+    /// </summary>
+    /// <remarks>
+    /// This used to keep whichever came first in the array, so the same chord written
+    /// [60, 64, 67, 70] and [70, 67, 64, 60] was voiced as root-and-third one way and
+    /// seventh-and-fifth the other: re-ordering a caller's pitches changed the harmony. What is
+    /// kept now follows the music — root, then third, then seventh, then fifth, then whatever
+    /// colour is left, which is the order a player drops notes in when there are not enough
+    /// fingers or voices for all of them.
+    /// </remarks>
+    private static byte[] GetUniquePitchClasses(int[] pitches, int max, byte rootPitchClass)
     {
         if (pitches.Length == 0 || max <= 0)
             return [];
 
         Span<bool> seen = stackalloc bool[12];
-        var tmp = new byte[Math.Min(12, max)];
-        var count = 0;
+        var distinct = new List<byte>(Math.Min(12, pitches.Length));
 
-        for (var i = 0; i < pitches.Length && count < tmp.Length; i++)
+        foreach (var pitch in pitches)
         {
             // Pitch classes are cyclic: fold so a negative pitch maps into 0..11 rather
             // than wrapping past the (byte) cast into an out-of-bounds seen[] index.
-            var pc = (byte)PitchMath.Fold(pitches[i]);
+            var pc = (byte)PitchMath.Fold(pitch);
             if (seen[pc])
                 continue;
             seen[pc] = true;
-            tmp[count++] = pc;
+            distinct.Add(pc);
         }
 
-        if (count == 0)
+        if (distinct.Count == 0)
             return [];
 
-        Array.Sort(tmp, 0, count);
-        var result = new byte[count];
-        Array.Copy(tmp, result, count);
-        return result;
+        distinct.Sort((a, b) =>
+        {
+            var byRole = ChordToneRank(a, rootPitchClass).CompareTo(ChordToneRank(b, rootPitchClass));
+            return byRole != 0
+                ? byRole
+                : PitchMath.Fold(a - rootPitchClass).CompareTo(PitchMath.Fold(b - rootPitchClass));
+        });
+
+        var kept = distinct.Take(Math.Min(12, max)).ToList();
+        kept.Sort();
+        return [.. kept];
     }
+
+    /// <summary>How readily a chord tone is given up when there is not room for all of them.</summary>
+    private static int ChordToneRank(byte pitchClass, byte rootPitchClass) =>
+        PitchMath.Fold(pitchClass - rootPitchClass) switch
+        {
+            0 => 0,             // the root
+            3 or 4 => 1,        // the third, which carries the quality
+            10 or 11 => 2,      // the seventh
+            7 => 3,             // the perfect fifth, the first note a player drops
+            _ => 4              // colour: ninths, elevenths, altered fifths
+        };
 
     private static byte[] DeduplicatePitchClasses(ReadOnlySpan<byte> pitchClasses, int max)
     {

@@ -458,7 +458,12 @@ public static class PolyphonyAnalyzer
                 MotionStats = new MotionStatistics(),
                 IntervalStats = new IntervalStatistics(),
                 QualityScore = 1.0f,
-                TextureDensity = voices.Voices.Count,
+                // Measured the same way as for several voices: TextureDensity is documented as
+                // the time-weighted average number of voices sounding, and reporting the voice
+                // COUNT here said 1.0 for a single line that is silent for half its span.
+                TextureDensity = voices.Voices.Count == 0
+                    ? 0f
+                    : CalculateTextureDensity(voices, CollectTimePoints(voices)),
                 VoiceIndependence = 1.0f
             };
         }
@@ -694,6 +699,10 @@ public static class PolyphonyAnalyzer
         // Pre-allocate assuming few violations (optimistic case)
         var violations = new List<CounterpointViolation>(motions.Count / 10);
 
+        // (voice, moment) pairs whose leap has already been reported: motions are per voice
+        // pair, so the same leap arrives once for every other voice sounding beside it.
+        var leapsReported = new HashSet<(int Voice, Rational Time)>();
+
         foreach (var motion in motions)
         {
             // Parallel fifths
@@ -747,16 +756,26 @@ public static class PolyphonyAnalyzer
                 });
             }
 
-            // Large leap without contrary motion
-            if (Math.Abs(motion.Voice1Motion) > 12 || Math.Abs(motion.Voice2Motion) > 12)
+            // A leap is something one voice does, but motions are recorded per voice PAIR, so
+            // a single leap in the top voice of four was reported three times — once for each
+            // voice it happened to be paired with. Report each leaping voice once per moment.
+            ReportLeap(motion.Voice1, motion.Voice1Motion);
+            ReportLeap(motion.Voice2, motion.Voice2Motion);
+
+            void ReportLeap(int voice, int semitones)
             {
+                if (Math.Abs(semitones) <= 12 || !leapsReported.Add((voice, motion.FromTime)))
+                {
+                    return;
+                }
+
                 violations.Add(new CounterpointViolation
                 {
                     Type = "Large Leap",
-                    Description = $"Voice {(Math.Abs(motion.Voice1Motion) > 12 ? motion.Voice1 + 1 : motion.Voice2 + 1)} leaps more than an octave",
+                    Description = $"Voice {voice + 1} leaps more than an octave",
                     Time = motion.FromTime,
-                    Voice1 = motion.Voice1,
-                    Voice2 = motion.Voice2,
+                    Voice1 = voice,
+                    Voice2 = voice,
                     Severity = "Style"
                 });
             }
