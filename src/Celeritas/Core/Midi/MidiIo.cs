@@ -41,6 +41,8 @@ public static class MidiIo
     /// <summary>Imports notes from the MIDI file at <paramref name="path"/>.</summary>
     public static NoteBuffer Import(string path, MidiImportOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(path);
+
         using var stream = File.OpenRead(path);
         return Import(stream, options);
     }
@@ -96,6 +98,8 @@ public static class MidiIo
     /// <exception cref="NotSupportedException">The file does not use ticks-per-quarter-note time division.</exception>
     public static NoteBuffer Import(Stream stream, MidiImportOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(stream);
+
         options ??= new MidiImportOptions();
 
         var midiFile = ReadHardened(stream);
@@ -161,6 +165,11 @@ public static class MidiIo
     /// <exception cref="ArgumentOutOfRangeException">An option (ticks-per-quarter-note, channel, or BPM) is out of range.</exception>
     public static void Export(NoteBuffer buffer, string path, MidiExportOptions? options = null)
     {
+        // Named arguments, not a NullReferenceException from somewhere inside: a caller handed
+        // a null buffer or path got "Object reference not set" and no idea which one.
+        ArgumentNullException.ThrowIfNull(buffer);
+        ArgumentNullException.ThrowIfNull(path);
+
         // Build BEFORE opening the file. File.Create truncates, so a bad channel — or a note
         // MIDI cannot represent — used to destroy whatever was already at `path` and only
         // then throw: an argument mistake that cost the caller their previous export.
@@ -205,6 +214,9 @@ public static class MidiIo
     /// <exception cref="ArgumentException">A note has a negative offset, which MIDI cannot represent.</exception>
     public static void Export(NoteBuffer buffer, Stream stream, MidiExportOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(buffer);
+        ArgumentNullException.ThrowIfNull(stream);
+
         options ??= new MidiExportOptions();
         ValidateExportOptions(options);
 

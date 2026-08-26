@@ -44,14 +44,28 @@ public sealed class PitchClassSetCatalog
     /// <summary>
     /// Load a catalog from a JSON string. Entries with a blank Forte label or empty prime form are skipped.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidDataException"><paramref name="json"/> is not valid JSON.</exception>
     public static PitchClassSetCatalog LoadJson(string json)
     {
         // Read through a source-generated contract rather than by reflection. The CLI publishes
         // native AOT, where the reflection-based reader needs types that are trimmed away and
         // code that cannot be generated at runtime — so `pcset --catalog`, which is the only
         // reason this method exists, could never have worked in the binary that ships.
-        var entries = JsonSerializer.Deserialize(json, CatalogJsonContext.Default.PitchClassSetCatalogEntryArray)
+        ArgumentNullException.ThrowIfNull(json);
+
+        PitchClassSetCatalogEntry?[] entries;
+        try
+        {
+            entries = JsonSerializer.Deserialize(json, CatalogJsonContext.Default.PitchClassSetCatalogEntryArray)
                   ?? [];
+        }
+        catch (JsonException ex)
+        {
+            // A malformed catalog is bad data in a file the caller chose, and JsonException is
+            // not a type any caller of this library would think to catch.
+            throw new InvalidDataException("The catalog is not valid JSON.", ex);
+        }
 
         var dict = new Dictionary<string, PitchClassSetCatalogEntry>(StringComparer.Ordinal);
         foreach (var entry in entries)

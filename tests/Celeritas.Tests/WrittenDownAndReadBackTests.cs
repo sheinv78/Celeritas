@@ -302,6 +302,49 @@ public class WrittenDownAndReadBackTests
         }
     }
 
+    // ---------- a missing argument is named, not dereferenced ----------
+
+    [Fact]
+    public void MidiIoNamesTheArgumentItWasNotGiven()
+    {
+        // A sweep of every public static entry point, called with nulls, found these four
+        // reaching a dereference instead: the caller got "Object reference not set" and no clue
+        // which argument was the problem.
+        using var buffer = new NoteBuffer(1);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter);
+        using var stream = new MemoryStream();
+        var path = Path.Combine(Path.GetTempPath(), $"celeritas-null-{Guid.NewGuid():N}.mid");
+
+        Assert.Throws<ArgumentNullException>(() => MidiIo.Export(null!, path));
+        Assert.Throws<ArgumentNullException>(() => MidiIo.Export(buffer, (string)null!));
+        Assert.Throws<ArgumentNullException>(() => MidiIo.Export(null!, stream));
+        Assert.Throws<ArgumentNullException>(() => MidiIo.Export(buffer, (Stream)null!));
+        Assert.Throws<ArgumentNullException>(() => MidiIo.Import((string)null!));
+        Assert.Throws<ArgumentNullException>(() => MidiIo.Import((Stream)null!));
+
+        Assert.False(File.Exists(path), "a rejected export must not have created the file");
+    }
+
+    [Fact]
+    public void ACatalogThatIsNotJson_IsReportedAsBadData()
+    {
+        // JsonException is not a type a caller of a music library would think to catch.
+        Assert.Throws<ArgumentNullException>(() => PitchClassSetCatalog.LoadJson(null!));
+        Assert.Throws<InvalidDataException>(() => PitchClassSetCatalog.LoadJson(""));
+        Assert.Throws<InvalidDataException>(() => PitchClassSetCatalog.LoadJson("{ not json"));
+    }
+
+    [Fact]
+    public void ACatalogThatIsJson_StillLoads()
+    {
+        var catalog = PitchClassSetCatalog.LoadJson("""
+            [ { "forte": "3-11A", "primeForm": [0, 3, 7], "name": "minor triad" } ]
+            """);
+
+        Assert.True(catalog.TryGetByPrimeForm([0, 3, 7], out var entry));
+        Assert.Equal("3-11A", entry!.Forte);
+    }
+
     // ---------- a tempo ramp keeps the tempo it ramps to ----------
 
     [Fact]
