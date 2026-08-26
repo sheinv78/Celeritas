@@ -36,6 +36,27 @@ public sealed record MidiExportOptions(
 /// <summary>
 /// Reads and writes MIDI files, converting between MIDI ticks and whole-note time units.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Two things a MIDI file cannot hold exactly, so that a caller comparing a buffer with the one
+/// read back knows where the difference comes from.
+/// </para>
+/// <para>
+/// <b>Time is a whole number of ticks.</b> A duration or onset that is not one is written to the
+/// nearest tick. At the default 480 ticks per quarter note every ordinary value — and every
+/// triplet, quintuplet and 32nd — is exact; a septuplet lands within half a tick (1/28 of a whole
+/// note is 68.57 ticks, written as 69, so it reads back as 23/640). Raise
+/// <see cref="MidiExportOptions.TicksPerQuarterNote"/> for a finer grid.
+/// </para>
+/// <para>
+/// <b>A note is a note-on and a note-off.</b> Two notes of the same pitch on the same channel
+/// that overlap in time cannot be told apart in the file: the first note-off ends whichever of
+/// them is sounding. A note held from 5/8 for 3/2 with a second sounding of the same pitch from
+/// 9/8 for 3/8 inside it is written as two notes, and read back as one from 5/8 to 3/2 and one
+/// from 9/8 to 17/8 — the same onsets, the ends re-paired. Give such voices different channels,
+/// or use <see cref="Notation.MusicXmlIo"/>, which keeps them apart.
+/// </para>
+/// </remarks>
 public static class MidiIo
 {
     /// <summary>Imports notes from the MIDI file at <paramref name="path"/>.</summary>
@@ -162,7 +183,11 @@ public static class MidiIo
     }
 
     /// <summary>Exports <paramref name="buffer"/> to a MIDI file at <paramref name="path"/>.</summary>
+    /// <remarks>See <see cref="MidiIo"/> for the two things the format cannot hold exactly.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An option (ticks-per-quarter-note, channel, or BPM) is out of range.</exception>
+    /// <exception cref="ArgumentException">A note has a negative offset, or lasts longer than
+    /// MIDI can express in one note.</exception>
     public static void Export(NoteBuffer buffer, string path, MidiExportOptions? options = null)
     {
         // Named arguments, not a NullReferenceException from somewhere inside: a caller handed

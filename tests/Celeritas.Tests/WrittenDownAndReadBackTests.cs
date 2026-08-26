@@ -431,6 +431,111 @@ public class WrittenDownAndReadBackTests
         Assert.Equal(above, below);
     }
 
+    // ---------- what MIDI cannot hold, it is documented as not holding ----------
+
+    [Fact]
+    public void TwoSoundingsOfOnePitchThatOverlap_ComeBackWithTheirEndsRepaired()
+    {
+        // A MIDI note is a note-on and a note-off, so two soundings of the same pitch on one
+        // channel cannot be told apart: the first note-off ends whichever is sounding. This
+        // pins the documented consequence, so a change to it is a decision rather than a
+        // surprise — MusicXmlIo, checked below, keeps the two apart.
+        using var original = new NoteBuffer(2);
+        original.AddNote(66, new Rational(5, 8), new Rational(3, 2));      // 5/8 .. 17/8
+        original.AddNote(66, new Rational(9, 8), new Rational(3, 8));      // 9/8 .. 3/2, inside it
+
+        var path = Path.Combine(Path.GetTempPath(), $"celeritas-overlap-{Guid.NewGuid():N}.mid");
+        try
+        {
+            MidiIo.Export(original, path);
+            using var reread = MidiIo.Import(path);
+
+            var notes = Enumerable.Range(0, reread.Count)
+                .Select(i => reread.Get(i))
+                .OrderBy(n => n.Offset.ToDouble())
+                .ToArray();
+
+            Assert.Equal(2, notes.Length);
+            Assert.Equal(new Rational(5, 8), notes[0].Offset);
+            Assert.Equal(new Rational(7, 8), notes[0].Duration);           // ends at 3/2
+            Assert.Equal(new Rational(9, 8), notes[1].Offset);
+            Assert.Equal(Rational.Whole, notes[1].Duration);               // ends at 17/8
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void MusicXmlKeepsTwoSoundingsOfOnePitchApart()
+    {
+        using var original = new NoteBuffer(2);
+        original.AddNote(66, new Rational(5, 8), new Rational(3, 2));
+        original.AddNote(66, new Rational(9, 8), new Rational(3, 8));
+
+        using var reread = MusicXmlIo.Parse(MusicXmlIo.ToXml(original));
+
+        var notes = Enumerable.Range(0, reread.Count)
+            .Select(i => (reread.Get(i).Offset, reread.Get(i).Duration))
+            .OrderBy(n => n.Offset.ToDouble())
+            .ToArray();
+
+        Assert.Equal([(new Rational(5, 8), new Rational(3, 2)), (new Rational(9, 8), new Rational(3, 8))], notes);
+    }
+
+    [Fact]
+    public void ADurationOffTheTickGrid_IsWrittenToTheNearestTick()
+    {
+        // A septuplet is 1920/28 = 68.57 ticks at the default 480 per quarter, written as 69.
+        // Documented on MidiIo; pinned here so the grid cannot change without a decision.
+        using var original = new NoteBuffer(1);
+        original.AddNote(60, Rational.Zero, new Rational(1, 28));
+
+        var path = Path.Combine(Path.GetTempPath(), $"celeritas-tick-{Guid.NewGuid():N}.mid");
+        try
+        {
+            MidiIo.Export(original, path);
+            using var reread = MidiIo.Import(path);
+
+            Assert.Equal(new Rational(23, 640), reread.Get(0).Duration);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ADurationOnTheTickGrid_SurvivesExactly()
+    {
+        // Everything ordinary, and every triplet and quintuplet, is a whole number of ticks.
+        Rational[] exact = [Rational.Whole, Rational.Half, Rational.Quarter, new(1, 32), new(1, 12), new(1, 20)];
+
+        using var original = new NoteBuffer(exact.Length);
+        var offset = Rational.Zero;
+        foreach (var duration in exact)
+        {
+            original.AddNote(60, offset, duration);
+            offset += duration;
+        }
+
+        var path = Path.Combine(Path.GetTempPath(), $"celeritas-grid-{Guid.NewGuid():N}.mid");
+        try
+        {
+            MidiIo.Export(original, path);
+            using var reread = MidiIo.Import(path);
+
+            Assert.Equal(
+                Enumerable.Range(0, original.Count).Select(i => original.Get(i).Duration),
+                Enumerable.Range(0, reread.Count).Select(i => reread.Get(i).Duration));
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
     // ---------- a tempo ramp keeps the tempo it ramps to ----------
 
     [Fact]
