@@ -3,6 +3,7 @@
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
 using Celeritas.Core.FiguredBass;
+using Celeritas.Core.Midi;
 using Celeritas.Core.Notation;
 using Celeritas.Core.Ornamentation;
 using CsCheck;
@@ -238,6 +239,67 @@ public class WrittenDownAndReadBackTests
 
         Assert.Equal(expected, notes.Length);
         Assert.Contains(notes, n => n.Pitch == 60 && n.Duration == Rational.Half);
+    }
+
+    // ---------- an ornament survives the tie before it ----------
+
+    [Fact]
+    public void AnOrnamentOnANoteTiedIntoIsStillPlayed()
+    {
+        // The tie branch returned before the ornament was ever looked at, so "C4/4~ C4/4{tr}"
+        // came back as one held half note with the trill silently gone. An ornament is an
+        // articulation of the note it is written on, so that note is struck: it ends the tie.
+        var ornamented = MusicNotation.Parse("C4/4~ C4/4{tr}");
+        var plain = MusicNotation.Parse("C4/4 C4/4{tr}");
+
+        Assert.Equal(plain.Length, ornamented.Length);
+        Assert.True(ornamented.Length > 2, "the trill did not expand");
+    }
+
+    [Fact]
+    public void ATieBetweenPlainNotesStillJoinsThem()
+    {
+        var notes = MusicNotation.Parse("C4/4~ C4/4");
+
+        Assert.Single(notes);
+        Assert.Equal(Rational.Half, notes[0].Duration);
+    }
+
+    // ---------- a dynamics mark may be quoted, as its grammar says ----------
+
+    [Theory]
+    [InlineData("@dynamics=\"mf\" C4/4")]
+    [InlineData("@dynamics=mf C4/4")]
+    public void ADynamicsMarkIsReadInEitherFormItsGrammarAccepts(string notation)
+    {
+        // The grammar lists STRING among the forms, and the visitor threw "Invalid dynamics
+        // value" for the quoted one — notation its own grammar accepts.
+        var directives = MusicNotation.ParseFull(notation).Directives.ToArray();
+
+        var dynamics = Assert.Single(directives.OfType<DynamicsDirective>());
+        Assert.Equal("mf", dynamics.StartLevel);
+    }
+
+    // ---------- a note MIDI cannot hold is refused, not clipped ----------
+
+    [Fact]
+    public void ANoteLongerThanMidiCanExpress_IsRefusedRatherThanClipped()
+    {
+        // The length was clipped to int.MaxValue ticks and written anyway, so the file held a
+        // different note from the one exported and nothing said so.
+        using var buffer = new NoteBuffer(1);
+        buffer.AddNote(60, Rational.Zero, new Rational(2_000_000, 1));
+
+        var path = Path.Combine(Path.GetTempPath(), $"celeritas-long-{Guid.NewGuid():N}.mid");
+        try
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => MidiIo.Export(buffer, path));
+            Assert.Contains("MIDI can express", thrown.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
     }
 
     // ---------- a tempo ramp keeps the tempo it ramps to ----------

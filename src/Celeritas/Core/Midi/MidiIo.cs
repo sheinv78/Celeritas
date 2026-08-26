@@ -262,7 +262,19 @@ public static class MidiIo
 
             var timeTicks = WholeNotesToTicks(e.Offset, options.TicksPerQuarterNote);
             var lengthTicks = Math.Max(1, WholeNotesToTicks(e.Duration, options.TicksPerQuarterNote));
-            var lengthTicksInt = lengthTicks > int.MaxValue ? int.MaxValue : (int)lengthTicks;
+
+            // A length past what a tick delta can hold used to be clipped to int.MaxValue and
+            // written anyway, so the file came back holding a different note from the one that
+            // was exported and nothing said so. Refuse it, the way a negative offset is refused.
+            if (lengthTicks > int.MaxValue)
+            {
+                throw new ArgumentException(
+                    $"Note {i} lasts {e.Duration} whole notes, which is {lengthTicks} ticks at " +
+                    $"{options.TicksPerQuarterNote} per quarter — more than MIDI can express in one note.",
+                    nameof(buffer));
+            }
+
+            var lengthTicksInt = (int)lengthTicks;
 
             var rawVelocity = (int)Math.Round(e.Velocity * 127.0);
             var velocity = rawVelocity <= 0

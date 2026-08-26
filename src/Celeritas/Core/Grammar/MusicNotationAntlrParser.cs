@@ -281,6 +281,13 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         // Create base note
         var baseNote = new NoteEvent(pitch, _currentTime, duration);
 
+        // An ornament is an articulation of the note it is written on, so an ornamented note is
+        // struck rather than held into: it ends the tie instead of continuing it. The tie branch
+        // below returns before the ornament is ever looked at, so "C4/4~ C4/4{tr}" used to come
+        // back as one held half note with the trill silently gone.
+        if (context.ornament() != null)
+            _pendingTies.Remove(pitch);
+
         // Check if this note is tied from a previous note
         if (_pendingTies.Contains(pitch))
         {
@@ -746,6 +753,16 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         {
             return context.IDENT().GetText();
         }
+
+        // The grammar lists STRING among the forms a dynamics value may take, and every other
+        // directive that takes a quoted value reads it — this one threw "Invalid dynamics
+        // value" for @dynamics="mf", notation its own grammar accepts.
+        if (context.STRING() != null)
+        {
+            var quoted = context.STRING().GetText();
+            return quoted[1..^1].ToLowerInvariant();
+        }
+
         throw new ArgumentException("Invalid dynamics value");
     }
     /// <summary>
