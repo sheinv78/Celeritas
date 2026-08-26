@@ -231,14 +231,81 @@ public static class MusicNotation
                     8 => "8",
                     16 => "16",
                     32 => "32",
-                    _ => $"{duration.Numerator}/{duration.Denominator}"
+                    _ => FallbackForm(duration)
                 }
             },
-            _ => $"{duration.Numerator}/{duration.Denominator}"
+            _ => FallbackForm(duration)
         };
-
-        // Fallback: rational format
     }
+
+    /// <summary>
+    /// The written form of a duration outside the plain note values, chosen so the parser can
+    /// read it back: <c>1/n</c> is the denominator on its own, which is how a tuplet is written
+    /// (<c>C4/12</c> is a triplet eighth).
+    /// </summary>
+    /// <remarks>
+    /// A duration whose numerator is not 1 has no single written form — a note lasting 5/4 is
+    /// written as tied notes, which only a sequence can express. This used to emit the rational
+    /// as "5/4", and the note came out as "C4/5/4", which is not notation at all: it did not
+    /// parse. The sequence writer splits such a duration up before it gets here; what reaches
+    /// this point is a lone duration being displayed, so the rational is the honest answer.
+    /// </remarks>
+    private static string FallbackForm(Rational duration) =>
+        duration.Numerator == 1
+            ? duration.Denominator.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : $"{duration.Numerator}/{duration.Denominator}";
+
+    /// <summary>
+    /// Splits <paramref name="duration"/> into pieces the notation can each write down. A
+    /// duration of the form 1/n, or a dotted note value, is one piece; anything else — a note
+    /// lasting two whole notes, or five quarters — becomes that many pieces of 1/n, which a
+    /// melodic line joins with ties and a silence simply lists one rest after another.
+    /// </summary>
+    private static List<Rational> SplitIntoWritablePieces(Rational duration)
+    {
+        var pieces = new List<Rational>();
+
+        // A duration the notation writes in one go stays one piece — including the dotted note
+        // values, whose 3/2 and 3/4 would otherwise be broken up by the whole-note loop below
+        // and come back as a tie the grammar does not accept on a chord.
+        if (IsWritableAlone(duration))
+        {
+            return [duration];
+        }
+
+        var remaining = duration;
+
+        // Whole notes first, so two whole notes is a tie of two rather than a list of pieces
+        // as long as the numerator.
+        while (remaining >= Rational.Whole)
+        {
+            pieces.Add(Rational.Whole);
+            remaining -= Rational.Whole;
+        }
+
+        if (remaining > Rational.Zero)
+        {
+            if (IsWritableAlone(remaining))
+            {
+                pieces.Add(remaining);
+            }
+            else
+            {
+                var piece = new Rational(1, remaining.Denominator);
+                for (long k = 0; k < remaining.Numerator; k++)
+                {
+                    pieces.Add(piece);
+                }
+            }
+        }
+
+        return pieces;
+    }
+
+    /// <summary>True when the notation has a single written form for this duration.</summary>
+    private static bool IsWritableAlone(Rational duration) =>
+        duration.Numerator == 1
+        || (duration.Numerator == 3 && IsPowerOfTwo(duration.Denominator) && duration.Denominator >= 2);
 
     private static bool IsPowerOfTwo(long n) => n > 0 && (n & (n - 1)) == 0;
 
@@ -257,76 +324,179 @@ public static class MusicNotation
             return string.Empty;
         }
 
+        // Notation is read as a timeline, so what is written has to be able to hold the timeline
+        // it was given. Written as one melodic line, three things silently became different
+        // music: a gap between two notes vanished (they were emitted back to back), notes that
+        // begin together but last different lengths turned into a succession, and overlapping
+        // notes did the same — "C4/4 E4/2" for a C and an E struck together reads back as a C
+        // followed by an E. Lay the notes out in as many voices as the timeline needs, and use
+        // the polyphonic form when that is more than one.
+        var voices = SeparateForNotation(sequence, groupChords);
+
+        if (voices.Count == 1)
+        {
+            return FormatVoice(voices[0], useDot, useLetters, groupChords);
+        }
+
+        var sb = new StringBuilder();
+        sb.Append("<< ");
+        for (var v = 0; v < voices.Count; v++)
+        {
+            if (v > 0)
+            {
+                sb.Append(" | ");
+            }
+
+            sb.Append(FormatVoice(voices[v], useDot, useLetters, groupChords));
+        }
+
+        sb.Append(" >>");
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Lays the notes out in the fewest voices that a melodic line can hold: within a voice each
+    /// event starts at or after the end of the one before it, and notes sharing an event share
+    /// an offset and a duration, so they can be written as a chord.
+    /// </summary>
+    private static List<List<NoteEvent>> SeparateForNotation(ReadOnlySpan<NoteEvent> sequence, bool groupChords)
+    {
+        var ordered = new List<NoteEvent>(sequence.Length);
+        foreach (ref readonly var note in sequence)
+        {
+            ordered.Add(note);
+        }
+
+        ordered.Sort(static (a, b) =>
+        {
+            var byTime = a.Offset.CompareTo(b.Offset);
+            if (byTime != 0) return byTime;
+            var byLength = a.Duration.CompareTo(b.Duration);
+            return byLength != 0 ? byLength : a.Pitch.CompareTo(b.Pitch);
+        });
+
+        var voices = new List<List<NoteEvent>>();
+        foreach (var note in ordered)
+        {
+            var placed = false;
+            foreach (var voice in voices)
+            {
+                var last = voice[^1];
+
+                // Joins the chord this voice is holding, or starts after the voice is free.
+                // A duration that has to be written as tied pieces cannot join a chord: the
+                // notation ties notes, not chords, so "[F4 G4]/1~ [F4 G4]/1" does not parse.
+                // Such notes each become their own voice and carry their own ties.
+                var joinsChord = groupChords
+                    && note.Pitch != RestPitch
+                    && last.Pitch != RestPitch
+                    && last.Offset == note.Offset
+                    && last.Duration == note.Duration
+                    && IsWritableAlone(note.Duration);
+
+                if (joinsChord || last.Offset + last.Duration <= note.Offset)
+                {
+                    voice.Add(note);
+                    placed = true;
+                    break;
+                }
+            }
+
+            if (!placed)
+            {
+                voices.Add([note]);
+            }
+        }
+
+        return voices;
+    }
+
+    /// <summary>
+    /// Writes one voice as a melodic line, filling the silence before and between its notes with
+    /// rests so that reading it back puts every note where it started.
+    /// </summary>
+    private static string FormatVoice(List<NoteEvent> voice, bool useDot, bool useLetters, bool groupChords)
+    {
         var separator = useLetters ? ':' : '/';
         var sb = new StringBuilder();
+        var cursor = Rational.Zero;
         var i = 0;
 
-        // Scratch list reused across iterations (cleared per note) to avoid a
-        // single-element List allocation for every note in the sequence.
-        var chordNotes = groupChords ? new List<NoteEvent>() : null;
-
-        while (i < sequence.Length)
+        while (i < voice.Count)
         {
-            if (sb.Length > 0)
+            var note = voice[i];
+
+            if (note.Offset > cursor)
             {
-                sb.Append(' ');
+                // One rest per writable piece: rests are not tied, they simply follow one
+                // another, and consecutive rests add up to the same silence.
+                foreach (var piece in SplitIntoWritablePieces(note.Offset - cursor))
+                {
+                    if (sb.Length > 0) sb.Append(' ');
+                    sb.Append('R');
+                    sb.Append(separator);
+                    sb.Append(FormatDuration(piece, useDot, useLetters));
+                }
+
+                cursor = note.Offset;
             }
 
-            // Check if next notes form a chord (same offset and duration)
-            if (groupChords && i < sequence.Length - 1)
+            // Everything at this offset with this duration is one chord.
+            var j = i + 1;
+            if (groupChords && note.Pitch != RestPitch && IsWritableAlone(note.Duration))
             {
-                chordNotes!.Clear();
-                chordNotes.Add(sequence[i]);
-                var chordOffset = sequence[i].Offset;
-                var chordDuration = sequence[i].Duration;
-
-                // Collect all notes with same offset and duration
-                var j = i + 1;
-                while (j < sequence.Length &&
-                       sequence[j].Offset == chordOffset &&
-                       sequence[j].Duration == chordDuration &&
-                       sequence[j].Pitch != RestPitch)
+                while (j < voice.Count &&
+                       voice[j].Offset == note.Offset &&
+                       voice[j].Duration == note.Duration &&
+                       voice[j].Pitch != RestPitch)
                 {
-                    chordNotes.Add(sequence[j]);
                     j++;
                 }
+            }
 
-                // If we found a chord (2+ notes), format as chord
-                if (chordNotes.Count > 1 && sequence[i].Pitch != RestPitch)
+            // A duration the notation cannot write in one go becomes tied pieces — a note
+            // lasting two whole notes is two whole notes tied, which is how it would be
+            // engraved. Writing the rational instead produced "C4/5/4", which does not parse.
+            var pieces = SplitIntoWritablePieces(note.Duration);
+            for (var piece = 0; piece < pieces.Count; piece++)
+            {
+                if (sb.Length > 0) sb.Append(' ');
+
+                if (j - i > 1)
                 {
                     sb.Append('[');
-                    for (var k = 0; k < chordNotes.Count; k++)
+                    for (var k = i; k < j; k++)
                     {
-                        if (k > 0)
-                        {
-                            sb.Append(' ');
-                        }
-
-                        sb.Append(ToNotation(chordNotes[k].Pitch));
+                        if (k > i) sb.Append(' ');
+                        sb.Append(ToNotation(voice[k].Pitch));
                     }
+
                     sb.Append(']');
-                    sb.Append(separator);
-                    sb.Append(FormatDuration(chordDuration, useDot, useLetters));
-                    i = j;
-                    continue;
+                }
+                else if (note.Pitch == RestPitch)
+                {
+                    sb.Append('R');
+                }
+                else
+                {
+                    sb.Append(ToNotation(note.Pitch));
+                }
+
+                sb.Append(separator);
+                sb.Append(FormatDuration(pieces[piece], useDot, useLetters));
+
+                // Tie every piece but the last to the one after it, so they sound as one note.
+                // Rests are not tied: they are simply written one after another.
+                if (piece < pieces.Count - 1 && note.Pitch != RestPitch)
+                {
+                    sb.Append('~');
                 }
             }
 
-            // Single note or rest
-            var note = sequence[i];
-            if (note.Pitch == RestPitch)
-            {
-                sb.Append('R');
-            }
-            else
-            {
-                sb.Append(ToNotation(note.Pitch));
-            }
-
-            sb.Append(separator);
-            sb.Append(FormatDuration(note.Duration, useDot, useLetters));
-            i++;
+            cursor = note.Offset + note.Duration;
+            i = j;
         }
+
         return sb.ToString();
     }
 

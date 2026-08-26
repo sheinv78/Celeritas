@@ -37,6 +37,24 @@ public sealed class FiguredBassRealizer
         foreach (var symbol in symbols)
         {
             var voicing = RealizeSymbolWithVoiceLeading(symbol, previousUpperVoices);
+
+            // MaxPitch is a preference and documented as one; the keyboard is not. Upper voices
+            // are stacked above the bass, so a bass near the top of the range pushed them past
+            // MIDI 127 — a bass of 125 realized as 125, 129, 132, 136, pitches that cannot be
+            // played, written to a file, or named. There is no octave left to move them to
+            // without putting them under the bass, so the figure is refused rather than
+            // realized as something unplayable.
+            foreach (var note in voicing)
+            {
+                if (note.Pitch is < 0 or > 127)
+                {
+                    throw new ArgumentException(
+                        $"The figure over bass {symbol.BassPitch} at {symbol.Time} needs a voice at MIDI {note.Pitch}, " +
+                        "which is off the keyboard; the bass leaves no room above it for the figures.",
+                        nameof(symbols));
+                }
+            }
+
             result.AddRange(voicing);
 
             previousUpperVoices = voicing.Length switch

@@ -77,20 +77,76 @@ public class ModalAndCharacterCoverageTests
     // ---------- diatonic chord qualities ----------
 
     [Fact]
-    public void EveryModeHasSevenDiatonicChordQualities()
+    public void EveryModeHasOneDiatonicChordPerDegreeOfItsOwnScale()
     {
+        // This used to require seven for every mode, which held only because eleven modes were
+        // answered with the major scale's table whatever their own scale was: the whole-tone
+        // scale has six degrees and the pentatonics five.
         foreach (var mode in Enum.GetValues<Mode>())
         {
-            Assert.Equal(7, ModeLibrary.GetDiatonicChordQualities(mode).Length);
+            var scale = ModeLibrary.GetScaleNotes(new ModalKey(0, mode));
+
+            Assert.Equal(scale.Length, ModeLibrary.GetDiatonicChordQualities(mode).Length);
         }
     }
 
     [Fact]
-    public void AModeWithNoTableOfItsOwn_FallsBackToTheMajorQualities()
+    public void AModeTheTableNeverListed_ReportsItsOwnChordsAndNotTheMajorScales()
     {
-        Assert.Equal(
-            ModeLibrary.GetDiatonicChordQualities(Mode.Ionian),
-            ModeLibrary.GetDiatonicChordQualities(Mode.Blues));
+        // Every triad in the whole-tone scale is augmented — it was reported as I major,
+        // ii minor, iii minor, because the switch fell through to the Ionian arm.
+        var wholeTone = ModeLibrary.GetDiatonicChordQualities(Mode.WholeTone);
+
+        Assert.Equal(6, wholeTone.Length);
+        Assert.All(wholeTone, q => Assert.Equal(ChordQuality.Augmented, q));
+        Assert.NotEqual(ModeLibrary.GetDiatonicChordQualities(Mode.Ionian), wholeTone);
+    }
+
+    [Fact]
+    public void APentatonicScaleDoesNotClaimChordsItCannotSpell()
+    {
+        // Stacking thirds out of a five-note scale does not land on triads, and saying so is
+        // better than naming the major scale's.
+        var pentatonic = ModeLibrary.GetDiatonicChordQualities(Mode.MajorPentatonic);
+
+        Assert.Equal(5, pentatonic.Length);
+        Assert.Contains(ChordQuality.Unknown, pentatonic);
+    }
+
+    [Theory]
+    [InlineData(Mode.Ionian)]
+    [InlineData(Mode.Dorian)]
+    [InlineData(Mode.Phrygian)]
+    [InlineData(Mode.Lydian)]
+    [InlineData(Mode.Mixolydian)]
+    [InlineData(Mode.Aeolian)]
+    [InlineData(Mode.Locrian)]
+    [InlineData(Mode.HarmonicMinor)]
+    public void TheModesTheTableDidList_StillReportWhatItListed(Mode mode)
+    {
+        // Computing from the scale has to reproduce the eight tables that were right, or the
+        // fix would have traded one wrong answer for another.
+        ChordQuality[] expected = mode switch
+        {
+            Mode.Ionian => [ChordQuality.Major, ChordQuality.Minor, ChordQuality.Minor,
+                            ChordQuality.Major, ChordQuality.Major, ChordQuality.Minor, ChordQuality.Diminished],
+            Mode.Dorian => [ChordQuality.Minor, ChordQuality.Minor, ChordQuality.Major,
+                            ChordQuality.Major, ChordQuality.Minor, ChordQuality.Diminished, ChordQuality.Major],
+            Mode.Phrygian => [ChordQuality.Minor, ChordQuality.Major, ChordQuality.Major,
+                              ChordQuality.Minor, ChordQuality.Diminished, ChordQuality.Major, ChordQuality.Minor],
+            Mode.Lydian => [ChordQuality.Major, ChordQuality.Major, ChordQuality.Minor,
+                            ChordQuality.Diminished, ChordQuality.Major, ChordQuality.Minor, ChordQuality.Minor],
+            Mode.Mixolydian => [ChordQuality.Major, ChordQuality.Minor, ChordQuality.Diminished,
+                                ChordQuality.Major, ChordQuality.Minor, ChordQuality.Minor, ChordQuality.Major],
+            Mode.Aeolian => [ChordQuality.Minor, ChordQuality.Diminished, ChordQuality.Major,
+                             ChordQuality.Minor, ChordQuality.Minor, ChordQuality.Major, ChordQuality.Major],
+            Mode.Locrian => [ChordQuality.Diminished, ChordQuality.Major, ChordQuality.Minor,
+                             ChordQuality.Minor, ChordQuality.Major, ChordQuality.Major, ChordQuality.Minor],
+            _ => [ChordQuality.Minor, ChordQuality.Diminished, ChordQuality.Augmented,
+                  ChordQuality.Minor, ChordQuality.Major, ChordQuality.Major, ChordQuality.Diminished],
+        };
+
+        Assert.Equal(expected, ModeLibrary.GetDiatonicChordQualities(mode));
     }
 
     [Fact]

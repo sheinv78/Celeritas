@@ -60,7 +60,7 @@ internal static class MusicNotationAntlrParser
         var visitor = new MusicNotationVisitorImpl(validateMeasures);
         var notes = visitor.Visit(tree);
 
-        return new ParseResult(notes, visitor.TimeSignature, [.. visitor.Directives], errors);
+        return new ParseResult(notes, visitor.LeadingTimeSignature, [.. visitor.Directives], errors);
     }
 
     /// <summary>
@@ -159,6 +159,9 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
     private Rational _measureStart = Rational.Zero;
 
     public TimeSignature? TimeSignature { get; private set; }
+
+    /// <summary>The first time signature the passage declares, whatever it changes to later.</summary>
+    public TimeSignature? LeadingTimeSignature { get; private set; }
     public IReadOnlyList<NotationDirective> Directives => _directives;
 
     public override NoteEvent[] VisitSequence(MusicNotationParser.SequenceContext context)
@@ -226,9 +229,14 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
     public override NoteEvent[] VisitTimeSignature(MusicNotationParser.TimeSignatureContext context)
     {
         var ints = context.INT();
-        var beats = int.Parse(ints[0].GetText());
-        var unit = int.Parse(ints[1].GetText());
+        var beats = Number(ints[0].GetText(), "beats per measure");
+        var unit = Number(ints[1].GetText(), "beat unit");
         TimeSignature = new TimeSignature(beats, unit);
+
+        // TimeSignature follows the music so that measure validation uses the meter in force,
+        // and a mid-sequence change overwrites it. ParseFull promises the LEADING one, and was
+        // handed whatever the passage ended in: "4/4: ... | 3/4: ..." reported 3/4.
+        LeadingTimeSignature ??= TimeSignature;
         return [];
     }
 
@@ -423,7 +431,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
 
         if (valueCtx.INT() != null)
         {
-            var value = int.Parse(valueCtx.INT().GetText());
+            var value = Number(valueCtx.INT().GetText(), "note duration");
             baseDuration = new Rational(1, value);
         }
         else if (valueCtx.DURATION_LETTER() != null)
@@ -465,7 +473,7 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         {
             foreach (var intToken in paramsCtx.INT())
             {
-                paramsList.Add(int.Parse(intToken.GetText()));
+                paramsList.Add(Number(intToken.GetText(), "ornament parameter"));
             }
         }
 
@@ -586,14 +594,14 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
 
     public override NoteEvent[] VisitBpmDirective(MusicNotationParser.BpmDirectiveContext context)
     {
-        var bpm = int.Parse(context.INT(0).GetText());
+        var bpm = Number(context.INT(0).GetText(), "bpm");
         int? targetBpm = null;
         Rational? rampDuration = null;
 
         // Check for ramp: @bpm 120 -> 140 /2
         if (context.ARROW() != null)
         {
-            targetBpm = int.Parse(context.INT(1).GetText());
+            targetBpm = Number(context.INT(1).GetText(), "target bpm");
             if (context.duration() != null)
             {
                 rampDuration = ParseDuration(context.duration());
@@ -731,4 +739,22 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         }
         throw new ArgumentException("Invalid dynamics value");
     }
+    /// <summary>
+    /// Reads a whole number written in the notation, blaming the notation rather than the
+    /// runtime when it does not fit.
+    /// </summary>
+    /// <remarks>
+    /// int.Parse threw OverflowException for a number too large to hold, and OverflowException
+    /// is not among the exceptions <see cref="MusicNotation.Parse(string, bool)"/> documents —
+    /// so a caller that had handled every documented failure still crashed on
+    /// "99999999999999999999/4: C4/4".
+    /// </remarks>
+    private static int Number(string text, string field)
+    {
+        if (!int.TryParse(text, out var value))
+            throw new ArgumentException($"'{text}' is too large a number for the {field}.");
+
+        return value;
+    }
+
 }

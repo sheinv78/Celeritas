@@ -601,26 +601,35 @@ public static class ModeLibrary
         if (!Enum.IsDefined(mode))
             throw new ArgumentOutOfRangeException(nameof(mode), mode, "Not a defined Mode value.");
 
-        return mode switch
+        // Built from the mode's own scale rather than read from a table. The table listed eight
+        // modes and answered the major scale's qualities for everything else, so the whole-tone
+        // scale — every triad in which is augmented — reported I major, ii minor, iii minor, and
+        // the two pentatonic scales, which have five degrees, reported seven chords. Stacking
+        // thirds out of the scale gives the same answers as the table did for the modes it knew,
+        // one per degree the scale actually has.
+        var intervals = GetIntervals(mode);
+        var qualities = new ChordQuality[intervals.Length];
+
+        for (var degree = 0; degree < intervals.Length; degree++)
         {
-            Mode.Ionian => [ChordQuality.Major, ChordQuality.Minor, ChordQuality.Minor,
-                           ChordQuality.Major, ChordQuality.Major, ChordQuality.Minor, ChordQuality.Diminished],
-            Mode.Dorian => [ChordQuality.Minor, ChordQuality.Minor, ChordQuality.Major,
-                           ChordQuality.Major, ChordQuality.Minor, ChordQuality.Diminished, ChordQuality.Major],
-            Mode.Phrygian => [ChordQuality.Minor, ChordQuality.Major, ChordQuality.Major,
-                             ChordQuality.Minor, ChordQuality.Diminished, ChordQuality.Major, ChordQuality.Minor],
-            Mode.Lydian => [ChordQuality.Major, ChordQuality.Major, ChordQuality.Minor,
-                           ChordQuality.Diminished, ChordQuality.Major, ChordQuality.Minor, ChordQuality.Minor],
-            Mode.Mixolydian => [ChordQuality.Major, ChordQuality.Minor, ChordQuality.Diminished,
-                               ChordQuality.Major, ChordQuality.Minor, ChordQuality.Minor, ChordQuality.Major],
-            Mode.Aeolian => [ChordQuality.Minor, ChordQuality.Diminished, ChordQuality.Major,
-                            ChordQuality.Minor, ChordQuality.Minor, ChordQuality.Major, ChordQuality.Major],
-            Mode.Locrian => [ChordQuality.Diminished, ChordQuality.Major, ChordQuality.Minor,
-                            ChordQuality.Minor, ChordQuality.Major, ChordQuality.Major, ChordQuality.Minor],
-            Mode.HarmonicMinor => [ChordQuality.Minor, ChordQuality.Diminished, ChordQuality.Augmented,
-                                  ChordQuality.Minor, ChordQuality.Major, ChordQuality.Major, ChordQuality.Diminished],
-            _ => [ChordQuality.Major, ChordQuality.Minor, ChordQuality.Minor,
-                 ChordQuality.Major, ChordQuality.Major, ChordQuality.Minor, ChordQuality.Diminished]
-        };
+            var root = intervals[degree];
+            var third = PitchMath.Fold(intervals[(degree + 2) % intervals.Length] - root);
+            var fifth = PitchMath.Fold(intervals[(degree + 4) % intervals.Length] - root);
+
+            qualities[degree] = (third, fifth) switch
+            {
+                (4, 7) => ChordQuality.Major,
+                (3, 7) => ChordQuality.Minor,
+                (3, 6) => ChordQuality.Diminished,
+                (4, 8) => ChordQuality.Augmented,
+                (2, 7) => ChordQuality.Sus2,
+                (5, 7) => ChordQuality.Sus4,
+                // A scale whose degrees do not stack into a triad — the pentatonics — has no
+                // chord to name here, and saying so beats naming one it does not contain.
+                _ => ChordQuality.Unknown
+            };
+        }
+
+        return qualities;
     }
 }

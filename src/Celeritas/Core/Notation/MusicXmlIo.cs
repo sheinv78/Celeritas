@@ -617,6 +617,13 @@ public static class MusicXmlIo
     {
         if (divisions <= 0)
             throw new InvalidDataException("A note or move appears before a positive <divisions> was declared.");
+
+        // MusicXML types <duration> as a positive number. A negative one used to come through
+        // untouched and became a note of negative length — which sorts before its own onset,
+        // ends before it starts, and is not something any of the analysis can read.
+        if (duration < Rational.Zero)
+            throw new InvalidDataException($"<duration> is {duration}; a duration cannot be negative.");
+
         return duration / ((long)divisions * 4);
     }
 

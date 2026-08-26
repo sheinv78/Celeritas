@@ -78,10 +78,21 @@ public sealed class Glissando : Ornament
     /// </summary>
     private NoteEvent[] ExpandDiatonic(int targetPitch)
     {
-        var direction = Math.Sign(targetPitch - BaseNote.Pitch);
+        // Put both ends on the keyboard before walking between them. The chromatic path above
+        // holds every step with Playable and this one did not, so a diatonic glissando aimed
+        // past either end of the keyboard emitted pitches like -28 — which nothing downstream
+        // can write down, play, or name.
+        var start = Playable(BaseNote.Pitch);
+        var end = Playable(targetPitch);
+        var direction = Math.Sign(end - start);
 
-        var pitches = new List<int> { BaseNote.Pitch };
-        for (var p = BaseNote.Pitch + direction; p != targetPitch; p += direction)
+        if (direction == 0)
+        {
+            return [new NoteEvent(start, BaseNote.Offset, BaseNote.Duration, BaseNote.Velocity)];
+        }
+
+        var pitches = new List<int> { start };
+        for (var p = start + direction; p != end; p += direction)
         {
             if (IsNatural(p))
             {
@@ -89,7 +100,7 @@ public sealed class Glissando : Ornament
             }
         }
 
-        pitches.Add(targetPitch);
+        pitches.Add(end);
 
         var stepDuration = BaseNote.Duration / pitches.Count;
         var notes = new NoteEvent[pitches.Count];
