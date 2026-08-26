@@ -586,6 +586,14 @@ modeCommand.SetAction(parseResult => RunGuarded(() =>
     {
         if (int.TryParse(note, out var midi))
         {
+            // A MIDI number is 0-127, which is what the library's own parser accepts. Taking
+            // any integer here let "-5" index the distribution at -5 and crash out of
+            // RunGuarded with a stack trace, and let "200" quietly count as a G#.
+            if (midi is < 0 or > 127)
+            {
+                throw new CliUsageException($"'{note}' is not a MIDI note number; those run from 0 to 127.");
+            }
+
             distribution[midi % 12] += 1f;
             rootHint ??= midi % 12;
         }
@@ -1383,8 +1391,14 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
         pitches[i] = buffer.Get(i).Pitch;
     }
 
-    // Detect key
-    var key = KeyAnalyzer.IdentifyKey(pitches);
+    // Detect key. The profiler rather than KeyAnalyzer.IdentifyKey, because it reports the
+    // margin that decided the call as well as the call itself: the three printers below stated
+    // the key as settled fact, which for key detection it rarely is — a clear detection is a
+    // margin of about 0.1 to 0.35 over the runner-up, and thin material can produce a wide
+    // margin over nothing at all.
+    var detection = KeyProfiler.DetectFromPitches(pitches);
+    var key = detection.Key;
+    var keyQualifier = KeyConfidenceDescription.Describe(detection.Confidence, detection.DistinctPitchClasses);
 
     // Analyze chords (group by time)
     var chordGroups = new Dictionary<Rational, List<int>>();
@@ -1429,23 +1443,24 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
     switch (format)
     {
         case "summary":
-            PrintSummary(key, orderedChordGroups, color);
+            PrintSummary(key, keyQualifier, orderedChordGroups, color);
             break;
         case "timeline":
-            PrintTimeline(key, chordAssignments, color);
+            PrintTimeline(key, keyQualifier, chordAssignments, color);
             break;
         default:
-            PrintSections(key, orderedChordGroups, chordGroups.Count, chordAssignments, color);
+            PrintSections(key, keyQualifier, orderedChordGroups, chordGroups.Count, chordAssignments, color);
             break;
     }
 
     static void PrintSummary(
         KeySignature key,
+        string keyQualifier,
         List<KeyValuePair<Rational, List<int>>> orderedChordGroups,
         HarmonicColorAnalysisResult color)
     {
         Console.WriteLine("Analysis Summary");
-        Console.WriteLine($"  Key: {key}");
+        Console.WriteLine($"  Key: {key}{keyQualifier}");
         Console.WriteLine($"  Chords: {orderedChordGroups.Count} detected");
 
         var chromaticUnique = color.ChromaticNotes.Select(e => e.PitchClass).Distinct().Count();
@@ -1509,12 +1524,13 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
 
     static void PrintSections(
         KeySignature key,
+        string keyQualifier,
         List<KeyValuePair<Rational, List<int>>> orderedChordGroups,
         int chordGroupCount,
         List<ChordAssignment> chordAssignments,
         HarmonicColorAnalysisResult color)
     {
-        Console.WriteLine($"Detected Key: {key}");
+        Console.WriteLine($"Detected Key: {key}{keyQualifier}");
         Console.WriteLine();
 
         Console.WriteLine("Chord Timeline:");
@@ -1575,10 +1591,11 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
 
     static void PrintTimeline(
         KeySignature key,
+        string keyQualifier,
         List<ChordAssignment> chords,
         HarmonicColorAnalysisResult color)
     {
-        Console.WriteLine($"Detected Key: {key}");
+        Console.WriteLine($"Detected Key: {key}{keyQualifier}");
 
         var melodicTypeByNote = new Dictionary<(Rational Offset, int Pitch), MelodicHarmonyEventType>();
         foreach (var e in color.MelodicHarmony)
@@ -1887,7 +1904,9 @@ musicxmlAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine($"  Range: {MusicNotation.ToNotation(minPitch)} - {MusicNotation.ToNotation(maxPitch)}");
 
     var key = KeyProfiler.DetectFromBuffer(buffer);
-    Console.WriteLine($"  Key:   {key.Key} (confidence {key.Confidence:P0})");
+    // The number is a margin over the runner-up, not a goodness of fit, so printing it as a
+    // bare percentage read as low confidence for calls that are in fact clear.
+    Console.WriteLine($"  Key:   {key.Key}{KeyConfidenceDescription.Describe(key.Confidence, key.DistinctPitchClasses)}");
 
     var groups = new Dictionary<Rational, List<int>>();
     for (var i = 0; i < buffer.Count; i++)
@@ -1937,7 +1956,11 @@ static int RunGuarded(Action action)
         or OverflowException
         or InvalidDataException
         or NotSupportedException
-        or IOException)
+        or IOException
+        // Not an IOException: writing to a path that is a directory, or that the user cannot
+        // write to, escaped as an unhandled exception with a stack trace — which is what this
+        // guard exists to prevent.
+        or UnauthorizedAccessException)
     {
         Console.Error.WriteLine($"Error: {ex.Message}");
         return 1;

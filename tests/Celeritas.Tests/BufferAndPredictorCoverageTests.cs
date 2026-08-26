@@ -247,13 +247,26 @@ public class BufferAndPredictorCoverageTests
     }
 
     [Fact]
-    public void AnUnknownStyleName_FallsBackToClassical()
+    public void AStyleTheLibraryHasNoModelFor_IsSaidSoRatherThanSubstituted()
     {
-        var unknown = RhythmModels.GetStyleModel("bebop-polka").GetStats();
-        var classical = RhythmModels.GetStyleModel("classical").GetStats();
+        // It used to answer with the classical model and tell the caller nothing, so the CLI
+        // printed "Generated measure (bebop-polka style)" over rhythms trained on Bach.
+        var thrown = Assert.Throws<ArgumentException>(() => RhythmModels.GetStyleModel("bebop-polka"));
 
-        Assert.Equal(classical.TotalTransitions, unknown.TotalTransitions);
-        Assert.Equal(classical.UniqueContexts, unknown.UniqueContexts);
+        Assert.Contains("bebop-polka", thrown.Message, StringComparison.Ordinal);
+        Assert.Contains("classical", thrown.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("classical")]
+    [InlineData("jazz")]
+    [InlineData("rock")]
+    [InlineData("latin")]
+    [InlineData("waltz")]
+    [InlineData("JAZZ")]
+    public void TheStylesTheLibraryDoesKnow_AreStillAccepted(string style)
+    {
+        Assert.True(RhythmModels.GetStyleModel(style).GetStats().TotalTransitions > 0);
     }
 
     [Fact]

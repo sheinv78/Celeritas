@@ -398,7 +398,8 @@ public static class RhythmModels
             RhythmStyle.Rock => GetStyleModel("rock"),
             RhythmStyle.Latin => GetStyleModel("latin"),
             RhythmStyle.Waltz => GetStyleModel("waltz"),
-            _ => GetStyleModel("classical")
+            // Unreachable: Enum.IsDefined above has already refused anything else.
+            _ => throw new ArgumentOutOfRangeException(nameof(style), style, "Not a defined RhythmStyle value.")
         };
     }
 
@@ -406,12 +407,17 @@ public static class RhythmModels
     /// Get a pre-trained model for a style.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="style"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="style"/> is not one of the styles
+    /// listed above.</exception>
     public static RhythmPredictor GetStyleModel(string style)
     {
         ArgumentNullException.ThrowIfNull(style);
 
         var predictor = new RhythmPredictor(order: 2, seed: 42);
 
+        // A style this does not know used to be answered with the classical model, and the
+        // caller was told nothing — the CLI went on to print "Generated measure (zzz style)"
+        // over rhythms trained on Bach.
         var durations = style.ToLowerInvariant() switch
         {
             "classical" => ClassicalDurations(),
@@ -419,7 +425,9 @@ public static class RhythmModels
             "rock" => RockDurations(),
             "latin" => LatinDurations(),
             "waltz" => WaltzDurations(),
-            _ => ClassicalDurations()
+            _ => throw new ArgumentException(
+                $"'{style}' is not a style this library has a model for; the styles are " +
+                "classical, jazz, rock, latin and waltz.", nameof(style))
         };
 
         predictor.Train(durations);

@@ -659,4 +659,50 @@ public class CliErrorAndFormatTests : IDisposable
         Assert.Equal(0, exit);
         Assert.Contains("I - IV - V", output, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData("-5")]
+    [InlineData("200")]
+    public void Mode_WithANumberThatIsNotAMidiNote_SaysSoRatherThanCrashing(string token)
+    {
+        // "-5" indexed the pitch distribution at -5 and came out of RunGuarded as an unhandled
+        // IndexOutOfRangeException with a stack trace; "200" quietly counted as a G#.
+        var (exit, output) = Run("mode", "--notes", token, "0", "2");
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("0 to 127", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("IndexOutOfRange", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Mode_WithNotesItCanRead_StillDetectsOne()
+    {
+        var (exit, output) = Run("mode", "--notes", "D", "E", "F", "G", "A", "B", "C");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Dorian", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Rhythm_WithAStyleThereIsNoModelFor_SaysSoRatherThanUsingAnother()
+    {
+        // It used the classical model and labelled the output with the style that was asked
+        // for: "Generated measure (bebop-polka style)" over rhythms trained on Bach.
+        var (exit, output) = Run("rhythm", "--durations", "1/4", "1/4", "--style", "bebop-polka");
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("bebop-polka", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Export_ToAPathThatCannotBeWritten_ReportsItRatherThanCrashing()
+    {
+        // An existing directory as --out raised UnauthorizedAccessException, which is not an
+        // IOException and so escaped the guard that turns these into a one-line message.
+        var (exit, output) = Run("midi", "export", "--notes", "C4 E4 G4", "--out", _work);
+
+        Assert.NotEqual(0, exit);
+        Assert.StartsWith("Error:", output.Trim(), StringComparison.Ordinal);
+        Assert.DoesNotContain("at System.", output, StringComparison.Ordinal);
+    }
 }
