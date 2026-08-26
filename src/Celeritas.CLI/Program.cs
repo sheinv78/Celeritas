@@ -545,6 +545,15 @@ voiceLeadCommand.SetAction(parseResult => RunGuarded(() =>
         {
             Console.WriteLine($"     {w}");
         }
+
+        // "I could not read these chords" and "these chords have no valid voice leading" are
+        // different answers, and they were sharing exit code 0 — a script could not tell a
+        // typo from a musical verdict.
+        if (solution.Warnings.Any(w => w.Contains("Cannot parse chord symbol", StringComparison.Ordinal)))
+        {
+            throw new CliUsageException(
+                "Some chord symbols could not be read: " + string.Join("; ", solution.Warnings));
+        }
     }
     else
     {
@@ -622,9 +631,16 @@ modeCommand.SetAction(parseResult => RunGuarded(() =>
     }
 
     // Use root hint (first note) for more accurate mode detection
-    var (key, confidence) = rootHint.HasValue
-        ? ModeLibrary.DetectModeWithRoot(distribution, rootHint.Value)
-        : ModeLibrary.DetectMode(distribution);
+    // Not one note was readable, so there is nothing to detect a mode from. Reporting one
+    // anyway printed "Detected: C Major", a scale and a character for input that held no music
+    // — the 0 % beside it is easy to read past, and the prose reads as fact.
+    if (!rootHint.HasValue)
+    {
+        throw new CliUsageException(
+            "None of the notes could be read, so there is nothing to detect a mode from.");
+    }
+
+    var (key, confidence) = ModeLibrary.DetectModeWithRoot(distribution, rootHint.Value);
 
     Console.WriteLine();
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
@@ -1800,10 +1816,12 @@ pcsetCommand.SetAction(parseResult => RunGuarded(() =>
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or InvalidDataException or ArgumentException or UnauthorizedAccessException)
         {
+            // The catalog was asked for by name, so failing to read it is a failure of the run,
+            // not a footnote under a successful one: this printed the reason and still exited 0.
             Console.WriteLine();
-            Console.WriteLine($"  Forte: (catalog error: {ex.Message})");
+            throw new CliUsageException($"The catalog could not be read: {ex.Message}");
         }
     }
     Console.WriteLine();

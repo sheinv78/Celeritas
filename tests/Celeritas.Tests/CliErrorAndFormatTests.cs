@@ -138,12 +138,24 @@ public class CliErrorAndFormatTests : IDisposable
     }
 
     [Fact]
-    public void VoiceLead_GivenAnUnparsableChord_ReportsNoValidVoiceLeading()
+    public void VoiceLead_GivenAnUnparsableChord_SaysSoAndFails()
     {
+        // "I could not read these chords" and "these chords have no valid voice leading" are
+        // different answers, and they used to share exit code 0 — a script could not tell a
+        // typo from a musical verdict.
         var (exit, output) = Run("voicelead", "--chords", "Czz Qqq");
 
+        Assert.NotEqual(0, exit);
+        Assert.Contains("could not be read", output, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void VoiceLead_GivenChordsItCanRead_StillReportsItsVerdict()
+    {
+        var (exit, output) = Run("voicelead", "--chords", "C", "F", "G", "C");
+
         Assert.Equal(0, exit);
-        Assert.Contains("No valid voice leading", output, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("VOICE LEADING", output, StringComparison.OrdinalIgnoreCase);
     }
 
     // ---------- rhythm ----------
@@ -525,15 +537,29 @@ public class CliErrorAndFormatTests : IDisposable
     }
 
     [Fact]
-    public void PcSet_WithAnUnreadableCatalog_ReportsTheErrorWithoutFalling()
+    public void PcSet_WithAnUnreadableCatalog_SaysSoAndFails()
     {
+        // The catalog was asked for by name, so failing to read it is a failure of the run,
+        // not a footnote under a successful one: this printed the reason and still exited 0,
+        // so a script asking for Forte labels got none and a success code.
         var catalog = Path.Combine(_work, "broken.json");
         File.WriteAllText(catalog, "{ this is not a catalog");
 
         var (exit, output) = Run("pcset", "--notes", "C4 E4 G4", "--catalog", catalog);
 
-        Assert.Equal(0, exit);
-        Assert.Contains("catalog error", output, StringComparison.Ordinal);
+        Assert.NotEqual(0, exit);
+        Assert.Contains("catalog could not be read", output, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Mode_WithNoNoteItCanRead_SaysSoRatherThanNamingOne()
+    {
+        // It printed "Detected: C Major", a scale and a character for input that held no music.
+        // The 0 % beside them is easy to read past, and the prose reads as fact.
+        var (exit, output) = Run("mode", "--notes", "Zzz Qqq");
+
+        Assert.NotEqual(0, exit);
+        Assert.DoesNotContain("Detected:", output, StringComparison.Ordinal);
     }
 
     // ---------- musicxml ----------
