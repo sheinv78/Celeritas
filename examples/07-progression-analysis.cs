@@ -239,10 +239,11 @@ Highlights:
   • Modulations/tonicizations: 1
 
 After C - Am - F, try:
-       B - Subdominant to dominant (score: 1.00)
+       G - Subdominant to dominant (score: 1.00)
        C - Plagal cadence (score: 0.95)
       Dm - Retrograde progression (score: 0.70)
-      Fm - Mediant for color (score: 0.65)
+      Em - Mediant for color (score: 0.65)
+    Bdim - Leading tone diminished (score: 0.60)
 
 === Harmonic Color Analysis ===
 Chromatic notes: 0

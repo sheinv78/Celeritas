@@ -289,7 +289,7 @@ Overall quality: 100.0 %
 === Imitation ===
 Has imitation: True
 Type: Canon
-Interval: 12 semitones
+Interval: -12 semitones
 Time delay: 1
 Voices involved: 1, 2
 

@@ -404,7 +404,6 @@ public static class PolyphonyAnalyzer
 
                     var p1 = s1[start1];
                     var p2 = s2[start2];
-                    var interval = p2 - p1;
 
                     // Time delay between the two entries; either voice may lead, but a
                     // zero delay is simultaneous (parallel) motion, not imitation.
@@ -415,6 +414,13 @@ public static class PolyphonyAnalyzer
                     {
                         continue;
                     }
+
+                    // The subject is whichever voice states the motif first and the answer is
+                    // the other, so the interval — how far the answer transposes the subject —
+                    // has to be read in that order. Taken from the voice list it followed
+                    // register instead, and a canon answered an octave ABOVE was reported at -12.
+                    var leads = delay > Rational.Zero;
+                    var interval = leads ? p2 - p1 : p1 - p2;
 
                     if (delay < Rational.Zero)
                     {
@@ -1042,7 +1048,11 @@ public sealed record ImitationDetectionResult
     /// <summary>Kind of imitation (e.g. <c>Canon</c>); empty when none.</summary>
     public string Type { get; init; } = "";
 
-    /// <summary>Transposition interval in semitones between the imitating voices.</summary>
+    /// <summary>
+    /// How far the answer transposes the subject, in semitones: positive when the voice that
+    /// enters second is higher, negative when it is lower. A canon answered an octave below
+    /// reports -12.
+    /// </summary>
     public int Interval { get; init; }
 
     /// <summary>Time delay between the leading and following voice, in whole-note units.</summary>

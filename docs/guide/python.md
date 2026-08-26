@@ -108,7 +108,7 @@ from celeritas import parse_note, Trill, Mordent, MordentType
 
 note = parse_note("E4")
 trill = Trill(note, interval=2, speed=8)
-print(len(trill.expand()))                       # 16 notes
+print(len(trill.expand()))                       # 8 notes
 
 mordent = Mordent(note, mordent_type=MordentType.UPPER, alternations=1)
 print([n.pitch for n in mordent.expand()])       # [64, 66, 64]

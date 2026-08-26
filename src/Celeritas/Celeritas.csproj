@@ -9,6 +9,11 @@
         <!-- Enable native exports for Python bindings -->
         <EnableDynamicLoading>true</EnableDynamicLoading>
 
+        <!-- The CLI publishes native AOT, so the library has to be AOT-safe. With this on, a
+             reflection-based call is a build error here rather than a feature that fails only in
+             the shipped binary: reading a pitch-class-set catalog was exactly that. -->
+        <IsAotCompatible>true</IsAotCompatible>
+
         <!-- NuGet Package metadata (version is set centrally in Directory.Build.props) -->
         <PackageId>Celeritas</PackageId>
         <Authors>Vladimir V. Shein</Authors>

@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Celeritas.Core.Analysis;
 
@@ -45,14 +46,11 @@ public sealed class PitchClassSetCatalog
     /// </summary>
     public static PitchClassSetCatalog LoadJson(string json)
     {
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            ReadCommentHandling = JsonCommentHandling.Skip,
-            AllowTrailingCommas = true
-        };
-
-        var entries = JsonSerializer.Deserialize<PitchClassSetCatalogEntry?[]>(json, options)
+        // Read through a source-generated contract rather than by reflection. The CLI publishes
+        // native AOT, where the reflection-based reader needs types that are trimmed away and
+        // code that cannot be generated at runtime — so `pcset --catalog`, which is the only
+        // reason this method exists, could never have worked in the binary that ships.
+        var entries = JsonSerializer.Deserialize(json, CatalogJsonContext.Default.PitchClassSetCatalogEntryArray)
                   ?? [];
 
         var dict = new Dictionary<string, PitchClassSetCatalogEntry>(StringComparer.Ordinal);
@@ -131,3 +129,15 @@ public sealed class PitchClassSetCatalog
         return result;
     }
 }
+
+/// <summary>
+/// The source-generated JSON contract for <see cref="PitchClassSetCatalog"/>, so reading a
+/// catalog needs neither reflection nor runtime code generation and keeps working in a
+/// natively compiled build.
+/// </summary>
+[JsonSourceGenerationOptions(
+    PropertyNameCaseInsensitive = true,
+    ReadCommentHandling = JsonCommentHandling.Skip,
+    AllowTrailingCommas = true)]
+[JsonSerializable(typeof(PitchClassSetCatalogEntry?[]))]
+internal sealed partial class CatalogJsonContext : JsonSerializerContext;
