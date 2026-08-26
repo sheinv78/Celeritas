@@ -61,8 +61,14 @@ public readonly record struct VoiceNote
     public Rational End => Offset + Duration;
 
     /// <summary>Formats as note name, octave, and onset (e.g. <c>C4 @ 0</c>).</summary>
+    /// <remarks>
+    /// Folded rather than `%`: C# keeps the sign, so a pitch below zero — which
+    /// <see cref="MusicMath.Transpose(NoteBuffer, int)"/> documents it can produce — indexed the
+    /// name table backwards and printing a separated voice threw IndexOutOfRangeException.
+    /// The octave is computed by flooring for the same reason, so B-1 does not print as B0.
+    /// </remarks>
     public override string ToString() =>
-        $"{ChordLibrary.NoteNames[Pitch % 12]}{(Pitch / 12) - 1} @ {Offset}";
+        $"{ChordLibrary.NoteNames[PitchMath.Fold(Pitch)]}{(int)Math.Floor(Pitch / 12.0) - 1} @ {Offset}";
 }
 
 /// <summary>

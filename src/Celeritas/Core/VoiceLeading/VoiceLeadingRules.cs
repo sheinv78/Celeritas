@@ -266,7 +266,7 @@ public static class VoiceLeadingRules
             var voice = (VoicePart)v;
             var fromPitch = from[voice];
             var toPitch = to[voice];
-            var fromPitchClass = fromPitch % 12;
+            var fromPitchClass = PitchMath.Fold(fromPitch);
 
             // Leading tone should resolve up by step
             if (fromPitchClass == leadingTone)
@@ -330,12 +330,14 @@ public static class VoiceLeadingRules
     {
         var leadingTone = (keyRoot + 11) % 12;
 
-        // Count pitch classes
+        // Count pitch classes. Folded rather than `%`: the Voicing constructor already refuses a
+        // pitch outside 0-127, so `%` cannot be handed a negative today — but that is a promise
+        // made three files away, and this span is indexed by the result.
         Span<int> counts = stackalloc int[12];
-        counts[voicing.Bass % 12]++;
-        counts[voicing.Tenor % 12]++;
-        counts[voicing.Alto % 12]++;
-        counts[voicing.Soprano % 12]++;
+        counts[PitchMath.Fold(voicing.Bass)]++;
+        counts[PitchMath.Fold(voicing.Tenor)]++;
+        counts[PitchMath.Fold(voicing.Alto)]++;
+        counts[PitchMath.Fold(voicing.Soprano)]++;
 
         return counts[leadingTone] switch
         {

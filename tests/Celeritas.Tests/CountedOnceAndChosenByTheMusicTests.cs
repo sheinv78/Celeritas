@@ -113,6 +113,62 @@ public class CountedOnceAndChosenByTheMusicTests
         Assert.Equal(2, leaps.Select(v => v.Time).Distinct().Count());
     }
 
+    // ---------- a pitch below zero is still a pitch class ----------
+
+    [Fact]
+    public void NamingANoteBelowZero_DoesNotIndexTheNameTableBackwards()
+    {
+        // VoiceNote.ToString folded with `%`, which keeps the sign in C#, so printing a
+        // separated voice whose notes sit below MIDI 0 threw IndexOutOfRangeException.
+        using var buffer = new NoteBuffer(3);
+        buffer.AddNote(-12, Rational.Zero, Rational.Quarter);
+        buffer.AddNote(-8, Rational.Quarter, Rational.Quarter);
+        buffer.AddNote(-5, Rational.Half, Rational.Quarter);
+
+        var printed = VoiceSeparator.Separate(buffer).Voices
+            .SelectMany(v => v.Notes)
+            .Select(n => n.ToString())
+            .ToArray();
+
+        Assert.Equal(3, printed.Length);
+        Assert.Contains(printed, p => p.StartsWith("C-2", StringComparison.Ordinal));
+        Assert.Contains(printed, p => p.StartsWith("E-2", StringComparison.Ordinal));
+        Assert.Contains(printed, p => p.StartsWith("G-2", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void HarmonisingAMelodyBelowZero_ChoosesTheSameChordsAsAnOctaveUp()
+    {
+        // The candidate provider built its melody mask with `%`, and the shift count is masked
+        // to five bits — so a pitch below zero set a bit outside the 12-bit mask entirely, and
+        // the same melody an octave lower was offered a different set of chords.
+        NoteEvent[] Melody(int root) =>
+            [.. new[] { root - 12, root - 8, root - 5 }
+                .Select((p, i) => new NoteEvent(p, new Rational(i, 4), Rational.Quarter))];
+
+        var key = new KeySignature(0, true);
+        var high = new MelodyHarmonizer().Harmonize(Melody(60), key);
+        var low = new MelodyHarmonizer().Harmonize(Melody(0), key);
+
+        Assert.Equal(
+            high.Chords.Select(c => c.Chord.ToString()),
+            low.Chords.Select(c => c.Chord.ToString()));
+    }
+
+    [Fact]
+    public void OfferingCandidatesForAMelodyBelowZero_OffersTheSameOnes()
+    {
+        var provider = new DefaultChordCandidateProvider();
+        var key = new KeySignature(0, true);
+
+        var high = provider.GetCandidates([60, 64, 67], key, new HarmonizationContext());
+        var low = provider.GetCandidates([-12, -8, -5], key, new HarmonizationContext());
+
+        Assert.Equal(
+            high.Select(c => c.Chord.ToString()),
+            low.Select(c => c.Chord.ToString()));
+    }
+
     // ---------- texture density is a time-weighted average ----------
 
     [Fact]

@@ -124,12 +124,19 @@ public sealed class DefaultChordCandidateProvider : IChordCandidateProvider
         }
     }
 
+    /// <summary>The pitch-class mask of a melody segment.</summary>
+    /// <remarks>
+    /// Folded rather than `%`: C# keeps the sign, and the shift count is then masked to five
+    /// bits, so a pitch below zero set a bit outside the 12-bit mask entirely. The same melody
+    /// an octave lower produced a different set of candidates, and the harmonization that
+    /// followed chose different chords for the same notes.
+    /// </remarks>
     private static ushort GetPitchMask(int[] pitches)
     {
         ushort mask = 0;
         foreach (var p in pitches)
         {
-            mask |= (ushort)(1 << (p % 12));
+            mask |= (ushort)(1 << PitchMath.Fold(p));
         }
 
         return mask;
