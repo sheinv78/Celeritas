@@ -174,9 +174,27 @@ public readonly record struct Rational : IComparable<Rational>
 
         var g1 = Gcd(a.Numerator, b.Numerator);
         var g2 = Gcd(b.Denominator, a.Denominator);
-        return new Rational(
-            checked(a.Numerator / g1 * (b.Denominator / g2)),
-            checked(a.Denominator / g2 * (b.Numerator / g1)));
+
+        // Build the quotient in 128 bits and check the reduced result, not the intermediate.
+        // Gcd returns a magnitude and denominators are positive, so the numerator product
+        // carries the sign of `a` alone while the true sign is sign(a) XOR sign(b). Dividing by
+        // a negative therefore built the numerator at +2^63 and `checked` refused it — even
+        // though the constructor was about to flip it to -2^63, which is a long the type holds
+        // happily: (2^62)/(-1/2) threw while the identical (-2^62)/(1/2) returned. Cross-
+        // reduction above leaves the pair coprime, so what is measured here is the final answer.
+        var numerator = (Int128)(a.Numerator / g1) * (b.Denominator / g2);
+        var denominator = (Int128)(a.Denominator / g2) * (b.Numerator / g1);
+
+        if (denominator < 0)
+        {
+            numerator = -numerator;
+            denominator = -denominator;
+        }
+
+        if (numerator < long.MinValue || numerator > long.MaxValue || denominator > long.MaxValue)
+            throw new OverflowException("The exact quotient does not fit in a 64-bit rational.");
+
+        return new Rational((long)numerator, (long)denominator);
     }
 
     /// <summary>Multiplies a rational number by an integer exactly.</summary>

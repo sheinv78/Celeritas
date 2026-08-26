@@ -31,8 +31,11 @@ public static class ChordCharacterClassifier
                 return ChordCharacterClassification.Unknown;
             }
 
-            var mask = ChordAnalyzer.GetMask(pitches);
-            var info = ChordLibrary.GetChord(mask);
+            // Identify, not GetChord(GetMask(...)): several qualities share one pitch-class set
+            // and the bare mask lookup can only answer the lowest registered root, so every
+            // "Csus4" came back as a Sus2 and every dim7 and augmented chord as its lowest
+            // rotation. Identify reads the bass to tell those rotations apart.
+            var info = ChordAnalyzer.Identify(pitches);
             return FromQuality(info.Quality);
         }
         catch
@@ -43,7 +46,12 @@ public static class ChordCharacterClassifier
 
     private static ChordCharacterClassification FromQuality(ChordQuality quality)
     {
-        var character = quality switch
+        // A quality this table does not name has no character to report, and saying so is the
+        // only honest answer. The arm below used to be `_ => Stable`, whose 0.90 is the highest
+        // stability in the table: a 7b5 — an altered dominant, about as unsettled as tonal
+        // harmony gets — came back steadier than a major triad, and so would every quality added
+        // to the enum after this switch was written.
+        ChordCharacter? named = quality switch
         {
             ChordQuality.Major => ChordCharacter.Bright,
             ChordQuality.Add9 or ChordQuality.Add11 or ChordQuality.Major7 => ChordCharacter.Dreamy,
@@ -51,12 +59,17 @@ public static class ChordCharacterClassifier
             ChordQuality.Minor7 => ChordCharacter.Warm,
             ChordQuality.Dominant7 => ChordCharacter.Tense,
             ChordQuality.Diminished or ChordQuality.Diminished7 or ChordQuality.HalfDim7 => ChordCharacter.Dark,
-            ChordQuality.Augmented or ChordQuality.Augmented7 => ChordCharacter.Mysterious,
+            // ChordCharacter.Mysterious is documented as "augmented, altered dominants".
+            ChordQuality.Augmented or ChordQuality.Augmented7
+                or ChordQuality.Dominant7Flat5 => ChordCharacter.Mysterious,
             ChordQuality.Sus2 or ChordQuality.Sus4 => ChordCharacter.Suspended,
             ChordQuality.Power => ChordCharacter.Powerful,
             ChordQuality.Quartal => ChordCharacter.Modal,
-            _ => ChordCharacter.Stable
+            _ => null
         };
+
+        if (named is not { } character)
+            return ChordCharacterClassification.Unknown;
 
         // Simple, intuitive scales: 0..1.
         var stability = character switch

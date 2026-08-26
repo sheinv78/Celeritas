@@ -122,25 +122,49 @@ public class ModalAndCharacterCoverageTests
     }
 
     [Fact]
-    public void AStackOfFourthsReadsAsSuspended_NotModal()
+    public void ASuspendedChordIsNotReportedAsTheOtherRotationOfItsPitchClasses()
     {
-        // Sus2, sus4 and quartal are rotations of one pitch-class set, and this classifier
-        // looks the chord up by mask alone — so it cannot see the bass that would separate
-        // them. The Modal arm is therefore unreachable from a chord symbol; the analyzer that
-        // does consult the bass (ProgressionAdvisor) reports Modal for the same symbol.
-        Assert.Equal(ChordCharacter.Suspended, ChordCharacterClassifier.Classify("Gsus4/D").Character);
+        // Sus2, sus4 and quartal are rotations of one pitch-class set, so a mask lookup alone
+        // always answers the lowest registered root — and this classifier used to do exactly
+        // that, reporting every sus4 symbol as ChordQuality.Sus2. Both spell "Suspended", which
+        // is what hid it; the quality is where the wrong answer showed.
+        Assert.Equal(ChordQuality.Sus4, ChordCharacterClassifier.Classify("Csus4").Quality);
+        Assert.Equal(ChordQuality.Sus2, ChordCharacterClassifier.Classify("Csus2").Quality);
     }
 
     [Fact]
-    public void AQualityWithNoCharacterOfItsOwn_ReadsAsStable()
+    public void AStackOfFourthsInTheBassReadsAsModal()
     {
-        // A dominant seventh with a flattened fifth is in the chord table but not in the
-        // character table, so it falls to the neutral arm rather than being mislabelled.
-        var classification = ChordCharacterClassifier.Classify("C7b5");
+        // G-C-D over D is a stack of fourths, and reading the bass is what tells it apart from
+        // the sus chords it shares a pitch-class set with.
+        var classification = ChordCharacterClassifier.Classify("Gsus4/D");
 
-        Assert.Equal(ChordCharacter.Stable, classification.Character);
-        Assert.Equal(0.90f, classification.Stability);
-        Assert.Equal(0.65f, classification.Brightness);
+        Assert.Equal(ChordQuality.Quartal, classification.Quality);
+        Assert.Equal(ChordCharacter.Modal, classification.Character);
+    }
+
+    [Fact]
+    public void AnAlteredDominant_IsNotTheSteadiestChordInTheTable()
+    {
+        // 7b5 was missing from the character table and fell through to Stable, whose 0.90 is the
+        // highest stability there is — so one of the least settled chords in tonal harmony came
+        // back steadier than a major triad.
+        var altered = ChordCharacterClassifier.Classify("C7b5");
+        var majorTriad = ChordCharacterClassifier.Classify("C");
+
+        Assert.Equal(ChordCharacter.Mysterious, altered.Character);
+        Assert.True(altered.Stability < majorTriad.Stability,
+            $"7b5 was reported as stable as {altered.Stability}, against {majorTriad.Stability} for a major triad");
+    }
+
+    [Fact]
+    public void AQualityTheTableDoesNotName_IsReportedAsUnknownRatherThanAsStable()
+    {
+        // Whatever quality is added to the enum next must not inherit Stable's 0.90 by default.
+        var unnamed = ChordCharacterClassifier.Classify("Zzz");
+
+        Assert.Equal(ChordQuality.Unknown, unnamed.Quality);
+        Assert.Equal(0.5f, unnamed.Stability);
     }
 
     [Theory]

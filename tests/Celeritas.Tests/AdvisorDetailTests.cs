@@ -142,11 +142,82 @@ public class AdvisorDetailTests
     }
 
     [Fact]
-    public void AQualityWithNoCharacterOfItsOwn_ReadsAsStable()
+    public void AnAlteredDominant_IsNotDrawnOnTheTensionCurveAsARestingTonic()
     {
+        // 7b5, m(maj7), add9 and add11 were all missing from the character table and fell
+        // through to Stable — "tonic, at rest (home)". The old test here asserted only that
+        // SOME chord in the progression was Stable, which the plain C satisfied, so it passed
+        // while saying nothing about the chord it was named for.
         var report = ProgressionAdvisor.Analyze(["C", "C7b5", "F"]);
 
-        Assert.Contains(report.Chords, c => c.Character == ChordCharacter.Stable);
+        var altered = Assert.Single(report.Chords, c => c.Symbol == "C7b5");
+        Assert.Equal(ChordCharacter.Mysterious, altered.Character);
+    }
+
+    [Theory]
+    [InlineData("Cadd9", ChordCharacter.Dreamy)]
+    [InlineData("Cadd11", ChordCharacter.Dreamy)]
+    [InlineData("Cm(maj7)", ChordCharacter.Melancholic)]
+    public void TheOtherQualitiesTheCharacterTableUsedToMiss_ReadAsThemselves(string symbol, ChordCharacter expected)
+    {
+        var report = ProgressionAdvisor.Analyze(["C", symbol, "F"]);
+
+        var chord = Assert.Single(report.Chords, c => c.Symbol == symbol);
+        Assert.Equal(expected, chord.Character);
+    }
+
+    // ---------- the roman numeral says which chord it is ----------
+
+    [Theory]
+    [InlineData("C7b5", "7b5")]
+    [InlineData("Caug7", "+7")]
+    [InlineData("Cadd9", "add9")]
+    [InlineData("Cadd11", "add11")]
+    [InlineData("C5", "5")]
+    public void ARomanNumeralCarriesTheQualityItsChordActuallyHas(string symbol, string suffix)
+    {
+        // The advisor kept its own copy of the suffix table and the copy had gone stale: these
+        // six qualities fell through to the empty string, so C7b5 was labelled "I" — the same
+        // label as a plain C — while the Nashville field beside it said "17b5".
+        var report = ProgressionAdvisor.Analyze(["C", symbol, "F"]);
+
+        var chord = Assert.Single(report.Chords, c => c.Symbol == symbol);
+        Assert.EndsWith(suffix, chord.RomanNumeral, StringComparison.Ordinal);
+        Assert.NotEqual(report.Chords[0].RomanNumeral, chord.RomanNumeral);
+    }
+
+    // ---------- an inversion is a fact about the music, not about pitch-class numbering ----------
+
+    [Fact]
+    public void AChordInRootPositionIsNotReportedAsInverted()
+    {
+        // GetInversion looked the chord up by mask alone, and sus/symmetric qualities share one
+        // mask with their rotations — so a root-position Csus4 was read as an F sus2 with the
+        // fourth in the bass and reported as an inversion.
+        Assert.Equal(0, ProgressionAdvisor.GetInversion([60, 65, 67]));      // Csus4
+        Assert.Equal(0, ProgressionAdvisor.GetInversion([60, 62, 67]));      // Csus2
+        Assert.Equal(0, ProgressionAdvisor.GetInversion([60, 64, 68]));      // Caug
+        Assert.Equal(0, ProgressionAdvisor.GetInversion([60, 63, 66, 69]));  // Cdim7
+    }
+
+    [Fact]
+    public void TheInversionOfAChordIsTheSameInEveryKey()
+    {
+        int[][] chords =
+        [
+            [60, 65, 67], [60, 62, 67], [60, 64, 68], [60, 63, 66, 69],
+            [60, 64, 67], [64, 67, 72], [67, 72, 76], [60, 64, 66, 70],
+        ];
+
+        foreach (var chord in chords)
+        {
+            var here = ProgressionAdvisor.GetInversion(chord);
+            for (var semitones = 1; semitones <= 11; semitones++)
+            {
+                var moved = chord.Select(p => p + semitones).ToArray();
+                Assert.Equal(here, ProgressionAdvisor.GetInversion(moved));
+            }
+        }
     }
 
     [Fact]

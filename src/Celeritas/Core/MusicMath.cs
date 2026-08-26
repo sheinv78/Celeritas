@@ -67,10 +67,17 @@ public static unsafe class MusicMath
     /// </para>
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="factor"/> is NaN.</exception>
     public static void ScaleVelocity(NoteBuffer buffer, float factor)
     {
         ArgumentNullException.ThrowIfNull(buffer);
         buffer.ThrowIfDisposed();
+
+        // There is no loudness that is "not a number", and NaN survives both Math.Clamp and
+        // Vector.Min/Max, so scaling by it wrote NaN into every velocity and the promise below
+        // — that the result is inside 0..1 — quietly stopped being true.
+        if (float.IsNaN(factor))
+            throw new ArgumentException("Velocity cannot be scaled by NaN.", nameof(factor));
 
         var velocities = buffer.VelocityPtr;
         var count = buffer.Count;
@@ -86,12 +93,20 @@ public static unsafe class MusicMath
             for (; i <= count - width; i += width)
             {
                 var scaled = Vector.LoadUnsafe(ref start, (nuint)i) * vFactor;
-                Vector.Min(Vector.Max(scaled, vZero), vOne).StoreUnsafe(ref start, (nuint)i);
+                var clamped = Vector.Min(Vector.Max(scaled, vZero), vOne);
+                // x == x is false only for NaN, which a velocity already in the buffer can be:
+                // nothing validates what AddNote is given. Silence is the one reading of it
+                // that stays inside the documented range.
+                Vector.ConditionalSelect(Vector.Equals(scaled, scaled), clamped, vZero)
+                    .StoreUnsafe(ref start, (nuint)i);
             }
         }
 
         for (; i < count; i++)
-            velocities[i] = Math.Clamp(velocities[i] * factor, 0f, 1f);
+        {
+            var scaled = velocities[i] * factor;
+            velocities[i] = float.IsNaN(scaled) ? 0f : Math.Clamp(scaled, 0f, 1f);
+        }
 
         GC.KeepAlive(buffer);
     }

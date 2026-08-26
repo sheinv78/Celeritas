@@ -63,14 +63,17 @@ public static class ProgressionAdvisor
             return 0;
         }
 
-        // Find lowest pitch
+        // Fold rather than `%`: C# keeps the sign, so a pitch below zero gave a negative
+        // pitch class and every interval below was computed from it.
         var bass = pitches.Min();
-        var bassPc = bass % 12;
+        var bassPc = PitchMath.Fold(bass);
 
-        // The root is typically the note that creates the most consonant intervals
-        // For simplicity, we check against common patterns
-        var mask = ChordAnalyzer.GetMask(pitches);
-        var chordInfo = ChordLibrary.GetChord(mask);
+        // Identify, not GetChord(GetMask(...)): the qualities whose pitch-class set is shared by
+        // several rotations — sus, augmented, dim7, 7b5 — can only get the lowest registered
+        // root out of a bare mask lookup. A root-position Csus4 was read as F sus2 and reported
+        // as an inversion, and because the answer came from absolute pitch-class numbering
+        // rather than from the music, transposing the same chord changed it.
+        var chordInfo = ChordAnalyzer.Identify(pitches);
 
         if (chordInfo.Quality == ChordQuality.Unknown)
         {
@@ -832,52 +835,22 @@ public static class ProgressionAdvisor
         };
     }
 
-    private static string FormatRomanNumeral(RomanNumeralChord roman, ChordQuality quality)
-    {
-        // Chromatic chords have no diatonic roman numeral — mark them "?" instead of
-        // leaking Invalid's default Degree (ScaleDegree.I) as a fake tonic.
-        if (!roman.IsValid)
-        {
-            return "?";
-        }
-
-        var numeral = roman.Degree switch
-        {
-            ScaleDegree.I => "I",
-            ScaleDegree.Ii => "II",
-            ScaleDegree.Iii => "III",
-            ScaleDegree.Iv => "IV",
-            ScaleDegree.V => "V",
-            ScaleDegree.Vi => "VI",
-            ScaleDegree.Vii => "VII",
-            _ => "?"
-        };
-
-        numeral = quality switch
-        {
-            // Lowercase for minor chords
-            ChordQuality.Minor or ChordQuality.Minor7 or ChordQuality.Diminished or ChordQuality.Diminished7
-                or ChordQuality.HalfDim7 or ChordQuality.MinorMajor7 => numeral.ToLowerInvariant(),
-            _ => numeral
-        };
-
-        // Add quality symbols
-        var suffix = quality switch
-        {
-            ChordQuality.Diminished => "°",
-            ChordQuality.Diminished7 => "°7",
-            ChordQuality.HalfDim7 => "ø7",
-            ChordQuality.Major7 => "maj7",
-            ChordQuality.Minor7 => "7",
-            ChordQuality.Dominant7 => "7",
-            ChordQuality.Augmented => "+",
-            ChordQuality.Sus2 => "sus2",
-            ChordQuality.Sus4 => "sus4",
-            _ => ""
-        };
-
-        return numeral + suffix;
-    }
+    /// <summary>
+    /// The roman numeral for <paramref name="roman"/>'s degree read with the quality the chord
+    /// actually has, which is not always the quality the degree would have diatonically.
+    /// </summary>
+    /// <remarks>
+    /// This used to carry its own copy of the numeral and suffix tables, and the copy had gone
+    /// stale: six qualities the library knows — 7b5, +7, add9, add11, 5 and m(maj7) — were
+    /// missing from its suffix list and fell through to the empty string, so C7b5 was labelled
+    /// "I", exactly like a plain C, while the Nashville field in the same report said "17b5".
+    /// <see cref="RomanNumeralChord.ToRomanNumeral"/> is the one table both now read.
+    /// </remarks>
+    private static string FormatRomanNumeral(RomanNumeralChord roman, ChordQuality quality) =>
+        roman.IsValid
+            ? new RomanNumeralChord(roman.Degree, quality, roman.Function).ToRomanNumeral()
+            : "?";     // Chromatic chords have no diatonic roman numeral — do not leak
+                       // Invalid's default Degree (ScaleDegree.I) as a fake tonic.
 
     private static ChordCharacter DetermineCharacter(ChordQuality quality, HarmonicFunction function, KeySignature key)
     {
@@ -899,12 +872,19 @@ public static class ProgressionAdvisor
                 ChordQuality.Minor7 => ChordCharacter.Warm,
                 ChordQuality.Dominant7 => ChordCharacter.Tense,
                 ChordQuality.Diminished or ChordQuality.Diminished7 => ChordCharacter.Dark,
-                ChordQuality.HalfDim7 => ChordCharacter.Melancholic,
-                ChordQuality.Augmented or ChordQuality.Augmented7 => ChordCharacter.Mysterious,
+                ChordQuality.HalfDim7 or ChordQuality.MinorMajor7 => ChordCharacter.Melancholic,
+                // ChordCharacter.Mysterious is documented as "augmented, altered dominants",
+                // which is what a 7b5 is.
+                ChordQuality.Augmented or ChordQuality.Augmented7
+                    or ChordQuality.Dominant7Flat5 => ChordCharacter.Mysterious,
+                ChordQuality.Add9 or ChordQuality.Add11 => ChordCharacter.Dreamy,
                 ChordQuality.Sus2 or ChordQuality.Sus4 => ChordCharacter.Suspended,
                 ChordQuality.Power => ChordCharacter.Powerful,
-                ChordQuality.Quartal => ChordCharacter.Modal,
-                _ => ChordCharacter.Stable
+                // Modal is documented as "non-functional harmony", which is the honest reading
+                // of a sonority the library could not name. This arm used to answer Stable —
+                // "tonic, at rest (home)", the lowest tension there is — so a 7b5 the same
+                // report called a dominant was drawn on the tension curve as a resting tonic.
+                _ => ChordCharacter.Modal
             }
         };
     }

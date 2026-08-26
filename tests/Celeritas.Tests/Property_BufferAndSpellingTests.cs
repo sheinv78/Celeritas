@@ -96,6 +96,39 @@ public class PropertyBufferAndSpellingTests : IDisposable
         }, iter: 500);
     }
 
+    [Fact]
+    public void ScalingVelocityByNothing_IsRefusedRatherThanStored()
+    {
+        // NaN survives both Math.Clamp and Vector.Min/Max, so scaling by it wrote NaN into
+        // every velocity and the method's unconditional promise of 0..1 quietly stopped
+        // being true. There is no loudness that is not a number.
+        using var buffer = BufferOf([60, 64, 67], [0]);
+
+        Assert.Throws<ArgumentException>(() => MusicMath.ScaleVelocity(buffer, float.NaN));
+        Assert.All(Enumerable.Range(0, buffer.Count), i => Assert.False(float.IsNaN(buffer.Get(i).Velocity)));
+    }
+
+    [Theory]
+    [InlineData(4)]
+    [InlineData(37)]
+    public void AVelocityThatWasAlreadyNotANumber_ComesOutInsideTheRange(int count)
+    {
+        // Nothing validates what AddNote is given, so a NaN can already be in the buffer.
+        // Both the vector loop and its tail have to answer for it, so this runs at a length
+        // below one vector width and at one well above it.
+        var buffer = new NoteBuffer(count);
+        for (var i = 0; i < count; i++)
+            buffer.AddNote(60 + (i % 12), new Rational(i, 8), Rational.Quarter, i % 3 == 0 ? float.NaN : 0.8f);
+
+        using (buffer)
+        {
+            MusicMath.ScaleVelocity(buffer, 1.5f);
+
+            Assert.All(Enumerable.Range(0, buffer.Count),
+                i => Assert.InRange(buffer.Get(i).Velocity, 0f, 1f));
+        }
+    }
+
     // ---------- quantization ----------
 
     [Fact]

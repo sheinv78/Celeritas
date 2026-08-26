@@ -206,4 +206,51 @@ public class FoundationsReviewFixTests
         Assert.Equal(2, chords.Count);
         Assert.Equal(new Rational(1, 3), chords[0].Time);
     }
+
+    // ---------- division refuses only what it cannot hold ----------
+
+    [Fact]
+    public void DividingByANegative_ReturnsAQuotientTheTypeCanHold()
+    {
+        // Gcd returns a magnitude and denominators are positive, so the numerator product
+        // carried the sign of the dividend alone while the true sign is the product of both.
+        // Dividing by a negative therefore built the numerator at +2^63 and `checked` refused
+        // it — although the constructor was about to flip it to -2^63, which the type holds.
+        var quotient = new Rational(4611686018427387904L, 1) / new Rational(-1, 2);      // 2^62 / -0.5
+
+        Assert.Equal(new Rational(long.MinValue, 1), quotient);
+    }
+
+    [Fact]
+    public void MovingTheMinusSignBetweenTheOperands_DoesNotChangeWhetherDivisionSucceeds()
+    {
+        // These are the same quotient written three ways. Only the first used to throw.
+        var a = new Rational(4611686018427387904L, 1) / new Rational(-1, 2);
+        var b = new Rational(-4611686018427387904L, 1) / new Rational(1, 2);
+        var c = new Rational(4611686018427387904L, 1) * new Rational(-2, 1);
+
+        Assert.Equal(b, a);
+        Assert.Equal(c, a);
+    }
+
+    [Fact]
+    public void AQuotientWithAFractionalPartIsHeldToo()
+    {
+        // Exact value -2^63/3, which reduces to a numerator the type holds.
+        var quotient = new Rational(2, 3) / new Rational(-1, 4611686018427387904L);
+
+        Assert.Equal(new Rational(long.MinValue, 3), quotient);
+    }
+
+    [Fact]
+    public void AQuotientThatGenuinelyDoesNotFit_IsStillRefused()
+    {
+        // 2^63 is one past what a long numerator holds, and refusing it is the documented
+        // behaviour — the fix above must not have turned the check off.
+        Assert.Throws<OverflowException>(() =>
+            new Rational(4611686018427387904L, 1) / new Rational(1, 2));
+
+        Assert.Throws<OverflowException>(() =>
+            new Rational(1, 4611686018427387904L) / new Rational(4, 1));
+    }
 }
