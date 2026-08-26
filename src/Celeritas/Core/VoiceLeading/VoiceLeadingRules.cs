@@ -351,7 +351,16 @@ public static class VoiceLeadingRules
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int IntervalClass(int pitch1, int pitch2)
     {
-        return (((pitch2 - pitch1) % 12) + 12) % 12;
+        // Measured from the lower sounding pitch, not from whichever voice is named first.
+        // A perfect fifth and a perfect fourth are inversions of each other, so direction
+        // decides which one is heard — and this used to compute pitch2 - pitch1 with the voice
+        // parts in name order. Whenever a voicing had its voices crossed, a sounding fifth
+        // measured downwards came out as 5 and a sounding fourth as 7: real parallel fifths
+        // went unreported, and parallel fourths, which are allowed between upper voices, were
+        // reported as parallel fifths.
+        var low = Math.Min(pitch1, pitch2);
+        var high = Math.Max(pitch1, pitch2);
+        return (high - low) % 12;
     }
 
     /// <summary>

@@ -382,6 +382,15 @@ public static class PolyphonyAnalyzer
                     continue;
                 }
 
+                // Two voices doubling one line are not a canon, however distinctive the line.
+                // The zero-delay guard below only rejects the aligned match, and a melody with
+                // a repeating figure also matches itself at a shifted position — so strict
+                // octave doubling of a tune that repeats was reported as a canon at that shift.
+                if (PolyphonyAnalyzerHelpers.MoveTogether(voices.Voices[v1], voices.Voices[v2]))
+                {
+                    continue;
+                }
+
                 var i2 = PolyphonyAnalyzerHelpers.ToIntervals(s2);
                 foreach (var (start1, start2) in PolyphonyAnalyzerHelpers.FindIntervalMatches(i1, i2, motifLen - 1))
                 {
@@ -718,8 +727,14 @@ public static class PolyphonyAnalyzer
                 });
             }
 
-            // Hidden fifths/octaves (similar motion to perfect interval in outer voices)
-            if (motion.IsHiddenPerfect && (motion.Voice1 == 0 || motion.Voice2 == 0))
+            // Hidden fifths/octaves (similar motion to perfect interval in outer voices).
+            // The outer voices are the highest and the lowest — the list is ordered by register,
+            // so that is the first and the last. The guard used to be "either voice is the
+            // highest", which let soprano-alto and soprano-tenor pairs through and then
+            // described them, in the text below, as being in the outer voices.
+            if (motion.IsHiddenPerfect
+                && motion.Voice1 == 0
+                && motion.Voice2 == voices.Voices.Count - 1)
             {
                 violations.Add(new CounterpointViolation
                 {
@@ -789,11 +804,23 @@ public static class PolyphonyAnalyzer
             var resolved = false;
             for (int j = i + 1; j < intervals.Count; j++)
             {
-                if (intervals[j].Voice1 == current.Voice1 && intervals[j].Voice2 == current.Voice2)
+                if (intervals[j].Voice1 != current.Voice1 || intervals[j].Voice2 != current.Voice2)
                 {
-                    resolved = intervals[j].Quality != IntervalQuality.SharpDissonance;
-                    break;
+                    continue;
                 }
+
+                // An interval is recorded at every time point where ANY voice has an onset, so
+                // a third voice subdividing the beat produces an entry for this pair with both
+                // of its pitches unchanged — the same dissonance still being held. Reading that
+                // as the resolution reported "not resolved by step" for a dissonance that does
+                // resolve, on the next beat, as soon as any other voice moved in between.
+                if (intervals[j].Pitch1 == current.Pitch1 && intervals[j].Pitch2 == current.Pitch2)
+                {
+                    continue;
+                }
+
+                resolved = intervals[j].Quality != IntervalQuality.SharpDissonance;
+                break;
             }
 
             if (!resolved)
@@ -1020,6 +1047,31 @@ static file class PolyphonyAnalyzerHelpers
 {
     public static float Clamp01(float x) => x < 0 ? 0 : x > 1 ? 1 : x;
 
+    /// <summary>
+    /// True when <paramref name="a"/> and <paramref name="b"/> are one line doubled: every note
+    /// starts when its counterpart does and stays the same interval away. A canon is one voice
+    /// answering another later; voices moving together in octaves or thirds are a single idea.
+    /// </summary>
+    public static bool MoveTogether(Voice a, Voice b)
+    {
+        if (a.Notes.Count == 0 || a.Notes.Count != b.Notes.Count)
+        {
+            return false;
+        }
+
+        var interval = b.Notes[0].Pitch - a.Notes[0].Pitch;
+        for (var i = 0; i < a.Notes.Count; i++)
+        {
+            if (a.Notes[i].Offset != b.Notes[i].Offset ||
+                b.Notes[i].Pitch - a.Notes[i].Pitch != interval)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static (int crossings, int spacing) AnalyzeCrossingsAndSpacing(VoiceSeparationResult voices)
     {
         if (voices.Voices.Count < 2)
@@ -1039,6 +1091,7 @@ static file class PolyphonyAnalyzerHelpers
 
         var crossings = 0;
         var spacing = 0;
+        var lowestVoiceIndex = voices.Voices.Max(v => v.Index);
 
         foreach (var t in times)
         {
@@ -1055,7 +1108,8 @@ static file class PolyphonyAnalyzerHelpers
                 }
             }
 
-            // Spacing: SA and AT within octave, TB within 2 octaves (heuristic).
+            // Spacing: upper voices within an octave of each other, the bass within two
+            // octaves of the voice above it (heuristic).
             for (var i = 0; i < sounding.Length - 1; i++)
             {
                 if (!sounding[i].HasValue || !sounding[i + 1].HasValue)
@@ -1064,7 +1118,13 @@ static file class PolyphonyAnalyzerHelpers
                 }
 
                 var dist = Math.Abs(sounding[i]!.Value - sounding[i + 1]!.Value);
-                var limit = i < 2 ? 12 : 24;
+
+                // Which pair this is follows the voices' own SATB slots, not their position in
+                // this list, which holds only the voices that are present. With an empty slot
+                // above them, a tenor and a bass landed at positions 0 and 1 and were judged by
+                // the soprano-alto octave rule, so an ordinary tenor/bass duet was reported as
+                // badly spaced.
+                var limit = voices.Voices[i + 1].Index == lowestVoiceIndex ? 24 : 12;
                 if (dist > limit)
                 {
                     spacing++;
