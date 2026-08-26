@@ -158,4 +158,63 @@ public class KeyProfilerKernelTests
         for (var key = 0; key < 24; key++)
             Assert.Equal(a[key] * 2, b[key], 4);
     }
+    // ---------- the answer does not depend on which kernel ran ----------
+
+    public static TheoryData<string, int[]> SymmetricMusic =>
+        new()
+        {
+            { "7b5, which maps onto itself a tritone away", new[] { 60, 64, 66, 70 } },
+            { "an augmented triad, three ways", new[] { 60, 64, 68 } },
+            { "a diminished seventh, four ways", new[] { 60, 63, 66, 69 } },
+            { "a whole-tone scale, six ways", new[] { 60, 62, 64, 66, 68, 70 } },
+            { "every note there is", new[] { 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71 } },
+        };
+
+    [Theory]
+    [MemberData(nameof(SymmetricMusic))]
+    public void MusicSymmetricUnderTransposition_PicksTheLowestOfTheKeysItCannotChooseBetween(
+        string what, int[] pitches)
+    {
+        // Such music gives two or more keys the same correlation exactly. The kernels sum in
+        // different orders, so "exactly" arrives as 0.28461015 against 0.28461018, and comparing
+        // those directly let the CPU decide: the natively compiled bindings reported C major for
+        // a chord this build called F# major. Anything inside the kernels' own noise is now the
+        // same score, so the lowest key index wins wherever it runs.
+        var detected = KeyProfiler.DetectFromPitches(pitches);
+        var best = detected.AllCorrelations.Max(c => c.Correlation);
+
+        var indistinguishable = detected.AllCorrelations
+            .Where(c => best - c.Correlation <= 1e-5f)
+            .Select(c => c.Key.Root + (c.Key.IsMajor ? 0 : 12))
+            .ToArray();
+
+        Assert.True(indistinguishable.Length > 1, $"{what} was expected to tie");
+        Assert.Equal(
+            indistinguishable.Min(),
+            detected.Key.Root + (detected.Key.IsMajor ? 0 : 12));
+    }
+
+    [Theory]
+    [MemberData(nameof(SymmetricMusic))]
+    public void TheCorrelationListLeadsWithTheKeyThatWasChosen(string what, int[] pitches)
+    {
+        // Sorting on the raw correlation put the noisily-larger member of a tie first, so
+        // TopKeys(1) named a different key from Key for exactly this music.
+        var detected = KeyProfiler.DetectFromPitches(pitches);
+
+        Assert.Equal(detected.Key, detected.TopKeys(1).First().Key);
+        Assert.Equal(detected.Key, detected.AllCorrelations[0].Key);
+        Assert.False(string.IsNullOrWhiteSpace(what));
+    }
+
+    [Fact]
+    public void MusicThatDoesDecideAKey_IsUnaffectedByTheMargin()
+    {
+        // A clear detection separates its winner by 0.1 to 0.35, four orders of magnitude above
+        // the kernels' noise, so the margin must not have blunted it.
+        var detected = KeyProfiler.DetectFromPitches([60, 62, 64, 65, 67, 69, 71]);
+
+        Assert.Equal(new KeySignature(0, true), detected.Key);
+        Assert.True(detected.Confidence > 0.05f, $"confidence collapsed to {detected.Confidence}");
+    }
 }

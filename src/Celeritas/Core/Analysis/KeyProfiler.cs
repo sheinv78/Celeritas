@@ -17,6 +17,17 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 public static class KeyProfiler
 {
+    /// <summary>
+    /// How far apart two correlations must be before one counts as better than the other.
+    /// </summary>
+    /// <remarks>
+    /// The AVX-512, AVX2 and scalar kernels sum the same products in different orders, so they
+    /// agree to about a part in ten million rather than bit for bit. A clear detection separates
+    /// its winner by 0.1 to 0.35, which is four orders of magnitude above this, so nothing a
+    /// listener could hear is lost by treating a smaller difference as no difference at all.
+    /// </remarks>
+    private const float ScoreNoise = 1e-5f;
+
     private static readonly CorrelationComputer ComputeCorrelations = CreateCorrelationComputer();
 
     private delegate void CorrelationComputer(ReadOnlySpan<float> input, Span<float> correlations);
@@ -143,12 +154,22 @@ public static class KeyProfiler
 
         ComputeCorrelations(normalized, correlations);
 
-        // Find best match
+        // Find best match. A later key has to beat the incumbent by more than the noise the
+        // kernels differ by, not merely by a bit.
+        //
+        // Music that is symmetric under transposition gives two keys the same correlation
+        // exactly — a 7b5 chord maps onto itself a tritone away, so C major and F# major score
+        // identically for it, and an augmented triad ties three ways. The kernels sum in
+        // different orders, so "identically" comes out as 0.28461015 against 0.28461018, and
+        // comparing those exactly let the winner be decided by which kernel the CPU chose: the
+        // natively compiled bindings reported C major for a chord the test build called F#
+        // major. Within this margin the incumbent stands, which makes the lower key index win —
+        // the same answer an exact tie already produced, on every machine.
         var bestKey = 0;
         var bestCorrelation = correlations[0];
         for (var i = 1; i < 24; i++)
         {
-            if (correlations[i] > bestCorrelation)
+            if (correlations[i] > bestCorrelation + ScoreNoise)
             {
                 bestCorrelation = correlations[i];
                 bestKey = i;
@@ -180,6 +201,17 @@ public static class KeyProfiler
                 correlations[i]);
         }
         Array.Sort(allCorrelations, (a, b) => b.Correlation.CompareTo(a.Correlation));
+
+        // The list leads with the key that was chosen. Sorting on the raw correlation puts the
+        // noisily-larger member of a tie first, which would have TopKeys(1) name a different key
+        // from Key for exactly the symmetric music the margin above exists to settle.
+        var chosen = Array.FindIndex(allCorrelations, c => c.Key.Root == root && c.Key.IsMajor == isMajor);
+        if (chosen > 0)
+        {
+            var winner = allCorrelations[chosen];
+            Array.Copy(allCorrelations, 0, allCorrelations, 1, chosen);
+            allCorrelations[0] = winner;
+        }
 
         // Counted here rather than at each call site: Detect is the one place that always has
         // the distribution, so no path can forget to report its evidence.
