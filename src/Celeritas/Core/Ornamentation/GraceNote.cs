@@ -49,6 +49,23 @@ public sealed class GraceNote : Ornament
         init => _durationRatio = value;
     }
 
+    /// <summary>
+    /// The ratio exactly as it was set, or <see langword="null"/> when the acciaccatura default
+    /// — an absolute 1/32 whole note per grace note — still applies.
+    /// </summary>
+    /// <remarks>
+    /// Copy this, not <see cref="DurationRatio"/>, when cloning: that getter substitutes 1/32
+    /// for an unset ratio, and assigning the substitute turns the absolute default into a ratio
+    /// of the main note. Re-basing a default acciaccatura onto a quarter note therefore gave it
+    /// 1/4 * 1/32 = 1/128 — a grace note four times shorter than the one it was asked for, and
+    /// shorter again on a longer note.
+    /// </remarks>
+    internal Rational? ExplicitDurationRatio
+    {
+        get => _durationRatio;
+        init => _durationRatio = value;
+    }
+
     /// <summary>Expands into the grace note(s) followed by the shortened main note.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><see cref="Type"/> is not a defined <see cref="GraceNoteType"/> value.</exception>
     public override NoteEvent[] Expand()

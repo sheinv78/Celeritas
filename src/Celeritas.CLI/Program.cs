@@ -224,6 +224,21 @@ progressionCommand.SetAction(parseResult => RunGuarded(() =>
         throw new CliUsageException("No chords provided. Use: celeritas progression --chords Gm Ebmaj7 Cm D");
     }
 
+    // A symbol the parser cannot read is dropped from the analysis, and the report then
+    // numbers the chords it kept from 1 — so asking about "C Zzz G" answered about "C G",
+    // called it I - V, and said nothing about the chord that went missing. Refuse instead:
+    // an analysis of a progression the caller did not type is a wrong answer, not a partial one.
+    var unreadable = chordSymbols
+        .Where(symbol => !ProgressionAdvisor.TryParseChordSymbol(symbol, out _, out _))
+        .ToArray();
+
+    if (unreadable.Length > 0)
+    {
+        throw new CliUsageException(
+            $"Not a chord symbol: {string.Join(", ", unreadable.Select(s => $"'{s}'"))}. " +
+            "Every chord in the progression has to be readable, or the analysis would be of a different progression.");
+    }
+
     var report = ProgressionAdvisor.Analyze(chordSymbols);
 
     Console.WriteLine();

@@ -330,16 +330,32 @@ public static class ModeLibrary
         // Test all roots and common modes
         var modesToTest = DetectableModes;
 
-        // Find the most prominent note (likely the root)
-        int likelyRoot = 0;
+        // Find the most prominent note (likely the root). When several notes carry the same top
+        // weight there is no most prominent note, and awarding the bonus below to the
+        // lowest-numbered of them made the answer depend on pitch-class numbering instead of on
+        // the music: a plain major scale came back as Ionian written in C, Locrian written in
+        // C#, Aeolian in D# and Lydian in G, because every rotation still contains pitch class 0
+        // and 0 always won the tie. -1 means "nothing stands out", which no root matches.
+        int likelyRoot = -1;
         float maxWeight = 0f;
+        var sharedTopWeight = false;
         for (int i = 0; i < 12; i++)
         {
             if (distribution[i] > maxWeight)
             {
                 maxWeight = distribution[i];
                 likelyRoot = i;
+                sharedTopWeight = false;
             }
+            else if (likelyRoot >= 0 && distribution[i] == maxWeight)
+            {
+                sharedTopWeight = true;
+            }
+        }
+
+        if (sharedTopWeight)
+        {
+            likelyRoot = -1;
         }
 
         for (int root = 0; root < 12; root++)
@@ -564,16 +580,16 @@ public static class ModeLibrary
 
         var outScale = total - inScale;
 
-        // Bonus for characteristic notes
-        var (characteristic, _) = GetCharacteristicNotes(key.Mode);
-        float charBonus = 0f;
-        foreach (var c in characteristic)
-        {
-            var pc = (key.Root + c) % 12;
-            charBonus += distribution[pc] * 0.2f;
-        }
-
-        return (inScale - (outScale * 0.5f) + charBonus) / total;
+        // No bonus for characteristic notes. A characteristic note is a scale tone, so it is
+        // already counted in inScale, and the fit difference it is meant to capture is carried
+        // there far more strongly: the raised sixth that separates Dorian from Aeolian is worth
+        // 1 inside one scale and -0.5 outside the other. Added again at 0.2 it did nothing where
+        // it was meant to help and quietly decided the answer where it was not — the table has
+        // no entry for Ionian or Aeolian, which by its own definition are what the other modes
+        // are characteristic AGAINST, so a bare diatonic scale, which fits every rotation
+        // equally, could never be read as major or minor. It came back as Dorian on the second
+        // degree, in every key.
+        return (inScale - (outScale * 0.5f)) / total;
     }
 
     /// <summary>

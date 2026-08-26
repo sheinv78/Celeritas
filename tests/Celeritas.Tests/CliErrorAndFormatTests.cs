@@ -637,4 +637,26 @@ public class CliErrorAndFormatTests : IDisposable
         Assert.Equal(0, exit);
         Assert.Contains("more", output, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Progression_WithASymbolItCannotRead_SaysSoRatherThanAnalysingTheRest()
+    {
+        // The unreadable symbol used to be dropped and the report numbered the chords it kept
+        // from 1, so "C Zzz G" was answered as "I - V" — an analysis of a progression the user
+        // never typed, with nothing on screen to say a chord had gone missing.
+        var (exit, output) = Run("progression", "--chords", "C", "Zzz", "G");
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("Zzz", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("I - V", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Progression_WithChordsItCanRead_StillAnalysesThem()
+    {
+        var (exit, output) = Run("progression", "--chords", "C", "F", "G");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("I - IV - V", output, StringComparison.Ordinal);
+    }
 }

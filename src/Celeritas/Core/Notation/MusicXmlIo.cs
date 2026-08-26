@@ -402,7 +402,7 @@ public static class MusicXmlIo
                 switch (el.Name.LocalName)
                 {
                     case "attributes":
-                        var div = el.Element("divisions");
+                        var div = Child(el, "divisions");
                         if (div is not null && int.TryParse(div.Value, out var d) && d > 0)
                             divisions = d;
                         break;
@@ -439,20 +439,20 @@ public static class MusicXmlIo
         XElement note, int divisions, float velocity, ref Rational cursor, ref Rational lastNoteOnset,
         Dictionary<(string voice, int midi), (Rational onset, Rational duration, float velocity)> pending, List<NoteEvent> notes)
     {
-        var durationEl = note.Element("duration");
+        var durationEl = Child(note, "duration");
         if (durationEl is null)
         {
             // Grace notes carry no <duration>. Preserve the pitch at the current position with a
             // short nominal length, without advancing time — an approximation (the engine has no
             // dedicated grace-note concept). A non-grace note without a duration is skipped.
-            if (note.Element("grace") is not null && note.Element("pitch") is { } gracePitch)
+            if (Child(note, "grace") is not null && Child(note, "pitch") is { } gracePitch)
                 notes.Add(new NoteEvent(PitchToMidi(gracePitch), cursor, GraceDuration, velocity));
             return;
         }
 
         var duration = DurationToWholeNotes(ParseDecimal(durationEl.Value, "duration"), divisions);
-        var isChord = note.Element("chord") is not null;
-        var isRest = note.Element("rest") is not null;
+        var isChord = Child(note, "chord") is not null;
+        var isRest = Child(note, "rest") is not null;
 
         if (isRest)
         {
@@ -465,14 +465,14 @@ public static class MusicXmlIo
             return;
         }
 
-        var pitch = note.Element("pitch")
+        var pitch = Child(note, "pitch")
             ?? throw new InvalidDataException("A sounding note has neither <pitch> nor <rest>.");
         var midi = PitchToMidi(pitch);
         var onset = isChord ? lastNoteOnset : cursor;
         var (tieStart, tieStop) = ReadTie(note);
 
         // Ties only connect notes within one voice; absent <voice>, all notes share one default.
-        var key = (voice: note.Element("voice")?.Value.Trim() ?? "", midi);
+        var key = (voice: Child(note, "voice")?.Value.Trim() ?? "", midi);
 
         if (tieStop && pending.TryGetValue(key, out var held))
         {
@@ -517,7 +517,7 @@ public static class MusicXmlIo
             else if (type == "stop") stop = true;
         }
 
-        if (!start && !stop && note.Element("notations") is { } notations)
+        if (!start && !stop && Child(note, "notations") is { } notations)
         {
             foreach (var tied in Children(notations, "tied"))
             {
@@ -575,7 +575,7 @@ public static class MusicXmlIo
 
     private static int PitchToMidi(XElement pitch)
     {
-        var step = pitch.Element("step")?.Value?.Trim().ToUpperInvariant()
+        var step = Child(pitch, "step")?.Value?.Trim().ToUpperInvariant()
             ?? throw new InvalidDataException("<pitch> is missing <step>.");
 
         var semitone = step switch
@@ -590,12 +590,12 @@ public static class MusicXmlIo
             _ => throw new InvalidDataException($"Unknown pitch step '{step}'."),
         };
 
-        var octaveEl = pitch.Element("octave")
+        var octaveEl = Child(pitch, "octave")
             ?? throw new InvalidDataException("<pitch> is missing <octave>.");
         var octave = ParseInt(octaveEl.Value, "octave");
 
         var alter = 0;
-        var alterEl = pitch.Element("alter");
+        var alterEl = Child(pitch, "alter");
         if (alterEl is not null && !string.IsNullOrWhiteSpace(alterEl.Value))
             alter = (int)Math.Round(ParseDouble(alterEl.Value, "alter"));
 
@@ -605,7 +605,7 @@ public static class MusicXmlIo
 
     private static Rational DurationOf(XElement el, int divisions)
     {
-        var durationEl = el.Element("duration");
+        var durationEl = Child(el, "duration");
         return durationEl is null
             ? Rational.Zero
             : DurationToWholeNotes(ParseDecimal(durationEl.Value, "duration"), divisions);
@@ -622,6 +622,18 @@ public static class MusicXmlIo
 
     private static IEnumerable<XElement> Children(XElement parent, string localName) =>
         parent.Elements().Where(e => e.Name.LocalName == localName);
+
+    /// <summary>
+    /// The first child element named <paramref name="localName"/>, whatever namespace it is in.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="XContainer.Element(XName)"/> given a bare string looks for that name in the
+    /// EMPTY namespace, so every lookup missed in a document that declares a default namespace —
+    /// which MusicXML 4 files written against the XSD do. The file parsed without error and
+    /// imported as zero notes.
+    /// </remarks>
+    private static XElement? Child(XElement parent, string localName) =>
+        parent.Elements().FirstOrDefault(e => e.Name.LocalName == localName);
 
     private static int ParseInt(string value, string field) =>
         int.TryParse(value?.Trim(), out var n)
@@ -696,6 +708,22 @@ public static class MusicXmlIo
                     $"Note {i} has a negative offset ({e.Offset}); MusicXML cannot represent events before time zero.",
                     nameof(buffer));
             }
+
+            // Export bars the whole timeline, so a note's measure has to be a measure this
+            // writer can count to. MeasureIndexOf casts to int; past int.MaxValue measures that
+            // cast wrapped, and the measure loop below ran on a negative index and never
+            // finished. The offset that reaches here is a mistake in the caller's timing
+            // arithmetic far more often than it is a piece four billion bars long.
+            var measures = (Int128)e.Offset.Numerator * measureLen.Denominator
+                / ((Int128)e.Offset.Denominator * measureLen.Numerator);
+            if (measures > int.MaxValue)
+            {
+                throw new ArgumentException(
+                    $"Note {i} starts at offset {e.Offset}, which is measure {measures} of " +
+                    $"{measureLen} — past the {int.MaxValue} measures MusicXML export can bar.",
+                    nameof(buffer));
+            }
+
             events.Add(e);
         }
         events.Sort((a, b) =>

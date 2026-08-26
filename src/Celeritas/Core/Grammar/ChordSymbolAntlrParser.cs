@@ -435,6 +435,12 @@ internal sealed class ChordBuildState
 {
     private TriadQuality _triad = TriadQuality.Major;
 
+    /// <summary>
+    /// Whether a marker has already named the triad. A "maj"/"M" that follows one is about the
+    /// seventh, not the triad — see the maj arm of <see cref="ApplyQuality"/>.
+    /// </summary>
+    private bool _triadNamed;
+
     public bool IsMinorTriad => _triad == TriadQuality.Minor;
 
     public bool SusPending { get; private set; }
@@ -487,7 +493,12 @@ internal sealed class ChordBuildState
         // matched before lowercasing, which would turn it into the minor marker.
         if (t == "M")
         {
-            _triad = TriadQuality.Major;
+            if (!_triadNamed)
+            {
+                _triad = TriadQuality.Major;
+                _triadNamed = true;
+            }
+
             _explicitMajor = true;
             return;
         }
@@ -500,7 +511,17 @@ internal sealed class ChordBuildState
             case "major":
                 // "Cmaj" is a plain major triad; _explicitMajor still makes a following
                 // extension use the major seventh ("Cmaj7"/"Cmaj9").
-                _triad = TriadQuality.Major;
+                //
+                // A maj marker that FOLLOWS another triad quality is about the seventh, not the
+                // triad: "Caugmaj7" is an augmented triad with a major seventh. Overwriting the
+                // triad here turned it — and "Cdimmaj7" and "Csus4maj7" — into a plain Cmaj7,
+                // silently returning a different chord from the one that was written.
+                if (!_triadNamed)
+                {
+                    _triad = TriadQuality.Major;
+                    _triadNamed = true;
+                }
+
                 _explicitMajor = true;
                 break;
             case "min":
@@ -508,19 +529,23 @@ internal sealed class ChordBuildState
             case "m":
             case "-":
                 _triad = TriadQuality.Minor;
+                _triadNamed = true;
                 _explicitMinor = true;
                 break;
             case "dim":
             case "o":
             case "°":
                 _triad = TriadQuality.Diminished;
+                _triadNamed = true;
                 break;
             case "aug":
             case "+":
                 _triad = TriadQuality.Augmented;
+                _triadNamed = true;
                 break;
             case "sus":
                 _triad = TriadQuality.Sus4;
+                _triadNamed = true;
                 SusPending = true;
                 break;
             case "ø":

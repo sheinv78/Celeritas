@@ -89,7 +89,8 @@ public static class OrnamentApplier
                 BaseNote = baseNote,
                 Type = grace.Type,
                 Intervals = grace.Intervals,
-                DurationRatio = grace.DurationRatio
+                // The raw ratio, so an unset one stays unset: see GraceNote.ExplicitDurationRatio.
+                ExplicitDurationRatio = grace.ExplicitDurationRatio
             },
             Glissando gliss => new Glissando
             {
