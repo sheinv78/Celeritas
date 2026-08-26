@@ -23,16 +23,25 @@ public readonly record struct PitchClassSetAnalysisResult(
     int[] IntervalVector)
 {
     /// <summary>Pitch classes formatted as <c>{a,b,c}</c>.</summary>
-    public string PitchClassesText => "{" + string.Join(",", PitchClasses) + "}";
+    public string PitchClassesText => Braced(PitchClasses);
 
     /// <summary>Normal order formatted as <c>{a,b,c}</c>.</summary>
-    public string NormalOrderText => "{" + string.Join(",", NormalOrder) + "}";
+    public string NormalOrderText => Braced(NormalOrder);
 
     /// <summary>Prime form formatted as <c>{a,b,c}</c>.</summary>
-    public string PrimeFormText => "{" + string.Join(",", PrimeForm) + "}";
+    public string PrimeFormText => Braced(PrimeForm);
 
     /// <summary>Interval vector formatted as <c>&lt;a,b,c,d,e,f&gt;</c>.</summary>
-    public string IntervalVectorText => "<" + string.Join(",", IntervalVector) + ">";
+    public string IntervalVectorText => "<" + Join(IntervalVector) + ">";
+
+    /// <summary>
+    /// A default instance of this struct has null arrays, and every one of these members — and
+    /// so the compiler-generated ToString that prints them — used to throw ArgumentNullException
+    /// on it. A value type is always constructible as default, and printing one should not fail.
+    /// </summary>
+    private static string Braced(int[]? values) => "{" + Join(values) + "}";
+
+    private static string Join(int[]? values) => values is null ? "" : string.Join(",", values);
 }
 
 /// <summary>

@@ -345,6 +345,63 @@ public class WrittenDownAndReadBackTests
         Assert.Equal("3-11A", entry!.Forte);
     }
 
+    // ---------- an absurd argument is answered, not run forever on ----------
+
+    [Fact]
+    public void AskingForMoreVoicesThanThereAreNotes_Returns()
+    {
+        // Every voice table is sized by maxVoices, so int.MaxValue seeded two billion of them
+        // and the call never came back. A voice needs a note, so there cannot be more voices
+        // than notes — and the empty ones were dropped from the result anyway.
+        using var buffer = new NoteBuffer(4);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter);
+        buffer.AddNote(64, Rational.Quarter, Rational.Quarter);
+
+        var many = VoiceSeparator.Separate(buffer, int.MaxValue);
+        var few = VoiceSeparator.Separate(buffer, 4);
+
+        Assert.Equal(few.Voices.Count, many.Voices.Count);
+        Assert.Equal(buffer.Count, many.Voices.Sum(v => v.Notes.Count));
+    }
+
+    [Fact]
+    public void AStepFarSmallerThanTheMusic_IsRefusedRatherThanRunForever()
+    {
+        // A step of 1/long.MaxValue across a couple of bars asks for about 2^62 windows.
+        using var buffer = new NoteBuffer(2);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter);
+        buffer.AddNote(64, Rational.Quarter, Rational.Quarter);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            KeyProfiler.AnalyzeModulations(buffer, Rational.Quarter, new Rational(1, long.MaxValue)));
+    }
+
+    [Fact]
+    public void AnOrdinaryWindowAndStep_StillWalkTheMusic()
+    {
+        using var buffer = new NoteBuffer(8);
+        for (var i = 0; i < 8; i++)
+            buffer.AddNote(60 + i, new Rational(i, 4), Rational.Quarter);
+
+        var trajectory = KeyProfiler.AnalyzeModulations(buffer, Rational.Whole, Rational.Half);
+
+        Assert.NotEmpty(trajectory.Points);
+    }
+
+    [Fact]
+    public void ADefaultAnalysisResultCanStillBePrinted()
+    {
+        // A value type is always constructible as default, and its arrays are null there — every
+        // formatted member, and so the compiler-generated ToString, threw ArgumentNullException.
+        var empty = default(PitchClassSetAnalysisResult);
+
+        Assert.Equal("{}", empty.PitchClassesText);
+        Assert.Equal("{}", empty.NormalOrderText);
+        Assert.Equal("{}", empty.PrimeFormText);
+        Assert.Equal("<>", empty.IntervalVectorText);
+        Assert.NotNull(empty.ToString());
+    }
+
     // ---------- a tempo ramp keeps the tempo it ramps to ----------
 
     [Fact]

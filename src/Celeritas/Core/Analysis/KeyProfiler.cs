@@ -572,6 +572,24 @@ public static class KeyProfiler
         var currentPos = Rational.Zero;
         var endTime = GetEndTime(buffer);
 
+        // How many windows this asks for. A step far smaller than the music is long produces a
+        // number of them no machine will get through — a step of 1/long.MaxValue over a couple
+        // of bars is about 2^62 windows — and the call simply never returned. Refuse it the way
+        // a non-positive step is refused, rather than appearing to hang.
+        if (endTime > Rational.Zero)
+        {
+            var windows = (Int128)endTime.Numerator * stepSize.Denominator
+                / ((Int128)endTime.Denominator * stepSize.Numerator);
+            if (windows > 1_000_000)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(stepSize),
+                    stepSize,
+                    $"A step of {stepSize} across {endTime} of music asks for {windows} windows; " +
+                    "use a step in proportion to the passage.");
+            }
+        }
+
         // Copy the notes once, sorted by onset, so each window scans only its own slice
         // instead of rescanning the whole buffer for every step (O(windows x notes)).
         var sorted = new NoteEvent[buffer.Count];

@@ -222,6 +222,21 @@ public static class VoiceSeparator
         // OverflowException from `new int[-1]`, neither of which names the argument at fault.
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxVoices);
 
+        // A voice needs at least one note, so asking for more voices than there are notes can
+        // only produce empty ones — which the result drops anyway. Without this, maxVoices of
+        // int.MaxValue seeded two billion voice tables and the call never came back.
+        //
+        // Counted over the notes that SOUND, which is what the separator places: counting rests
+        // too made the cap depend on how the silence was written down, and the same music with
+        // its rests spelled out separated into a different number of voices.
+        var sounding = 0;
+        for (var i = 0; i < buffer.Count; i++)
+        {
+            if (buffer.PitchAt(i) != MusicNotation.RestPitch) sounding++;
+        }
+
+        maxVoices = Math.Min(maxVoices, Math.Max(1, sounding));
+
         if (buffer.Count == 0)
         {
             return new VoiceSeparationResult
