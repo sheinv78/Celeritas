@@ -331,6 +331,89 @@ class TestTrill(unittest.TestCase):
         self.assertEqual(len(expanded), 16)
         _assert_exact_timing(self, base_note, expanded)
 
+    def test_trill_matches_the_library_when_the_duration_is_not_a_whole_number_of_units(self):
+        """The bindings write Trill again in Python, so the two can drift apart.
+
+        They had: the loop here ran until the base note ran out and put a stub note at the end,
+        where Celeritas.Core.Ornamentation.Trill takes as many whole units as fit and stretches
+        the last one to the end. A trill on a 3/8 note at speed 3 came out with five notes from
+        the bindings and four from the library.
+        """
+
+        base_note = NoteEvent(
+            pitch=64,
+            time_numerator=0,
+            time_denominator=1,
+            duration_numerator=3,
+            duration_denominator=8,
+            velocity=80,
+        )
+        expanded = Trill(base_note, interval=2, speed=3).expand()
+
+        self.assertEqual(len(expanded), 4)
+        self.assertEqual(
+            [(n.pitch, n.duration_numerator, n.duration_denominator) for n in expanded],
+            [(64, 1, 12), (66, 1, 12), (64, 1, 12), (66, 1, 8)],
+        )
+        _assert_exact_timing(self, base_note, expanded)
+
+    def test_trill_shorter_than_one_unit_is_left_as_it_is(self):
+        """Expanding a note shorter than a single trill unit would delete it."""
+
+        base_note = NoteEvent(
+            pitch=64,
+            time_numerator=0,
+            time_denominator=1,
+            duration_numerator=1,
+            duration_denominator=64,
+            velocity=80,
+        )
+        expanded = Trill(base_note, interval=2, speed=8).expand()
+
+        self.assertEqual(len(expanded), 1)
+        self.assertEqual(expanded[0], base_note)
+
+    def test_trill_end_with_turn_is_actually_played(self):
+        """end_with_turn was accepted, stored, and then ignored: the flag did nothing at all."""
+
+        base_note = NoteEvent(
+            pitch=64,
+            time_numerator=0,
+            time_denominator=1,
+            duration_numerator=1,
+            duration_denominator=2,
+            velocity=80,
+        )
+        plain = Trill(base_note, interval=2, speed=8).expand()
+        turned = Trill(base_note, interval=2, speed=8, end_with_turn=True).expand()
+
+        self.assertNotEqual(
+            [n.pitch for n in plain],
+            [n.pitch for n in turned],
+            "end_with_turn changed nothing",
+        )
+        # The turn drops to the note below before returning to the main note.
+        self.assertEqual(turned[-2].pitch, 62)
+        self.assertEqual(turned[-1].pitch, 64)
+        _assert_exact_timing(self, base_note, turned)
+
+    def test_trill_never_leaves_the_keyboard(self):
+        """The library holds every ornamental pitch in 0..127; the bindings now do too."""
+
+        base_note = NoteEvent(
+            pitch=126,
+            time_numerator=0,
+            time_denominator=1,
+            duration_numerator=1,
+            duration_denominator=4,
+            velocity=80,
+        )
+        expanded = Trill(base_note, interval=4, speed=8).expand()
+
+        for note in expanded:
+            self.assertGreaterEqual(note.pitch, 0)
+            self.assertLessEqual(note.pitch, 127)
+
     def test_trill_sub_quarter_offset_not_truncated(self):
         # A base note starting at 1/8 (sub-quarter offset) must not have its
         # trill notes collapse to offset 0 (regression: int(time * 4) truncation).

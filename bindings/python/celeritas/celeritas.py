@@ -354,6 +354,12 @@ def parse_chord_symbol(symbol: str, max_pitches: int = 32) -> Optional[List[int]
     return list(out_array)[: out_count.value]
 
 
+def _playable(pitch: int) -> int:
+    """Holds an ornamental pitch on the keyboard, as Ornament.Playable does in the library."""
+
+    return max(0, min(127, pitch))
+
+
 class Trill:
     """Trill ornament - rapid alternation between main note and upper note"""
 
@@ -374,40 +380,99 @@ class Trill:
     def expand(self) -> List[NoteEvent]:
         """Expand trill into sequence of notes.
 
-        Timing is computed with exact rational arithmetic (fractions of a
-        whole note). The last note is shortened if necessary so that the
-        expanded durations sum exactly to the base note's duration.
+        Follows Celeritas.Core.Ornamentation.Trill note for note: as many whole trill units as
+        fit in the base note, the last one stretched to end exactly where the base note does.
+
+        This used to run a loop until the base note ran out, which put an extra stub note at the
+        end whenever the duration was not a whole number of units - a trill on a 3/8 note at
+        speed 3 came out of the bindings with five notes where the library gives four. Two
+        implementations of one piece of music theory drift, and nothing compared them.
         """
 
-        notes = []
-        # `speed` notes per quarter note = 1/(speed*4) of a whole note each.
+        base_pitch = self.base_note.pitch
         step = Fraction(1, self.speed * 4)
-        upper_pitch = self.base_note.pitch + self.interval
+        upper_pitch = _playable(base_pitch + self.interval)
+        # The turn drops to the note below: a whole tone when the trill is a whole tone wide,
+        # a semitone otherwise.
+        lower_pitch = _playable(base_pitch - (2 if self.interval == 2 else 1))
 
-        current_time = Fraction(
-            self.base_note.time_numerator, self.base_note.time_denominator
-        )
-        end_time = current_time + Fraction(
+        start_time = Fraction(self.base_note.time_numerator, self.base_note.time_denominator)
+        duration = Fraction(
             self.base_note.duration_numerator, self.base_note.duration_denominator
         )
+        end_time = start_time + duration
 
+        # How many whole trill units fit. A base note shorter than one of them is left alone:
+        # expanding it would delete it.
+        total_notes = duration // step
+        if total_notes == 0:
+            return [self.base_note]
+
+        if self.end_with_turn and total_notes >= 3:
+            total_notes -= 2  # the last two belong to the turn
+
+        notes = []
+        current_time = start_time
         use_upper = self.start_with_upper
 
-        while current_time < end_time:
-            duration = min(step, end_time - current_time)
-            pitch = upper_pitch if use_upper else self.base_note.pitch
+        for _ in range(int(total_notes)):
+            if current_time >= end_time:
+                break
+
             notes.append(
                 NoteEvent(
-                    pitch=pitch,
+                    pitch=upper_pitch if use_upper else base_pitch,
                     time_numerator=current_time.numerator,
                     time_denominator=current_time.denominator,
-                    duration_numerator=duration.numerator,
-                    duration_denominator=duration.denominator,
+                    duration_numerator=step.numerator,
+                    duration_denominator=step.denominator,
                     velocity=self.base_note.velocity,
                 )
             )
-            current_time += duration
+            current_time += step
             use_upper = not use_upper
+
+        if self.end_with_turn and current_time < end_time:
+            notes.append(
+                NoteEvent(
+                    pitch=lower_pitch,
+                    time_numerator=current_time.numerator,
+                    time_denominator=current_time.denominator,
+                    duration_numerator=step.numerator,
+                    duration_denominator=step.denominator,
+                    velocity=self.base_note.velocity,
+                )
+            )
+            current_time += step
+
+            if current_time < end_time:
+                tail = end_time - current_time
+                notes.append(
+                    NoteEvent(
+                        pitch=base_pitch,
+                        time_numerator=current_time.numerator,
+                        time_denominator=current_time.denominator,
+                        duration_numerator=tail.numerator,
+                        duration_denominator=tail.denominator,
+                        velocity=self.base_note.velocity,
+                    )
+                )
+
+        # Stretch the final note to the exact end of the base note, so the expansion sums to the
+        # base duration and leaves no gap before the next melody note.
+        if notes:
+            last = notes[-1]
+            last_start = Fraction(last.time_numerator, last.time_denominator)
+            if last_start + Fraction(last.duration_numerator, last.duration_denominator) != end_time:
+                stretched = end_time - last_start
+                notes[-1] = NoteEvent(
+                    pitch=last.pitch,
+                    time_numerator=last.time_numerator,
+                    time_denominator=last.time_denominator,
+                    duration_numerator=stretched.numerator,
+                    duration_denominator=stretched.denominator,
+                    velocity=last.velocity,
+                )
 
         return notes
 
