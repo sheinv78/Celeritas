@@ -484,9 +484,13 @@ public static class RhythmAnalyzer
     /// </summary>
     private static List<(Rational offset, Rational duration, int index)> CollectSortedOnsets(NoteBuffer buffer)
     {
+        // An onset is something being struck, and a rest is the absence of one. Counted as
+        // onsets, rests halved the note density and turned 2/2 into 2/4. The index is kept as
+        // the buffer index so it still addresses the parallel velocity array.
         var onsets = new List<(Rational offset, Rational duration, int index)>(buffer.Count);
         for (int i = 0; i < buffer.Count; i++)
         {
+            if (Rests.IsRest(buffer.PitchAt(i))) continue;
             onsets.Add((buffer.GetOffset(i), buffer.GetDuration(i), i));
         }
 

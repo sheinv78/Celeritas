@@ -143,10 +143,21 @@ public static class FormAnalyzer
             return new FormAnalysisResult([], [], Rational.Zero, []);
 
         // Ensure deterministic phrase detection without mutating the caller's buffer:
-        // copy the events out and sort the copy (stable, by offset).
-        var notes = new NoteEvent[count];
+        // copy the events out and sort the copy (stable, by offset). Rests are left behind —
+        // a phrase boundary is a gap in the sound, and a rest event filled that gap with a
+        // "note", so a melody in three phrases separated by half-bar rests read as one.
+        var kept = new List<NoteEvent>(count);
         for (var i = 0; i < count; i++)
-            notes[i] = buffer.Get(i);
+        {
+            var note = buffer.Get(i);
+            if (!Rests.IsRest(note.Pitch)) kept.Add(note);
+        }
+
+        if (kept.Count == 0)
+            return new FormAnalysisResult([], [], Rational.Zero, []);
+
+        var notes = kept.ToArray();
+        count = notes.Length;
 
         var isOrdered = true;
         for (var i = 1; i < count; i++)
@@ -428,7 +439,9 @@ public static class FormAnalyzer
             ushort mask = 0;
             for (var j = phrase.StartIndex; j <= phrase.EndIndex; j++)
             {
-                mask |= (ushort)(1 << (notes[j].Pitch % 12));
+                // Fold rather than `%`: C# keeps the sign, and a negative pitch — which
+                // MusicMath.Transpose documents it can produce — shifted by a negative amount.
+                mask |= (ushort)(1 << PitchMath.Fold(notes[j].Pitch));
             }
             phrasePcSets[i] = mask;
         }

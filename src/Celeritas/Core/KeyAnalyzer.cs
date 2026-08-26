@@ -135,10 +135,11 @@ public static class KeyAnalyzer
         Span<int> pitches = notes.Length <= StackAlloc.MaxInts
             ? stackalloc int[notes.Length]
             : new int[notes.Length];
-        for (var i = 0; i < notes.Length; i++)
-            pitches[i] = notes[i].Pitch;
+        var sounding = Rests.SoundingInto(notes, pitches);
+        if (sounding == 0)
+            return RomanNumeralChord.Invalid;
 
-        return Analyze(pitches, key);
+        return Analyze(pitches[..sounding], key);
     }
 
     /// <summary>
@@ -430,10 +431,11 @@ public static class KeyAnalyzer
         Span<int> pitches = notes.Length <= StackAlloc.MaxInts
             ? stackalloc int[notes.Length]
             : new int[notes.Length];
-        for (var i = 0; i < notes.Length; i++)
-            pitches[i] = notes[i].Pitch;
+        var sounding = Rests.SoundingInto(notes, pitches);
+        if (sounding == 0)
+            return new KeySignature(0, true);
 
-        return IdentifyKey(pitches);
+        return IdentifyKey(pitches[..sounding]);
     }
 
     /// <summary>
@@ -483,7 +485,20 @@ public static class KeyAnalyzer
     public static KeySignature DetectKey(NoteBuffer buffer)
     {
         ArgumentNullException.ThrowIfNull(buffer);
-        return IdentifyKey(buffer.PitchSpan);
+
+        // Rests are silence, not a pitch class. Counting RestPitch (-1) as a B made a phrase in
+        // C major with two half-bar rests come back as E minor.
+        Span<int> pitches = buffer.Count <= StackAlloc.MaxInts
+            ? stackalloc int[buffer.Count]
+            : new int[buffer.Count];
+        var sounding = 0;
+        for (var i = 0; i < buffer.Count; i++)
+        {
+            var pitch = buffer.PitchAt(i);
+            if (!Rests.IsRest(pitch)) pitches[sounding++] = pitch;
+        }
+
+        return IdentifyKey(pitches[..sounding]);
     }
 
     /// <summary>

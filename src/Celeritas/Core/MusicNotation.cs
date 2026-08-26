@@ -14,6 +14,12 @@ public static class MusicNotation
     /// <summary>
     /// Special pitch value indicating a rest (silence).
     /// </summary>
+    /// <remarks>
+    /// This value is reserved across the library: a note event carrying it is silence, not a
+    /// note. Analysis ignores it — it contributes no pitch class, no onset and no duration — and
+    /// the MIDI and MusicXML writers leave a gap where it falls rather than writing a note.
+    /// <see cref="MusicMath.Transpose(NoteBuffer, int)"/> leaves it alone for the same reason.
+    /// </remarks>
     public const int RestPitch = -1;
 
     /// <summary>

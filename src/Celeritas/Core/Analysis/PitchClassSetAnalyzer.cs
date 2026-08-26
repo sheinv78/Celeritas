@@ -41,20 +41,26 @@ public readonly record struct PitchClassSetAnalysisResult(
 /// </summary>
 public static class PitchClassSetAnalyzer
 {
+    /// <remarks>
+    /// Rests hold no pitch class and do not join the set; counting RestPitch (-1) as a B turned
+    /// the trichord {0,4,7} into the tetrachord {0,4,7,11} and changed its prime form.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PitchClassSetAnalysisResult Analyze(NoteBuffer buffer)
     {
         ArgumentNullException.ThrowIfNull(buffer);
-        return Analyze(buffer.PitchesReadOnly);
+        return AnalyzeMask(Rests.MaskOf(buffer.PitchesReadOnly));
     }
 
     /// <summary>
     /// Analyze a pitch-class set from raw pitches (folded to pitch classes 0-11, deduplicated).
     /// </summary>
-    public static PitchClassSetAnalysisResult Analyze(ReadOnlySpan<int> pitches)
+    public static PitchClassSetAnalysisResult Analyze(ReadOnlySpan<int> pitches) =>
+        AnalyzeMask(ChordAnalyzer.GetMask(pitches));
+
+    private static PitchClassSetAnalysisResult AnalyzeMask(ushort mask)
     {
-        var mask = ChordAnalyzer.GetMask(pitches);
         var pitchClasses = MaskToPitchClasses(mask);
         var cardinality = pitchClasses.Length;
 

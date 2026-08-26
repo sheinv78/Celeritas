@@ -247,6 +247,12 @@ public static class MidiIo
         for (var i = 0; i < buffer.Count; i++)
         {
             var e = buffer.Get(i);
+
+            // A rest is silence, and MIDI writes silence as the absence of a note. Without this
+            // ClampToMidiNote turned RestPitch (-1) into 0 and the file gained an audible C-1
+            // wherever the music was quiet.
+            if (Rests.IsRest(e.Pitch)) continue;
+
             var noteNumber = ClampToMidiNote(e.Pitch);
 
             if (e.Offset < Rational.Zero)

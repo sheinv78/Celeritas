@@ -472,7 +472,13 @@ public sealed unsafe class NoteBuffer : IDisposable
             }
 
             var slice = new ReadOnlySpan<int>(PitchPtr + start, i - start);
-            output[resultCount++] = (new Rational(currentNum, currentDen), ChordAnalyzer.GetMask(slice));
+            var mask = Rests.MaskOf(slice);
+
+            // A group is never empty and a sounding note always sets a bit, so an empty mask
+            // means every note at this offset was a rest. Nothing is struck there, so there is
+            // no chord to report.
+            if (mask != 0)
+                output[resultCount++] = (new Rational(currentNum, currentDen), mask);
         }
 
         return resultCount;
@@ -506,7 +512,13 @@ public sealed unsafe class NoteBuffer : IDisposable
             }
 
             var slice = new ReadOnlySpan<int>(PitchPtr + start, i - start);
-            result.Add((new Rational(currentNum, currentDen), ChordAnalyzer.GetMask(slice)));
+            var mask = Rests.MaskOf(slice);
+
+            // A group is never empty and a sounding note always sets a bit, so an empty mask
+            // means every note at this offset was a rest. Nothing is struck there, so there is
+            // no chord to report.
+            if (mask != 0)
+                result.Add((new Rational(currentNum, currentDen), mask));
         }
 
         return result;

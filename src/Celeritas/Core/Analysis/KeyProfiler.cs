@@ -323,6 +323,9 @@ public static class KeyProfiler
         for (var i = 0; i < buffer.Count; i++)
         {
             var note = buffer.Get(i);
+            // Silence carries no pitch class: folding RestPitch (-1) put its whole duration on
+            // pitch class 11, and a phrase in C major with rests in it read as E minor.
+            if (Rests.IsRest(note.Pitch)) continue;
             // Fold: `%` keeps the sign in C#, so a pitch below zero indexed backwards out of the
             // distribution. Its sibling DetectFromPitches guards this same loop and its cousin
             // ChordAnalyzer.GetMask folds it — one distribution, computed three ways.
@@ -601,7 +604,7 @@ public static class KeyProfiler
                 // Check if note overlaps with window. Fold like the sibling paths in
                 // ExtractPitchClassDistribution and DetectFromPitches: `%` keeps the sign in C#,
                 // so a pitch below zero indexed backwards out of the distribution.
-                if (note.Offset + note.Duration > currentPos)
+                if (note.Offset + note.Duration > currentPos && !Rests.IsRest(note.Pitch))
                 {
                     var pitchClass = PitchMath.Fold(note.Pitch);
                     distribution[pitchClass] += (float)note.Duration.ToDouble();
@@ -617,12 +620,18 @@ public static class KeyProfiler
         return new KeyTrajectory(results);
     }
 
+    /// <summary>
+    /// When the music stops sounding. Trailing rests do not extend it: a key trajectory has no
+    /// point to make about silence, and windows past the last note reported a key detected from
+    /// an empty distribution — a fabricated answer at the end of every passage that ended quietly.
+    /// </summary>
     private static Rational GetEndTime(NoteBuffer buffer)
     {
         var maxEnd = Rational.Zero;
         for (var i = 0; i < buffer.Count; i++)
         {
             var note = buffer.Get(i);
+            if (Rests.IsRest(note.Pitch)) continue;
             var end = note.Offset + note.Duration;
             if (end > maxEnd) maxEnd = end;
         }

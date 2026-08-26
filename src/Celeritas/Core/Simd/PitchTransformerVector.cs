@@ -17,6 +17,7 @@ internal sealed class PitchTransformerVector : IPitchTransformer
     public unsafe void Transpose(int* pitches, int count, int semitones)
     {
         var vSemitones = new Vector<int>(semitones);
+        var vRest = new Vector<int>(MusicNotation.RestPitch);
         var width = Vector<int>.Count;
         ref var start = ref Unsafe.AsRef<int>(pitches);
 
@@ -24,10 +25,16 @@ internal sealed class PitchTransformerVector : IPitchTransformer
         for (; i <= count - width; i += width)
         {
             var v = Vector.LoadUnsafe(ref start, (nuint)i);
-            (v + vSemitones).StoreUnsafe(ref start, (nuint)i);
+            // Transposing music moves its notes; its silences stay silent. Added to blindly, a
+            // rest's RestPitch (-1) became a sounding note a fifth up.
+            Vector.ConditionalSelect(Vector.Equals(v, vRest), v, v + vSemitones)
+                .StoreUnsafe(ref start, (nuint)i);
         }
 
         for (; i < count; i++)
-            pitches[i] += semitones;
+        {
+            if (pitches[i] != MusicNotation.RestPitch)
+                pitches[i] += semitones;
+        }
     }
 }

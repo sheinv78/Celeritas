@@ -86,9 +86,12 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
     {
         ArgumentNullException.ThrowIfNull(buffer);
 
+        // Train on what was played. A rest's duration is silence, and learning it as a duration
+        // taught the model contexts that no performer ever strikes.
         var durations = new List<Rational>();
         for (int i = 0; i < buffer.Count; i++)
         {
+            if (Rests.IsRest(buffer.PitchAt(i))) continue;
             durations.Add(buffer.GetDuration(i));
         }
         Train(durations);

@@ -90,12 +90,16 @@ public static unsafe class ChordAnalyzer
     }
 
     // Safe version for NoteBuffer without requiring unsafe context
+    /// <summary>
+    /// Computes the 12-bit pitch-class mask of the notes in <paramref name="buffer"/> that sound.
+    /// Rests carry no pitch class and are ignored.
+    /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ushort GetMask(NoteBuffer buffer)
     {
         ArgumentNullException.ThrowIfNull(buffer);
-        return GetMask(buffer.PitchSpan);
+        return Rests.MaskOf(buffer.PitchSpan);
     }
 
     // Unsafe version for extreme cases
@@ -185,7 +189,38 @@ public static unsafe class ChordAnalyzer
     public static ChordInfo Identify(NoteBuffer buffer)
     {
         ArgumentNullException.ThrowIfNull(buffer);
-        return Identify(buffer.PitchSpan);
+        return IdentifySounding(buffer.PitchSpan);
+    }
+
+    /// <summary>
+    /// Identifies the chord spelled by the pitches that sound, ignoring rests. Every overload
+    /// that takes note data comes through here: a rest is <see cref="MusicNotation.RestPitch"/>
+    /// (-1), and folding that gives pitch class 11, so a C major triad written with a rest after
+    /// it identified as Cmaj7 — and the rest, being the lowest "pitch", was read as the bass.
+    /// </summary>
+    private static ChordInfo IdentifySounding(ReadOnlySpan<int> pitches)
+    {
+        var rests = 0;
+        foreach (var pitch in pitches)
+        {
+            if (Rests.IsRest(pitch)) rests++;
+        }
+
+        if (rests == 0)
+            return Identify(pitches);
+
+        var sounding = pitches.Length - rests;
+        if (sounding == 0)
+            return ChordLibrary.GetChord(0);
+
+        Span<int> kept = sounding <= StackAlloc.MaxInts ? stackalloc int[sounding] : new int[sounding];
+        var next = 0;
+        foreach (var pitch in pitches)
+        {
+            if (!Rests.IsRest(pitch)) kept[next++] = pitch;
+        }
+
+        return Identify(kept);
     }
 
     /// <summary>
@@ -210,11 +245,11 @@ public static unsafe class ChordAnalyzer
         for (var i = 0; i < notes.Length; i++)
             pitches[i] = notes[i].Pitch;
 
-        return Identify(pitches);
+        return IdentifySounding(pitches);
     }
 
     /// <summary>
-    /// Identify chord from note events.
+    /// Identify chord from note events. Rests are silence, not chord tones, and are ignored.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChordInfo Identify(ReadOnlySpan<NoteEvent> notes)
@@ -228,6 +263,6 @@ public static unsafe class ChordAnalyzer
         for (var i = 0; i < notes.Length; i++)
             pitches[i] = notes[i].Pitch;
 
-        return Identify(pitches);
+        return IdentifySounding(pitches);
     }
 }

@@ -37,6 +37,12 @@ public static unsafe class MusicMath
     /// <summary>
     /// Adds <paramref name="semitones"/> to every pitch. Results are NOT clamped to the MIDI
     /// 0-127 range; callers that need valid MIDI pitches must clamp afterwards.
+    /// <para>
+    /// Rests are left where they are: <see cref="MusicNotation.RestPitch"/> is silence, and
+    /// silence has no pitch to move. Because that value is reserved, a note transposed exactly
+    /// onto it reads as a rest from then on — clamp, or transpose back, before analysing a
+    /// buffer that has been moved below the bottom of the keyboard.
+    /// </para>
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

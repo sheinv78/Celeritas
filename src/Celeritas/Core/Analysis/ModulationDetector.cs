@@ -97,7 +97,7 @@ public static class ModulationDetector
         {
             notes[i] = buffer.Get(i);
         }
-        return Analyze(notes, startKey);
+        return Analyze(notes.AsSpan(), startKey);
     }
 
     /// <summary>
@@ -128,8 +128,19 @@ public static class ModulationDetector
         // 8 quarter-beats). A foreign-key area shorter than this counts as a tonicization.
         var minModulationDuration = new Rational(2, 1);
 
-        // Convert to array for easier manipulation
-        var notesArray = notes.ToArray();
+        // Convert to array for easier manipulation. Rests drop out here: they carry no harmony,
+        // and read as a B they invented two modulations in a passage that never leaves C major.
+        var notesArray = Rests.ToArrayWithout(notes);
+        if (notesArray.Length == 0)
+        {
+            return new ModulationAnalysisResult
+            {
+                StartKey = startKey,
+                Modulations = [],
+                EndKey = startKey
+            };
+        }
+
         var chords = ExtractChords(notesArray);
 
         if (chords.Count < 2)

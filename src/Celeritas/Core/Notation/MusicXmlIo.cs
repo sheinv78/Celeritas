@@ -682,6 +682,12 @@ public static class MusicXmlIo
         for (var i = 0; i < buffer.Count; i++)
         {
             var e = buffer.Get(i);
+
+            // A rest is silence. Written as a note it produced <octave>-2</octave>, which is
+            // outside MusicXML's range, and reading the file back gave a note at pitch -1. The
+            // gap it leaves is written as a rest by the measure filler further down.
+            if (Rests.IsRest(e.Pitch)) continue;
+
             if (e.Offset < Rational.Zero)
             {
                 // MeasureIndexOf truncates toward zero, so a negative onset would silently land in

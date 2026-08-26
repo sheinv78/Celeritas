@@ -191,12 +191,19 @@ public static class MelodyAnalyzer
             return EmptyResult();
         }
 
-        // Extract pitches in time order
+        // Extract pitches in time order. A rest is silence, not a note in the line: kept, its
+        // RestPitch (-1) reached the interval naming and threw "MIDI pitch must be 0-127".
         var notes = new List<(int Pitch, Rational Time)>();
         for (int i = 0; i < buffer.Count; i++)
         {
             var note = buffer.Get(i);
+            if (Rests.IsRest(note.Pitch)) continue;
             notes.Add((note.Pitch, note.Offset));
+        }
+
+        if (notes.Count == 0)
+        {
+            return EmptyResult();
         }
         // Pitch tie-break: chord notes share an onset, and an offset-only sort would
         // leave their order (and thus the interval sequence) insertion-order dependent.
