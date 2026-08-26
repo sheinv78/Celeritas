@@ -331,7 +331,9 @@ class TestTrill(unittest.TestCase):
         self.assertEqual(len(expanded), 16)
         _assert_exact_timing(self, base_note, expanded)
 
-    def test_trill_matches_the_library_when_the_duration_is_not_a_whole_number_of_units(self):
+    def test_trill_matches_the_library_when_the_duration_is_not_a_whole_number_of_units(
+        self,
+    ):
         """The bindings write Trill again in Python, so the two can drift apart.
 
         They had: the loop here ran until the base note ran out and put a stub note at the end,

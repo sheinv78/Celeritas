@@ -396,7 +396,9 @@ class Trill:
         # a semitone otherwise.
         lower_pitch = _playable(base_pitch - (2 if self.interval == 2 else 1))
 
-        start_time = Fraction(self.base_note.time_numerator, self.base_note.time_denominator)
+        start_time = Fraction(
+            self.base_note.time_numerator, self.base_note.time_denominator
+        )
         duration = Fraction(
             self.base_note.duration_numerator, self.base_note.duration_denominator
         )
@@ -463,7 +465,8 @@ class Trill:
         if notes:
             last = notes[-1]
             last_start = Fraction(last.time_numerator, last.time_denominator)
-            if last_start + Fraction(last.duration_numerator, last.duration_denominator) != end_time:
+            last_length = Fraction(last.duration_numerator, last.duration_denominator)
+            if last_start + last_length != end_time:
                 stretched = end_time - last_start
                 notes[-1] = NoteEvent(
                     pitch=last.pitch,
