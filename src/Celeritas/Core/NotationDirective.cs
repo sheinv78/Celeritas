@@ -41,8 +41,12 @@ public sealed record TempoBpmDirective : NotationDirective
     /// <summary>Returns a readable form such as "@bpm 120 at 0" or "@bpm 120 -&gt; 140 /2 at 0".</summary>
     public override string ToString()
     {
+        // The ramp duration is optional in the notation, so a ramp may have a target and no
+        // stated length. Requiring both dropped the target and read back as a steady tempo.
         if (TargetBpm.HasValue && RampDuration.HasValue)
             return $"@bpm {Bpm} -> {TargetBpm} /{MusicNotation.FormatDuration(RampDuration.Value)} at {Time}";
+        if (TargetBpm.HasValue)
+            return $"@bpm {Bpm} -> {TargetBpm} at {Time}";
         return $"@bpm {Bpm} at {Time}";
     }
 }

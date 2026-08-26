@@ -214,6 +214,95 @@ public class WrittenDownAndReadBackTests
         Assert.Contains("keyboard", thrown.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ---------- a tie belongs to one voice ----------
+
+    [Fact]
+    public void ATieAtTheEndOfAVoice_DoesNotSwallowTheNextVoicesNote()
+    {
+        // Pending ties were not cleared between the voices of a polyphonic block, so a tie left
+        // dangling at the end of one voice merged the next voice's first same-pitch note into
+        // it: three notes came back as two, and the one that vanished belonged to another line.
+        var notes = MusicNotation.Parse("<< C4/4~ | C4/4 D4/4 >>");
+
+        Assert.Equal(3, notes.Length);
+        Assert.Equal(2, notes.Count(n => n.Pitch == 60));
+    }
+
+    [Theory]
+    [InlineData("<< C4/4~ C4/4 | G3/2 >>", 2)]
+    [InlineData("C4/4~ C4/4 D4/4", 2)]
+    public void ATieWithinOneLine_StillJoinsItsNotes(string notation, int expected)
+    {
+        // The fix must not have stopped ties from working where they do belong.
+        var notes = MusicNotation.Parse(notation);
+
+        Assert.Equal(expected, notes.Length);
+        Assert.Contains(notes, n => n.Pitch == 60 && n.Duration == Rational.Half);
+    }
+
+    // ---------- a tempo ramp keeps the tempo it ramps to ----------
+
+    [Fact]
+    public void ATempoRampWithNoStatedLength_KeepsItsTarget()
+    {
+        // The ramp duration is optional in the notation, and both the writer and ToString
+        // required it before they would mention the target — so a passage that ramps to 180
+        // was written back as "@bpm 120" and read as a steady tempo.
+        var parsed = MusicNotation.ParseFull("@bpm=120->180 C4/4");
+        var directives = parsed.Directives.ToArray();
+
+        var written = MusicNotation.FormatWithDirectives(parsed.Notes.AsSpan(), directives.AsSpan());
+        var reread = MusicNotation.ParseFull(written).Directives.OfType<TempoBpmDirective>().Single();
+
+        Assert.Equal(120, reread.Bpm);
+        Assert.Equal(180, reread.TargetBpm);
+        Assert.Contains("180", directives.OfType<TempoBpmDirective>().Single().ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ATempoRampWithALength_KeepsBoth()
+    {
+        var parsed = MusicNotation.ParseFull("@bpm=120->180/2 C4/4");
+        var directives = parsed.Directives.ToArray();
+
+        var reread = MusicNotation
+            .ParseFull(MusicNotation.FormatWithDirectives(parsed.Notes.AsSpan(), directives.AsSpan()))
+            .Directives.OfType<TempoBpmDirective>().Single();
+
+        Assert.Equal(180, reread.TargetBpm);
+        Assert.Equal(Rational.Half, reread.RampDuration);
+    }
+
+    // ---------- statistics describe the music, not the silence before it ----------
+
+    [Fact]
+    public void RhythmStatisticsMeasureTheMusicRatherThanTheTimeBeforeIt()
+    {
+        // Counting measures from time zero billed a passage its leading silence: four quarters
+        // all inside bar 5 were reported as five measures at 0.80 notes per measure.
+        using var buffer = new NoteBuffer(4);
+        for (var i = 0; i < 4; i++)
+            buffer.AddNote(60 + i, new Rational(16 + i, 4), Rational.Quarter);
+
+        var statistics = RhythmAnalyzer.Analyze(buffer, new TimeSignature(4, 4)).Statistics;
+
+        Assert.Equal(1, statistics.MeasureCount);
+        Assert.Equal(4f, statistics.NotesPerMeasure);
+    }
+
+    [Fact]
+    public void RhythmStatisticsStillCountEveryMeasureTheMusicSpans()
+    {
+        using var buffer = new NoteBuffer(8);
+        for (var i = 0; i < 8; i++)
+            buffer.AddNote(60 + i, new Rational(i, 4), Rational.Quarter);
+
+        var statistics = RhythmAnalyzer.Analyze(buffer, new TimeSignature(4, 4)).Statistics;
+
+        Assert.Equal(2, statistics.MeasureCount);
+        Assert.Equal(4f, statistics.NotesPerMeasure);
+    }
+
     [Fact]
     public void AFigureWithRoomAboveItsBass_IsStillRealised()
     {

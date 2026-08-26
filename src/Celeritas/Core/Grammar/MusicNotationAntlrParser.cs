@@ -557,6 +557,12 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
             var voiceStartTime = blockStartTime;
             _currentTime = voiceStartTime;
 
+            // A tie joins two notes in one line; it cannot reach across into another voice.
+            // Left standing, a tie dangling at the end of one voice swallowed the next voice's
+            // first note of the same pitch — "<< C4/4~ | C4/4 D4/4 >>" came back as two notes
+            // instead of three, and the one that vanished was in the other voice.
+            _pendingTies.Clear();
+
             // Parse this voice
             VisitVoice(voiceCtx);
 
@@ -565,6 +571,9 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
             if (voiceDuration > maxVoiceDuration)
                 maxVoiceDuration = voiceDuration;
         }
+
+        // A tie at the end of the last voice has nothing after it inside the block either.
+        _pendingTies.Clear();
 
         // Advance timeline by the longest voice
         _currentTime = blockStartTime + maxVoiceDuration;

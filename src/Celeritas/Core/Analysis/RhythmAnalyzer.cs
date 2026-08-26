@@ -968,7 +968,11 @@ public static class RhythmAnalyzer
             strengthHist[e.Strength] = count + 1;
         }
 
-        var measureCount = events.Max(e => e.Measure) + 1;
+        // The measures the music occupies, not the measures since time zero. Counting from zero
+        // billed a passage its leading silence: four quarters all inside bar 5 were reported as
+        // five measures at 0.80 notes per measure, when what was played is one measure of four.
+        // Density already measures from the first onset; this now agrees with it.
+        var measureCount = events.Max(e => e.Measure) - events.Min(e => e.Measure) + 1;
 
         // Exact mean via Rational arithmetic (numerators cannot simply be summed
         // across different denominators).

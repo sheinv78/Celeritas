@@ -507,9 +507,13 @@ public static class MusicNotation
     {
         return directive switch
         {
-            TempoBpmDirective bpm => bpm is { TargetBpm: not null, RampDuration: not null }
-                ? $"@bpm {bpm.Bpm} -> {bpm.TargetBpm} {(useLetters ? ':' : '/')}{FormatDuration(bpm.RampDuration.Value, useDot: true, useLetters)}"
-                : $"@bpm {bpm.Bpm}",
+            // The ramp duration is optional in the notation, so "@bpm=120->180" is a ramp with
+            // no stated length. Requiring both parts dropped the target and wrote back
+            // "@bpm 120" — a passage that ramped to 180 came out holding its opening tempo.
+            TempoBpmDirective { TargetBpm: not null, RampDuration: not null } ramp =>
+                $"@bpm {ramp.Bpm} -> {ramp.TargetBpm} {(useLetters ? ':' : '/')}{FormatDuration(ramp.RampDuration.Value, useDot: true, useLetters)}",
+            TempoBpmDirective { TargetBpm: not null } target => $"@bpm {target.Bpm} -> {target.TargetBpm}",
+            TempoBpmDirective bpm => $"@bpm {bpm.Bpm}",
 
             TempoCharacterDirective tempo => NeedsQuotes(tempo.Character)
                 ? $"@tempo \"{tempo.Character}\""
