@@ -135,7 +135,7 @@ Formatted: C4/4 E4/8 G4/2.
 Numeric: C4/4 E4/8 G4/2.
 Letters: C4:q E4:e G4:h.
 No dots: C4/4 E4/8 G4/3/4
-Flat: C4/4 E4/4 G4/4 D4/4 F4/4 A4/4 B4/2
+Flat: << C4/4 D4/4 B4/2 | E4/4 F4/4 | G4/4 A4/4 >>
 Grouped: [C4 E4 G4]/4 [D4 F4 A4]/4 B4/2
 With directives: @bpm 120 @dynamics mf C4/4 E4/4 G4/4
 BPM ramp: @bpm 120 -> 140 /2 C4/1 D4/1

@@ -53,6 +53,12 @@ jobs:
       # EnforceCodeStyleInBuild + TreatWarningsAsErrors; this step only checks whitespace.
       run: dotnet format whitespace Celeritas.sln --verify-no-changes
 
+    - name: Check the examples print what they document
+      if: matrix.os == 'ubuntu-latest'
+      # Nothing else compiles examples/, so before this they could drift into documenting a
+      # version of the library that no longer existed - and several had.
+      run: bash scripts/check-examples.sh
+
     - name: Test (with coverage)
       run: dotnet test --no-build -c Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory TestResults
 

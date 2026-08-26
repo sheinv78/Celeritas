@@ -184,7 +184,7 @@ Syncopation:
   Syncopation level: 0.00
 
 Groove:
-  Density: 2.00
+  Density: 0.75
 
 === Complete Melody Analysis ===
 Contour: Wave (Undulating/wave-like contour)

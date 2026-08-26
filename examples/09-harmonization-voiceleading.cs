@@ -248,7 +248,7 @@ Voicings:
 3   G2     D3     B3     G4    
 4   G2     E3     C4     G4    
 
-SATB VoicePart Leading:
+SATB Voice Leading:
 ═══════════════════════════════════════
 
      Bass      Tenor     Alto      Soprano

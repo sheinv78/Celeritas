@@ -210,9 +210,18 @@ class FormAndPolyphony
 /* Expected Output:
 
 === Form Analysis ===
-Phrases detected: 1
-  Phrase: 0 → 29/4
-    Length: 29/4
+Phrases detected: 4
+  Phrase: 0 → 5/4
+    Length: 5/4
+    Cadence: None
+  Phrase: 7/4 → 3
+    Length: 5/4
+    Cadence: None
+  Phrase: 7/2 → 19/4
+    Length: 5/4
+    Cadence: None
+  Phrase: 21/4 → 29/4
+    Length: 2
     Cadence: None
 
 Cadences:
@@ -225,6 +234,12 @@ Sections: 1
     Time: 0 → 6
     Length: 6
     Phrases: 1
+
+=== Period Structure ===
+Period 1:
+  Antecedent phrase: 0
+  Consequent phrase: 1
+  Length A: 2, Length B: 2
 
 === Polyphony Analysis ===
 Voices detected: 4
