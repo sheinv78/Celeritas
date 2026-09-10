@@ -656,7 +656,36 @@ public static class VoiceSeparator
         var avgJump = jumpCount > 0 ? totalJumps / jumpCount : 0;
         var jumpPenalty = Math.Max(0, (avgJump - 4) * 0.02f); // Penalize avg jump > 4 semitones
 
-        return Math.Clamp(1.0f - crossingPenalty - jumpPenalty, 0f, 1f);
+        // A voice is one line: at any moment it sounds one note. A note that begins while
+        // another in the same voice is still sounding is a note the separation could not place,
+        // and nothing here counted them — so eleven notes struck together came back as four
+        // voices, one of them holding eight at once, and the score called that separation
+        // perfect. This is the one thing a separation is for, so it is the one thing the score
+        // must report; the melodic-jump term above cannot see it, because notes piled on the
+        // same onset are a step apart in pitch and look like the smoothest line there is.
+        var piled = 0;
+        var placed = 0;
+        foreach (var voice in voices)
+        {
+            var soundingUntil = Rational.Zero;
+            var first = true;
+            foreach (var note in voice.Notes)
+            {
+                placed++;
+                if (!first && note.Offset < soundingUntil)
+                {
+                    piled++;
+                }
+
+                var end = note.Offset + note.Duration;
+                soundingUntil = first || end > soundingUntil ? end : soundingUntil;
+                first = false;
+            }
+        }
+
+        var pilePenalty = placed > 0 ? (float)piled / placed : 0f;
+
+        return Math.Clamp(1.0f - crossingPenalty - jumpPenalty - pilePenalty, 0f, 1f);
     }
 
     private static string GetVoiceName(int index, int total)

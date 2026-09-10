@@ -734,7 +734,7 @@ public static class ProgressionAdvisor
 
             for (var v = 0; v < voices; v++)
             {
-                totalMoves += Math.Abs(sortBuf[12 + v] - sortBuf[v]);
+                totalMoves += Math.Abs(ShortestMove(sortBuf[v], sortBuf[12 + v]));
                 totalVoices++;
             }
 
@@ -746,8 +746,8 @@ public static class ProgressionAdvisor
                     var intA = Math.Abs(sortBuf[v2] - sortBuf[v1]) % 12;
                     var intB = Math.Abs(sortBuf[12 + v2] - sortBuf[12 + v1]) % 12;
 
-                    var dir1 = Math.Sign(sortBuf[12 + v1] - sortBuf[v1]);
-                    var dir2 = Math.Sign(sortBuf[12 + v2] - sortBuf[v2]);
+                    var dir1 = Math.Sign(ShortestMove(sortBuf[v1], sortBuf[12 + v1]));
+                    var dir2 = Math.Sign(ShortestMove(sortBuf[v2], sortBuf[12 + v2]));
                     var isParallelMotion = dir1 != 0 && dir1 == dir2;
 
                     if (!isParallelMotion)
@@ -770,6 +770,26 @@ public static class ProgressionAdvisor
 
         var avg = totalVoices > 0 ? totalMoves / totalVoices : 0f;
         return (avg, p5, p8);
+    }
+
+    /// <summary>
+    /// How far a voice moves between two chord tones, the short way round, as a signed number of
+    /// semitones in -6..+6.
+    /// </summary>
+    /// <remarks>
+    /// The chords being compared here were voiced from their symbols into one fixed octave, so
+    /// the absolute distance between two of those pitches measures where that voicing put them
+    /// rather than how the music moves: I-IV-V-I came out at 4.67 semitones per voice in ten keys
+    /// and 6.67 in F and G flat, purely because those roots wrap round the top of the octave, and
+    /// vi-IV-I-V gave four different answers over the twelve keys. Voice leading is a property of
+    /// the music, so it is measured between pitch classes, which transpose with it. A tritone is
+    /// the same distance either way and is counted as rising, which is a choice made from the
+    /// interval alone and therefore moves with the music too.
+    /// </remarks>
+    private static int ShortestMove(int from, int to)
+    {
+        var distance = PitchMath.Fold(to - from);
+        return distance > 6 ? distance - 12 : distance;
     }
 
     private static ChordAnalysisDetail AnalyzeChord(

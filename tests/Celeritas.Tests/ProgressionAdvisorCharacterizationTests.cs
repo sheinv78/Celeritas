@@ -255,7 +255,12 @@ public class ProgressionAdvisorCharacterizationTests
         // iv6 -> V in minor is Phrygian here too, matching the public DetectCadence.
         Assert.Equal(CadenceType.Phrygian, r.Cadences[0].Type);
         Assert.Equal(0f, r.ParallelFifths);
-        Assert.Equal("Rough", r.QualityRating);
+
+        // "Rough" until voice movement stopped being measured in absolute semitones between
+        // pitches voiced into one fixed octave: Dm/F puts its D an octave above its F, which
+        // inflated every move away from it. i - iv6 - V moves by a fourth and then a semitone,
+        // which is smooth, and the same progression in every other key now agrees.
+        Assert.Equal("Good", r.QualityRating);
 
         Assert.Equal(
             "This progression is in A Minor, giving it a darker and more dramatic character.\n"

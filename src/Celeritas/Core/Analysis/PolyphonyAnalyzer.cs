@@ -314,7 +314,13 @@ public static class PolyphonyAnalyzer
         var parallel8Ves = violations.Count(v => v.Type == "Parallel Octaves");
         var hidden = violations.Count(v => v.Type == "Hidden Perfect Interval");
 
-        var (voiceCrossing, spacing) = PolyphonyAnalyzerHelpers.AnalyzeCrossingsAndSpacing(analysis.Voices);
+        // The crossing and spacing findings go into the list as well as into their counters.
+        // They used to be counted here and nowhere else, so a caller told "VoiceCrossing = 3"
+        // looked in Violations — documented as "the full list underlying the counts" — and found
+        // nothing about them; over 400 random two-voice textures a counter disagreed with the
+        // list in 195.
+        var (voiceCrossing, spacing, crossingAndSpacing) =
+            PolyphonyAnalyzerHelpers.AnalyzeCrossingsAndSpacing(analysis.Voices);
 
         return new CounterpointRulesCheckResult
         {
@@ -324,7 +330,7 @@ public static class PolyphonyAnalyzer
             VoiceCrossing = voiceCrossing,
             SpacingViolations = spacing,
             QualityScore = PolyphonyAnalyzerHelpers.Clamp01(analysis.QualityScore - (spacing * 0.02f) - (voiceCrossing * 0.02f)),
-            Violations = violations
+            Violations = [.. violations, .. crossingAndSpacing]
         };
     }
 
@@ -1024,16 +1030,28 @@ public sealed record CounterpointRulesCheckResult
     /// <summary>Number of hidden (direct) perfect-interval motions detected.</summary>
     public required int HiddenParallels { get; init; }
 
-    /// <summary>Number of voice-crossing occurrences detected.</summary>
+    /// <summary>Number of voice-crossing occurrences detected; each is a
+    /// <c>Voice Crossing</c> entry in <see cref="Violations"/>.</summary>
     public required int VoiceCrossing { get; init; }
 
-    /// <summary>Number of voice-spacing violations detected.</summary>
+    /// <summary>Number of voice-spacing violations detected; each is a <c>Spacing</c> entry in
+    /// <see cref="Violations"/>.</summary>
     public required int SpacingViolations { get; init; }
 
     /// <summary>Overall quality score in the range 0-1.</summary>
     public required float QualityScore { get; init; }
 
-    /// <summary>Full list of counterpoint violations underlying the counts.</summary>
+    /// <summary>
+    /// Full list of counterpoint violations underlying the counts, each naming the time and the
+    /// two voices it involves.
+    /// </summary>
+    /// <remarks>
+    /// Every count on this record is the number of entries here whose <c>Type</c> matches it:
+    /// <c>Parallel Fifths</c>, <c>Parallel Octaves</c>, <c>Hidden Perfect Interval</c>,
+    /// <c>Voice Crossing</c>, <c>Spacing</c>. The list also carries the findings this check does
+    /// not count — <c>Large Leap</c> and <c>Unresolved Dissonance</c> — so it is longer than
+    /// their sum.
+    /// </remarks>
     public required IReadOnlyList<CounterpointViolation> Violations { get; init; }
 }
 
@@ -1101,11 +1119,13 @@ static file class PolyphonyAnalyzerHelpers
         return true;
     }
 
-    public static (int crossings, int spacing) AnalyzeCrossingsAndSpacing(VoiceSeparationResult voices)
+    public static (int Crossings, int Spacing, List<CounterpointViolation> Violations)
+        AnalyzeCrossingsAndSpacing(VoiceSeparationResult voices)
     {
+        var found = new List<CounterpointViolation>();
         if (voices.Voices.Count < 2)
         {
-            return (0, 0);
+            return (0, 0, found);
         }
 
         // Collect all distinct time points where any note starts.
@@ -1134,6 +1154,17 @@ static file class PolyphonyAnalyzerHelpers
                 if (sounding[i].HasValue && sounding[i + 1].HasValue && sounding[i]!.Value < sounding[i + 1]!.Value)
                 {
                     crossings++;
+                    found.Add(new CounterpointViolation
+                    {
+                        Type = "Voice Crossing",
+                        Description =
+                            $"{voices.Voices[i].Name} at {sounding[i]!.Value} is below "
+                            + $"{voices.Voices[i + 1].Name} at {sounding[i + 1]!.Value}",
+                        Time = t,
+                        Voice1 = voices.Voices[i].Index,
+                        Voice2 = voices.Voices[i + 1].Index,
+                        Severity = "Warning"
+                    });
                 }
             }
 
@@ -1157,11 +1188,22 @@ static file class PolyphonyAnalyzerHelpers
                 if (dist > limit)
                 {
                     spacing++;
+                    found.Add(new CounterpointViolation
+                    {
+                        Type = "Spacing",
+                        Description =
+                            $"{dist} semitones between {voices.Voices[i].Name} and "
+                            + $"{voices.Voices[i + 1].Name}, more than the {limit} allowed here",
+                        Time = t,
+                        Voice1 = voices.Voices[i].Index,
+                        Voice2 = voices.Voices[i + 1].Index,
+                        Severity = "Style"
+                    });
                 }
             }
         }
 
-        return (crossings, spacing);
+        return (crossings, spacing, found);
     }
 
     private static int? GetSoundingPitch(Voice voice, Rational t)

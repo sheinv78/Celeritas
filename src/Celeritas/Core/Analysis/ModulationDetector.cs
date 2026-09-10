@@ -436,7 +436,49 @@ public static class ModulationDetector
             return null;
         }
 
+        if (!TellsTheKeysApart(pitches, detectedKey, currentKey))
+        {
+            return null;
+        }
+
         return new WindowVerdict(detectedKey, separation);
+    }
+
+    /// <summary>
+    /// Whether the window holds a note that tells <paramref name="detected"/> from
+    /// <paramref name="current"/> at all.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A key change nobody can hear is not a key change. C major and D minor differ by exactly
+    /// one note — B against B flat — and the middle strain of "Twinkle, Twinkle, Little Star",
+    /// G G F F E E D, contains neither, so the window had nothing in it that separates the two
+    /// and the detector chose on the weighting of the notes they share. Forty-two notes without
+    /// an accidental anywhere in them came back as five modulations, ending in D minor.
+    /// </para>
+    /// <para>
+    /// The test is only applied where it can decide something: relative keys have identical
+    /// scales, so nothing in the pitch content ever tells C major from A minor and the guard
+    /// stands aside for them, leaving that call to the profile margins above.
+    /// </para>
+    /// </remarks>
+    private static bool TellsTheKeysApart(ReadOnlySpan<int> pitches, KeySignature detected, KeySignature current)
+    {
+        var distinguishing = (ushort)(detected.GetScaleMask() ^ current.GetScaleMask());
+        if (distinguishing == 0)
+        {
+            return true;
+        }
+
+        foreach (var pitch in pitches)
+        {
+            if ((distinguishing & (1 << PitchMath.Fold(pitch))) != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
