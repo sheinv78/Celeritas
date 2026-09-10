@@ -273,15 +273,105 @@ public static class ModeLibrary
     /// <summary>
     /// Get note names for a scale.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A heptatonic scale uses each of the seven letters A-G exactly once, so its notes are
+    /// spelled out from the root's letter rather than read off the table of pitch-class names.
+    /// Reading them off the table gave F sharp Ionian as "F# G# A# B C# D# F" — an F sharp and
+    /// an F natural in one scale and no E at all, so that where the leading tone belongs a
+    /// reader sees a diminished octave. Ninety-two of the hundred and fifty-six heptatonic mode
+    /// and root pairs came back spelled that way.
+    /// </para>
+    /// <para>
+    /// Where a root sounds the same as two letters, the spelling that needs the fewest
+    /// accidentals wins, which is what a musician writes: the Ionian mode on pitch class 8 is A
+    /// flat major, not G sharp major with a double-sharped seventh. Ties go to the earlier
+    /// letter, so pitch class 6 is spelled F sharp rather than G flat.
+    /// </para>
+    /// <para>
+    /// A scale that is not heptatonic — the pentatonics, the blues scale, whole tone, the
+    /// diminished scales — has no letter-per-degree to keep, and its notes are named from the
+    /// pitch-class table. So is a heptatonic scale that no spelling can write within single
+    /// accidentals, since this library's note names carry at most one.
+    /// </para>
+    /// </remarks>
     public static string[] GetScaleNoteNames(ModalKey key)
     {
         var notes = GetScaleNotes(key);
+
+        if (notes.Length == LetterCount && TrySpellByLetter(notes) is { } spelled)
+        {
+            return spelled;
+        }
+
         var names = new string[notes.Length];
         for (int i = 0; i < notes.Length; i++)
         {
             names[i] = ChordLibrary.NoteNames[notes[i]];
         }
         return names;
+    }
+
+    private const int LetterCount = 7;
+
+    private const string Letters = "CDEFGAB";
+
+    /// <summary>The pitch class each letter names with no accidental on it.</summary>
+    private static readonly int[] LetterPitchClasses = [0, 2, 4, 5, 7, 9, 11];
+
+    /// <summary>
+    /// The seven notes spelled one letter per degree, or <see langword="null"/> when no starting
+    /// letter can write them all within a single accidental.
+    /// </summary>
+    private static string[]? TrySpellByLetter(int[] notes)
+    {
+        string[]? best = null;
+        var fewestAccidentals = int.MaxValue;
+
+        for (var startLetter = 0; startLetter < LetterCount; startLetter++)
+        {
+            var candidate = new string[LetterCount];
+            var accidentals = 0;
+            var writable = true;
+
+            for (var degree = 0; degree < LetterCount; degree++)
+            {
+                var letter = (startLetter + degree) % LetterCount;
+                var alteration = Centered(notes[degree] - LetterPitchClasses[letter]);
+
+                if (alteration is < -1 or > 1)
+                {
+                    writable = false;
+                    break;
+                }
+
+                accidentals += Math.Abs(alteration);
+                candidate[degree] = Letters[letter] + alteration switch
+                {
+                    1 => "#",
+                    -1 => "b",
+                    _ => string.Empty
+                };
+            }
+
+            if (writable && accidentals < fewestAccidentals)
+            {
+                fewestAccidentals = accidentals;
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// A distance in semitones brought into -6..5, so that eleven semitones up reads as one
+    /// semitone down — which is what an accidental on the letter above means.
+    /// </summary>
+    private static int Centered(int semitones)
+    {
+        var folded = PitchMath.Fold(semitones);
+        return folded > 6 ? folded - 12 : folded;
     }
 
     /// <summary>
