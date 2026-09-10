@@ -124,13 +124,24 @@ public readonly struct ModalKey(byte root, Mode mode) : IEquatable<ModalKey>
     public ModalKey ParallelMinor => new(Root, Mode.Aeolian);
 
     /// <summary>
-    /// Get the relative major (for minor modes).
+    /// The major key built on the same notes as this mode — for Lydian on C, that is G major.
     /// </summary>
+    /// <remarks>
+    /// Every diatonic mode has one, not only the minor-sounding ones: the table listed Aeolian,
+    /// Dorian, Phrygian and Locrian and let Lydian and Mixolydian fall through to the default,
+    /// which returns the mode's own root. So C Lydian claimed C major as its relative major
+    /// though the two differ by the F sharp that makes it Lydian, and the answer was silently
+    /// the same as <see cref="ParallelMajor"/>. A mode with no diatonic parent — harmonic minor,
+    /// whole tone, the pentatonics — still falls through to the parallel major, since there is no
+    /// major scale on the same notes to point at.
+    /// </remarks>
     public ModalKey RelativeMajor => Mode switch
     {
         Mode.Aeolian => new((byte)((Root + 3) % 12), Mode.Ionian),
         Mode.Dorian => new((byte)((Root + 10) % 12), Mode.Ionian),
         Mode.Phrygian => new((byte)((Root + 8) % 12), Mode.Ionian),
+        Mode.Lydian => new((byte)((Root + 7) % 12), Mode.Ionian),
+        Mode.Mixolydian => new((byte)((Root + 5) % 12), Mode.Ionian),
         Mode.Locrian => new((byte)((Root + 1) % 12), Mode.Ionian),
         _ => new(Root, Mode.Ionian)
     };
@@ -371,7 +382,14 @@ public static class ModeLibrary
                     score += 0.15f;
                 }
 
-                // Slight preference for common modes
+                // Slight preference for common modes. With no root hint, every rotation of a
+                // scale fits its notes exactly, so this is what decides which of them to name —
+                // and thereby where the root is. Harmonic and melodic minor need an entry for
+                // the same reason Ionian does: they are the ordinary name for their rotations.
+                // Without one, F harmonic minor tied with C Phrygian Dominant (its fifth mode)
+                // and A melodic minor with C altered (its seventh), both were settled by the
+                // order of the root loop, and the answer stopped following the music: every
+                // transposition of the scale came back rooted on pitch class 0.
                 score += mode switch
                 {
                     Mode.Ionian => 0.05f,
@@ -380,6 +398,8 @@ public static class ModeLibrary
                     Mode.Mixolydian => 0.02f,
                     Mode.Phrygian => 0.01f,
                     Mode.Lydian => 0.01f,
+                    Mode.HarmonicMinor => 0.01f,
+                    Mode.MelodicMinor => 0.01f,
                     _ => 0f
                 };
 
@@ -512,11 +532,32 @@ public static class ModeLibrary
         return total > 0f;
     }
 
+    /// <summary>
+    /// The modes detection chooses between. Every <see cref="Mode"/> except the two pentatonics,
+    /// which are proper subsets of modes already here.
+    /// </summary>
+    /// <remarks>
+    /// The list held only the seven diatonic modes plus harmonic and melodic minor, so eight of
+    /// the modes this library defines could never be named: the exact notes of C Phrygian
+    /// Dominant came back as C Phrygian — a mode without the major third that defines the scale —
+    /// at confidence 0.272, which for this detector is a confident answer, and the altered scale
+    /// likewise came back as Locrian. Widening the list corrects 96 of 228 mode/root pairs and
+    /// changes no answer that was already right: not one full scale moves to a different wrong
+    /// mode, and not one of the 105 five-note melodies drawn from a diatonic mode changes at all.
+    ///
+    /// The pentatonics stay out because the score rewards containing the notes played, so a scale
+    /// contained in another can only tie with it, never win — a minor pentatonic fits Aeolian and
+    /// Dorian perfectly and adding MinorPentatonic would just make it a three-way tie decided by
+    /// the order of this array. A pentatonic melody is reported as its containing mode with a
+    /// confidence of zero, which says the same thing more honestly.
+    /// </remarks>
     private static readonly Mode[] DetectableModes =
     [
         Mode.Ionian, Mode.Dorian, Mode.Phrygian, Mode.Lydian,
         Mode.Mixolydian, Mode.Aeolian, Mode.Locrian,
-        Mode.HarmonicMinor, Mode.MelodicMinor
+        Mode.HarmonicMinor, Mode.MelodicMinor,
+        Mode.PhrygianDominant, Mode.LydianDominant, Mode.LocrianNatural2, Mode.Altered,
+        Mode.WholeTone, Mode.DiminishedHalfWhole, Mode.DiminishedWholeHalf, Mode.Blues
     ];
 
     /// <summary>

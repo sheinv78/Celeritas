@@ -73,14 +73,33 @@ public class ModalAndFunctionalCoverageTests
     }
 
     [Theory]
-    [InlineData(Mode.Ionian, 0)]
-    [InlineData(Mode.Lydian, 5)]
-    [InlineData(Mode.Mixolydian, 7)]
-    public void RelativeMajor_OfAMajorMode_KeepsItsOwnRoot_AsDocumented(Mode mode, int root)
+    [InlineData(Mode.Ionian, 0, 0)]        // C major is its own relative major
+    [InlineData(Mode.Lydian, 5, 0)]        // F Lydian to C major
+    [InlineData(Mode.Lydian, 0, 7)]        // C Lydian to G major
+    [InlineData(Mode.Mixolydian, 7, 0)]    // G Mixolydian to C major
+    [InlineData(Mode.Mixolydian, 0, 5)]    // C Mixolydian to F major
+    public void RelativeMajor_OfAMajorMode_IsTheSharedScale(Mode mode, int root, int expectedRoot)
     {
-        // The property is documented "for minor modes". For a major-ish mode it deliberately
-        // falls back to the same root in Ionian rather than naming the parent scale, so
-        // F Lydian answers F major, not C major. Pinned so the fallback stays deliberate.
+        // Lydian and Mixolydian have a relative major as surely as the minor-sounding modes do:
+        // they are rotations of a major scale too. Both were missing from the table and fell
+        // through to a default that returns the mode's own root, so this asserted that F Lydian
+        // answers F major — which differs from F Lydian by the B natural — and called the gap
+        // deliberate.
+        var relative = new ModalKey((byte)root, mode).RelativeMajor;
+
+        Assert.Equal((byte)expectedRoot, relative.Root);
+        Assert.Equal(Mode.Ionian, relative.Mode);
+    }
+
+    [Theory]
+    [InlineData(Mode.HarmonicMinor, 9)]
+    [InlineData(Mode.MelodicMinor, 9)]
+    [InlineData(Mode.WholeTone, 0)]
+    [InlineData(Mode.MajorPentatonic, 0)]
+    public void RelativeMajor_OfAModeWithNoDiatonicParent_KeepsItsOwnRoot(Mode mode, int root)
+    {
+        // No major scale is built on these notes, so there is nothing to point at and the
+        // property answers the parallel major. This fallback really is deliberate.
         var relative = new ModalKey((byte)root, mode).RelativeMajor;
 
         Assert.Equal((byte)root, relative.Root);

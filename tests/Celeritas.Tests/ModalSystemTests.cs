@@ -113,4 +113,96 @@ public class ModalSystemTests
         Assert.Equal(Mode.Dorian, key.Mode);
         Assert.True(confidence > 0.1f, $"a full scale should clear the modest margin floor, got {confidence}");
     }
+
+    /// <summary>
+    /// Given the exact notes of a mode and told where its root is, detection must name that mode.
+    /// It could not name eight of them: the candidate list held only the diatonic modes plus
+    /// harmonic and melodic minor, so C Phrygian Dominant came back as C Phrygian — a mode without
+    /// the major third that defines the scale — at a confidence this detector treats as certain.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryModeAndRoot))]
+    public void AModeIsFoundFromItsOwnScale(Mode mode, int root)
+    {
+        var scale = ModeLibrary.GetScaleNotes(new ModalKey((byte)root, mode));
+
+        var (key, _) = ModeLibrary.DetectModeWithRoot(scale, root);
+
+        Assert.Equal(root, key.Root);
+        Assert.Equal(mode, key.Mode);
+    }
+
+    /// <summary>
+    /// The two pentatonics are the exception, and deliberately so: each is contained in modes the
+    /// detector already offers, and the score rewards containing the notes played, so a contained
+    /// scale can only tie with its container. They come back as that container with a confidence
+    /// of zero, which says "this fits several modes equally" rather than picking one and meaning it.
+    /// </summary>
+    [Theory]
+    [InlineData(Mode.MajorPentatonic)]
+    [InlineData(Mode.MinorPentatonic)]
+    public void APentatonicIsReportedAsAModeThatContainsItWithNoConfidence(Mode pentatonic)
+    {
+        for (var root = 0; root < 12; root++)
+        {
+            var scale = ModeLibrary.GetScaleNotes(new ModalKey((byte)root, pentatonic));
+
+            var (key, confidence) = ModeLibrary.DetectModeWithRoot(scale, root);
+
+            Assert.Equal(root, key.Root);
+            Assert.Equal(0f, confidence);
+            Assert.All(scale, pitchClass =>
+                Assert.True(
+                    ModeLibrary.ContainsPitch(key, ((pitchClass % 12) + 12) % 12),
+                    $"{pentatonic} on {root} was answered {key}, which lacks {pitchClass}"));
+        }
+    }
+
+    /// <summary>
+    /// Every diatonic mode is a rotation of a major scale, so its relative major must be built on
+    /// the same notes. Lydian and Mixolydian were missing from the table and fell through to a
+    /// default that returns the mode's own root, so C Lydian claimed C major — which differs by
+    /// the F sharp that makes it Lydian — and the answer was silently the parallel major.
+    /// </summary>
+    [Theory]
+    [InlineData(Mode.Ionian)]
+    [InlineData(Mode.Dorian)]
+    [InlineData(Mode.Phrygian)]
+    [InlineData(Mode.Lydian)]
+    [InlineData(Mode.Mixolydian)]
+    [InlineData(Mode.Aeolian)]
+    [InlineData(Mode.Locrian)]
+    public void ADiatonicModeAndItsRelativeMajorAreBuiltOnTheSameNotes(Mode mode)
+    {
+        for (var root = 0; root < 12; root++)
+        {
+            var key = new ModalKey((byte)root, mode);
+
+            var relative = key.RelativeMajor;
+
+            Assert.Equal(Mode.Ionian, relative.Mode);
+            Assert.Equal(
+                ModeLibrary.GetScaleMask(key),
+                ModeLibrary.GetScaleMask(relative));
+        }
+    }
+
+    public static TheoryData<Mode, int> EveryModeAndRoot()
+    {
+        var data = new TheoryData<Mode, int>();
+        foreach (var mode in Enum.GetValues<Mode>())
+        {
+            if (mode is Mode.MajorPentatonic or Mode.MinorPentatonic)
+            {
+                continue;
+            }
+
+            for (var root = 0; root < 12; root++)
+            {
+                data.Add(mode, root);
+            }
+        }
+
+        return data;
+    }
 }
