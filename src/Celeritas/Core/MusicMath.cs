@@ -43,6 +43,11 @@ public static unsafe class MusicMath
     /// onto it reads as a rest from then on — clamp, or transpose back, before analysing a
     /// buffer that has been moved below the bottom of the keyboard.
     /// </para>
+    /// <para>
+    /// The single-note reading takes the other contract: <c>pitch.Transpose(ChromaticInterval)</c>
+    /// throws when the pitch or the result leaves 0-127. This one moves a whole buffer and cannot
+    /// stop partway through, so it moves everything and leaves the range to the caller.
+    /// </para>
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

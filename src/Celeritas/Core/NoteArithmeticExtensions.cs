@@ -28,6 +28,11 @@ public static class NoteArithmeticExtensions
         /// <summary>
         /// Transposes this MIDI pitch by the given chromatic interval.
         /// </summary>
+        /// <remarks>
+        /// One note, so it can refuse: a result outside the keyboard is an error here.
+        /// <see cref="MusicMath.Transpose(NoteBuffer, int)"/> takes the other contract — it moves
+        /// a whole buffer, cannot stop partway through, and is documented not to clamp.
+        /// </remarks>
         /// <returns>The resulting MIDI pitch.</returns>
         /// <exception cref="ArgumentOutOfRangeException">This pitch, or the result, is outside the MIDI range 0-127.</exception>
         public int Transpose(ChromaticInterval interval)
