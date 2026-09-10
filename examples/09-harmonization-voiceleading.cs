@@ -224,15 +224,14 @@ class HarmonizationAndVoiceLeading
 
 === Harmonization Result ===
 Melody notes: 5
-Chords generated: 6
+Chords generated: 5
 
 Chord progression:
   0: C Major
   1/4: G Major
   1/2: C Major
   3/4: F Major
-  1: G Major
-  5/4: C Major
+  1: C Major
 Cost (lower is better): -0.20
 
 === SATB Voice Leading ===
@@ -267,7 +266,6 @@ Total voice leading cost: 39.0
   1/2: C Major
   3/4: G Major
   1: G Major
-  5/4: G Major
 
 === Strict Voice Leading ===
 Total cost: 55.00

@@ -11,7 +11,18 @@ public sealed class DefaultHarmonicRhythmStrategy(Rational? beatDuration = null)
 {
     private readonly Rational _beatDuration = beatDuration ?? Rational.Quarter;
 
-    /// <summary>Segments the melody into beat-aligned slices, skipping beats with no sounding notes.</summary>
+    /// <summary>
+    /// Segments the melody into beat-aligned slices, skipping beats with no sounding notes. A
+    /// beat in which nothing new begins — only notes held over from the beat before, and the
+    /// same ones — joins the slice before it, so a note longer than a beat gets one chord.
+    /// </summary>
+    /// <remarks>
+    /// The class has always been documented as one chord per beat "or per note if longer than a
+    /// beat", and the second half of that was never true: a held whole note came back as four
+    /// quarter-beat slices, and the harmonizer put four chords under it — C, F, C, C under a
+    /// single sustained C. Beats without a fresh onset are folded into the slice that started
+    /// the note now, and the strong-beat flag stays with that slice's own beat.
+    /// </remarks>
     public IReadOnlyList<MelodySlice> Segment(ReadOnlySpan<NoteEvent> melody)
     {
         if (melody.IsEmpty)
@@ -43,9 +54,21 @@ public sealed class DefaultHarmonicRhythmStrategy(Rational? beatDuration = null)
 
             if (pitches.Length > 0)
             {
-                // Strong beat = first beat or every other beat (simplified)
-                var isStrong = beatIndex % 2 == 0;
-                slices.Add(new MelodySlice(current, sliceEnd, pitches, isStrong));
+                // Nothing begins in this beat and the notes are the ones already sounding: the
+                // beat belongs to the slice that started them.
+                if (slices.Count > 0
+                    && !AnyNoteStartsIn(melody, current, sliceEnd)
+                    && slices[^1].End == current
+                    && pitches.AsSpan().SequenceEqual(slices[^1].Pitches))
+                {
+                    slices[^1] = slices[^1] with { End = sliceEnd };
+                }
+                else
+                {
+                    // Strong beat = first beat or every other beat (simplified)
+                    var isStrong = beatIndex % 2 == 0;
+                    slices.Add(new MelodySlice(current, sliceEnd, pitches, isStrong));
+                }
             }
 
             current = sliceEnd;
@@ -53,6 +76,19 @@ public sealed class DefaultHarmonicRhythmStrategy(Rational? beatDuration = null)
         }
 
         return slices;
+    }
+
+    private static bool AnyNoteStartsIn(ReadOnlySpan<NoteEvent> melody, Rational start, Rational end)
+    {
+        foreach (var note in melody)
+        {
+            if (note.Offset >= start && note.Offset < end)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static int[] CollectPitches(ReadOnlySpan<NoteEvent> melody, Rational start, Rational end)
