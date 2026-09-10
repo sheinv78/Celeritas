@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Vladimir V. Shein
+﻿// Copyright (c) 2025 Vladimir V. Shein
 // Licensed under the Business Source License 1.1
 
 using System.Runtime.InteropServices;
@@ -123,14 +123,20 @@ public static class NativeExports
                 return 0;
             }
 
-            var notes = MusicNotation.Parse(notation);
-            if (notes.Length == 0)
+            // TryParseNote, not MusicNotation.Parse: this export names one note, and the
+            // notation parser reads a whole passage and was handing back its first event.
+            // "C4 E4 G4" came back as C4 with the chord silently dropped, "R/4" came back as
+            // a note of pitch -1 — the value this library reserves for silence — and the
+            // grammar's octave is [0-9]+ with no sign, so every pitch in the bottom MIDI
+            // octave, "C-1" through "B-1", was refused outright.
+            if (!MusicNotation.TryParseNote(notation.AsSpan(), out var pitch))
             {
                 SetLastError($"Could not parse note notation: '{notation}'.");
                 return 0;
             }
 
-            var note = notes[0];
+            // The fields a bare note carries, unchanged from what the notation parser gave one.
+            var note = new NoteEvent(pitch, Rational.Zero, Rational.Quarter);
             var cNote = new CNoteEvent
             {
                 Pitch = note.Pitch,

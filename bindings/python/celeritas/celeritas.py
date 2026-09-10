@@ -214,11 +214,20 @@ def native_version() -> str:
 def parse_note(notation: str) -> Optional[NoteEvent]:
     """Parse a single note from string notation (e.g., 'C4', 'F#5', 'Bb3').
 
+    Accepts scientific pitch notation with sharps, flats and their Unicode signs, and a bare
+    MIDI number. The whole MIDI range is reachable, 'C-1' (0) to 'G9' (127).
+
+    Anything that is more than one note is refused rather than answered: a sequence, a chord,
+    a rest, a note with a written duration, a note carrying an ornament. It used to run the
+    notation-language parser and hand back its first event, so 'C4 E4 G4' came back as C4 with
+    the chord silently dropped and 'R/4' came back as a note of pitch -1, which this library
+    reserves for silence.
+
     Args:
         notation: Note notation string
 
     Returns:
-        NoteEvent or None if parsing failed
+        NoteEvent, at time 0 and a quarter note long, or None if parsing failed
     """
 
     c_note = CNoteEvent()
@@ -280,7 +289,13 @@ def identify_chord(pitches: List[int]) -> str:
         pitches: List of MIDI pitch values
 
     Returns:
-        Chord symbol (e.g., 'Cmaj', 'Dm7', 'G7')
+        The root and quality run together, as the native library writes them: 'CMajor',
+        'DMinor', 'GDominant7', 'CDominant7Flat5'. Not a chord symbol in the jazz sense, and
+        not the spaced form C# prints from ChordInfo.ToString ('C Major') - the two differ by
+        that space, and this shape is what shipped.
+
+        An unrecognized chord reads 'CUnknown' whatever notes it was given: there is no root
+        to report, so pitch class 0 stands in. Test for 'Unknown' before reading the root.
 
     Raises:
         CeleritasError: If the native chord identification fails.

@@ -215,19 +215,20 @@ class TestIdentifyChord(unittest.TestCase):
     """Tests for identify_chord function"""
 
     def test_identify_c_major(self):
-        chord = identify_chord([60, 64, 67])
-        self.assertIn("C", chord)
-        self.assertIn("maj", chord.lower())
+        # Not assertIn("maj", chord.lower()): "CMajor".lower() contains "maj" whatever the
+        # rendering does, so that passed without testing the string it was named for.
+        self.assertEqual(identify_chord([60, 64, 67]), "CMajor")
 
     def test_identify_d_minor(self):
-        chord = identify_chord([62, 65, 69])
-        self.assertIn("D", chord)
-        self.assertIn("m", chord.lower())
+        self.assertEqual(identify_chord([62, 65, 69]), "DMinor")
 
     def test_identify_g7(self):
-        chord = identify_chord([67, 71, 74, 77])
-        self.assertIn("G", chord)
-        self.assertIn("7", chord)
+        self.assertEqual(identify_chord([67, 71, 74, 77]), "GDominant7")
+
+    def test_identify_an_unrecognized_chord_names_no_root(self):
+        """The root beside Unknown is a placeholder: there is none to report."""
+
+        self.assertEqual(identify_chord([64, 67, 71, 74, 78]), "CUnknown")
 
     def test_identify_chord_with_inversions(self):
         # C major in different inversions
@@ -612,6 +613,50 @@ class TestDotNetBridge(unittest.TestCase):
 
         available = is_pythonnet_available()
         self.assertIsInstance(available, bool)
+
+
+class TestParseNoteNamesOneNote(unittest.TestCase):
+    """parse_note names one note, and used to run the whole notation-language parser."""
+
+    def test_the_bottom_of_the_midi_range_is_reachable(self):
+        """The grammar's octave is [0-9]+ with no sign, so C-1 through B-1 were refused."""
+
+        self.assertIsNotNone(parse_note("C-1"))
+        self.assertEqual(parse_note("C-1").pitch, 0)
+        self.assertEqual(parse_note("B-1").pitch, 11)
+
+    def test_the_top_of_the_midi_range_is_reachable(self):
+        self.assertEqual(parse_note("G9").pitch, 127)
+
+    def test_more_than_one_note_is_refused(self):
+        """'C4 E4 G4' came back as C4 with the chord silently dropped."""
+
+        for notation in ("C4 E4 G4", "[C4 E4 G4]/4", "C4~ C4"):
+            self.assertIsNone(parse_note(notation), notation)
+
+    def test_a_rest_is_not_a_note(self):
+        """'R/4' came back as a note of pitch -1, the value reserved for silence."""
+
+        self.assertIsNone(parse_note("R/4"))
+        self.assertIsNone(parse_note("R"))
+
+    def test_notation_that_is_not_a_bare_pitch_is_refused(self):
+        for notation in ("C4/4", "C4{tr}", "4/4: C4/4"):
+            self.assertIsNone(parse_note(notation), notation)
+
+    def test_a_plain_note_is_unchanged(self):
+        note = parse_note("C4")
+        self.assertEqual(
+            (
+                note.pitch,
+                note.time_numerator,
+                note.time_denominator,
+                note.duration_numerator,
+                note.duration_denominator,
+                note.velocity,
+            ),
+            (60, 0, 1, 1, 4, 102),
+        )
 
 
 class TestOrnamentsMatchTheLibrary(unittest.TestCase):
