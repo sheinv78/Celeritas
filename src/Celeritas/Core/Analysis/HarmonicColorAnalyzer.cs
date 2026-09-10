@@ -108,8 +108,12 @@ public static class HarmonicColorAnalyzer
                     nameof(chordProgression));
             }
 
-            var mask = ChordAnalyzer.GetMask(pitches);
-            var info = ChordLibrary.GetChord(mask);
+            // Identify, not GetChord(GetMask(...)): a symbol states its own root, and
+            // ParseChordSymbol puts it at the bottom, but the bare mask lookup throws that away
+            // and answers the lowest-numbered registered root of the pitch-class set. Csus4 came
+            // back as F sus2, Eaug as C augmented, F#7b5 as C7b5 — 59 of 252 symbols named a root
+            // their caller did not write. Identify reads the bass, which is the root here.
+            var info = ChordAnalyzer.Identify(pitches);
 
             chords[i] = new ChordAssignment(start, end, info, pitches);
         }

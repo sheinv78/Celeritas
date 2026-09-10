@@ -108,6 +108,12 @@ public static class ChordLibrary
     private static readonly ChordInfo[] Lookup = new ChordInfo[4096];
     private static readonly bool[] HasChord = new bool[4096];
 
+    // What third each quality has, read off the same interval templates below rather than
+    // written out again, so a quality added there classifies itself here. Callers that ask
+    // "major or minor?" of a chord kept their own list and left half the enum out of it.
+    private static readonly ChordThird[] Thirds =
+        new ChordThird[Enum.GetValues<ChordQuality>().Length];
+
     /// <summary>Note names indexed by pitch class (0=C .. 11=B), using sharp spellings.</summary>
     // IReadOnlyList so callers cannot mutate the shared table (indexing still works).
     public static IReadOnlyList<string> NoteNames { get; } = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -156,6 +162,10 @@ public static class ChordLibrary
 
         foreach (var (quality, steps) in templates)
         {
+            Thirds[(int)quality] = Array.IndexOf(steps, 4) >= 0 ? ChordThird.Major
+                : Array.IndexOf(steps, 3) >= 0 ? ChordThird.Minor
+                : ChordThird.None;
+
             for (var root = 0; root < 12; root++)
             {
                 ushort mask = 0;
@@ -171,6 +181,22 @@ public static class ChordLibrary
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// The third <paramref name="quality"/> is built on — the interval that decides whether a
+    /// chord sounds major or minor, and <see cref="ChordThird.None"/> for the suspended, power
+    /// and quartal chords, which state a root and leave the mode open.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ChordQuality.Unknown"/> reports <see cref="ChordThird.None"/> as well, so a
+    /// caller that treats "no third" as "no evidence of mode" must still check for Unknown when
+    /// it means "no chord at all".
+    /// </remarks>
+    internal static ChordThird ThirdOf(ChordQuality quality)
+    {
+        var index = (int)quality;
+        return (uint)index < (uint)Thirds.Length ? Thirds[index] : ChordThird.None;
     }
 
     /// <summary>

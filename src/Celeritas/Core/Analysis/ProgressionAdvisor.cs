@@ -131,8 +131,12 @@ public static class ProgressionAdvisor
                 continue;
             }
 
-            var mask = ChordAnalyzer.GetMask(pitches);
-            var info = ChordLibrary.GetChord(mask);
+            // Identify, not GetChord(GetMask(...)): a symbol states its own root, and
+            // ParseChordSymbol puts it at the bottom, but the bare mask lookup throws that away
+            // and answers the lowest-numbered registered root of the pitch-class set. Csus4 came
+            // back as F sus2, Eaug as C augmented, F#7b5 as C7b5 — 59 of 252 symbols named a root
+            // their caller did not write. Identify reads the bass, which is the root here.
+            var info = ChordAnalyzer.Identify(pitches);
             parsedChords.Add(new ParsedChord(symbol, pitches, info));
         }
 
@@ -226,8 +230,12 @@ public static class ProgressionAdvisor
                 continue;
             }
 
-            var mask = ChordAnalyzer.GetMask(pitches);
-            var info = ChordLibrary.GetChord(mask);
+            // Identify, not GetChord(GetMask(...)): a symbol states its own root, and
+            // ParseChordSymbol puts it at the bottom, but the bare mask lookup throws that away
+            // and answers the lowest-numbered registered root of the pitch-class set. Csus4 came
+            // back as F sus2, Eaug as C augmented, F#7b5 as C7b5 — 59 of 252 symbols named a root
+            // their caller did not write. Identify reads the bass, which is the root here.
+            var info = ChordAnalyzer.Identify(pitches);
             parsedChords.Add(new ParsedChord(symbol, pitches, info));
         }
 
@@ -1232,6 +1240,50 @@ public static class ProgressionAdvisor
     /// <summary>
     /// Improved key detection that considers chord positions, qualities, and frequencies.
     /// </summary>
+    /// <summary>
+    /// The root a chord is built on and the third it is built with, from the chord the library
+    /// named when it could name one and from the notes themselves when it could not.
+    /// </summary>
+    /// <remarks>
+    /// The library has no <see cref="ChordQuality"/> for a ninth, eleventh or thirteenth chord,
+    /// so <see cref="ChordAnalyzer.Identify(ReadOnlySpan{int})"/> answers Unknown for them — but
+    /// <see cref="ParseChordSymbol"/> parsed the symbol and put its root at the bottom, and the
+    /// third is a semitone count away. A key scorer that reads only the named quality throws all
+    /// of that away and treats "C9" as no evidence of anything.
+    /// </remarks>
+    private static (int Root, ChordThird Third) RootAndThird(int[] pitches, ChordInfo info)
+    {
+        if (info.Quality != ChordQuality.Unknown)
+        {
+            return (info.RootPitchClass, ChordLibrary.ThirdOf(info.Quality));
+        }
+
+        if (pitches.Length == 0)
+        {
+            return (0, ChordThird.None);
+        }
+
+        // ParseChordSymbol voices a chord from its root up, so the lowest note is the root.
+        var lowest = pitches[0];
+        foreach (var pitch in pitches)
+        {
+            if (pitch < lowest) lowest = pitch;
+        }
+
+        var root = PitchMath.Fold(lowest);
+        var present = 0;
+        foreach (var pitch in pitches)
+        {
+            present |= 1 << PitchMath.Fold(pitch);
+        }
+
+        var third = (present & (1 << ((root + 4) % 12))) != 0 ? ChordThird.Major
+            : (present & (1 << ((root + 3) % 12))) != 0 ? ChordThird.Minor
+            : ChordThird.None;
+
+        return (root, third);
+    }
+
     private static (KeySignature key, float confidence) DetectKeyFromProgression(
         List<ParsedChord> chords)
     {
@@ -1243,16 +1295,38 @@ public static class ProgressionAdvisor
         // Score each possible key
         var keyScores = new float[24]; // 12 major + 12 minor
 
-        foreach (var (_, _, info) in chords)
+        foreach (var (_, pitches, info) in chords)
         {
-            var root = info.RootPitchClass;
-            var isMinor = info.Quality is ChordQuality.Minor or ChordQuality.Minor7
-                or ChordQuality.MinorMajor7 or ChordQuality.HalfDim7;
-            var isMajor = info.Quality is ChordQuality.Major or ChordQuality.Major7
-                or ChordQuality.Dominant7;
+            // Which keys a chord is evidence for, in one place. Two hand-written quality lists —
+            // three counted as major, four as minor — left the other twelve of the nineteen
+            // scoring nothing at all, and a chord the library cannot name at all (a ninth, an
+            // eleventh, a thirteenth) scored nothing either even though its pitches were right
+            // there. A progression holding one fell through to the tie-break and came out in a
+            // key its own chords contradicted: "Dm G Cadd9" was read as D minor, "Csus4 Am F G"
+            // as G major, and SuggestNext advised on "C#9" in C.
+            var (root, third) = RootAndThird(pitches, info);
+
+            // The diminished chords stay out of both arms on purpose: a diminished triad is a
+            // leading-tone or supertonic chord that sits on no tonic, and a dim7 is symmetrical —
+            // its four rotations are the same four pitch classes, so it belongs to four keys
+            // equally and is evidence for none. Scoring them as minor chords made "Ddim Gm Cm"
+            // evidence for C major, since a D minor triad really is that key's supertonic and a
+            // D diminished one is not.
+            if (info.Quality is ChordQuality.Diminished or ChordQuality.Diminished7)
+            {
+                continue;
+            }
+
+            var isMajor = third == ChordThird.Major;
+            var isMinor = third == ChordThird.Minor;
+
+            // A suspended, power or quartal chord has no third at all. It names a root as firmly
+            // as any triad and says nothing whatever about the mode, so it is evidence for both
+            // keys on that root rather than half-evidence for each.
+            var hasNoThird = third == ChordThird.None;
 
             // This chord suggests these keys:
-            if (isMajor)
+            if (isMajor || hasNoThird)
             {
                 // Major chord on I, IV, V of major keys
                 keyScores[root] += 1.0f;           // I of major
@@ -1263,7 +1337,8 @@ public static class ProgressionAdvisor
                 keyScores[12 + ((root + 9) % 12)] += 0.3f;  // III of minor
                 keyScores[12 + ((root + 4) % 12)] += 0.3f;  // VI of minor
             }
-            else if (isMinor)
+
+            if (isMinor || hasNoThird)
             {
                 // Minor chord on i, iv, v of minor keys
                 keyScores[12 + root] += 1.0f;           // i of minor
@@ -1277,37 +1352,49 @@ public static class ProgressionAdvisor
             }
         }
 
+        // The tonic bonuses go to the qualities a piece actually rests on: a plain or coloured
+        // triad, major or minor. An unstable chord — diminished, augmented, altered, dominant —
+        // is not where music sits down, and stays out. A suspended, power or quartal chord opens
+        // and closes pieces all the time and used to get nothing here, which is why "Csus4 Am F G"
+        // was read in G rather than C; having no third, it is that root's tonic in both modes.
+        static bool RestsHere(ChordQuality quality) =>
+            quality is ChordQuality.Major or ChordQuality.Major7 or ChordQuality.Add9
+                or ChordQuality.Add11 or ChordQuality.Minor or ChordQuality.Minor7
+                or ChordQuality.MinorMajor7 or ChordQuality.Sus2 or ChordQuality.Sus4
+                or ChordQuality.Power or ChordQuality.Quartal;
+
+        static void Tonic(float[] keyScores, ChordInfo chord, float bonus)
+        {
+            if (!RestsHere(chord.Quality))
+            {
+                return;
+            }
+
+            switch (ChordLibrary.ThirdOf(chord.Quality))
+            {
+                case ChordThird.Major:
+                    keyScores[chord.RootPitchClass] += bonus;
+                    break;
+                case ChordThird.Minor:
+                    keyScores[12 + chord.RootPitchClass] += bonus;
+                    break;
+                default:
+                    keyScores[chord.RootPitchClass] += bonus;
+                    keyScores[12 + chord.RootPitchClass] += bonus;
+                    break;
+            }
+        }
+
         // Strong bonus for first chord (often tonic)
         var firstChord = chords[0].Info;
-        var firstRoot = firstChord.RootPitchClass;
-        var firstIsMinor = firstChord.Quality is ChordQuality.Minor or ChordQuality.Minor7
-            or ChordQuality.MinorMajor7;
-        var firstIsMajor = firstChord.Quality is ChordQuality.Major or ChordQuality.Major7;
+        var firstRoot = RootAndThird(chords[0].Pitches, firstChord).Root;
+        var firstIsMinor = RestsHere(firstChord.Quality)
+            && ChordLibrary.ThirdOf(firstChord.Quality) == ChordThird.Minor;
 
-        if (firstIsMinor)
-        {
-            keyScores[12 + firstRoot] += 3.0f;  // Strong minor key indicator
-        }
-        else if (firstIsMajor)
-        {
-            keyScores[firstRoot] += 3.0f;  // Strong major key indicator
-        }
+        Tonic(keyScores, firstChord, 3.0f);
 
         // Bonus for last chord (often tonic in cadences)
-        var lastChord = chords[^1].Info;
-        var lastRoot = lastChord.RootPitchClass;
-        var lastIsMinor = lastChord.Quality is ChordQuality.Minor or ChordQuality.Minor7
-            or ChordQuality.MinorMajor7;
-        var lastIsMajor = lastChord.Quality is ChordQuality.Major or ChordQuality.Major7;
-
-        if (lastIsMinor)
-        {
-            keyScores[12 + lastRoot] += 2.0f;
-        }
-        else if (lastIsMajor)
-        {
-            keyScores[lastRoot] += 2.0f;
-        }
+        Tonic(keyScores, chords[^1].Info, 2.0f);
 
         // Check for V-I patterns (strong key indicators)
         for (var i = 1; i < chords.Count; i++)
@@ -1319,17 +1406,7 @@ public static class ProgressionAdvisor
             // Perfect 4th up (or 5th down) = V->I motion
             if (interval == 5)
             {
-                var currIsMinor = curr.Quality is ChordQuality.Minor or ChordQuality.Minor7;
-                var currIsMajor = curr.Quality is ChordQuality.Major or ChordQuality.Major7;
-
-                if (currIsMinor)
-                {
-                    keyScores[12 + curr.RootPitchClass] += 2.5f;
-                }
-                else if (currIsMajor)
-                {
-                    keyScores[curr.RootPitchClass] += 2.5f;
-                }
+                Tonic(keyScores, curr, 2.5f);
             }
         }
 
