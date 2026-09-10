@@ -412,8 +412,16 @@ public sealed class FiguredBassRealizer
 
     /// <summary>
     /// Parse figured bass notation string (e.g., "6", "7", "6/5", "#3/#5").
-    /// Accidental prefixes are tolerated here (use <see cref="ParseAccidentals"/> to read them).
     /// </summary>
+    /// <remarks>
+    /// Figures are separated by a slash, a comma, a dash or whitespace — the ways a stack of
+    /// figures gets written on one line — so "6/4", "6 4", "6-4" and "6,4" are all a six-four. An
+    /// accidental may precede its figure ("#6"), follow it ("6#"), or be written as a trailing
+    /// plus for a sharp ("6+"), and a figure may run to two digits ("b10"). An accidental with no
+    /// figure at all ("#") is the figured-bass convention for the third, and reads as "#3". The
+    /// accidentals are read by <see cref="ParseAccidentals"/> from the same tokens, so the two
+    /// methods cannot disagree about which figure an accidental belongs to.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="figuresStr"/> is <see langword="null"/>.</exception>
     public static int[] ParseFigures(string figuresStr)
     {
@@ -421,47 +429,95 @@ public sealed class FiguredBassRealizer
         // from an unfigured bass, which realizes as a plain root-position triad.
         ArgumentNullException.ThrowIfNull(figuresStr);
 
-        if (string.IsNullOrWhiteSpace(figuresStr))
-        {
-            return [];
-        }
-
-        var parts = figuresStr.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        var figures = new List<int>(parts.Length);
-        foreach (var part in parts)
-        {
-            var digits = new string([.. part.Where(char.IsDigit)]);
-            if (digits.Length > 0)
-            {
-                figures.Add(int.Parse(digits));
-            }
-        }
-
-        return [.. figures];
+        return [.. Tokenize(figuresStr).Select(t => t.Figure)];
     }
 
     /// <summary>
-    /// Parse accidentals from figured bass string (e.g., "#3", "b7", "#3/#5")
+    /// Parse accidentals from figured bass string (e.g., "#3", "b7", "#3/#5"), keyed by the
+    /// figure each one alters.
     /// </summary>
+    /// <remarks>
+    /// Reads the same tokens <see cref="ParseFigures"/> does. Before that, an accidental was
+    /// recognised only immediately in front of a single digit: "6#" and "6+" — the postfix forms
+    /// older editions use — were silently dropped, "b10" put its flat on a figure 1 that does not
+    /// exist and left the tenth natural, and a bare "#", which every figured-bass reader knows
+    /// as a raised third, altered nothing. Each of those realized as a chord the figures did not
+    /// ask for, with no error to say so.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="figuresStr"/> is <see langword="null"/>.</exception>
     public static Dictionary<int, char> ParseAccidentals(string figuresStr)
     {
         ArgumentNullException.ThrowIfNull(figuresStr);
 
         var accidentals = new Dictionary<int, char>();
-
-        for (var i = 0; i < figuresStr.Length; i++)
+        foreach (var token in Tokenize(figuresStr))
         {
-            var c = figuresStr[i];
-            if (c is '#' or 'b' or 'n' && i + 1 < figuresStr.Length && char.IsDigit(figuresStr[i + 1]))
+            if (token.Accidental is { } accidental)
             {
-                var interval = figuresStr[i + 1] - '0';
-                accidentals[interval] = c;
+                accidentals[token.Figure] = accidental;
             }
         }
 
         return accidentals;
     }
+
+    /// <summary>The figure a token names and the accidental on it, if any.</summary>
+    private readonly record struct FigureToken(int Figure, char? Accidental);
+
+    /// <summary>
+    /// One pass over the text that both public readers share: figures separated by slash, comma
+    /// or whitespace; an accidental before or after its digits, or a trailing plus for a sharp;
+    /// digits taken whole; a lone accidental standing for the third.
+    /// </summary>
+    private static List<FigureToken> Tokenize(string figuresStr)
+    {
+        var tokens = new List<FigureToken>();
+        if (string.IsNullOrWhiteSpace(figuresStr))
+        {
+            return tokens;
+        }
+
+        foreach (var part in figuresStr.Split(FigureSeparators, StringSplitOptions.RemoveEmptyEntries))
+        {
+            char? accidental = null;
+            var digits = 0;
+            var value = 0;
+
+            foreach (var c in part)
+            {
+                if (char.IsDigit(c))
+                {
+                    value = (value * 10) + (c - '0');
+                    digits++;
+                }
+                else if (c is '#' or 'b' or 'n')
+                {
+                    accidental = c;
+                }
+                else if (c == '+')
+                {
+                    accidental = '#';
+                }
+
+                // Anything else — a stray letter, a dash inside a part — is ignored, as it was.
+            }
+
+            if (digits > 0)
+            {
+                tokens.Add(new FigureToken(value, accidental));
+            }
+            else if (accidental is not null)
+            {
+                // A bare accidental alters the third.
+                tokens.Add(new FigureToken(3, accidental));
+            }
+        }
+
+        return tokens;
+    }
+
+    // A dash too: no figure is 64, so "6-4" can only mean two figures.
+    private static readonly char[] FigureSeparators = ['/', ',', '-', ' ', '\t', '\r', '\n'];
 }
 
 /// <summary>
