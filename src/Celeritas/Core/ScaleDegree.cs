@@ -44,7 +44,15 @@ public enum HarmonicFunction
     /// <summary>Dominant function (tension): V, vii°.</summary>
     Dominant,       // V, vii° (tension)
 
-    /// <summary>Pre-dominant function: chords that can substitute for the subdominant (IV, ii).</summary>
+    /// <summary>
+    /// Pre-dominant function: chords that can substitute for the subdominant (IV, ii).
+    /// </summary>
+    /// <remarks>
+    /// This library's own analysis never assigns it — it calls those chords
+    /// <see cref="Subdominant"/> — so a report will not contain one unless you put it there. It
+    /// is here for callers who draw the distinction; the display name for it reads "Pre-dominant
+    /// (preparation)".
+    /// </remarks>
     PreDominant,    // IV, ii (can substitute subdominant)
 
     /// <summary>Chromatic function: borrowed or altered chords.</summary>

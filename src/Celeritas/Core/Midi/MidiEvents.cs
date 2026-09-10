@@ -168,6 +168,16 @@ public static class MidiEvents
     /// <summary>
     /// Add a tempo change event to a MIDI track chunk.
     /// </summary>
+    /// <param name="track">The track the event is inserted into, in time order.</param>
+    /// <param name="offset">Where the change takes effect, in whole-note units.</param>
+    /// <param name="beatsPerMinute">The new tempo. A SetTempo event holds 24 bits, so roughly 4 is the floor.</param>
+    /// <param name="ticksPerQuarterNote">
+    /// The time division of the file this track belongs to — read it from
+    /// <see cref="Melanchall.DryWetMidi.Core.MidiFile.TimeDivision"/>, not from
+    /// <see cref="MidiExportOptions"/>, whose default is 480 while a <c>new MidiFile()</c> uses
+    /// 96. Nothing here can check it: a track does not know its file. Pass the wrong one and the
+    /// event lands at the wrong time, by exactly the ratio of the two.
+    /// </param>
     public static void AddTempoChange(TrackChunk track, Rational offset, int beatsPerMinute, int ticksPerQuarterNote)
     {
         ArgumentNullException.ThrowIfNull(track);
@@ -202,6 +212,16 @@ public static class MidiEvents
     /// <summary>
     /// Add a time signature change event to a MIDI track chunk.
     /// </summary>
+    /// <param name="track">The track the event is inserted into, in time order.</param>
+    /// <param name="offset">Where the change takes effect, in whole-note units.</param>
+    /// <param name="numerator">Beats per measure, in [1..255].</param>
+    /// <param name="denominator">The beat unit as it is written — 4, 8, 16 — a power of two in [1..128].</param>
+    /// <param name="ticksPerQuarterNote">
+    /// The time division of the file this track belongs to, exactly as for
+    /// <see cref="AddTempoChange"/>: read it from
+    /// <see cref="Melanchall.DryWetMidi.Core.MidiFile.TimeDivision"/> rather than from
+    /// <see cref="MidiExportOptions"/>.
+    /// </param>
     public static void AddTimeSignatureChange(TrackChunk track, Rational offset, int numerator, int denominator, int ticksPerQuarterNote)
     {
         ArgumentNullException.ThrowIfNull(track);

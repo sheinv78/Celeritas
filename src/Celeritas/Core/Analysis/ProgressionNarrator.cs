@@ -20,6 +20,10 @@ internal static class ProgressionNarrator
         HarmonicFunction.Subdominant => "Subdominant (motion/tension building)",
         HarmonicFunction.Dominant => "Dominant (tension/pull to resolve)",
         HarmonicFunction.Chromatic => "Chromatic (color/borrowed)",
+        // Analysis here never produces PreDominant, but it is a public enum value and a caller
+        // may hand one back; naming it "Unknown" made a function this library defines look like
+        // one it does not.
+        HarmonicFunction.PreDominant => "Pre-dominant (preparation)",
         _ => "Unknown"
     };
 

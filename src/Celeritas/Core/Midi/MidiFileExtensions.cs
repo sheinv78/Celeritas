@@ -101,7 +101,15 @@ public static class MidiFileExtensions
         /// <summary>Adds a new track built from <paramref name="notes"/> and returns it.</summary>
         /// <param name="notes">Notes to place on the track.</param>
         /// <param name="name">Optional track name written as a sequence/track-name meta event.</param>
-        /// <param name="options">Export options controlling channel, velocity, and ticks-per-quarter-note.</param>
+        /// <param name="options">
+        /// Export options controlling channel and velocity. Its ticks-per-quarter-note sets the
+        /// file's time division only when the file has none yet — and a <c>new MidiFile()</c>
+        /// already has one, of 96, so in practice this option applies to nothing and the file
+        /// keeps 96 while the option's own default reads 480. Take the value the file actually
+        /// uses from <see cref="Melanchall.DryWetMidi.Core.MidiFile.TimeDivision"/>; passing the
+        /// option's default to <see cref="MidiEvents.AddTempoChange"/> instead puts every change
+        /// five times too late.
+        /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">A note has a negative offset, which MIDI cannot represent.</exception>
         public TrackChunk AddTrack(NoteEvent[] notes, string? name = null, MidiExportOptions? options = null)
