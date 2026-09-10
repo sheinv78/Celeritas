@@ -276,6 +276,14 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
         return dist.First().Key;
     }
 
+    // A shorter context than the model was trained for is a weaker answer, so the whole
+    // prediction is discounted. It must be the WHOLE prediction: discounting only Confidence
+    // left the most likely duration reporting a smaller number than one of its own
+    // alternatives — the classical model after [1/8, 1/2] said "most likely 1/4 at 0.40" and
+    // "alternative 1/8 at 0.50" in one breath, and ContextFound is true here, so nothing told
+    // a caller ranking the two that they were on different scales.
+    private const float FallbackDiscount = 0.8f;
+
     private RhythmPrediction FallbackPredict(IReadOnlyList<Rational> recentDurations)
     {
         // Try shorter contexts
@@ -294,9 +302,9 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
                 return new RhythmPrediction
                 {
                     MostLikely = sorted[0].Key,
-                    Confidence = sorted[0].Value / total * 0.8f, // Lower confidence for fallback
+                    Confidence = sorted[0].Value / total * FallbackDiscount,
                     Alternatives = [.. sorted.Skip(1).Take(4).Select(kv =>
-                        new RhythmAlternative { Duration = kv.Key, Probability = kv.Value / total })],
+                        new RhythmAlternative { Duration = kv.Key, Probability = kv.Value / total * FallbackDiscount })],
                     ContextFound = true
                 };
             }
@@ -330,7 +338,11 @@ public sealed class RhythmPrediction
 
     /// <summary>Most probable next duration (whole-note units).</summary>
     public required Rational MostLikely { get; init; }
-    /// <summary>Probability of the most likely duration in 0-1 (scaled down for fallback contexts).</summary>
+    /// <summary>
+    /// Probability of the most likely duration in 0-1, scaled down when the answer came from a
+    /// context shorter than the model's order. <see cref="RhythmAlternative.Probability"/> is
+    /// scaled by the same factor, so this is always the largest of the numbers reported here.
+    /// </summary>
     public required float Confidence { get; init; }
     /// <summary>Up to four next-most-likely durations with their probabilities.</summary>
     public required IReadOnlyList<RhythmAlternative> Alternatives { get; init; }
@@ -355,7 +367,10 @@ public sealed class RhythmAlternative
 
     /// <summary>The alternative duration (whole-note units).</summary>
     public required Rational Duration { get; init; }
-    /// <summary>Probability of this duration in 0-1.</summary>
+    /// <summary>
+    /// Probability of this duration in 0-1, on the same scale as
+    /// <see cref="RhythmPrediction.Confidence"/> so the two can be compared.
+    /// </summary>
     public required float Probability { get; init; }
 }
 

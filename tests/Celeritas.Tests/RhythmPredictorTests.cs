@@ -70,4 +70,62 @@ public class RhythmPredictorTests
         Assert.Equal(8, generated.Count);
         Assert.All(generated, d => Assert.True(d > Rational.Zero));
     }
+
+    /// <summary>
+    /// The most likely duration must report the largest number in the prediction. It did not
+    /// when the answer came from a context shorter than the model's order: only
+    /// <see cref="RhythmPrediction.Confidence"/> was discounted, so the classical model after
+    /// [1/8, 1/2] returned "most likely 1/4 at 0.40" alongside "alternative 1/8 at 0.50" —
+    /// with <see cref="RhythmPrediction.ContextFound"/> true, so nothing warned a caller that
+    /// the two numbers were on different scales.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryStyleAndContext))]
+    public void TheMostLikelyDurationIsNeverBeatenByItsOwnAlternative(
+        RhythmStyle style,
+        int firstNumerator,
+        int firstDenominator,
+        int secondNumerator,
+        int secondDenominator)
+    {
+        var model = RhythmModels.GetStyleModel(style);
+        var context = new[]
+        {
+            new Rational(firstNumerator, firstDenominator),
+            new Rational(secondNumerator, secondDenominator),
+        };
+
+        var prediction = model.Predict(context);
+
+        Assert.InRange(prediction.Confidence, 0f, 1f);
+        Assert.All(prediction.Alternatives, alternative =>
+        {
+            Assert.NotEqual(prediction.MostLikely, alternative.Duration);
+            Assert.True(
+                alternative.Probability <= prediction.Confidence,
+                $"{style} after [{context[0]}, {context[1]}]: most likely {prediction.MostLikely} at " +
+                $"{prediction.Confidence:F3}, but alternative {alternative.Duration} at " +
+                $"{alternative.Probability:F3}");
+        });
+    }
+
+    public static TheoryData<RhythmStyle, int, int, int, int> EveryStyleAndContext()
+    {
+        (int Numerator, int Denominator)[] vocabulary =
+            [(1, 8), (1, 4), (1, 2), (3, 8), (1, 1), (3, 4), (1, 12), (1, 16)];
+
+        var data = new TheoryData<RhythmStyle, int, int, int, int>();
+        foreach (var style in Enum.GetValues<RhythmStyle>())
+        {
+            foreach (var (firstNumerator, firstDenominator) in vocabulary)
+            {
+                foreach (var (secondNumerator, secondDenominator) in vocabulary)
+                {
+                    data.Add(style, firstNumerator, firstDenominator, secondNumerator, secondDenominator);
+                }
+            }
+        }
+
+        return data;
+    }
 }
