@@ -437,7 +437,7 @@ public class TheUndrivenSurfaceTests
         Assert.Equal("0,3,7", PitchClassSetCatalog.PrimeFormKey([0, 3, 7]));
         Assert.Equal("0,3,7", PitchClassSetCatalog.PrimeFormKey([7, 3, 0]));
         Assert.Equal("0,3,7", PitchClassSetCatalog.PrimeFormKey([19, 15, 12]));
-        Assert.Equal("0,3,7", PitchClassSetCatalog.PrimeFormKey([-5, 3, 7]));
+        Assert.Equal("0,3,7", PitchClassSetCatalog.PrimeFormKey([-12, 3, 7]));
 
         for (ushort mask = 1; mask < 4096; mask += 7)
         {
