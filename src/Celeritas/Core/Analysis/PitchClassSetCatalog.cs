@@ -93,6 +93,11 @@ public sealed class PitchClassSetCatalog
         return new PitchClassSetCatalog(dict);
     }
 
+    /// <summary>
+    /// Looks up the entry for a prime form, in whatever order and octave its pitch classes are
+    /// given; the form is normalised before the lookup, so <c>[7, 3, 0]</c> finds the minor
+    /// triad.
+    /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="primeForm"/> is <see langword="null"/>.</exception>
     public bool TryGetByPrimeForm(int[] primeForm, out PitchClassSetCatalogEntry? entry)
     {
@@ -114,13 +119,28 @@ public sealed class PitchClassSetCatalog
         return false;
     }
 
+    /// <summary>
+    /// The text key a catalogue stores a prime form under — its pitch classes folded, sorted and
+    /// joined with commas, so "0,3,7" for a minor triad however its notes were given.
+    /// </summary>
+    /// <remarks>
+    /// Normalises first, the way <see cref="TryGetByPrimeForm"/> and <see cref="LoadJson"/> do
+    /// before they call this. It used to fold without sorting, so a caller building their own
+    /// index with it from <c>[7, 3, 0]</c> got "7,3,0" — a key the catalogue has never stored
+    /// anything under, since it sorts on load — and every lookup through it missed.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="primeForm"/> is <see langword="null"/>.</exception>
     public static string PrimeFormKey(int[] primeForm)
     {
         ArgumentNullException.ThrowIfNull(primeForm);
-        return string.Join(",", primeForm.Select(PitchMath.Fold));
+        return string.Join(",", NormalizePrimeForm(primeForm));
     }
 
+    /// <summary>
+    /// A prime form as the catalogue keeps it: every value folded into 0-11 and the set sorted
+    /// ascending. The catalogue's entries and its lookups both go through this, so an entry
+    /// written as <c>[19, 15, 12]</c> is stored, and found, as <c>[0, 3, 7]</c>.
+    /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="primeForm"/> is <see langword="null"/>.</exception>
     public static int[] NormalizePrimeForm(int[] primeForm)
     {

@@ -428,6 +428,31 @@ public class TheUndrivenSurfaceTests
         }
     }
 
+    [Fact]
+    public void ACatalogueKeyIsTheSameWhicheverWayThePrimeFormIsGiven()
+    {
+        // PrimeFormKey folded without sorting, so a caller indexing with it from [7,3,0] got
+        // "7,3,0" — a key the catalogue never stores anything under, since it sorts on load —
+        // and every lookup through that key missed.
+        Assert.Equal("0,3,7", PitchClassSetCatalog.PrimeFormKey([0, 3, 7]));
+        Assert.Equal("0,3,7", PitchClassSetCatalog.PrimeFormKey([7, 3, 0]));
+        Assert.Equal("0,3,7", PitchClassSetCatalog.PrimeFormKey([19, 15, 12]));
+        Assert.Equal("0,3,7", PitchClassSetCatalog.PrimeFormKey([-5, 3, 7]));
+
+        for (ushort mask = 1; mask < 4096; mask += 7)
+        {
+            var set = PitchClassSetAnalyzer.MaskToPitchClasses(mask);
+            var shuffled = set.Reverse().Select(p => p + 12).ToArray();
+
+            Assert.Equal(
+                PitchClassSetCatalog.PrimeFormKey(set),
+                PitchClassSetCatalog.PrimeFormKey(shuffled));
+            Assert.Equal(
+                PitchClassSetCatalog.PrimeFormKey(set),
+                string.Join(",", PitchClassSetCatalog.NormalizePrimeForm(shuffled)));
+        }
+    }
+
     private static int[] RelativeTo(ushort mask, int root)
     {
         var classes = new List<int>();
