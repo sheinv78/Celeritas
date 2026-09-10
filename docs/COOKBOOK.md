@@ -218,6 +218,11 @@ Console.WriteLine(chord);                                      // C Major7
 as `"C4 E4 G4 B4 D5"` comes back as `C Unknown`. Fold the extension into four notes
 instead - `"C4 E4 G4 D5"` identifies as `C Add9`.
 
+When the quality is `Unknown` the root beside it is a placeholder, not a detected
+root: an unrecognized set has none, and the library pairs `Unknown` with pitch class
+zero. So `"E4 G4 B4 D5 F#5"` also reads `C Unknown`, with no C anywhere in it. Test
+`chord.Quality != ChordQuality.Unknown` before reading `chord.Root`.
+
 ### Nashville Number System
 
 Every chord in a progression report carries its Nashville number (scale degree +

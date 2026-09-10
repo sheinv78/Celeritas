@@ -10,7 +10,15 @@ namespace Celeritas.Core;
 /// </summary>
 public enum ChordQuality : byte
 {
-    /// <summary>Unrecognized or unclassified chord.</summary>
+    /// <summary>
+    /// Unrecognized or unclassified chord.
+    /// </summary>
+    /// <remarks>
+    /// When the library answers with this it pairs it with root pitch class 0, because an
+    /// unrecognized set has no root to report — so a <see cref="ChordInfo"/> for E-G-B-D-F#
+    /// reads "C Unknown" and the C is a placeholder, not a detected root. Test
+    /// <see cref="ChordInfo.Quality"/> against this value; do not read the root beside it.
+    /// </remarks>
     Unknown,
 
     /// <summary>Major triad (root, major third, perfect fifth).</summary>
@@ -76,9 +84,17 @@ public enum ChordQuality : byte
 public readonly record struct ChordInfo(byte RootPitchClass, ChordQuality Quality)
 {
     /// <summary>Root note name (e.g. "C", "F#") for <see cref="RootPitchClass"/>.</summary>
+    /// <remarks>
+    /// Meaningless when <see cref="Quality"/> is <see cref="ChordQuality.Unknown"/>: the library
+    /// pairs that with pitch class 0, so this reads "C" for a chord it did not recognize at all.
+    /// </remarks>
     public string Root => ChordLibrary.NoteNames[RootPitchClass];
 
     /// <summary>Returns the root name followed by the quality (e.g. "C Major").</summary>
+    /// <remarks>
+    /// The two fields are rendered as given, so an unrecognized chord reads "C Unknown" whatever
+    /// notes it was — see <see cref="ChordQuality.Unknown"/>.
+    /// </remarks>
     public override string ToString() => $"{Root} {Quality}";
 }
 
