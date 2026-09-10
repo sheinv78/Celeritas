@@ -415,12 +415,47 @@ public static class MusicNotation
     /// Writes one voice as a melodic line, filling the silence before and between its notes with
     /// rests so that reading it back puts every note where it started.
     /// </summary>
-    private static string FormatVoice(List<NoteEvent> voice, bool useDot, bool useLetters, bool groupChords)
+    /// <param name="voice">The notes of one voice, in time order.</param>
+    /// <param name="useDot">Write a dotted duration where one fits.</param>
+    /// <param name="useLetters">Write durations as letters rather than numbers.</param>
+    /// <param name="groupChords">Write notes sharing an offset and a duration as a chord.</param>
+    /// <param name="directives">
+    /// Directives to write into this voice at their own times, or <see langword="null"/> for none.
+    /// A directive is not a sound, so it needs a voice to sit in; the caller gives them to the
+    /// voice whose cursor is the timeline's.
+    /// </param>
+    private static string FormatVoice(
+        List<NoteEvent> voice,
+        bool useDot,
+        bool useLetters,
+        bool groupChords,
+        List<NotationDirective>? directives = null)
     {
         var separator = useLetters ? ':' : '/';
         var sb = new StringBuilder();
         var cursor = Rational.Zero;
         var i = 0;
+        var directiveIndex = 0;
+
+        void WriteRest(Rational piece)
+        {
+            if (sb.Length > 0) sb.Append(' ');
+            sb.Append('R');
+            sb.Append(separator);
+            sb.Append(FormatDuration(piece, useDot, useLetters));
+        }
+
+        void WriteDirectivesUpTo(Rational time)
+        {
+            while (directives is not null &&
+                   directiveIndex < directives.Count &&
+                   directives[directiveIndex].Time <= time)
+            {
+                if (sb.Length > 0) sb.Append(' ');
+                sb.Append(FormatDirective(directives[directiveIndex], useLetters));
+                directiveIndex++;
+            }
+        }
 
         while (i < voice.Count)
         {
@@ -432,14 +467,15 @@ public static class MusicNotation
                 // another, and consecutive rests add up to the same silence.
                 foreach (var piece in SplitIntoWritablePieces(note.Offset - cursor))
                 {
-                    if (sb.Length > 0) sb.Append(' ');
-                    sb.Append('R');
-                    sb.Append(separator);
-                    sb.Append(FormatDuration(piece, useDot, useLetters));
+                    WriteDirectivesUpTo(cursor);
+                    WriteRest(piece);
+                    cursor += piece;
                 }
 
                 cursor = note.Offset;
             }
+
+            WriteDirectivesUpTo(note.Offset);
 
             // Everything at this offset with this duration is one chord.
             var j = i + 1;
@@ -497,6 +533,26 @@ public static class MusicNotation
             i = j;
         }
 
+        // Directives past the last note still sit at a time, so keep the silence that carries
+        // them: appending them bare would read back at the end of the notes instead.
+        while (directives is not null && directiveIndex < directives.Count)
+        {
+            var directive = directives[directiveIndex];
+            if (directive.Time > cursor)
+            {
+                foreach (var piece in SplitIntoWritablePieces(directive.Time - cursor))
+                {
+                    WriteRest(piece);
+                }
+
+                cursor = directive.Time;
+            }
+
+            if (sb.Length > 0) sb.Append(' ');
+            sb.Append(FormatDirective(directive, useLetters));
+            directiveIndex++;
+        }
+
         return sb.ToString();
     }
 
@@ -542,13 +598,65 @@ public static class MusicNotation
             _ => throw new ArgumentException($"Unknown directive type: {directive.GetType().Name}")
         };
 
-        static bool NeedsQuotes(string value) =>
-            value.Length == 0 || value.Contains(' ') || value.Contains('\t') || !char.IsLower(value[0]);
+        // A value goes unquoted only when it lexes as one whole IDENT — [a-z_]+ that no other
+        // token claims first. Testing only the first character let "verse1" and "abC" through,
+        // which lex as IDENT plus a stray number or pitch name, and let single letters through
+        // that the lexer has already spoken for: "b" is a flat, "q" a quarter, "f" a dynamic.
+        // Each was written back as notation that will not parse.
+        static bool NeedsQuotes(string value)
+        {
+            if (value.Length == 0)
+            {
+                return true;
+            }
+
+            foreach (var c in value)
+            {
+                if (c is not ((>= 'a' and <= 'z') or '_'))
+                {
+                    return true;
+                }
+            }
+
+            return ReservedLowercaseWords.Contains(value);
+        }
     }
 
     /// <summary>
-    /// Format notes and directives together in timeline order
+    /// The lowercase words the notation lexer claims before <c>IDENT</c>, so a directive value
+    /// spelled as one of them has to be quoted. Only exact matches matter: the lexer takes the
+    /// longest match, so "tempos" is an IDENT even though "tempo" is a keyword.
     /// </summary>
+    private static readonly HashSet<string> ReservedLowercaseWords =
+    [
+        // duration letters, the flat sign, and the rest
+        "w", "h", "q", "e", "s", "t", "b", "r", "rest",
+        // dynamics levels
+        "p", "pp", "ppp", "pppp", "mp", "mf", "f", "ff", "fff", "ffff", "sf", "sfz", "fp", "rf",
+        // directive keywords
+        "bpm", "tempo", "character", "section", "part", "dynamics",
+        "cresc", "crescendo", "dim", "diminuendo", "to",
+        // ornaments
+        "tr", "trill", "mord", "mordent", "turn", "app", "appo"
+    ];
+
+    /// <summary>
+    /// Format notes and directives together in timeline order.
+    /// </summary>
+    /// <remarks>
+    /// The notes go through the same voice separation as
+    /// <see cref="FormatNoteSequence(System.ReadOnlySpan{NoteEvent}, bool, bool, bool)"/>. This
+    /// walked them as one melodic line instead, and so carried the three faults that method was
+    /// rewritten to lose: a gap between notes vanished, notes struck together but held for
+    /// different lengths became a succession, and so did overlapping notes. Half of a small set
+    /// of test passages came back as different music, and none of them had a directive in it.
+    ///
+    /// A directive is not a sound, so the notation has nowhere to put one but inside a voice.
+    /// They ride in the first, whose cursor is the timeline's, and read back at the same times.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// An element of <paramref name="directives"/> is <see langword="null"/>.
+    /// </exception>
     public static string FormatWithDirectives(
         ReadOnlySpan<NoteEvent> notes,
         ReadOnlySpan<NotationDirective> directives,
@@ -561,112 +669,41 @@ public static class MusicNotation
             return string.Empty;
         }
 
-        var sb = new StringBuilder();
-        var noteIndex = 0;
-        var directiveIndex = 0;
-        var currentTime = Rational.Zero;
-
-        // Scratch list reused across iterations (cleared per note) to avoid a
-        // single-element List allocation for every note in the sequence.
-        var chordNotes = groupChords ? new List<NoteEvent>() : null;
-
-        while (noteIndex < notes.Length || directiveIndex < directives.Length)
+        var ordered = new List<NotationDirective>(directives.Length);
+        foreach (var directive in directives)
         {
-            // Insert directives that occur at or before current time
-            while (directiveIndex < directives.Length && directives[directiveIndex].Time <= currentTime)
-            {
-                if (sb.Length > 0)
-                {
-                    sb.Append(' ');
-                }
-
-                sb.Append(FormatDirective(directives[directiveIndex], useLetters));
-                directiveIndex++;
-            }
-
-            // Add next note/chord
-            if (noteIndex < notes.Length)
-            {
-                var nextNoteTime = notes[noteIndex].Offset;
-
-                // Check if there are directives before next note
-                if (directiveIndex < directives.Length && directives[directiveIndex].Time < nextNoteTime)
-                {
-                    currentTime = directives[directiveIndex].Time;
-                    continue;
-                }
-
-                // Format note(s) starting at this time
-                if (sb.Length > 0)
-                {
-                    sb.Append(' ');
-                }
-
-                // Check for chord (groupChords logic from FormatNoteSequence)
-                if (groupChords && noteIndex < notes.Length - 1)
-                {
-                    chordNotes!.Clear();
-                    chordNotes.Add(notes[noteIndex]);
-                    var chordOffset = notes[noteIndex].Offset;
-                    var chordDuration = notes[noteIndex].Duration;
-
-                    var j = noteIndex + 1;
-                    while (j < notes.Length &&
-                           notes[j].Offset == chordOffset &&
-                           notes[j].Duration == chordDuration &&
-                           notes[j].Pitch != RestPitch)
-                    {
-                        chordNotes.Add(notes[j]);
-                        j++;
-                    }
-
-                    if (chordNotes.Count > 1 && notes[noteIndex].Pitch != RestPitch)
-                    {
-                        var separator = useLetters ? ':' : '/';
-                        sb.Append('[');
-                        for (var k = 0; k < chordNotes.Count; k++)
-                        {
-                            if (k > 0)
-                            {
-                                sb.Append(' ');
-                            }
-
-                            sb.Append(ToNotation(chordNotes[k].Pitch));
-                        }
-                        sb.Append(']');
-                        sb.Append(separator);
-                        sb.Append(FormatDuration(chordDuration, useDot, useLetters));
-                        currentTime = chordOffset + chordDuration;
-                        noteIndex = j;
-                        continue;
-                    }
-                }
-
-                // Single note
-                var note = notes[noteIndex];
-                var sep = useLetters ? ':' : '/';
-                if (note.Pitch == RestPitch)
-                {
-                    sb.Append('R');
-                }
-                else
-                {
-                    sb.Append(ToNotation(note.Pitch));
-                }
-                sb.Append(sep);
-                sb.Append(FormatDuration(note.Duration, useDot, useLetters));
-                currentTime = note.Offset + note.Duration;
-                noteIndex++;
-            }
-            else if (directiveIndex < directives.Length)
-            {
-                // Notes are exhausted but directives remain past currentTime:
-                // jump to the next directive's time so the drain loop above emits it
-                // (otherwise nothing advances and the loop never terminates).
-                currentTime = directives[directiveIndex].Time;
-            }
+            ArgumentNullException.ThrowIfNull(directive, nameof(directives));
+            ordered.Add(directive);
         }
 
+        // A stable sort by time: directives written at one moment keep the order given.
+        var byTime = ordered.OrderBy(static d => d.Time).ToList();
+
+        if (notes.IsEmpty)
+        {
+            return string.Join(' ', byTime.Select(d => FormatDirective(d, useLetters)));
+        }
+
+        var voices = SeparateForNotation(notes, groupChords);
+
+        if (voices.Count == 1)
+        {
+            return FormatVoice(voices[0], useDot, useLetters, groupChords, byTime);
+        }
+
+        var sb = new StringBuilder();
+        sb.Append("<< ");
+        for (var v = 0; v < voices.Count; v++)
+        {
+            if (v > 0)
+            {
+                sb.Append(" | ");
+            }
+
+            sb.Append(FormatVoice(voices[v], useDot, useLetters, groupChords, v == 0 ? byTime : null));
+        }
+
+        sb.Append(" >>");
         return sb.ToString();
     }
 

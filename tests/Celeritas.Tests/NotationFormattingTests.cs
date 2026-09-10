@@ -126,7 +126,12 @@ public class NotationFormattingTests
 
         var text = MusicNotation.FormatWithDirectives(notes, [], groupChords: false);
 
-        Assert.Equal("C4/4 E4/4", text);
+        // Not "C4/4 E4/4": that reads back as a C followed by an E. Declining to write the two
+        // as one chord does not make them consecutive — they are still struck together, so the
+        // notation needs two voices to say so. This asserted the succession until the writer
+        // was made to separate voices the way FormatNoteSequence already did.
+        Assert.Equal("<< C4/4 | E4/4 >>", text);
+        Assert.Equal(MusicNotation.FormatNoteSequence(notes, groupChords: false), text);
     }
 
     [Fact]

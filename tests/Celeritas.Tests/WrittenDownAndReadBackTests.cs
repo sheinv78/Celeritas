@@ -618,4 +618,140 @@ public class WrittenDownAndReadBackTests
         Assert.NotEmpty(notes);
         Assert.All(notes, n => Assert.InRange(n.Pitch, 0, 127));
     }
+    /// <summary>
+    /// The two writers hold the same timeline. FormatWithDirectives walked the notes as one
+    /// melodic line instead of separating them into voices, so it carried the three faults
+    /// FormatNoteSequence was rewritten to lose: a gap between notes vanished, notes struck
+    /// together but held for different lengths became a succession, and so did overlapping
+    /// notes. Half of these passages were written as different music, and not one has a
+    /// directive in it.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PassagesTheNotationMustHold))]
+    public void BothWritersWriteTheSameMusic(string name, NoteEvent[] passage)
+    {
+        var asSequence = MusicNotation.FormatNoteSequence(passage);
+
+        var withDirectives = MusicNotation.FormatWithDirectives(passage, []);
+
+        Assert.Equal(asSequence, withDirectives);
+
+        // and the sounding notes come back unchanged; a gap comes back as a written rest, and
+        // separating voices reorders the events, so compare the passages and not their order
+        static (int Pitch, Rational Offset, Rational Duration)[] Sounding(IEnumerable<NoteEvent> notes) =>
+            [.. notes.Where(n => !Rests.IsRest(n.Pitch))
+                .Select(n => (n.Pitch, n.Offset, n.Duration))
+                .OrderBy(n => n.Offset).ThenBy(n => n.Pitch)];
+
+        Assert.Equal(Sounding(passage), Sounding(MusicNotation.Parse(withDirectives)));
+
+        _ = name;
+    }
+
+    public static TheoryData<string, NoteEvent[]> PassagesTheNotationMustHold() => new()
+    {
+        { "a plain melody", [new(60, Rational.Zero, Rational.Quarter), new(62, Rational.Quarter, Rational.Quarter)] },
+        { "a gap between two notes", [new(60, Rational.Zero, Rational.Quarter), new(62, Rational.Half, Rational.Quarter)] },
+        { "two voices struck together", [new(60, Rational.Zero, Rational.Quarter), new(64, Rational.Zero, Rational.Quarter), new(62, Rational.Quarter, Rational.Quarter), new(65, Rational.Quarter, Rational.Quarter)] },
+        { "one onset, two lengths", [new(60, Rational.Zero, Rational.Half), new(64, Rational.Zero, Rational.Quarter)] },
+        { "overlapping notes", [new(60, Rational.Zero, Rational.Half), new(64, Rational.Quarter, Rational.Half)] },
+        { "a chord", [new(60, Rational.Zero, Rational.Half), new(64, Rational.Zero, Rational.Half), new(67, Rational.Zero, Rational.Half)] },
+        { "music that does not start at zero", [new(60, Rational.Half, Rational.Quarter)] },
+    };
+
+    /// <summary>
+    /// A directive label is quoted unless it lexes as one whole IDENT. The rule looked only at
+    /// the first character, so "verse_1" and "abC" were written bare and read back as an
+    /// identifier plus a stray number or pitch name, and single letters the lexer had already
+    /// spoken for went bare too: b is a flat, q a quarter, f a dynamic. 93 of these 132 label
+    /// and directive pairs came back as notation that will not parse.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(LabelsAndDirectiveKinds))]
+    public void ADirectiveLabelSurvivesWhateverItIsCalled(string label, string kind)
+    {
+        NotationDirective directive = kind switch
+        {
+            "section" => new SectionDirective { Label = label, Time = Rational.Zero },
+            "part" => new PartDirective { Name = label, Time = Rational.Zero },
+            _ => new TempoCharacterDirective { Character = label, Time = Rational.Zero },
+        };
+
+        var written = MusicNotation.FormatWithDirectives(
+            [new NoteEvent(60, Rational.Zero, Rational.Quarter)], [directive]);
+
+        var readBack = MusicNotation.ParseFull(written);
+
+        var only = Assert.Single(readBack.Directives);
+        var name = only switch
+        {
+            SectionDirective d => d.Label,
+            PartDirective d => d.Name,
+            TempoCharacterDirective d => d.Character,
+            _ => null,
+        };
+
+        Assert.Equal(label, name);
+    }
+
+    public static TheoryData<string, string> LabelsAndDirectiveKinds()
+    {
+        string[] labels =
+        [
+            // words the lexer has already spoken for
+            "b", "w", "h", "q", "e", "s", "t", "r", "rest",
+            "p", "pp", "mf", "f", "ff", "sfz",
+            "bpm", "tempo", "section", "part", "dynamics", "cresc", "dim", "to",
+            "tr", "trill", "mord", "turn", "app",
+            // shapes an identifier cannot hold
+            "verse_1", "abC", "A", "B", "Chorus", "Verse 1", "2", "a-b", "",
+            // and ones it can
+            "a", "verse", "intro", "coda", "my_part", "tempos", "trills",
+        ];
+
+        var data = new TheoryData<string, string>();
+        foreach (var label in labels)
+        {
+            foreach (var kind in new[] { "section", "part", "tempo" })
+            {
+                data.Add(label, kind);
+            }
+        }
+
+        return data;
+    }
+
+    /// <summary>
+    /// Directives keep their times through a passage that needs more than one voice to write.
+    /// </summary>
+    [Fact]
+    public void DirectivesKeepTheirTimesAcrossAPolyphonicPassage()
+    {
+        NoteEvent[] passage =
+        [
+            new(60, Rational.Zero, Rational.Half),
+            new(64, Rational.Zero, Rational.Quarter),
+            new(65, Rational.Quarter, Rational.Quarter),
+        ];
+
+        NotationDirective[] directives =
+        [
+            new TempoBpmDirective { Bpm = 80, Time = Rational.Zero },
+            new SectionDirective { Label = "middle", Time = Rational.Quarter },
+            new DynamicsDirective { Type = DynamicsType.Static, StartLevel = "ff", Time = Rational.Half },
+        ];
+
+        var written = MusicNotation.FormatWithDirectives(passage, directives);
+        var readBack = MusicNotation.ParseFull(written);
+
+        Assert.Equal(
+            directives.Select(d => d.Time).Order(),
+            readBack.Directives.Select(d => d.Time).Order());
+
+        var sounding = readBack.Notes.Where(n => !Rests.IsRest(n.Pitch))
+            .Select(n => (n.Pitch, n.Offset, n.Duration)).Order().ToArray();
+        Assert.Equal(
+            passage.Select(n => (n.Pitch, n.Offset, n.Duration)).Order().ToArray(),
+            sounding);
+    }
 }

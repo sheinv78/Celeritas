@@ -17,7 +17,7 @@ public abstract record NotationDirective
 
 /// <summary>
 /// BPM (beats per minute) directive with optional ramp/transition.
-/// Examples: "@bpm 120", "@bpm 120 -> 140 /2" (ramp from 120 to 140 over 2 whole notes)
+/// Examples: <c>@bpm 120</c>, <c>@bpm 120 -&gt; 140 /2</c> (ramp from 120 to 140 across a half note).
 /// </summary>
 public sealed record TempoBpmDirective : NotationDirective
 {
@@ -53,7 +53,9 @@ public sealed record TempoBpmDirective : NotationDirective
 
 /// <summary>
 /// Musical tempo marking (character/style: Presto, Vivace, Allegro, etc.).
-/// Examples: "@tempo Presto", "@tempo \"Allegro con brio\""
+/// Examples: <c>@tempo presto</c>, <c>@tempo "Presto"</c>, <c>@tempo "Allegro con brio"</c>.
+/// A value goes unquoted only when it is a lowercase word the notation has not already
+/// reserved, so anything with a capital, a digit or a space is quoted.
 /// </summary>
 public sealed record TempoCharacterDirective : NotationDirective
 {
@@ -69,7 +71,8 @@ public sealed record TempoCharacterDirective : NotationDirective
 
 /// <summary>
 /// Section/form boundary marker (A, B, Verse, Chorus, Bridge, Coda, etc.).
-/// Examples: "@section A", "@section \"Verse 1\"", "@section Chorus"
+/// Examples: <c>@section "A"</c>, <c>@section "Verse 1"</c>, <c>@section "Chorus"</c>, <c>@section intro</c>.
+/// Section letters are quoted because A-G are pitch names and b is a flat.
 /// </summary>
 public sealed record SectionDirective : NotationDirective
 {
@@ -84,7 +87,8 @@ public sealed record SectionDirective : NotationDirective
 
 /// <summary>
 /// Part/voice assignment marker (for multi-part scores).
-/// Examples: "@part Soprano", "@part \"Violin I\"", "@part Bass"
+/// Examples: <c>@part soprano</c>, <c>@part "Violin I"</c>, <c>@part "Bass"</c>.
+/// A capitalised name is quoted; <c>@part Bass</c> would be read as the pitch B.
 /// </summary>
 public sealed record PartDirective : NotationDirective
 {
