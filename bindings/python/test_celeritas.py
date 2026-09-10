@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Unit tests for Celeritas Python bindings
 
@@ -612,6 +612,65 @@ class TestDotNetBridge(unittest.TestCase):
 
         available = is_pythonnet_available()
         self.assertIsInstance(available, bool)
+
+
+class TestOrnamentsMatchTheLibrary(unittest.TestCase):
+    """The bindings write Trill and Mordent again in Python, so the two drift apart silently.
+
+    These pin the places they had drifted. There is no native export for ornaments yet, so the
+    only thing holding the two implementations together is a test that compares them.
+    """
+
+    @staticmethod
+    def _note(pitch, duration=(1, 4)):
+        return NoteEvent(
+            pitch=pitch,
+            time_numerator=0,
+            time_denominator=1,
+            duration_numerator=duration[0],
+            duration_denominator=duration[1],
+            velocity=0.8,
+        )
+
+    def test_a_mordent_at_the_bottom_of_the_keyboard_stays_on_it(self):
+        """Ornament.Playable holds an ornamental pitch in 0..127.
+
+        Trill was given that clamp and Mordent, in the same file, was not: 270 of 840 expansions
+        differed from the library, and a lower mordent on MIDI 0 produced pitch -1 - the value
+        this library reserves for silence, so the ornament emitted a note that reads as a rest.
+        """
+
+        expanded = Mordent(self._note(0), MordentType.LOWER, interval=1).expand()
+
+        self.assertEqual([n.pitch for n in expanded], [0, 0, 0])
+        self.assertTrue(all(0 <= n.pitch <= 127 for n in expanded))
+
+    def test_a_mordent_at_the_top_of_the_keyboard_stays_on_it(self):
+        expanded = Mordent(self._note(127), MordentType.UPPER, interval=2).expand()
+
+        self.assertEqual([n.pitch for n in expanded], [127, 127, 127])
+
+    def test_a_mordent_away_from_the_edges_still_reaches_its_neighbour(self):
+        expanded = Mordent(self._note(60), MordentType.UPPER, interval=2).expand()
+
+        self.assertEqual([n.pitch for n in expanded], [60, 62, 60])
+
+    def test_a_mordent_with_no_alternations_is_refused(self):
+        """Celeritas.Core.Ornamentation.Mordent throws; 0 used to give a bare main note here
+        and a negative count gave no notes at all."""
+
+        for alternations in (0, -1):
+            with self.assertRaises(ValueError):
+                Mordent(self._note(60), alternations=alternations).expand()
+
+    def test_a_trill_with_no_speed_is_refused(self):
+        """Celeritas.Core.Ornamentation.Trill throws; speed 0 used to raise ZeroDivisionError
+        from inside Fraction, and a negative speed silently expanded to no notes at all.
+        """
+
+        for speed in (0, -1):
+            with self.assertRaises(ValueError):
+                Trill(self._note(60), speed=speed).expand()
 
 
 def run_tests():

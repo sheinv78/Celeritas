@@ -389,6 +389,12 @@ class Trill:
         implementations of one piece of music theory drift, and nothing compared them.
         """
 
+        if self.speed <= 0:
+            # Celeritas.Core.Ornamentation.Trill throws here. Without the check, speed 0 raised
+            # ZeroDivisionError from deep inside Fraction and a negative speed silently expanded
+            # to no notes at all - an ornament that vanishes rather than one that is refused.
+            raise ValueError(f"Trill speed must be positive, got {self.speed}")
+
         base_pitch = self.base_note.pitch
         step = Fraction(1, self.speed * 4)
         upper_pitch = _playable(base_pitch + self.interval)
@@ -503,6 +509,13 @@ class Mordent:
         note's duration and no zero-duration notes are produced.
         """
 
+        if self.alternations < 1:
+            # Celeritas.Core.Ornamentation.Mordent throws here. Without the check, 0 gave a bare
+            # main note and a negative count gave no notes at all.
+            raise ValueError(
+                f"Mordent alternations must be at least 1, got {self.alternations}"
+            )
+
         notes = []
         note_count = 2 * self.alternations + 1
         note_duration = (
@@ -513,7 +526,11 @@ class Mordent:
             / note_count
         )
 
-        neighbor_pitch = (
+        # Held on the keyboard, as Ornament.Playable does in the library. Trill was given this
+        # and Mordent, in the same file, was not: 270 of 840 expansions differed, and a lower
+        # mordent on MIDI 0 produced pitch -1 - which this library reserves for silence, so the
+        # ornament emitted a note that the C# side reads as a rest.
+        neighbor_pitch = _playable(
             self.base_note.pitch + self.interval
             if self.type == MordentType.UPPER
             else self.base_note.pitch - self.interval
