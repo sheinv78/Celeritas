@@ -56,6 +56,13 @@ public enum HarmonicFunction
     PreDominant,    // IV, ii (can substitute subdominant)
 
     /// <summary>Chromatic function: borrowed or altered chords.</summary>
+    /// <remarks>
+    /// <see cref="KeyAnalyzer"/> never assigns it: a chord that does not belong to the key comes
+    /// back as <see cref="RomanNumeralChord.Invalid"/> rather than as a valid chord with this
+    /// function, so a caller must test <see cref="RomanNumeralChord.IsValid"/> rather than look
+    /// for this value. It is here for callers building their own analysis, and for the
+    /// display name, which reads "Chromatic (color/borrowed)".
+    /// </remarks>
     Chromatic       // Borrowed/altered chords
 }
 

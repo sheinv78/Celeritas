@@ -745,6 +745,13 @@ public readonly record struct KeyDetectionResult(
     /// all. A seven-note scale cannot be singled out by fewer than five of them, however clean
     /// the <see cref="Confidence"/> margin looks.
     /// </summary>
+    /// <remarks>
+    /// This is a necessary condition and not a sufficient one — it counts pitch classes and
+    /// looks at nothing else. The chromatic aggregate has all twelve and reports
+    /// <see langword="true"/> here while its <see cref="Confidence"/> is exactly 0, because
+    /// twelve notes fit every key equally. Check both before treating <see cref="Key"/> as a
+    /// real detection.
+    /// </remarks>
     public bool IsDecidable => DistinctPitchClasses >= 5;
 
     /// <summary>Top N most likely keys</summary>

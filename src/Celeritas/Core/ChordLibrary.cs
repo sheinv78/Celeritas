@@ -229,6 +229,17 @@ public static class ChordLibrary
     /// Returns the chord for a 12-bit pitch-class mask, or an <c>Unknown</c>
     /// chord if the mask matches no known template.
     /// </summary>
+    /// <remarks>
+    /// A mask is a set of pitch classes and nothing else, so where several qualities share one
+    /// set this can only answer whichever was registered first. It therefore never returns
+    /// <see cref="ChordQuality.Sus4"/> or <see cref="ChordQuality.Quartal"/> (both share
+    /// <see cref="ChordQuality.Sus2"/>'s set), nor <see cref="ChordQuality.Major6"/> or
+    /// <see cref="ChordQuality.Minor6"/> (which share the sets of the sevenths a minor third
+    /// below them), and it roots the symmetrical augmented and diminished-seventh chords on the
+    /// lowest registered root rather than on the bass. Use
+    /// <see cref="ChordAnalyzer.Identify(ReadOnlySpan{int})"/> to have the bass note decide, which
+    /// is what tells those readings apart.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChordInfo GetChord(ushort mask)
     {

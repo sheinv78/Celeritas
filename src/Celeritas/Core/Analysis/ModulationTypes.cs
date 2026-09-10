@@ -19,13 +19,34 @@ public enum ModulationType
     /// <summary>Direct/phrase modulation (abrupt key change)</summary>
     Direct,
 
-    /// <summary>Sequential modulation (pattern repeated in new key)</summary>
+    /// <summary>
+    /// Sequential modulation (pattern repeated in new key).
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ModulationDetector"/> never assigns it. Telling a sequence from any other key
+    /// change means recognising that the music has restated a pattern at a new pitch level,
+    /// which this detector does not look for — it reads each window's pitch content and the
+    /// relationship between the two keys' roots, and reports such a change as
+    /// <see cref="Direct"/> or, where a shared chord carries it, <see cref="PivotChord"/>. The
+    /// value is here for callers who make the distinction themselves.
+    /// </remarks>
     Sequential,
 
     /// <summary>Chromatic modulation (chromatic alteration leads to new key)</summary>
     Chromatic,
 
-    /// <summary>Enharmonic modulation (reinterpretation of chord)</summary>
+    /// <summary>
+    /// Enharmonic modulation: a chord respelled to mean something else in the new key.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ModulationDetector"/> never assigns it. The vehicle is a chord that maps onto
+    /// itself under transposition — a diminished seventh, an augmented triad — read in one key
+    /// and then spelled as belonging to another; recognising that means following a chord's
+    /// spelling across the boundary, and the detector reads pitch content and the relationship
+    /// between the two keys' roots instead. It reports such a change as <see cref="Chromatic"/>,
+    /// <see cref="Direct"/> or <see cref="PivotChord"/> according to how the roots stand. The
+    /// value is here for callers who make the distinction themselves.
+    /// </remarks>
     Enharmonic,
 
     /// <summary>Modal interchange (parallel major/minor)</summary>
