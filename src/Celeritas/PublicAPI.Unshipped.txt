@@ -1109,6 +1109,7 @@ Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.Midi
 Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).Clone() -> Melanchall.DryWetMidi.Core.MidiFile!
 Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).GetStatistics() -> Celeritas.Core.Midi.MidiFileStatistics!
 Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).Merge(Melanchall.DryWetMidi.Core.MidiFile! other) -> Melanchall.DryWetMidi.Core.MidiFile!
+Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).Merge(Melanchall.DryWetMidi.Core.MidiFile! other, Celeritas.Core.Midi.MidiMergeMode mode) -> Melanchall.DryWetMidi.Core.MidiFile!
 Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).Merge(params Melanchall.DryWetMidi.Core.MidiFile![]! others) -> Melanchall.DryWetMidi.Core.MidiFile!
 Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).MergeToSingleTrack(Melanchall.DryWetMidi.Core.MidiFile! other) -> Melanchall.DryWetMidi.Core.MidiFile!
 Celeritas.Core.Midi.MidiFileExtensions.extension(Melanchall.DryWetMidi.Core.MidiFile!).MergeToSingleTrack(params Melanchall.DryWetMidi.Core.MidiFile![]! others) -> Melanchall.DryWetMidi.Core.MidiFile!
@@ -2223,6 +2224,7 @@ static Celeritas.Core.Midi.MidiFileExtensions.AddTrack(this Melanchall.DryWetMid
 static Celeritas.Core.Midi.MidiFileExtensions.Clone(this Melanchall.DryWetMidi.Core.MidiFile! file) -> Melanchall.DryWetMidi.Core.MidiFile!
 static Celeritas.Core.Midi.MidiFileExtensions.GetStatistics(this Melanchall.DryWetMidi.Core.MidiFile! file) -> Celeritas.Core.Midi.MidiFileStatistics!
 static Celeritas.Core.Midi.MidiFileExtensions.Merge(this Melanchall.DryWetMidi.Core.MidiFile! file, Melanchall.DryWetMidi.Core.MidiFile! other) -> Melanchall.DryWetMidi.Core.MidiFile!
+static Celeritas.Core.Midi.MidiFileExtensions.Merge(this Melanchall.DryWetMidi.Core.MidiFile! file, Melanchall.DryWetMidi.Core.MidiFile! other, Celeritas.Core.Midi.MidiMergeMode mode) -> Melanchall.DryWetMidi.Core.MidiFile!
 static Celeritas.Core.Midi.MidiFileExtensions.Merge(this Melanchall.DryWetMidi.Core.MidiFile! file, params Melanchall.DryWetMidi.Core.MidiFile![]! others) -> Melanchall.DryWetMidi.Core.MidiFile!
 static Celeritas.Core.Midi.MidiFileExtensions.MergeToSingleTrack(this Melanchall.DryWetMidi.Core.MidiFile! file, Melanchall.DryWetMidi.Core.MidiFile! other) -> Melanchall.DryWetMidi.Core.MidiFile!
 static Celeritas.Core.Midi.MidiFileExtensions.MergeToSingleTrack(this Melanchall.DryWetMidi.Core.MidiFile! file, params Melanchall.DryWetMidi.Core.MidiFile![]! others) -> Melanchall.DryWetMidi.Core.MidiFile!

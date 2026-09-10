@@ -513,8 +513,16 @@ public enum VoiceLeadingStyle
     Smooth,
 
     /// <summary>
-    /// Strict style (common practice rules)
+    /// Strict style (common practice rules).
     /// </summary>
+    /// <remarks>
+    /// The realizer takes the same path for this as for <see cref="Smooth"/> and produces the
+    /// same notes: the common-practice rules this value names — no parallel fifths or octaves,
+    /// the seventh resolved down — are not enforced here. Choose it to say what the music is
+    /// meant to be; to have the rules actually applied, realize the bass and then check or solve
+    /// the result with <see cref="Celeritas.Core.VoiceLeading.VoiceLeadingRules"/> or
+    /// <see cref="Celeritas.Core.VoiceLeading.VoiceLeadingSolver"/>, which do enforce them.
+    /// </remarks>
     Strict,
 
     /// <summary>

@@ -15,6 +15,14 @@ public enum GraceNoteType
     Appoggiatura,
 
     /// <summary>Multiple grace notes before the main note.</summary>
+    /// <remarks>
+    /// How many there are comes from <see cref="GraceNote.Intervals"/>, not from this value —
+    /// one interval gives one grace note whichever type is chosen, and three give three. What
+    /// this value selects is the timing, and it is the same as
+    /// <see cref="Appoggiatura"/>'s: the run takes <see cref="GraceNote.DurationRatio"/> of the
+    /// main note, where <see cref="Acciaccatura"/> takes an absolute 1/32 per note. Choose it to
+    /// say that a run is intended; the expansion is the appoggiatura's.
+    /// </remarks>
     Multiple
 }
 

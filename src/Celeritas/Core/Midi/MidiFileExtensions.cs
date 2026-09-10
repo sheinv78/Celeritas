@@ -193,7 +193,10 @@ public static class MidiFileExtensions
         /// Sets the tempo at time zero to <paramref name="bpm"/> beats per minute, replacing any
         /// tempo already there. Tempo changes later in the track are preserved.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="bpm"/> is not positive.</exception>
+        /// <param name="bpm">The new tempo. A SetTempo event holds 24 bits of microseconds per
+        /// quarter note, so roughly 4 is the floor and 60,000,000 the ceiling.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="bpm"/> is not positive,
+        /// or is outside what a MIDI SetTempo event can hold.</exception>
         public void SetTempo(int bpm)
         {
             ArgumentNullException.ThrowIfNull(file);
@@ -201,6 +204,26 @@ public static class MidiFileExtensions
             if (bpm <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bpm), bpm, "BPM must be positive.");
+            }
+
+            // The same 24-bit ceiling MidiEvents.AddTempoChange guards. Without it the tempo
+            // reached DryWetMidi unchecked and came back as an ArgumentOutOfRangeException about
+            // microseconds per quarter note, naming a parameter called "value" that this caller
+            // never passed and a unit they may not know is involved: SetTempo(1) threw
+            // "Number of microseconds per quarter note is out of [1; 16777215] range".
+            var microsecondsPerQuarter = (long)Math.Round(60_000_000.0 / bpm);
+            if (microsecondsPerQuarter > 0xFFFFFF)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(bpm), bpm,
+                    "BPM is too low to represent in a MIDI SetTempo event (minimum ~4).");
+            }
+
+            if (microsecondsPerQuarter < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(bpm), bpm,
+                    "BPM is too high to represent in a MIDI SetTempo event (maximum 60,000,000).");
             }
 
             var tempo = Tempo.FromBeatsPerMinute(bpm);
@@ -261,8 +284,40 @@ public static class MidiFileExtensions
         }
 
         /// <summary>
+        /// Merges <paramref name="other"/> into a copy of this file the way
+        /// <paramref name="mode"/> asks.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="MidiMergeMode"/> named two behaviours that existed only as two separate
+        /// methods, so nothing anywhere took one as a parameter: a caller holding a mode had
+        /// nowhere to pass it, and the enum was a type that could be constructed and not used.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="other"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined
+        /// <see cref="MidiMergeMode"/> value.</exception>
+        public MidiFile Merge(MidiFile other, MidiMergeMode mode)
+        {
+            ArgumentNullException.ThrowIfNull(file);
+            ArgumentNullException.ThrowIfNull(other);
+
+            if (!Enum.IsDefined(mode))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(mode), mode, "Not a defined MidiMergeMode value.");
+            }
+
+            // The private sources, not the sibling members: an unqualified Merge(other) inside
+            // this extension block does not bind to the member below it, and the file came back
+            // holding one track and half the notes.
+            return mode == MidiMergeMode.SingleTrack
+                ? MergeToSingleTrackSources([file, other])
+                : MergeSources([file, other]);
+        }
+
+        /// <summary>
         /// Merges this file with one other MIDI file, keeping tracks separate.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="other"/> is <see langword="null"/>.</exception>
         public MidiFile Merge(MidiFile other)
         {
             ArgumentNullException.ThrowIfNull(file);
