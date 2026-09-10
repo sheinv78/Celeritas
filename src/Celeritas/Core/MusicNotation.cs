@@ -132,12 +132,22 @@ public static class MusicNotation
     }
 
     /// <summary>
-    /// Parse duration string
-    /// Supports: 1 (whole), 2 (half), 4 (quarter), 8 (eighth), 16 (16th)
-    ///           w/whole, h/half, q/quarter, e/eighth, s/16th
+    /// Parse duration string.
+    /// Supports: any note value written as its denominator — 1 (whole), 2 (half), 4 (quarter),
+    ///           8, 16, 32, 64, and the tuplet values like 3, 6 and 12
+    ///           w/whole, h/half, q/quarter, e/eighth, s/16th, t/32nd
     ///           Dotted: 4. (dotted quarter = 3/8), 2. (dotted half = 3/4)
     /// </summary>
+    /// <remarks>
+    /// The bare number is the same vocabulary the notation grammar accepts after the slash, so
+    /// everything <see cref="FormatDuration"/> writes for a duration of the form 1/n reads back
+    /// here. It used to stop at 32 and reject the rest: a 64th note was written "64" and then
+    /// refused, and so was every tuplet value the grammar reads happily inside a note.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="duration"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="duration"/> is not a note value —
+    /// including the "3/8" form, which names a duration the notation writes as a dotted note
+    /// ("4.") rather than as a fraction.</exception>
     public static Rational ParseDuration(string duration)
     {
         ArgumentNullException.ThrowIfNull(duration);
@@ -153,7 +163,7 @@ public static class MusicNotation
             "8" or "e" or "eighth" => new Rational(1, 8),
             "16" or "s" or "16th" or "sixteenth" => new Rational(1, 16),
             "32" or "t" or "32nd" or "thirtysecond" => new Rational(1, 32),
-            _ => throw new ArgumentException($"Invalid duration: {duration}")
+            _ => NoteValue(baseDuration, duration)
         };
 
         return isDotted switch
@@ -162,6 +172,24 @@ public static class MusicNotation
             true => baseValue + (baseValue / 2),
             _ => baseValue
         };
+    }
+
+    /// <summary>
+    /// A duration written as its denominator alone, which is how the grammar spells every note
+    /// value outside the named ones — <c>C4/64</c> is a 64th, <c>C4/12</c> a triplet eighth.
+    /// </summary>
+    private static Rational NoteValue(string baseDuration, string whole)
+    {
+        // int.MaxValue would overflow Rational's arithmetic; a denominator that large is not a
+        // note value anyone wrote down.
+        if (!int.TryParse(baseDuration, System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture, out var denominator)
+            || denominator <= 0 || denominator > 1024)
+        {
+            throw new ArgumentException($"Invalid duration: {whole}");
+        }
+
+        return new Rational(1, denominator);
     }
 
     /// <summary>
@@ -192,7 +220,10 @@ public static class MusicNotation
                         8 => "e.",
                         16 => "s.",
                         32 => "t.",
-                        _ => $"{duration.Numerator}/{duration.Denominator}"
+                        // No letter goes finer than a 32nd, so fall back the way the numeric arm
+                        // below does rather than emitting the raw rational: "1/64" is not
+                        // notation and nothing reads it, while "64" is what the grammar expects.
+                        _ => FallbackForm(duration)
                     },
                     _ => baseNote switch
                     {
@@ -221,7 +252,8 @@ public static class MusicNotation
                     8 => "e",
                     16 => "s",
                     32 => "t",
-                    _ => $"{duration.Numerator}/{duration.Denominator}"
+                    // As above: below a 32nd there is no letter, and the numeric form parses.
+                    _ => FallbackForm(duration)
                 },
                 _ => duration.Denominator switch
                 {
@@ -261,14 +293,14 @@ public static class MusicNotation
     /// lasting two whole notes, or five quarters — becomes that many pieces of 1/n, which a
     /// melodic line joins with ties and a silence simply lists one rest after another.
     /// </summary>
-    private static List<Rational> SplitIntoWritablePieces(Rational duration)
+    private static List<Rational> SplitIntoWritablePieces(Rational duration, bool useDot = true)
     {
         var pieces = new List<Rational>();
 
         // A duration the notation writes in one go stays one piece — including the dotted note
         // values, whose 3/2 and 3/4 would otherwise be broken up by the whole-note loop below
         // and come back as a tie the grammar does not accept on a chord.
-        if (IsWritableAlone(duration))
+        if (IsWritableAlone(duration, useDot))
         {
             return [duration];
         }
@@ -285,7 +317,7 @@ public static class MusicNotation
 
         if (remaining > Rational.Zero)
         {
-            if (IsWritableAlone(remaining))
+            if (IsWritableAlone(remaining, useDot))
             {
                 pieces.Add(remaining);
             }
@@ -302,10 +334,20 @@ public static class MusicNotation
         return pieces;
     }
 
-    /// <summary>True when the notation has a single written form for this duration.</summary>
-    private static bool IsWritableAlone(Rational duration) =>
+    /// <summary>
+    /// True when the notation has a single written form for this duration.
+    /// </summary>
+    /// <remarks>
+    /// A dotted note value counts only when <paramref name="useDot"/> allows the dot to be
+    /// written. Answering yes regardless left a caller who turned dots off with "C4/3/8" — the
+    /// rational fallback, straight out of <see cref="FormatDuration"/>, in a position where the
+    /// grammar wants a note value. That text does not parse, so a passage written with
+    /// <c>useDot: false</c> could not be read back.
+    /// </remarks>
+    private static bool IsWritableAlone(Rational duration, bool useDot = true) =>
         duration.Numerator == 1
-        || (duration.Numerator == 3 && IsPowerOfTwo(duration.Denominator) && duration.Denominator >= 2);
+        || (useDot && duration.Numerator == 3 && IsPowerOfTwo(duration.Denominator)
+            && duration.Denominator >= 2);
 
     private static bool IsPowerOfTwo(long n) => n > 0 && (n & (n - 1)) == 0;
 
@@ -331,7 +373,7 @@ public static class MusicNotation
         // notes did the same — "C4/4 E4/2" for a C and an E struck together reads back as a C
         // followed by an E. Lay the notes out in as many voices as the timeline needs, and use
         // the polyphonic form when that is more than one.
-        var voices = SeparateForNotation(sequence, groupChords);
+        var voices = SeparateForNotation(sequence, groupChords, useDot);
 
         if (voices.Count == 1)
         {
@@ -359,7 +401,10 @@ public static class MusicNotation
     /// event starts at or after the end of the one before it, and notes sharing an event share
     /// an offset and a duration, so they can be written as a chord.
     /// </summary>
-    private static List<List<NoteEvent>> SeparateForNotation(ReadOnlySpan<NoteEvent> sequence, bool groupChords)
+    private static List<List<NoteEvent>> SeparateForNotation(
+        ReadOnlySpan<NoteEvent> sequence,
+        bool groupChords,
+        bool useDot = true)
     {
         var ordered = new List<NoteEvent>(sequence.Length);
         foreach (ref readonly var note in sequence)
@@ -392,7 +437,7 @@ public static class MusicNotation
                     && last.Pitch != RestPitch
                     && last.Offset == note.Offset
                     && last.Duration == note.Duration
-                    && IsWritableAlone(note.Duration);
+                    && IsWritableAlone(note.Duration, useDot);
 
                 if (joinsChord || last.Offset + last.Duration <= note.Offset)
                 {
@@ -465,7 +510,7 @@ public static class MusicNotation
             {
                 // One rest per writable piece: rests are not tied, they simply follow one
                 // another, and consecutive rests add up to the same silence.
-                foreach (var piece in SplitIntoWritablePieces(note.Offset - cursor))
+                foreach (var piece in SplitIntoWritablePieces(note.Offset - cursor, useDot))
                 {
                     WriteDirectivesUpTo(cursor);
                     WriteRest(piece);
@@ -479,7 +524,7 @@ public static class MusicNotation
 
             // Everything at this offset with this duration is one chord.
             var j = i + 1;
-            if (groupChords && note.Pitch != RestPitch && IsWritableAlone(note.Duration))
+            if (groupChords && note.Pitch != RestPitch && IsWritableAlone(note.Duration, useDot))
             {
                 while (j < voice.Count &&
                        voice[j].Offset == note.Offset &&
@@ -493,7 +538,7 @@ public static class MusicNotation
             // A duration the notation cannot write in one go becomes tied pieces — a note
             // lasting two whole notes is two whole notes tied, which is how it would be
             // engraved. Writing the rational instead produced "C4/5/4", which does not parse.
-            var pieces = SplitIntoWritablePieces(note.Duration);
+            var pieces = SplitIntoWritablePieces(note.Duration, useDot);
             for (var piece = 0; piece < pieces.Count; piece++)
             {
                 if (sb.Length > 0) sb.Append(' ');
@@ -540,7 +585,7 @@ public static class MusicNotation
             var directive = directives[directiveIndex];
             if (directive.Time > cursor)
             {
-                foreach (var piece in SplitIntoWritablePieces(directive.Time - cursor))
+                foreach (var piece in SplitIntoWritablePieces(directive.Time - cursor, useDot))
                 {
                     WriteRest(piece);
                 }
@@ -684,7 +729,7 @@ public static class MusicNotation
             return string.Join(' ', byTime.Select(d => FormatDirective(d, useLetters)));
         }
 
-        var voices = SeparateForNotation(notes, groupChords);
+        var voices = SeparateForNotation(notes, groupChords, useDot);
 
         if (voices.Count == 1)
         {

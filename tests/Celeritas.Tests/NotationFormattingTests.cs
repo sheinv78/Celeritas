@@ -76,10 +76,32 @@ public class NotationFormattingTests
     }
 
     [Fact]
-    public void ADurationTheTableCannotName_IsPrintedAsARatio()
+    public void ADurationTheLetterTableCannotName_FallsBackToTheFormThatParses()
     {
-        Assert.Equal("1/64", MusicNotation.FormatDuration(new Rational(1, 64), useLetters: true));
+        // This used to require "1/64" of the letter arm, pinning as correct a string nothing in
+        // the library reads: ParseDuration rejected it, and so did the grammar inside a note. The
+        // numeric arm beside it already answered "64", which is how the grammar spells every note
+        // value outside the named ones, and both arms now agree.
+        Assert.Equal("64", MusicNotation.FormatDuration(new Rational(1, 64), useLetters: true));
+        Assert.Equal("64", MusicNotation.FormatDuration(new Rational(1, 64), useLetters: false));
+        Assert.Equal(new Rational(1, 64), MusicNotation.ParseDuration("64"));
+    }
+
+    [Fact]
+    public void ADurationWithNoSingleWrittenForm_IsPrintedAsARatio()
+    {
+        // Five eighths is tied notes, which only a sequence can express — FormatNoteSequence
+        // splits it — so a lone duration being displayed shows the rational. That string is for
+        // reading, not for parsing, and ParseDuration says so.
         Assert.Equal("5/8", MusicNotation.FormatDuration(new Rational(5, 8)));
+        Assert.Throws<ArgumentException>(() => MusicNotation.ParseDuration("5/8"));
+
+        // ...and the sequence writer never puts one in front of the parser.
+        NoteEvent[] five = [new(60, Rational.Zero, new Rational(5, 8))];
+        var text = MusicNotation.FormatNoteSequence(five);
+        Assert.Equal(
+            new Rational(5, 8),
+            MusicNotation.Parse(text).Aggregate(Rational.Zero, (total, n) => total + n.Duration));
     }
 
     // ---------- FormatWithDirectives ----------

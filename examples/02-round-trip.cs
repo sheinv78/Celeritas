@@ -31,13 +31,12 @@ class RoundTrip
         Console.WriteLine($"Letters: {letters}");
         // Output: "C4:q E4:e G4:h."
 
-        // Without dots: a dotted value has no plain note symbol, so the formatter
-        // falls back to the raw rational (3/4) instead of the dotted form (2.)
+        // Without dots: a dotted value has no plain note symbol, so the writer spells it
+        // as tied notes instead. Every flag combination still reads back as the same music.
         var noDots = MusicNotation.FormatNoteSequence(notes,
             useDot: false, useLetters: false);
         Console.WriteLine($"No dots: {noDots}");
-        // Output: "C4/4 E4/8 G4/3/4" (the dotted half prints as the rational 3/4,
-        // which is NOT valid input notation - keep useDot: true for round-trips)
+        // Output: "C4/4 E4/8 G4/4~ G4/4~ G4/4" (the dotted half becomes three tied quarters)
 
         // ===== Chord Grouping =====
 
@@ -134,7 +133,7 @@ class RoundTrip
 Formatted: C4/4 E4/8 G4/2.
 Numeric: C4/4 E4/8 G4/2.
 Letters: C4:q E4:e G4:h.
-No dots: C4/4 E4/8 G4/3/4
+No dots: C4/4 E4/8 G4/4~ G4/4~ G4/4
 Flat: << C4/4 D4/4 B4/2 | E4/4 F4/4 | G4/4 A4/4 >>
 Grouped: [C4 E4 G4]/4 [D4 F4 A4]/4 B4/2
 With directives: @bpm 120 @dynamics mf C4/4 E4/4 G4/4

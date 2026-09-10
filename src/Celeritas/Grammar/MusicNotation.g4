@@ -103,7 +103,11 @@ accidental
     ;
 
 octave
-    : INT
+    // MINUS, because octave -1 is where MIDI starts: pitch 0 is C-1 in scientific pitch
+    // notation, which is what ToNotation writes. Without it the writer produced "C-1" and
+    // this parser refused to read it, so the bottom octave of the keyboard could be exported
+    // from a MIDI file and then not be written down.
+    : MINUS? INT
     ;
 
 duration
@@ -142,6 +146,10 @@ BAR         : '|' ;
 AT          : '@' ;
 ARROW       : '->' ;
 EQUALS      : '=' ;
+
+// A lone minus, for the negative octave. Declared after ARROW so '->' still lexes as one
+// token: ANTLR takes the longest match, and on a tie the rule declared first.
+MINUS       : '-' ;
 
 // Brackets
 LBRACKET    : '[' ;

@@ -416,9 +416,14 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
 
         // Get octave. TryParse + long arithmetic: a huge octave must surface as the
         // parser's documented ArgumentException, not an OverflowException.
-        var octaveText = context.octave().INT().GetText();
+        var octaveCtx = context.octave();
+        var octaveText = octaveCtx.INT().GetText();
         if (!int.TryParse(octaveText, out var octave))
             throw new ArgumentException($"Invalid octave in '{context.GetText()}': {octaveText}");
+
+        // Octave -1 is where MIDI starts: pitch 0 is C-1, which is what ToNotation writes.
+        if (octaveCtx.MINUS() != null)
+            octave = -octave;
 
         // Calculate MIDI pitch: C4 = 60. Validate the MIDI range so "C99/4" fails
         // instead of producing an impossible pitch.
