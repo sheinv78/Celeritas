@@ -70,7 +70,10 @@ class ProgressionAnalysis
         var cadence4 = ProgressionAdvisor.DetectCadence(half, cadenceKey);
         Console.WriteLine($"{string.Join(" - ", half)}: {cadence4}");  // Half
 
-        // The same three chords with no key: heard in G major as IV - v - I, an authentic cadence
+        // The same three chords with no key given: the key is inferred as C major, where they
+        // are I - ii - V, so the answer agrees with the line above. (It used to infer G major and
+        // call this Authentic: Dm rising a fourth to G was taken for V going to I, though a
+        // minor chord a fourth below is ii going to V.)
         Console.WriteLine($"{string.Join(" - ", half)} (key inferred): {ProgressionAdvisor.DetectCadence(half)}");
 
         // ===== Chord Character Classification =====
@@ -217,7 +220,7 @@ G7 - C: Authentic
 F - C: Plagal
 G7 - Am: Deceptive
 C - Dm - G: Half
-C - Dm - G (key inferred): Authentic
+C - Dm - G (key inferred): Half
 
 Chord characters:
        C: Bright (80 %, 85 %)
