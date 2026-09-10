@@ -462,7 +462,10 @@ public static class KeyAnalyzer
     /// Each note counts once towards the key, however long it is held; see
     /// <see cref="IdentifyKey(ReadOnlySpan{int})"/> for the algorithm and its documented
     /// answers for undecidable input. For duration-weighted detection use
-    /// <see cref="KeyProfiler.DetectFromPitches(ReadOnlySpan{NoteEvent})"/>.
+    /// <see cref="KeyProfiler.DetectFromBuffer"/>, which is the one reading in the library that
+    /// weighs how long a note is held. <see cref="KeyProfiler.DetectFromPitches(ReadOnlySpan{NoteEvent})"/>
+    /// is not it: as its name says, it reads the pitches and not the durations, and named here
+    /// it sent a caller who wanted duration weighting to the algorithm that has none.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static KeySignature DetectKey(ReadOnlySpan<NoteEvent> notes) => IdentifyKey(notes);
