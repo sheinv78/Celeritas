@@ -44,6 +44,32 @@ $destDir = Join-Path $repoRoot 'bindings/python/celeritas/native'
 
 New-Item -ItemType Directory -Force $destDir | Out-Null
 
+# Native AOT links with MSVC, and the ILCompiler targets shell out to vswhere.exe to find it.
+# vswhere ships with the Visual Studio Installer, which is not on PATH by default: without it
+# the publish fails with MSB3073 exit code 123, and the message names link.exe rather than the
+# program that is actually missing. Put the installer directory on PATH for this process when
+# it is there and vswhere is not already reachable.
+if ($IsWindows -and -not (Get-Command vswhere -ErrorAction SilentlyContinue)) {
+    $installerDirs = @(
+        (Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer'),
+        (Join-Path $env:ProgramFiles 'Microsoft Visual Studio\Installer')
+    )
+
+    foreach ($dir in $installerDirs) {
+        if ($dir -and (Test-Path (Join-Path $dir 'vswhere.exe'))) {
+            $env:PATH = "$dir;$env:PATH"
+            Write-Host "  Added to PATH for this build: $dir" -ForegroundColor DarkGray
+            break
+        }
+    }
+
+    if (-not (Get-Command vswhere -ErrorAction SilentlyContinue)) {
+        Write-Warning ("vswhere.exe was not found. Native AOT needs it to locate the MSVC " +
+            "linker; if the publish below fails with MSB3073, install the Visual Studio " +
+            "Build Tools with the C++ workload.")
+    }
+}
+
 Write-Host "Publishing native library for Python bindings" -ForegroundColor Cyan
 Write-Host "  Project: $project"
 Write-Host "  Configuration: $Configuration"

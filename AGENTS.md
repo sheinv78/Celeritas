@@ -47,8 +47,17 @@ The ANTLR build task emits the generated lexer/parser/visitor `.cs` files into `
 ## Python Bindings
 
 Two separate paths:
-1. **Fast (default):** `ctypes` → `Celeritas.Native.dll/.so/.dylib` (NativeAOT). Rebuild with `scripts/build-python-native.ps1`; output goes to `bindings/python/celeritas/native/`.
+1. **Fast (default):** `ctypes` → `Celeritas.Native.dll/.so/.dylib` (NativeAOT). Rebuild with `scripts/build-python-native.ps1`; output goes to `bindings/python/celeritas/native/`. The module loads the native library at *import* time, so nothing in the package — not even the pure-Python ornaments — can be exercised without building it first.
 2. **Full API (opt-in):** `pythonnet` bridge — `from celeritas import load_celeritas`.
+
+The bindings are a **second implementation, not a wrapper**, for the ornaments: `Trill` and
+`Mordent` are written again in Python because there is no native export for them. Nothing but a
+test comparing the two holds them together, and they have drifted three times — see
+`TestOrnamentsMatchTheLibrary` in `bindings/python/test_celeritas.py`. **Change an ornament in C#
+and you must change it here too.**
+
+The bindings also run their own CI gates that `dotnet test` will not catch:
+`flake8 --max-line-length=100`, `black --check` and `mypy`.
 
 ## Developer Commands
 
@@ -81,6 +90,8 @@ dotnet publish src/Celeritas.CLI -c Release -r win-x64
 - **Tests use xUnit `[Theory]` + `[InlineData]`** throughout. New tests must follow the same naming pattern: `MethodName_Condition_ExpectedBehavior`.
 - **Enharmonic spelling:** Default is sharps; pass `preferSharps: false` to `ToNotation()` / `ToName()` when flats are required.
 - **`NoteBuffer` lifecycle:** Always `using var buf = new NoteBuffer(capacity)` — it allocates native memory and requires `Dispose()`.
+- **`MusicNotation.RestPitch` is `-1` and reserved library-wide.** A note event carrying it is silence, not a note: analysis skips it, and the MIDI and MusicXML writers leave a gap. Never let a computed pitch land on it — clamp with `Ornament.Playable` or the equivalent. Two separate defects have been a pitch arithmetic result of `-1` being read back as a rest.
+- **The same musical question is often answered in more than one place** — two overloads, an aggregate `Analyze` and the dedicated analyzer, a managed method and its C-ABI export in `src/Celeritas.Native/NativeExports.cs`, a C# class and its Python rewrite. **A fix applied to one of them is not finished**: grep for the other entry points and run them side by side on the *simplest* input before writing the test. Three defects in one day were repairs that never reached the sibling.
 
 ## Key Files for Orientation
 
