@@ -173,8 +173,10 @@ public static class ModalProgressions
     /// Patterns are matched on bare scale-degree numbers (1-7): chord qualities and
     /// alterations are not represented, so degree sequences shared by several modes
     /// (e.g. 1-7-1, which is I-bVII-I in Mixolydian but i-VII-i in Aeolian) cannot be
-    /// distinguished by this method alone. When multiple modes match with the same
-    /// confidence, the tie is resolved by mode enumeration order (Ionian, Dorian,
+    /// distinguished by this method alone. Confidence is the fraction of the PATTERN found in
+    /// the input, so a short pattern is easier to match whole than a long one; when two match
+    /// equally well the longer one wins, because it accounts for more of the music. When they
+    /// are the same length too, the tie is resolved by mode enumeration order (Ionian, Dorian,
     /// Phrygian, Lydian, Mixolydian, Aeolian, Locrian, then the altered modes) — the
     /// first mode tried wins. Treat the returned mode as a plausible reading, not a
     /// unique identification.
@@ -193,6 +195,7 @@ public static class ModalProgressions
         Mode bestMode = Mode.Ionian;
         ModalProgression? bestMatch = null;
         float bestConfidence = 0;
+        var bestLength = 0;
 
         foreach (var mode in allModes)
         {
@@ -201,11 +204,20 @@ public static class ModalProgressions
             foreach (var prog in progressions)
             {
                 var confidence = MatchProgression(romanNumerals, prog.Degrees);
-                if (confidence > bestConfidence)
+
+                // Confidence is the fraction of the PATTERN found, so a short pattern is easier
+                // to match whole: "ii - V - I" scores 1.0 on any progression that ends that way,
+                // including "I - iii - vi - ii - V - I", which also scores 1.0 against itself.
+                // At equal confidence the longer pattern accounts for more of the music, so it
+                // wins; keeping the first one found instead meant a progression handed in
+                // complete was reported as a fragment of itself.
+                if (confidence > bestConfidence
+                    || (confidence == bestConfidence && confidence > 0 && prog.Degrees.Count > bestLength))
                 {
                     bestConfidence = confidence;
                     bestMode = mode;
                     bestMatch = prog;
+                    bestLength = prog.Degrees.Count;
                 }
             }
         }
