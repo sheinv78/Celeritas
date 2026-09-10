@@ -1205,6 +1205,16 @@ public static class ProgressionAdvisor
             }
         }
 
+        // Where a chord's root is first heard in the window, for the tie-break below.
+        var firstHeardAt = new int[12];
+        Array.Fill(firstHeardAt, int.MaxValue);
+        for (var i = 0; i < window.Length; i++)
+        {
+            var pc = window[i].Info.RootPitchClass;
+            if (firstHeardAt[pc] == int.MaxValue)
+                firstHeardAt[pc] = i;
+        }
+
         for (int root = 0; root < 12; root++)
         {
             foreach (var isMajor in new[] { true, false })
@@ -1220,7 +1230,21 @@ public static class ProgressionAdvisor
                     }
                 }
 
-                if (score > bestScore && score > currentScore)
+                if (score <= currentScore)
+                {
+                    continue;
+                }
+
+                // Three diatonic chords fit several keys equally — a relative pair, a pair of
+                // neighbours on the circle — so a strict "greater than" kept whichever came first
+                // in root order, which is not a property of the music: "C Am Dm" read as a move
+                // to C major and the same three chords a minor third up as a move to C MINOR, so
+                // the reported modulation rotated through four different answers over the twelve
+                // transpositions. Ties go to the key whose tonic is actually played in the
+                // window, earliest first, and then to the root nearest above the current key's —
+                // each of which moves with the music, as DetectKeyFromProgression's tie-break
+                // already does.
+                if (score > bestScore || (score == bestScore && Beats(testKey, bestKey!.Value)))
                 {
                     bestScore = score;
                     bestKey = testKey;
@@ -1229,6 +1253,20 @@ public static class ProgressionAdvisor
         }
 
         return bestKey;
+
+        bool Beats(KeySignature candidate, KeySignature incumbent)
+        {
+            if (firstHeardAt[candidate.Root] != firstHeardAt[incumbent.Root])
+                return firstHeardAt[candidate.Root] < firstHeardAt[incumbent.Root];
+
+            var candidateDistance = PitchMath.Fold(candidate.Root - currentKey.Root);
+            var incumbentDistance = PitchMath.Fold(incumbent.Root - currentKey.Root);
+            if (candidateDistance != incumbentDistance)
+                return candidateDistance < incumbentDistance;
+
+            // Same root: keep the mode of the current key, and major over minor otherwise.
+            return candidate.IsMajor == currentKey.IsMajor && incumbent.IsMajor != currentKey.IsMajor;
+        }
     }
 
     private static bool KeysEqual(KeySignature a, KeySignature b)
@@ -1428,8 +1466,18 @@ public static class ProgressionAdvisor
             var curr = chords[i].Info;
             var interval = (curr.RootPitchClass - prev.RootPitchClass + 12) % 12;
 
-            // Perfect 4th up (or 5th down) = V->I motion
-            if (interval == 5)
+            // Perfect 4th up (or 5th down) = V->I motion — with one exception. A minor chord
+            // rising a fourth into a MAJOR one is ii going to V, the commonest non-tonic fourth
+            // there is, not a dominant resolving: Dm -> G in "C Am Dm G" handed G the tonic
+            // bonus, and I-vi-ii-V — the most played progression in popular music — was
+            // reported in the key of its own dominant, in all twelve keys. A minor chord rising
+            // into a minor one keeps the bonus, because natural minor's dominant is minor and
+            // Gm -> Cm is how that key cadences; take it away and "Dsus4 Gm Cm" reads as D minor.
+            var prevThird = ChordLibrary.ThirdOf(prev.Quality);
+            var currThird = ChordLibrary.ThirdOf(curr.Quality);
+            var supertonicToDominant = prevThird == ChordThird.Minor && currThird == ChordThird.Major;
+
+            if (interval == 5 && !supertonicToDominant)
             {
                 Tonic(keyScores, curr, 2.5f);
             }
