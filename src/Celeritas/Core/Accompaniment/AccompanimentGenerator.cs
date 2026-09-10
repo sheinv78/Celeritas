@@ -143,14 +143,14 @@ public static class AccompanimentGenerator
                 continue;
             }
 
-            var chordPitchClasses = DeduplicatePitchClasses(pcs[..pcCount], opt.MaxChordTones);
+            var rootPc = roman.GetRootPitchClass(key);
+            var chordPitchClasses = DeduplicatePitchClasses(pcs[..pcCount], opt.MaxChordTones, rootPc);
             if (chordPitchClasses.Length == 0)
             {
                 offset += duration;
                 continue;
             }
 
-            var rootPc = roman.GetRootPitchClass(key);
             var bassPitch = ValidateMidiPitch(
                 PitchClassToMidiAtOrAbove(rootPc, OctaveToMidiBase(opt.BassOctave)),
                 nameof(AccompanimentOptions.BassOctave));
@@ -240,6 +240,21 @@ public static class AccompanimentGenerator
             distinct.Add(pc);
         }
 
+        return KeepTheTonesThatCarryTheChord(distinct, max, rootPitchClass);
+    }
+
+    /// <summary>
+    /// The <paramref name="max"/> pitch classes that carry the chord, in ascending order.
+    /// </summary>
+    /// <remarks>
+    /// Both overloads reach this, so the same chord asked for as a roman numeral and as a
+    /// harmonization drops the same notes. It did not: the roman-numeral path kept whichever
+    /// pitch classes came first in the quality's interval list, which is root, third, fifth,
+    /// seventh — so a V7 at <c>MaxChordTones = 3</c> came out G-B-D, a plain triad with the
+    /// seventh that makes it a dominant thrown away, where the harmonization path gave G-B-F.
+    /// </remarks>
+    private static byte[] KeepTheTonesThatCarryTheChord(List<byte> distinct, int max, byte rootPitchClass)
+    {
         if (distinct.Count == 0)
             return [];
 
@@ -267,31 +282,27 @@ public static class AccompanimentGenerator
             _ => 4              // colour: ninths, elevenths, altered fifths
         };
 
-    private static byte[] DeduplicatePitchClasses(ReadOnlySpan<byte> pitchClasses, int max)
+    private static byte[] DeduplicatePitchClasses(
+        ReadOnlySpan<byte> pitchClasses,
+        int max,
+        byte rootPitchClass)
     {
         if (pitchClasses.IsEmpty || max <= 0)
             return [];
 
         Span<bool> seen = stackalloc bool[12];
-        var tmp = new byte[Math.Min(12, Math.Min(max, pitchClasses.Length))];
-        var count = 0;
+        var distinct = new List<byte>(Math.Min(12, pitchClasses.Length));
 
-        for (var i = 0; i < pitchClasses.Length && count < tmp.Length; i++)
+        foreach (var pitchClass in pitchClasses)
         {
-            var pc = (byte)(pitchClasses[i] % 12);
+            var pc = (byte)PitchMath.Fold(pitchClass);
             if (seen[pc])
                 continue;
             seen[pc] = true;
-            tmp[count++] = pc;
+            distinct.Add(pc);
         }
 
-        if (count == 0)
-            return [];
-
-        Array.Sort(tmp, 0, count);
-        var result = new byte[count];
-        Array.Copy(tmp, result, count);
-        return result;
+        return KeepTheTonesThatCarryTheChord(distinct, max, rootPitchClass);
     }
 
     private static int[] VoicePitchClasses(byte[] pitchClasses, int octave)

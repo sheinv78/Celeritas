@@ -104,4 +104,49 @@ public sealed class AccompanimentGeneratorTests
         // First event is bass — pitch class C (0).
         Assert.Equal(PitchClassC, events[0].Pitch % 12);
     }
+
+    /// <summary>
+    /// A chord asked for as a roman numeral and the same chord asked for as a harmonization must
+    /// give up the same notes when there is not room for all of them. The roman-numeral path used
+    /// to keep whichever came first in the quality's interval list — root, third, fifth, seventh —
+    /// so a V7 at three tones came out G-B-D, a plain triad with the note that makes it a dominant
+    /// thrown away, while the same chord through <see cref="ChordAssignment"/> gave G-B-F.
+    /// </summary>
+    [Theory]
+    [InlineData(ScaleDegree.V, ChordQuality.Dominant7, 3, new[] { 5, 7, 11 })]    // G-B-F, not G-B-D
+    [InlineData(ScaleDegree.Ii, ChordQuality.Minor7, 3, new[] { 0, 2, 5 })]       // D-F-C, not D-F-A
+    [InlineData(ScaleDegree.I, ChordQuality.Major7, 3, new[] { 0, 4, 11 })]       // C-E-B, not C-E-G
+    [InlineData(ScaleDegree.V, ChordQuality.Dominant7, 2, new[] { 7, 11 })]       // root and third
+    [InlineData(ScaleDegree.V, ChordQuality.Dominant7, 4, new[] { 2, 5, 7, 11 })] // room for all
+    [InlineData(ScaleDegree.I, ChordQuality.Major, 3, new[] { 0, 4, 7 })]         // a triad is whole
+    public void AChordGivesUpTheSameNotesWhicheverWayItIsAskedFor(
+        ScaleDegree degree,
+        ChordQuality quality,
+        int maxChordTones,
+        int[] expectedPitchClasses)
+    {
+        var key = new KeySignature("C", isMajor: true);
+        var roman = new RomanNumeralChord(degree, quality, HarmonicFunction.Tonic);
+        var options = AccompanimentOptions.Default with { MaxChordTones = maxChordTones };
+
+        var fromRoman = AccompanimentGenerator.Generate(
+            [new HarmonicRhythmItem(roman, Rational.Whole)], key, options);
+
+        var fromHarmonization = AccompanimentGenerator.Generate(
+            [
+                new ChordAssignment(
+                    Start: Rational.Zero,
+                    End: Rational.Whole,
+                    Chord: new ChordInfo(roman.GetRootPitchClass(key), quality),
+                    Pitches: [.. roman.GetPitchClasses(key).Select(pc => MidiPitch.C4 + pc)]),
+            ],
+            options);
+
+        // The bass sounds the root an octave or more below; the chord tones are what is voiced.
+        static int[] ChordTones(NoteEvent[] events) =>
+            [.. events.Where(n => n.Pitch >= MidiPitch.C4).Select(n => n.Pitch % 12).Distinct().Order()];
+
+        Assert.Equal(expectedPitchClasses, ChordTones(fromRoman));
+        Assert.Equal(expectedPitchClasses, ChordTones(fromHarmonization));
+    }
 }

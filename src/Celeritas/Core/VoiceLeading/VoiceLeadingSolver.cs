@@ -15,6 +15,11 @@ namespace Celeritas.Core.VoiceLeading;
 /// 1. Generate all valid voicings for each chord (constraint: notes in range, proper spacing)
 /// 2. Build a graph where edges connect compatible voicings of consecutive chords
 /// 3. Use parallel A* search to find the path with minimum voice leading cost
+///
+/// The rules followed are exactly the ones <see cref="VoiceLeadingViolation"/> names. Inversion is
+/// not among them: a chord arrives here as a set of pitch classes with no bass named, so the bass
+/// takes whichever chord tone the smoothest path wants, and a progression may well begin or end on
+/// a six-four. Choose the inversions yourself if they matter.
 /// </summary>
 /// <param name="options">Solver options; defaults to <c>VoiceLeadingSolverOptions.Default</c> when <see langword="null"/>.</param>
 public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null)
