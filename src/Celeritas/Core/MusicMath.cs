@@ -114,6 +114,13 @@ public static unsafe class MusicMath
     /// <summary>
     /// Quantize note start times to a grid (round to nearest grid step, half-way cases round up).
     /// </summary>
+    /// <remarks>
+    /// Start times only: a note keeps the length it had, so on a grid coarser than the material
+    /// it still ends off the grid. And notes closer together than one grid step land on the same
+    /// step and sound together — four sixteenths quantized to a quarter become two pairs — which
+    /// is what quantizing to that grid means, not a fault in the arithmetic. Choose a grid no
+    /// coarser than the shortest note that should stay distinct.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static void Quantize(NoteBuffer buffer, Rational grid)
     {

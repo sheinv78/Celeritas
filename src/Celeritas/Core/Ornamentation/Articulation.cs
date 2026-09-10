@@ -72,7 +72,17 @@ public sealed class Articulation : Ornament
         // Round (not truncate) the float to a centesimal ratio: 0.7f is stored as
         // 0.69999998...; truncation turned it into 69/100 instead of 7/10.
         var duration = BaseNote.Duration * new Rational((long)Math.Round(DurationMultiplier * 100), 100);
-        var velocity = Math.Clamp(BaseNote.Velocity * VelocityMultiplier, 0f, 1f);
+
+        // A mark that makes a note louder moves it that fraction of the way to the top rather
+        // than multiplying it there. Multiplying and clamping ran out of room: at a base
+        // velocity of 0.8, accent (x1.3), marcato (x1.5) and sforzando (x1.6) all came out at
+        // 1.000 and three distinct marks were the same note, while a musician hears sfz above
+        // marcato above accent at every dynamic. The two meet exactly at 0.5, so nothing changes
+        // in the middle of the range; only where the old formula had already saturated.
+        var velocity = VelocityMultiplier > 1f
+            ? BaseNote.Velocity + ((1f - BaseNote.Velocity) * (VelocityMultiplier - 1f))
+            : BaseNote.Velocity * VelocityMultiplier;
+        velocity = Math.Clamp(velocity, 0f, 1f);
 
         return [new NoteEvent(BaseNote.Pitch, BaseNote.Offset, duration, velocity)];
     }

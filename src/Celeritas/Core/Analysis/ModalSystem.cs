@@ -387,28 +387,90 @@ public static class ModeLibrary
     }
 
     /// <summary>
-    /// Get the characteristic/avoid notes for a mode.
-    /// Characteristic notes distinguish this mode from parallel major/minor.
+    /// Get the characteristic and avoid notes of a mode, as semitones above its root.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A characteristic note is the degree that tells this mode from the parallel major or
+    /// minor: the raised 6th of Dorian, the lowered 2nd of Phrygian, the raised 4th of Lydian.
+    /// Ionian and Aeolian have none, because they are what the others are compared against, and
+    /// the list is empty for the scales that are not compared this way at all — the pentatonics,
+    /// the blues scale, and the symmetrical whole-tone and diminished scales.
+    /// </para>
+    /// <para>
+    /// An avoid note is a degree a semitone above a note of the mode's own tonic seventh chord:
+    /// it sounds against that chord rather than with it, so it is passed through rather than
+    /// rested on. This half of the answer used to be empty for all nineteen modes, so a caller
+    /// asking the question got nothing back for it whatever the mode. It is worked out from the
+    /// scale rather than listed, which means a mode added later answers too, and it comes out
+    /// where the textbooks put it: the 4th in Ionian and Mixolydian, the flat 6th in Aeolian,
+    /// the flat 2nd in Locrian — and nothing at all in Lydian and Dorian, which is exactly why
+    /// those two are the modes a melody can move through freely.
+    /// </para>
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="Mode"/> value.</exception>
     public static (int[] characteristic, int[] avoid) GetCharacteristicNotes(Mode mode)
     {
         if (!Enum.IsDefined(mode))
             throw new ArgumentOutOfRangeException(nameof(mode), mode, "Not a defined Mode value.");
 
-        return mode switch
+        int[] characteristic = mode switch
         {
-            Mode.Dorian => ([9], []),           // Raised 6th vs natural minor
-            Mode.Phrygian => ([1], []),         // Lowered 2nd
-            Mode.Lydian => ([6], []),           // Raised 4th
-            Mode.Mixolydian => ([10], []),      // Lowered 7th vs major
-            Mode.Locrian => ([1, 6], []),       // Lowered 2nd and 5th
-            Mode.HarmonicMinor => ([11], []),   // Raised 7th vs natural minor
-            Mode.MelodicMinor => ([9, 11], []), // Raised 6th and 7th
-            Mode.PhrygianDominant => ([1, 4], []), // b2 and major 3rd
-            Mode.LydianDominant => ([6, 10], []), // #4 and b7
-            _ => ([], [])
+            Mode.Dorian => [9],           // Raised 6th vs natural minor
+            Mode.Phrygian => [1],         // Lowered 2nd
+            Mode.Lydian => [6],           // Raised 4th
+            Mode.Mixolydian => [10],      // Lowered 7th vs major
+            Mode.Locrian => [1, 6],       // Lowered 2nd and 5th
+            Mode.HarmonicMinor => [11],   // Raised 7th vs natural minor
+            Mode.MelodicMinor => [9, 11], // Raised 6th and 7th
+            Mode.PhrygianDominant => [1, 4], // b2 and major 3rd
+            Mode.LydianDominant => [6, 10], // #4 and b7
+            _ => []
         };
+
+        return (characteristic, AvoidNotes(mode));
+    }
+
+    /// <summary>
+    /// The degrees of <paramref name="mode"/> that sit a semitone above a note of its own tonic
+    /// seventh chord, as semitones above the root.
+    /// </summary>
+    /// <remarks>
+    /// The tonic seventh is degrees 1, 3, 5 and 7 of the scale, which only a seven-note scale
+    /// has; a mode with any other number of notes has no avoid note to report here.
+    /// </remarks>
+    private static int[] AvoidNotes(Mode mode)
+    {
+        var intervals = GetIntervals(mode);
+        if (intervals.Length != LetterCount)
+        {
+            return [];
+        }
+
+        var chord = 0;
+        for (var degree = 0; degree < LetterCount; degree += 2)
+        {
+            chord |= 1 << intervals[degree];
+        }
+
+        var avoid = new List<int>(2);
+        foreach (var interval in intervals)
+        {
+            // A chord tone is never its own avoid note, and the root is a chord tone, so the
+            // semitone below the root — the leading tone of a harmonic-minor scale, say — is
+            // caught by the same test without a special case.
+            if ((chord & (1 << interval)) != 0)
+            {
+                continue;
+            }
+
+            if ((chord & (1 << PitchMath.Fold(interval - 1))) != 0)
+            {
+                avoid.Add(interval);
+            }
+        }
+
+        return [.. avoid];
     }
 
     /// <summary>
