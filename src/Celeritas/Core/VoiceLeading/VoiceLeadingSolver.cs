@@ -439,7 +439,11 @@ public sealed class VoiceLeadingSolution
         }
 
         sb.AppendLine();
-        sb.AppendLine($"Total voice leading cost: {TotalCost:F1}");
+        // Invariant, like every other number this library renders: under a locale whose
+        // decimal separator is a comma this read "39,0", so the same solution printed
+        // differently on different machines and a test comparing the text could not be
+        // written portably.
+        sb.AppendLine(FormattableString.Invariant($"Total voice leading cost: {TotalCost:F1}"));
 
         if (Warnings.Count > 0)
         {
@@ -455,11 +459,14 @@ public sealed class VoiceLeadingSolution
     }
 
     /// <summary>
-    /// Export to NoteBuffer for playback.
+    /// Export to NoteBuffer for playback. A solution with no voicings — one that found no
+    /// valid path, or was asked for no chords — is an empty buffer, not an error.
     /// </summary>
     public NoteBuffer ToNoteBuffer(Rational chordDuration)
     {
-        var buffer = new NoteBuffer(Voicings.Count * 4);
+        // A NoteBuffer refuses a capacity of zero, so an empty solution used to throw
+        // ArgumentOutOfRangeException about "capacity", a parameter this caller never passed.
+        var buffer = new NoteBuffer(Math.Max(1, Voicings.Count * 4));
         var time = Rational.Zero;
 
         foreach (var voicing in Voicings)

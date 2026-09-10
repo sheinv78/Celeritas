@@ -776,7 +776,10 @@ public readonly record struct KeyCorrelation(KeySignature Key, float Correlation
     public override string ToString()
     {
         var keyName = ChordLibrary.NoteNames[Key.Root] + (Key.IsMajor ? " Major" : " Minor");
-        return $"{keyName}: {Correlation:F3}";
+
+        // Invariant, so the example in the summary is what a caller gets on every machine: under
+        // a locale with a comma for a decimal separator this returned "C Major: 0,812".
+        return FormattableString.Invariant($"{keyName}: {Correlation:F3}");
     }
 }
 
