@@ -5,6 +5,7 @@ using Celeritas.Core.Analysis;
 using Celeritas.Core.Harmonization;
 using Celeritas.Core.Midi;
 using Celeritas.Core.Notation;
+using Celeritas.Core.Orchestration;
 
 namespace Celeritas.Tests;
 
@@ -125,6 +126,34 @@ public class RestsAreSilenceTests
         yield return ("RhythmPredictor.Train(buffer)",
             n => { using var b = BufferOf(n); var p = new RhythmPredictor(2, 1); p.Train(b); var s = p.GetStats(); return $"{s.UniqueContexts} {s.TotalTransitions}"; }
         );
+        yield return ("ModeLibrary.DetectModeWithRoot(notes)",
+            n => { var (key, confidence) = ModeLibrary.DetectModeWithRoot(n); return $"{key} {confidence:F4}"; }
+        );
+        yield return ("ModeLibrary.DetectModeWithRoot(notes, root)",
+            n => { var (key, confidence) = ModeLibrary.DetectModeWithRoot(n, 0); return $"{key} {confidence:F4}"; }
+        );
+        yield return ("OrchestrationMapper.Map",
+            n => string.Join(" | ", OrchestrationMapper.Map(n).Parts.Select(
+                part => $"{part.Definition.Name}:{string.Join(",", part.Notes.Select(x => $"{x.Pitch}@{x.Offset}"))}"))
+        );
+    }
+
+    /// <summary>
+    /// The readings that take the notation itself rather than parsed notes. They belong in a
+    /// table of their own because a <see cref="NoteEvent"/> array cannot express one, which is
+    /// how <see cref="KeyAnalyzer.DetectKey(string)"/> came to be the last reading in the library
+    /// still counting a rest as a B while the two overloads on either side of it did not.
+    /// These three are every public entry point that reads a passage of notation; the other two
+    /// that take a string — <see cref="MusicNotation.ParseNote(string)"/> and
+    /// <see cref="SpnNote.Parse(string)"/> — name one note and cannot be handed a rest.
+    /// </summary>
+    private static IEnumerable<(string Name, Func<string, string> Read)> NotationReadings()
+    {
+        yield return ("KeyAnalyzer.DetectKey(notation)", t => KeyAnalyzer.DetectKey(t).ToString());
+        yield return ("KeyProfiler.DetectFromPitches(notation)",
+            t => { var r = KeyProfiler.DetectFromPitches(t); return $"{r.Key} {r.DistinctPitchClasses}"; }
+        );
+        yield return ("ChordAnalyzer.Identify(notation)", t => ChordAnalyzer.Identify(t).ToString());
     }
 
     [Theory]
@@ -146,6 +175,69 @@ public class RestsAreSilenceTests
         }
 
         Assert.True(disagreed.Count == 0, string.Join(Environment.NewLine, disagreed));
+    }
+
+    [Theory]
+    [MemberData(nameof(Passages))]
+    public void EveryReadingOfANotationString_IgnoresItsRests(string notation)
+    {
+        // The same passage with the rests struck out of the text. The notes that remain keep
+        // their own durations, so the music is unchanged and only the silence is gone.
+        var sounding = string.Join(
+            " ",
+            notation.Split(' ').Where(token => !token.StartsWith("R/", StringComparison.Ordinal)));
+
+        Assert.NotEqual(notation, sounding);
+
+        var disagreed = new List<string>();
+        foreach (var (name, read) in NotationReadings())
+        {
+            var withRests = read(notation);
+            var without = read(sounding);
+            if (withRests != without)
+                disagreed.Add($"{name}: with rests \"{withRests}\", without \"{without}\"");
+        }
+
+        Assert.True(disagreed.Count == 0, string.Join(Environment.NewLine, disagreed));
+    }
+
+    [Fact]
+    public void ABarOfSilenceIsNotAKey()
+    {
+        // "R/1" folded to a single B and was answered as B major with the confidence of a real
+        // detection. Nothing sounds, so the answer is the documented empty-input one.
+        Assert.Equal(CMajor, KeyAnalyzer.DetectKey("R/1"));
+        Assert.Equal(CMajor, KeyProfiler.DetectFromPitches("R/2 R/2").Key);
+        Assert.Equal(0f, KeyProfiler.DetectFromPitches("R/2 R/2").Confidence);
+    }
+
+    [Fact]
+    public void MusicMadeOnlyOfSilenceHasNoMode()
+    {
+        // Every event is a rest, so there is nothing to name a mode from — the same answer as
+        // for an empty collection, which this overload has always rejected. Reading the rests as
+        // Bs instead gave "B Phrygian" for a bar of nothing.
+        var silence = MusicNotation.Parse("R/4 R/4 R/2");
+
+        var thrown = Assert.Throws<ArgumentException>(() => ModeLibrary.DetectModeWithRoot(silence));
+        Assert.Equal("notes", thrown.ParamName);
+    }
+
+    [Fact]
+    public void OrchestratingSilenceAddsNoNoteToThePart()
+    {
+        // RestPitch (-1) is below every SplitPitch, so a rest was scored for the bass and then
+        // octave-shifted up into the instrument's range: a bar of rests came out playing B1.
+        var result = OrchestrationMapper.Map(MusicNotation.Parse("4/4: R/4 R/4 R/2"));
+
+        Assert.Empty(result.Bass.Notes);
+        Assert.Empty(result.Harmony.Notes);
+
+        var withRests = OrchestrationMapper.Map(MusicNotation.Parse("4/4: C5/4 R/4 E5/4 G5/4"));
+        var sounding = OrchestrationMapper.Map(MusicNotation.Parse("4/4: C5/4 E5/4 G5/4"));
+        Assert.Equal(
+            sounding.Parts.Select(p => p.Notes.Select(n => n.Pitch).ToArray()),
+            withRests.Parts.Select(p => p.Notes.Select(n => n.Pitch).ToArray()));
     }
 
     // ---------- writing the music out ----------

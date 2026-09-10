@@ -405,18 +405,14 @@ public static class KeyAnalyzer
     /// </summary>
     private static KeySignature IdentifyKey(string notation)
     {
-        var notes = MusicNotation.Parse(notation);
-        if (notes.Length == 0)
-            return new KeySignature(0, true);
-
-        // The note count here is driven by the caller's string content, so it is unbounded.
-        Span<int> pitches = notes.Length <= StackAlloc.MaxInts
-            ? stackalloc int[notes.Length]
-            : new int[notes.Length];
-        for (var i = 0; i < notes.Length; i++)
-            pitches[i] = notes[i].Pitch;
-
-        return IdentifyKey(pitches);
+        // Hand the parsed notes to the overload below rather than copying their pitches here:
+        // that one drops the rests, and this one did not. MusicNotation.Parse marks a rest with
+        // RestPitch (-1), PitchMath.Fold turns it into a B, and the phantom B made C-E-G into a
+        // Cmaj7 whose four pitch classes tip the tie-break to the relative minor. So
+        // "C4/4 R/4 E4/4 G4/4" was answered as E minor while DetectKey(notes), DetectKey(buffer),
+        // KeyProfiler.DetectFromPitches(notation) and ChordAnalyzer.Identify(notation) all said
+        // C major, and a bar of silence was answered as B major.
+        return IdentifyKey(new ReadOnlySpan<NoteEvent>(MusicNotation.Parse(notation)));
     }
 
     /// <summary>

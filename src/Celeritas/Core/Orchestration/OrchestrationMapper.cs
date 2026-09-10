@@ -29,6 +29,13 @@ public static class OrchestrationMapper
         for (var i = 0; i < notes.Length; i++)
         {
             var n = notes[i];
+
+            // Silence is not scored for anyone. A rest is RestPitch (-1), which is below every
+            // SplitPitch, so it was handed to the bass part and then octave-shifted into range:
+            // a bar of rests came out as a bass line on B1, and orchestrating a passage added
+            // notes to it that nobody wrote.
+            if (Rests.IsRest(n.Pitch)) continue;
+
             var isBass = n.Pitch < opt.SplitPitch;
             if (isBass)
             {

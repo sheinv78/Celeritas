@@ -483,17 +483,26 @@ public static class ModeLibrary
     /// <summary>
     /// Detect mode from notes with root hint (automatically extracts pitch classes).
     /// </summary>
-    /// <param name="notes">Collection of note events.</param>
-    /// <param name="rootHint">Hint for the root note (pitch class). If null, uses first note's pitch class.</param>
+    /// <param name="notes">Collection of note events. Rests are silence and do not count towards
+    /// the mode, nor can one be the root.</param>
+    /// <param name="rootHint">Hint for the root note (pitch class). If null, uses the first
+    /// sounding note's pitch class.</param>
     /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="notes"/> holds nothing that sounds —
+    /// it is empty, or every event in it is a rest.</exception>
     public static (ModalKey key, float confidence) DetectModeWithRoot(IEnumerable<NoteEvent> notes, int? rootHint = null)
     {
         // ToList() throws on null, but names its own "source" parameter instead of this one.
         ArgumentNullException.ThrowIfNull(notes);
 
-        var noteList = notes.ToList();
+        // Rests are silence, not a pitch class. Folding RestPitch (-1) put a B nobody played into
+        // the distribution, and that phantom B is precisely the degree that names the wrong mode:
+        // the leading tone Mixolydian does not have, the raised 7th that turns Aeolian into
+        // harmonic minor and Dorian into melodic minor, the #4 that turns Ionian into Lydian. The
+        // root was read off it too, so a passage opening with a rest was answered in B.
+        var noteList = notes.Where(note => !Rests.IsRest(note.Pitch)).ToList();
         if (noteList.Count == 0)
-            throw new ArgumentException("Notes collection is empty", nameof(notes));
+            throw new ArgumentException("Notes collection holds nothing that sounds", nameof(notes));
 
         // Both folds matter: `%` keeps the sign, so a pitch below zero gave a negative root and
         // indexed backwards out of the distribution.
