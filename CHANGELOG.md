@@ -298,6 +298,24 @@ Behavioral and API changes that can affect existing code:
   behaviours that existed only as two separate methods, so nothing anywhere took
   one as a parameter
 
+### Removed
+
+Public types that a 0.9.0 consumer will not find. Diffing the tracked public API
+against the commit that started tracking it turned these up; none of them was in the
+notes, so an upgrade failed to compile with nothing here to explain it.
+
+- `Celeritas.Core.Analysis.MelodicIntervalStats` is renamed
+  `MelodicIntervalStatistics`, and `Celeritas.Core.Analysis.RhythmModelStats` is
+  renamed `RhythmModelStatistics` — same members, spelled out
+- `Celeritas.Core.Analysis.TimeSignature` moved to `Celeritas.Core.TimeSignature`,
+  and `Celeritas.Core.VoiceLeading.Voice` moved to `Celeritas.Core.Analysis.Voice`:
+  each now sits with the types it is used by
+- `MusicNotationAntlrParser`, `ChordSymbolAntlrParser`, `IPitchTransformer` and
+  `PitchTransformerFactory` are internal. They were generated-parser and SIMD
+  dispatch plumbing that the public entry points wrap — `MusicNotation.Parse`,
+  `ProgressionAdvisor.ParseChordSymbol` and `MusicMath.Transpose` — and nothing in
+  them was meant to be called directly
+
 ### Infrastructure
 
 - SIMD out-of-bounds fixes in pitch transformer tail handling; SIMD dispatch centralized
