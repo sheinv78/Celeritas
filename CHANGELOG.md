@@ -200,6 +200,16 @@ follows.
   validated only that the BPM was positive, so `SetTempo(1)` came back as a
   third-party exception about microseconds per quarter note, naming a parameter
   the caller never passed
+- A MIDI file is written with the tracks it has. The writer's default is SMF
+  format 1, in which DryWetMidi moves the meta events of a lone track into a
+  first track of their own, so every one-track file this library wrote came back
+  as two: `MidiIo.Export`, documented as single-track, wrote a tempo track and a
+  note track; a track added as "lead" was saved as an empty track called "lead"
+  beside an unnamed track holding its notes; a `MergeToSingleTrack` result saved
+  as two tracks; and `MidiFileExtensions.Clone` returned a file whose
+  `TrackCount` differed from its original's. `Export`, `Save` and `Clone` now
+  write format 0 for one track and format 1 for more, and keep format 2 for a
+  file that was read as format 2
 
 #### Parsing
 

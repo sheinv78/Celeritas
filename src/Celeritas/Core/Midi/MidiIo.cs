@@ -182,8 +182,11 @@ public static class MidiIo
         }
     }
 
-    /// <summary>Exports <paramref name="buffer"/> to a MIDI file at <paramref name="path"/>.</summary>
-    /// <remarks>See <see cref="MidiIo"/> for the two things the format cannot hold exactly.</remarks>
+    /// <summary>Exports <paramref name="buffer"/> as a single-track MIDI file at <paramref name="path"/>.</summary>
+    /// <remarks>
+    /// See <see cref="MidiIo"/> for the two things the format cannot hold exactly. The file is
+    /// SMF format 0: one track chunk holding the tempo and every note.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An option (ticks-per-quarter-note, channel, or BPM) is out of range.</exception>
     /// <exception cref="ArgumentException">A note has a negative offset, or lasts longer than
@@ -203,7 +206,7 @@ public static class MidiIo
         var midiFile = BuildMidiFile(buffer, opts);
 
         using var stream = File.Create(path);
-        midiFile.Write(stream);
+        midiFile.Write(stream, MidiFileExtensions.FormatThatKeepsTheLayout(midiFile));
     }
 
     /// <summary>
@@ -235,6 +238,12 @@ public static class MidiIo
     }
 
     /// <summary>Writes <paramref name="buffer"/> as a single-track MIDI file to <paramref name="stream"/>.</summary>
+    /// <remarks>
+    /// The file is SMF format 0: one track chunk holding the tempo and every note. It was written
+    /// as format 1 before, in which the writer moves the tempo into a first track of its own, so
+    /// the "single-track" file read back with two tracks and a <see cref="MidiFileStatistics.TrackCount"/>
+    /// of 2 — see <see cref="MidiFileExtensions.FormatThatKeepsTheLayout"/>.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">An option (ticks-per-quarter-note, channel, or BPM) is out of range.</exception>
     /// <exception cref="ArgumentException">A note has a negative offset, which MIDI cannot represent.</exception>
     public static void Export(NoteBuffer buffer, Stream stream, MidiExportOptions? options = null)
@@ -245,7 +254,8 @@ public static class MidiIo
         options ??= new MidiExportOptions();
         ValidateExportOptions(options);
 
-        BuildMidiFile(buffer, options).Write(stream);
+        var midiFile = BuildMidiFile(buffer, options);
+        midiFile.Write(stream, MidiFileExtensions.FormatThatKeepsTheLayout(midiFile));
     }
 
     /// <summary>

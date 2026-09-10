@@ -89,13 +89,18 @@ public static class MidiFileExtensions
 {
     extension(MidiFile file)
     {
-        /// <summary>Writes the file to <paramref name="path"/>.</summary>
+        /// <summary>Writes the file to <paramref name="path"/> with the track layout it has.</summary>
+        /// <remarks>
+        /// A file of one track chunk is written as SMF format 0, a file of more as format 1, and
+        /// a file that was read as format 2 stays format 2 — see
+        /// <see cref="FormatThatKeepsTheLayout"/> for why the format is chosen and not defaulted.
+        /// </remarks>
         public void Save(string path)
         {
             ArgumentNullException.ThrowIfNull(file);
 
             using var stream = File.Create(path);
-            file.Write(stream);
+            file.Write(stream, FormatThatKeepsTheLayout(file));
         }
 
         /// <summary>Adds a new track built from <paramref name="notes"/> and returns it.</summary>
@@ -265,20 +270,23 @@ public static class MidiFileExtensions
 
         /// <summary>
         /// Returns a deep copy of the file via a write/read round-trip, which also normalizes
-        /// it the way saving would.
+        /// it the way saving would. The copy has the track chunks of the original, in the same
+        /// number and order, each holding the events it held.
         /// </summary>
         /// <remarks>
         /// <see cref="MidiFile"/> declares its own <c>Clone</c>, and an instance method always
         /// beats an extension, so <c>file.Clone()</c> calls DryWetMidi's in-memory copy rather
         /// than this one. Call <c>MidiFileExtensions.Clone(file)</c> explicitly to round-trip
-        /// through the writer instead.
+        /// through the writer instead. The round trip writes in the format that keeps the
+        /// layout (<see cref="FormatThatKeepsTheLayout"/>); before that, a one-track file came
+        /// back as two.
         /// </remarks>
         public MidiFile Clone()
         {
             ArgumentNullException.ThrowIfNull(file);
 
             using var ms = new MemoryStream();
-            file.Write(ms);
+            file.Write(ms, FormatThatKeepsTheLayout(file));
             ms.Position = 0;
             return MidiFile.Read(ms);
         }
@@ -455,6 +463,58 @@ public static class MidiFileExtensions
                 minNoteNumber: minNoteNumber,
                 maxNoteNumber: maxNoteNumber,
                 channels: [.. channels.OrderBy(c => c)]);
+        }
+    }
+
+    /// <summary>
+    /// The SMF format in which <paramref name="file"/> is written with the track chunks it has:
+    /// format 0 for one chunk, format 1 for more, and format 2 for a file that was read as
+    /// format 2.
+    /// </summary>
+    /// <remarks>
+    /// DryWetMidi writes format 1 by default, and its writer, handed a format-1 file of exactly
+    /// one track chunk that holds meta events beside channel events, moves the meta events into
+    /// a first track of their own — the layout format 1 usually has. Every one-track file this
+    /// library makes came back from disk as two: <see cref="MidiIo.Export(NoteBuffer, Stream, MidiExportOptions?)"/>,
+    /// documented as single-track, wrote a tempo track and a note track; a file built with one
+    /// <see cref="AddTrack(MidiFile, NoteEvent[], string?, MidiExportOptions?)"/> put its name on an empty first track and its notes, unnamed, on
+    /// the second; a <see cref="MergeToSingleTrack(MidiFile, MidiFile)"/> result saved as two tracks; and
+    /// <see cref="Clone"/> returned a file whose <see cref="MidiFileStatistics.TrackCount"/>
+    /// differed from its original's. One chunk is what format 0 holds, and the writer leaves
+    /// two or more chunks alone in format 1, so choosing by the count keeps every layout.
+    /// A file read as format 2 is kept as format 2: its chunks are independent sequences, and
+    /// writing them as simultaneous tracks would change what the file means.
+    /// </remarks>
+    internal static MidiFileFormat FormatThatKeepsTheLayout(MidiFile file)
+    {
+        if (WasReadAs(file, MidiFileFormat.MultiSequence))
+        {
+            return MidiFileFormat.MultiSequence;
+        }
+
+        return file.GetTrackChunks().Take(2).Count() == 1
+            ? MidiFileFormat.SingleTrack
+            : MidiFileFormat.MultiTrack;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="file"/> was read from a stream whose header declared
+    /// <paramref name="format"/>. False for a file built in memory, whose
+    /// <see cref="MidiFile.OriginalFormat"/> throws rather than answering.
+    /// </summary>
+    private static bool WasReadAs(MidiFile file, MidiFileFormat format)
+    {
+        try
+        {
+            return file.OriginalFormat == format;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+        catch (UnknownFileFormatException)
+        {
+            return false;
         }
     }
 
