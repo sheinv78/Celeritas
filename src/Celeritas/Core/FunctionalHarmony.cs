@@ -80,6 +80,9 @@ public readonly record struct FunctionalChord(KeySignature Key, RomanNumeralChor
             ChordQuality.Add9 => root + "add9",
             ChordQuality.Add11 => root + "add11",
 
+            ChordQuality.Major6 => root + "6",
+            ChordQuality.Minor6 => root + "m6",
+
             // No conventional symbol (Unknown, Quartal): fall back to a readable name.
             _ => root + " " + Roman.Quality
         };
@@ -336,7 +339,8 @@ public readonly record struct SecondaryDominant(KeySignature Key, ScaleDegree Ta
             or ChordQuality.Minor7
             or ChordQuality.HalfDim7
             or ChordQuality.Diminished7
-            or ChordQuality.MinorMajor7;
+            or ChordQuality.MinorMajor7
+            or ChordQuality.Minor6;
 
         return isLowercase ? numeral.ToLowerInvariant() : numeral;
     }

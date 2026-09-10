@@ -44,6 +44,9 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
     private static readonly byte[] Add9Intervals = [0, 4, 7, 2];
     private static readonly byte[] Add11Intervals = [0, 4, 7, 5];
 
+    private static readonly byte[] Major6Intervals = [0, 4, 7, 9];
+    private static readonly byte[] Minor6Intervals = [0, 3, 7, 9];
+
     /// <summary>A sentinel chord representing a failed or absent analysis (<see cref="IsValid"/> is <see langword="false"/>).</summary>
     public static RomanNumeralChord Invalid => new();
 
@@ -144,6 +147,9 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
             ChordQuality.Add9 => Add9Intervals,
             ChordQuality.Add11 => Add11Intervals,
 
+            ChordQuality.Major6 => Major6Intervals,
+            ChordQuality.Minor6 => Minor6Intervals,
+
             _ => []
         };
     }
@@ -172,7 +178,8 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
         {
             // Lowercase for minor/diminished qualities in traditional notation
             ChordQuality.Minor or ChordQuality.Diminished or ChordQuality.Minor7 or ChordQuality.HalfDim7
-                or ChordQuality.Diminished7 or ChordQuality.MinorMajor7 => numeral.ToLowerInvariant(),
+                or ChordQuality.Diminished7 or ChordQuality.MinorMajor7
+                or ChordQuality.Minor6 => numeral.ToLowerInvariant(),
             _ => numeral
         };
 
@@ -198,6 +205,8 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
             ChordQuality.Add11 => "add11",
             ChordQuality.Power => "5",
             ChordQuality.Quartal => "quartal",
+            // Minor-ness is carried by the numeral's case, so both sixths take the bare figure.
+            ChordQuality.Major6 or ChordQuality.Minor6 => "6",
             _ => ""
         };
 
@@ -246,6 +255,8 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
             ChordQuality.Add11 => "add11",
             ChordQuality.Power => "5",
             ChordQuality.Quartal => "quartal",
+            ChordQuality.Major6 => "6",
+            ChordQuality.Minor6 => "m6",
             _ => ""
         };
 

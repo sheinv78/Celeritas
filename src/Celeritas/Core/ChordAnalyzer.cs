@@ -130,7 +130,7 @@ public static unsafe class ChordAnalyzer
         // note to disambiguate.
         if (!pitches.IsEmpty &&
             info.Quality is ChordQuality.Sus2 or ChordQuality.Augmented or ChordQuality.Diminished7
-                or ChordQuality.Dominant7Flat5)
+                or ChordQuality.Dominant7Flat5 or ChordQuality.Minor7 or ChordQuality.HalfDim7)
         {
             var bass = pitches[0];
             foreach (var p in pitches)
@@ -178,6 +178,27 @@ public static unsafe class ChordAnalyzer
                             return new ChordInfo(partner, info.Quality);
                         break;
                     }
+
+                // A sixth chord and the seventh chord a minor third below it are the same four
+                // pitch classes — {C,E,G,A} is both C6 and Am7, {C,Eb,G,A} both Cm6 and Am7b5 —
+                // so the mask lookup can only ever answer the seventh, and did: a lead sheet
+                // opening on C6 in C major was reported as opening on vi7, and Cm6, the melodic
+                // minor tonic, came back as a half-diminished chord. The bass decides, exactly
+                // as it does for sus and dim7 above: with the sixth-chord root in the bass this
+                // is a sixth chord, and with the seventh's root in the bass it is a seventh.
+                // Any other bass is an inversion of both and keeps the answer it had.
+                case ChordQuality.Minor7:
+                case ChordQuality.HalfDim7:
+                    if (bassPc == (info.RootPitchClass + 3) % 12)
+                    {
+                        return new ChordInfo(
+                            (byte)bassPc,
+                            info.Quality == ChordQuality.Minor7
+                                ? ChordQuality.Major6
+                                : ChordQuality.Minor6);
+                    }
+
+                    break;
             }
         }
 

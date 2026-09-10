@@ -73,7 +73,23 @@ public enum ChordQuality : byte
     Augmented7,
 
     /// <summary>Dominant seventh chord with a flatted fifth.</summary>
-    Dominant7Flat5
+    Dominant7Flat5,
+
+    /// <summary>Major sixth chord (major triad plus a major sixth).</summary>
+    /// <remarks>
+    /// C-E-G-A. The same four pitch classes as the minor seventh a minor third below (Am7), so
+    /// only the bass tells them apart — see <see cref="ChordAnalyzer.Identify(ReadOnlySpan{int})"/>.
+    /// A bright, fully stable sonority and one of the commonest ways to voice a final tonic.
+    /// </remarks>
+    Major6,
+
+    /// <summary>Minor sixth chord (minor triad plus a major sixth).</summary>
+    /// <remarks>
+    /// C-Eb-G-A. The same four pitch classes as the half-diminished seventh a minor third below
+    /// (Am7b5), so only the bass tells them apart. The tonic of the melodic minor scale, and a
+    /// resting chord — not the unresolved sonority its half-diminished rotation is.
+    /// </remarks>
+    Minor6
 }
 
 /// <summary>
@@ -158,6 +174,16 @@ public static class ChordLibrary
             // Add chords
             (ChordQuality.Add9,       [0, 4, 7, 14 % 12]), // 14 % 12 = 2
             (ChordQuality.Add11,      [0, 4, 7, 17 % 12]), // 17 % 12 = 5
+
+            // Sixth chords. NOTE: {0,4,7,9} is a rotation of the minor seventh three semitones
+            // below it ({C,E,G,A} == {A,C,E,G}) and {0,3,7,9} of the half-diminished seventh
+            // ({C,Eb,G,A} == {A,C,Eb,G}), so these masks are already taken by Minor7 and HalfDim7
+            // above and the registration below is a no-op for the lookup — deliberately, so a
+            // bare mask lookup keeps answering what it always did. ChordAnalyzer.Identify uses
+            // the actual bass to tell the two readings apart, as it does for sus and dim7. The
+            // templates are still listed here because they are what ThirdOf reads.
+            (ChordQuality.Major6,     [0, 4, 7, 9]),
+            (ChordQuality.Minor6,     [0, 3, 7, 9]),
         };
 
         foreach (var (quality, steps) in templates)

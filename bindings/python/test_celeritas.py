@@ -230,6 +230,19 @@ class TestIdentifyChord(unittest.TestCase):
 
         self.assertEqual(identify_chord([64, 67, 71, 74, 78]), "CUnknown")
 
+    def test_identify_a_sixth_chord_reads_its_bass(self):
+        """C-E-G-A is a C6 with C at the bottom and an Am7 with A at the bottom.
+
+        The two are the same four pitch classes, so only the bass tells them apart. The
+        library had no sixth-chord quality at all and answered Am7 either way, which made a
+        tonic sixth chord come back as the submediant.
+        """
+
+        self.assertEqual(identify_chord([60, 64, 67, 69]), "CMajor6")
+        self.assertEqual(identify_chord([57, 60, 64, 67]), "AMinor7")
+        self.assertEqual(identify_chord([60, 63, 67, 69]), "CMinor6")
+        self.assertEqual(identify_chord([57, 60, 63, 67]), "AHalfDim7")
+
     def test_identify_chord_with_inversions(self):
         # C major in different inversions
         root = identify_chord([60, 64, 67])

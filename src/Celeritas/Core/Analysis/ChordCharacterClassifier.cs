@@ -53,9 +53,14 @@ public static class ChordCharacterClassifier
         // to the enum after this switch was written.
         ChordCharacter? named = quality switch
         {
-            ChordQuality.Major => ChordCharacter.Bright,
+            ChordQuality.Major or ChordQuality.Major6 => ChordCharacter.Bright,
             ChordQuality.Add9 or ChordQuality.Add11 or ChordQuality.Major7 => ChordCharacter.Dreamy,
-            ChordQuality.Minor or ChordQuality.MinorMajor7 => ChordCharacter.Melancholic,
+            // A minor sixth chord is the melodic-minor tonic: a coloured resting chord, and the
+            // same character as the minor triad it is built on. Reading it as the half-diminished
+            // seventh it shares its pitch classes with reported it as Dark, with the stability of
+            // an unresolved chord, on a perfect fifth it plainly has.
+            ChordQuality.Minor or ChordQuality.MinorMajor7 or ChordQuality.Minor6
+                => ChordCharacter.Melancholic,
             ChordQuality.Minor7 => ChordCharacter.Warm,
             ChordQuality.Dominant7 => ChordCharacter.Tense,
             ChordQuality.Diminished or ChordQuality.Diminished7 or ChordQuality.HalfDim7 => ChordCharacter.Dark,

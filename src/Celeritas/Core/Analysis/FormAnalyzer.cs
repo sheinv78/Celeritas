@@ -371,10 +371,14 @@ public static class FormAnalyzer
         numeral = chord switch
         {
             // Adjust for quality
-            { Quality: ChordQuality.Minor, Degree: ScaleDegree.I or ScaleDegree.Iv or ScaleDegree.V } => numeral
-                .ToLowerInvariant(),
-            { Quality: ChordQuality.Major, Degree: ScaleDegree.Ii or ScaleDegree.Iii or ScaleDegree.Vi } => numeral
-                .ToUpperInvariant(),
+            {
+                Quality: ChordQuality.Minor or ChordQuality.Minor6,
+                Degree: ScaleDegree.I or ScaleDegree.Iv or ScaleDegree.V
+            } => numeral.ToLowerInvariant(),
+            {
+                Quality: ChordQuality.Major or ChordQuality.Major6,
+                Degree: ScaleDegree.Ii or ScaleDegree.Iii or ScaleDegree.Vi
+            } => numeral.ToUpperInvariant(),
             _ => numeral
         };
 

@@ -872,15 +872,17 @@ public static class ProgressionAdvisor
             true when function == HarmonicFunction.Dominant && quality == ChordQuality.Major => ChordCharacter.Tense,
             _ => quality switch
             {
-                ChordQuality.Major when function == HarmonicFunction.Tonic => ChordCharacter.Stable,
-                ChordQuality.Major => ChordCharacter.Bright,
+                ChordQuality.Major or ChordQuality.Major6 when function == HarmonicFunction.Tonic
+                    => ChordCharacter.Stable,
+                ChordQuality.Major or ChordQuality.Major6 => ChordCharacter.Bright,
                 ChordQuality.Major7 => ChordCharacter.Dreamy,
                 ChordQuality.Minor when function == HarmonicFunction.Tonic => ChordCharacter.Melancholic,
                 ChordQuality.Minor => ChordCharacter.Warm,
                 ChordQuality.Minor7 => ChordCharacter.Warm,
                 ChordQuality.Dominant7 => ChordCharacter.Tense,
                 ChordQuality.Diminished or ChordQuality.Diminished7 => ChordCharacter.Dark,
-                ChordQuality.HalfDim7 or ChordQuality.MinorMajor7 => ChordCharacter.Melancholic,
+                ChordQuality.HalfDim7 or ChordQuality.MinorMajor7 or ChordQuality.Minor6
+                    => ChordCharacter.Melancholic,
                 // ChordCharacter.Mysterious is documented as "augmented, altered dominants",
                 // which is what a 7b5 is.
                 ChordQuality.Augmented or ChordQuality.Augmented7
@@ -1361,7 +1363,10 @@ public static class ProgressionAdvisor
             quality is ChordQuality.Major or ChordQuality.Major7 or ChordQuality.Add9
                 or ChordQuality.Add11 or ChordQuality.Minor or ChordQuality.Minor7
                 or ChordQuality.MinorMajor7 or ChordQuality.Sus2 or ChordQuality.Sus4
-                or ChordQuality.Power or ChordQuality.Quartal;
+                or ChordQuality.Power or ChordQuality.Quartal
+                // A sixth chord is about as restful as tonal harmony gets, and is the commonest
+                // way to voice a final tonic in jazz and in popular song.
+                or ChordQuality.Major6 or ChordQuality.Minor6;
 
         static void Tonic(float[] keyScores, ChordInfo chord, float bonus)
         {
