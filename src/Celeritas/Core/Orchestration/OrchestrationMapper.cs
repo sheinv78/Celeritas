@@ -8,6 +8,26 @@ namespace Celeritas.Core.Orchestration;
 /// </summary>
 public static class OrchestrationMapper
 {
+    /// <summary>
+    /// Splits <paramref name="notes"/> into a bass part and a harmony part at
+    /// <see cref="OrchestrationOptions.SplitPitch"/> and shifts each note by octaves into its
+    /// part's range. Rests are silence and are scored for neither part.
+    /// </summary>
+    /// <remarks>
+    /// The slot decides, not the kind. A note below <see cref="OrchestrationOptions.SplitPitch"/>
+    /// goes to <see cref="OrchestrationOptions.Bass"/> and every other note to
+    /// <see cref="OrchestrationOptions.Harmony"/>, whatever
+    /// <see cref="OrchestrationPartDefinition.Kind"/> either definition carries; the definitions
+    /// are copied onto the result unchanged, so each <see cref="OrchestratedPart"/> reports the
+    /// kind and name it was given. Swapping the two kinds moves no note. The mapper has always
+    /// worked this way; it had not said so, and the kind read as though it were consulted.
+    /// </remarks>
+    /// <param name="notes">The notes to orchestrate; rests are skipped.</param>
+    /// <param name="options">
+    /// The split point and the two part definitions; <see cref="OrchestrationOptions.Default"/>
+    /// when <see langword="null"/>.
+    /// </param>
+    /// <returns>The bass and harmony parts, each carrying the definition it was mapped with.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="notes"/> is <see langword="null"/>.</exception>
     public static OrchestrationResult Map(NoteEvent[] notes, OrchestrationOptions? options = null)
     {

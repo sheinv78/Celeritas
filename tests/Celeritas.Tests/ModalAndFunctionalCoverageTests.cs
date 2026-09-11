@@ -17,24 +17,60 @@ public class ModalAndFunctionalCoverageTests
 
     // ---------- ModalKey conversions ----------
 
+    /// <summary>
+    /// The key-signature parity of every mode, stated by hand from the third each has above its
+    /// root. The altered and half-whole diminished scales carry both thirds; they are dominant
+    /// scales, so the major third is the chord tone and the minor third a sharp ninth.
+    /// </summary>
+    public static readonly TheoryData<Mode, bool> EveryModeAndItsParity = new()
+    {
+        { Mode.Ionian, true },
+        { Mode.Dorian, false },
+        { Mode.Phrygian, false },
+        { Mode.Lydian, true },
+        { Mode.Mixolydian, true },
+        { Mode.Aeolian, false },
+        { Mode.Locrian, false },
+        { Mode.HarmonicMinor, false },
+        { Mode.MelodicMinor, false },
+        { Mode.PhrygianDominant, true },
+        { Mode.LydianDominant, true },
+        { Mode.LocrianNatural2, false },
+        { Mode.Altered, true },
+        { Mode.WholeTone, true },
+        { Mode.DiminishedHalfWhole, true },
+        { Mode.DiminishedWholeHalf, false },
+        { Mode.Blues, false },
+        { Mode.MajorPentatonic, true },
+        { Mode.MinorPentatonic, false }
+    };
+
     [Theory]
-    [InlineData(Mode.Ionian, true)]
-    [InlineData(Mode.Lydian, true)]
-    [InlineData(Mode.Mixolydian, true)]
-    [InlineData(Mode.Aeolian, false)]
-    [InlineData(Mode.Dorian, false)]
-    [InlineData(Mode.Phrygian, false)]
-    [InlineData(Mode.Locrian, false)]
-    [InlineData(Mode.HarmonicMinor, false)]
-    [InlineData(Mode.MelodicMinor, false)]
+    [MemberData(nameof(EveryModeAndItsParity))]
     public void ToKeySignature_MapsAModeToTheRightParity(Mode mode, bool expectMajor)
     {
         // A mode with a major third belongs to a major key signature and vice versa; getting
-        // this backwards would silently flip every downstream roman numeral.
-        var key = new ModalKey((byte)0, mode).ToKeySignature();
+        // this backwards would silently flip every downstream roman numeral. The table used to
+        // list nine modes and send the other ten to major, so the minor pentatonic, the blues
+        // scale, the whole-half diminished scale and the half-diminished scale — none of which
+        // has a major third — were all major keys.
+        for (var root = 0; root < 12; root++)
+        {
+            var key = new ModalKey((byte)root, mode).ToKeySignature();
 
-        Assert.Equal((byte)0, key.Root);
-        Assert.Equal(expectMajor, key.IsMajor);
+            Assert.Equal((byte)root, key.Root);
+            Assert.Equal(expectMajor, key.IsMajor);
+        }
+    }
+
+    [Fact]
+    public void ToKeySignature_ParityIsStatedForEveryMode()
+    {
+        // The rows above are the oracle; a mode added to the enum without one would go
+        // unchecked, and an unlisted mode is exactly where the wrong answers lived.
+        var stated = EveryModeAndItsParity.Select(row => (Mode)row[0]).Order();
+
+        Assert.Equal(Enum.GetValues<Mode>().Order(), stated);
     }
 
     [Fact]

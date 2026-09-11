@@ -8,6 +8,13 @@ public static class OrnamentApplier
     /// <summary>
     /// Apply ornaments to a melody by note index (as used in examples).
     /// </summary>
+    /// <remarks>
+    /// Each ornament is expanded in place of its note and every other note keeps its written
+    /// offset. An ornament that subdivides its note fits inside it; an articulation that
+    /// lengthens it — the fermata preset, or any <see cref="Articulation.DurationMultiplier"/>
+    /// above 1 — is given no room, so in a single line the lengthened note is still sounding at
+    /// the next onset and overlaps it. Delaying the rest of the line is the caller's to do.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="ornamentMap"/> is <see langword="null"/>.</exception>
     public static NoteEvent[] Apply(ReadOnlySpan<NoteEvent> melody, IReadOnlyDictionary<int, Ornament> ornamentMap)
     {
@@ -38,6 +45,10 @@ public static class OrnamentApplier
     /// <summary>
     /// Apply ornaments to a melody by note index (as used in examples).
     /// </summary>
+    /// <remarks>
+    /// Every note not being ornamented keeps its written offset, so a lengthening articulation
+    /// (the fermata preset) overlaps the note after it in a single line; see the span overload.
+    /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="melody"/> or <paramref name="ornamentMap"/> is <see langword="null"/>.
     /// </exception>
@@ -116,6 +127,11 @@ public static class OrnamentApplier
     /// (Offset, Pitch) of its BaseNote, so multiple ornaments may share an offset
     /// (e.g. on different notes of a chord). Ornaments that match no note are ignored.
     /// </summary>
+    /// <remarks>
+    /// As with <see cref="Apply(ReadOnlySpan{NoteEvent}, IReadOnlyDictionary{int, Ornament})"/>,
+    /// the notes around an ornament keep their written offsets: a lengthening articulation (the
+    /// fermata preset) is given no room and overlaps the note after it in a single line.
+    /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="notes"/> or <paramref name="ornaments"/> is <see langword="null"/>.
     /// </exception>

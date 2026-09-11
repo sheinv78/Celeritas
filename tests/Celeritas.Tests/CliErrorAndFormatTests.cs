@@ -178,6 +178,65 @@ public class CliErrorAndFormatTests : IDisposable
         Assert.Contains("Invalid duration", output, StringComparison.Ordinal);
     }
 
+    public static TheoryData<string, string[]> CommaDecimalDurations =>
+    new()
+    {
+        { "0,25", ["rhythm", "--durations", "0,25 0,25 0,5", "--predict", "0"] },
+        { "0,25", ["rhythm", "--durations", "0,25", "0,25", "0,5", "--predict", "0"] },
+        { "1,5", ["rhythm", "--durations", "1,5;0,5", "--predict", "0"] },
+    };
+
+    [Theory]
+    [MemberData(nameof(CommaDecimalDurations))]
+    public void Rhythm_GivenCommaDecimalDurations_RefusesRatherThanSplittingThem(string offender, string[] args)
+    {
+        // A de-DE or ru-RU user writes a quarter as "0,25" — the same comma this CLI prints in
+        // its own numbers there. Split on that comma, "0,25 0,25 0,5" became the six durations
+        // "0 25 0 25 0 5": fifty-one measures of a rhythm nobody typed, reported with exit 0.
+        var (exit, output) = Run(args);
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("Error:", output, StringComparison.Ordinal);
+        Assert.Contains($"'{offender}'", output, StringComparison.Ordinal);
+        Assert.Contains("0.25", output, StringComparison.Ordinal);
+        Assert.Contains("1/4", output, StringComparison.Ordinal);
+        Assert.Contains("spaces", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Measures:", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Rhythm_GivenPointDecimalDurations_ReadsEachAsOneDuration()
+    {
+        // The form the refusal message asks for has to work.
+        var (exit, output) = Run("rhythm", "--durations", "0.25 0.25 0.5", "--predict", "0");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("INPUT: 1/4 1/4 1/2", output, StringComparison.Ordinal);
+        Assert.Contains("Notes: 3", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AListOption_GivenTwoIntegersJoinedByAComma_RefusesThemAsAmbiguous()
+    {
+        // The guard is on the list expansion every list option shares, not on durations alone:
+        // "60,64" could be two MIDI notes or one comma-decimal, and it is not guessed at.
+        var (exit, output) = Run("analyze", "--notes", "60,64");
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("'60,64'", output, StringComparison.Ordinal);
+        Assert.Contains("spaces", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AListOption_GivenThreeCommaSeparatedIntegers_StillReadsThemAsAList()
+    {
+        // Three integers cannot be one decimal, so the comma-separated list form survives.
+        var (exit, output) = Run("analyze", "--notes", "60,64,67");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Chord: C Major", output, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("classical")]
     [InlineData("jazz")]

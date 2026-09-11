@@ -35,8 +35,35 @@ public class MidiIoOptionTests : IDisposable
         return path;
     }
 
+    /// <summary>
+    /// A melody track and a bass track that interleave in time: melody on the beats 0 and 2,
+    /// bass on the beats 1 and 3. Merged by time the notes read C5 C3 E5 G3; track by track,
+    /// C5 E5 C3 G3.
+    /// </summary>
+    private string TwoTrackFile()
+    {
+        var melody = new TrackChunk(
+            new NoteOnEvent((SevenBitNumber)72, (SevenBitNumber)100),
+            new NoteOffEvent((SevenBitNumber)72, (SevenBitNumber)0) { DeltaTime = 480 },
+            new NoteOnEvent((SevenBitNumber)76, (SevenBitNumber)100) { DeltaTime = 480 },
+            new NoteOffEvent((SevenBitNumber)76, (SevenBitNumber)0) { DeltaTime = 480 });
+        var bass = new TrackChunk(
+            new NoteOnEvent((SevenBitNumber)48, (SevenBitNumber)100) { DeltaTime = 480 },
+            new NoteOffEvent((SevenBitNumber)48, (SevenBitNumber)0) { DeltaTime = 480 },
+            new NoteOnEvent((SevenBitNumber)55, (SevenBitNumber)100) { DeltaTime = 480 },
+            new NoteOffEvent((SevenBitNumber)55, (SevenBitNumber)0) { DeltaTime = 480 });
+
+        var path = Path.Combine(_work, $"{Guid.NewGuid():N}.mid");
+        new MidiFile(melody, bass) { TimeDivision = new TicksPerQuarterNoteTimeDivision(480) }
+            .Write(path, format: MidiFileFormat.MultiTrack);
+        return path;
+    }
+
     private static int[] Pitches(NoteBuffer buffer) =>
         [.. Enumerable.Range(0, buffer.Count).Select(i => buffer.Get(i).Pitch)];
+
+    private static Rational[] Offsets(NoteBuffer buffer) =>
+        [.. Enumerable.Range(0, buffer.Count).Select(i => buffer.Get(i).Offset)];
 
     // ---------- import filters ----------
 
@@ -78,6 +105,52 @@ public class MidiIoOptionTests : IDisposable
         using var buffer = MidiIo.Import(TwoChannelFile(), new MidiImportOptions(Channel: 0, MaxNotes: 5));
 
         Assert.Equal([60], Pitches(buffer));
+    }
+
+    // ---------- the order the notes come out in ----------
+
+    [Fact]
+    public void SortedByOffset_MergesTheTracksIntoOneTimeOrder()
+    {
+        using var buffer = MidiIo.Import(TwoTrackFile(), new MidiImportOptions(SortByOffset: true));
+
+        Assert.Equal([72, 48, 76, 55], Pitches(buffer));
+        Assert.Equal([Rational.Zero, Rational.Quarter, Rational.Half, new Rational(3, 4)], Offsets(buffer));
+    }
+
+    [Fact]
+    public void NotSortedByOffset_KeepsTheFilesOrder_TrackByTrack()
+    {
+        // The melody track first, whole, then the bass track — the order a reader sees the
+        // notes in when opening the file, not the merged timeline.
+        using var buffer = MidiIo.Import(TwoTrackFile(), new MidiImportOptions(SortByOffset: false));
+
+        Assert.Equal([72, 76, 48, 55], Pitches(buffer));
+        Assert.Equal([Rational.Zero, Rational.Half, Rational.Quarter, new Rational(3, 4)], Offsets(buffer));
+    }
+
+    [Fact]
+    public void TheTwoOrdersDiffer_AndHoldTheSameNotes()
+    {
+        // SortByOffset used to change nothing: both settings gave the merged time order,
+        // because the notes arrived already merged and the sort skipped was of a sorted list.
+        var path = TwoTrackFile();
+        using var sorted = MidiIo.Import(path, new MidiImportOptions(SortByOffset: true));
+        using var asListed = MidiIo.Import(path, new MidiImportOptions(SortByOffset: false));
+
+        Assert.NotEqual(Pitches(sorted), Pitches(asListed));
+        Assert.Equal(Pitches(sorted).Order(), Pitches(asListed).Order());
+        Assert.Equal(Offsets(sorted).Order(), Offsets(asListed).Order());
+    }
+
+    [Fact]
+    public void MaxNotesCountsInTheOrderTheNotesAreImported()
+    {
+        using var byTime = MidiIo.Import(TwoTrackFile(), new MidiImportOptions(MaxNotes: 3, SortByOffset: true));
+        using var byTrack = MidiIo.Import(TwoTrackFile(), new MidiImportOptions(MaxNotes: 3, SortByOffset: false));
+
+        Assert.Equal([72, 48, 76], Pitches(byTime));   // the first three to sound
+        Assert.Equal([72, 76, 48], Pitches(byTrack));  // the melody track, then one bass note
     }
 
     // ---------- export guards ----------

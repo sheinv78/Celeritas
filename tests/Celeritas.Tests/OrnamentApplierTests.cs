@@ -174,6 +174,55 @@ public class OrnamentApplierTests
         Assert.Contains(result, n => n.Pitch is 64 or 65 or 66);
     }
 
+    // ---------- a lengthening articulation does not move what follows ----------
+
+    [Fact]
+    public void Apply_Fermata_HoldsTheNotePastTheNextOnset_AndLeavesTheNextNoteWhereItWas()
+    {
+        // Every other ornament fits inside its note. A fermata is the one preset that lengthens
+        // it, and the applier makes no room: the doc on Apply, DurationMultiplier and
+        // ArticulationType.Fermata says later notes stay at their written offsets, so in a single
+        // line the held note sounds over the next onset. This pins that documented behaviour.
+        var melody = Melody();
+        var fermata = Articulation.FromType(ArticulationType.Fermata, melody[0]);
+
+        var result = OrnamentApplier.Apply(melody, new Dictionary<int, Ornament> { [0] = fermata });
+
+        Assert.Equal(melody.Length, result.Length);
+
+        var held = result[0];
+        Assert.Equal(melody[0].Offset, held.Offset);
+        Assert.Equal(melody[0].Duration * new Rational(3, 2), held.Duration);
+        Assert.True(held.Offset + held.Duration > melody[1].Offset,
+            "the fermata note should still be sounding when the next note begins");
+
+        // Nothing after it has been delayed.
+        Assert.Equal(melody[1], result[1]);
+        Assert.Equal(melody[2], result[2]);
+        Assert.Equal(melody[3], result[3]);
+    }
+
+    [Fact]
+    public void ApplyOrnaments_Fermata_HoldsTheNotePastTheNextOnset_AndLeavesTheNextNoteWhereItWas()
+    {
+        // The base-note-matched form answers the same way as the index form.
+        var melody = Melody();
+        var fermata = Articulation.FromType(ArticulationType.Fermata, melody[1]);
+
+        var result = OrnamentApplier.ApplyOrnaments(melody, [fermata]);
+
+        Assert.Equal(melody.Length, result.Length);
+        Assert.Equal(melody[0], result[0]);
+
+        var held = result[1];
+        Assert.Equal(melody[1].Offset, held.Offset);
+        Assert.True(held.Offset + held.Duration > melody[2].Offset,
+            "the fermata note should still be sounding when the next note begins");
+
+        Assert.Equal(melody[2], result[2]);
+        Assert.Equal(melody[3], result[3]);
+    }
+
     // ---------- the factory methods ----------
 
     [Fact]

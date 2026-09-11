@@ -37,7 +37,7 @@ public enum Mode
     /// <summary>Melodic minor ascending (W-H-W-W-W-W-H). Jazz, smooth.</summary>
     MelodicMinor = 8,
 
-    /// <summary>Phrygian with major 3rd (H-A2-H-W-W-H-W). Flamenco, Spanish.</summary>
+    /// <summary>Phrygian with major 3rd (H-A2-H-W-H-W-W). Flamenco, Spanish.</summary>
     PhrygianDominant = 9,
 
     /// <summary>Lydian with lowered 7th (W-W-W-H-W-H-W). Jazz fusion.</summary>
@@ -103,15 +103,30 @@ public readonly struct ModalKey(byte root, Mode mode) : IEquatable<ModalKey>
         => new(key.Root, key.IsMajor ? Mode.Ionian : Mode.Aeolian);
 
     /// <summary>
-    /// Convert to simple KeySignature (loses modal info for non-standard modes).
+    /// Convert to simple KeySignature (loses modal info for non-standard modes). A mode with a
+    /// major third above its root is a major key; one whose only third is minor is a minor key.
     /// </summary>
-    public KeySignature ToKeySignature() => Mode switch
+    /// <remarks>
+    /// The parity is read off the mode's own intervals rather than a list of modes. The list
+    /// named the seven diatonic modes and the two minor scales and sent everything else to
+    /// major, so the minor pentatonic, the blues scale, the whole-half diminished scale and
+    /// Locrian natural 2 — the half-diminished scale — all came back as a major key though none
+    /// of them has a major third. Where a scale has both thirds, as the altered and half-whole
+    /// diminished scales do, the major third decides: they are dominant scales, whose minor
+    /// third is heard as a sharp ninth over a chord whose own third is major. Every mode this
+    /// library defines has one third or the other; a scale with neither would convert to major,
+    /// which is where every unlisted mode went before, so no answer that was right has moved.
+    /// </remarks>
+    public KeySignature ToKeySignature()
     {
-        Mode.Ionian or Mode.Lydian or Mode.Mixolydian => new KeySignature(Root, true),
-        Mode.Aeolian or Mode.Dorian or Mode.Phrygian or Mode.HarmonicMinor or Mode.MelodicMinor => new KeySignature(Root, false),
-        Mode.Locrian => new KeySignature(Root, false),
-        _ => new KeySignature(Root, true) // Default to major for exotic scales
-    };
+        var intervals = ModeLibrary.GetIntervals(Mode);
+        var isMajor = intervals.Contains(MajorThird) || !intervals.Contains(MinorThird);
+        return new KeySignature(Root, isMajor);
+    }
+
+    private const int MinorThird = 3;
+
+    private const int MajorThird = 4;
 
     /// <summary>
     /// Get the parallel major of this mode.

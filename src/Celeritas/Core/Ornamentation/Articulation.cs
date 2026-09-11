@@ -36,6 +36,15 @@ public enum ArticulationType
     Sforzando,
 
     /// <summary>Fermata - hold longer than written.</summary>
+    /// <remarks>
+    /// The <see cref="Articulation.FromType"/> preset holds the note for one and a half times
+    /// its written value, and it is the one preset that reaches past the note it sits on. Nothing
+    /// after it moves: <see cref="OrnamentApplier"/> leaves every later note at its written
+    /// offset, so in a single line the held note is still sounding when the next one begins and
+    /// the two overlap. How long the pause lasts, and whether the other voices wait too, is a
+    /// decision about the performance rather than about this note, so it is left to the caller,
+    /// who shifts the later notes if the line is to breathe.
+    /// </remarks>
     Fermata
 }
 
@@ -52,6 +61,12 @@ public sealed class Articulation : Ornament
     /// <summary>
     /// Duration multiplier (e.g., 0.5 for staccato).
     /// </summary>
+    /// <remarks>
+    /// A value above 1 (the fermata preset's 1.5) lengthens the note past its written value
+    /// without delaying anything that follows: <see cref="Expand"/> keeps the base note's offset,
+    /// and <see cref="OrnamentApplier"/> keeps every later note at its own, so in a single line
+    /// the lengthened note overlaps the next. Every other preset stays inside the written note.
+    /// </remarks>
     public float DurationMultiplier { get; init; } = 1.0f;
 
     /// <summary>

@@ -307,6 +307,75 @@ public class ThePromisesTheDocumentationMakesTests
         }
     }
 
+    /// <summary>
+    /// The step pattern each <see cref="Mode"/> summary quotes in parentheses, copied verbatim.
+    /// XML docs cannot be read back at runtime, so this table stands in for them: a summary and
+    /// its row are edited together, and the test below holds the row to the intervals the library
+    /// actually plays.
+    /// </summary>
+    private static readonly Dictionary<Mode, string> DocumentedStepPatterns = new()
+    {
+        [Mode.Ionian] = "W-W-H-W-W-W-H",
+        [Mode.Dorian] = "W-H-W-W-W-H-W",
+        [Mode.Phrygian] = "H-W-W-W-H-W-W",
+        [Mode.Lydian] = "W-W-W-H-W-W-H",
+        [Mode.Mixolydian] = "W-W-H-W-W-H-W",
+        [Mode.Aeolian] = "W-H-W-W-H-W-W",
+        [Mode.Locrian] = "H-W-W-H-W-W-W",
+        [Mode.HarmonicMinor] = "W-H-W-W-H-A2-H",
+        [Mode.MelodicMinor] = "W-H-W-W-W-W-H",
+        [Mode.PhrygianDominant] = "H-A2-H-W-H-W-W",
+        [Mode.LydianDominant] = "W-W-W-H-W-H-W",
+        [Mode.LocrianNatural2] = "W-H-W-H-W-W-W",
+        [Mode.Altered] = "H-W-H-W-W-W-W",
+        [Mode.WholeTone] = "W-W-W-W-W-W",
+        [Mode.DiminishedHalfWhole] = "H-W-H-W-H-W-H-W",
+        [Mode.DiminishedWholeHalf] = "W-H-W-H-W-H-W-H",
+        [Mode.Blues] = "m3-W-H-H-m3-W",
+        [Mode.MajorPentatonic] = "W-W-m3-W-m3",
+        [Mode.MinorPentatonic] = "m3-W-W-m3-W",
+    };
+
+    [Fact]
+    public void EveryModeSummaryQuotesTheStepPatternTheLibraryBuilds()
+    {
+        // "Phrygian with major 3rd (H-A2-H-W-H-W-W)" — every Mode summary quotes its steps. The
+        // PhrygianDominant summary read H-A2-H-W-W-H-W, a scale with a natural 6th (C Db E F G A Bb)
+        // that ModeLibrary has never built, and nothing noticed because a doc is not executed.
+        Assert.All(Enum.GetValues<Mode>(), mode =>
+        {
+            Assert.True(
+                DocumentedStepPatterns.TryGetValue(mode, out var documented),
+                $"{mode} has no row in DocumentedStepPatterns; copy the pattern from its summary");
+
+            // The intervals are the truth and the summary is what is under test, so a failure
+            // reads "Expected: <what the library plays> Actual: <what the doc says>".
+            Assert.Equal(StepPattern(ModeLibrary.GetIntervals(mode)), documented);
+        });
+    }
+
+    private static string StepPattern(ReadOnlySpan<int> intervals)
+    {
+        // Three semitones between adjacent degrees of a seven-note scale is an augmented second;
+        // in a gapped scale the same distance skips a degree and is a minor third. The summaries
+        // name it the same way.
+        var three = intervals.Length == 7 ? "A2" : "m3";
+        var steps = new string[intervals.Length];
+        for (var i = 0; i < intervals.Length; i++)
+        {
+            var next = i + 1 < intervals.Length ? intervals[i + 1] : 12;
+            steps[i] = (next - intervals[i]) switch
+            {
+                1 => "H",
+                2 => "W",
+                3 => three,
+                var other => other.ToString(),
+            };
+        }
+
+        return string.Join('-', steps);
+    }
+
     [Fact]
     public void ScalingVelocityAlwaysLandsInsideTheRangeTheTypeAllows()
     {

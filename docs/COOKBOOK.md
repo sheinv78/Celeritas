@@ -276,7 +276,7 @@ using Celeritas.Core.Analysis;
 
 var dorianScale = MusicNotation.Parse("D4 E4 F4 G4 A4 B4 C5 D5");
 var (mode, confidence) = ModeLibrary.DetectModeWithRoot(dorianScale, rootHint: 2); // D = 2
-Console.WriteLine($"{mode} (confidence: {confidence:P0})");  // D Dorian (confidence: 18%)
+Console.WriteLine($"{mode} (confidence: {confidence:P0})");  // D Dorian (confidence: 19%)
 ```
 
 ### Analyze scale degrees
@@ -317,9 +317,11 @@ foreach (var chord in result.Chords)
 // 1/4: G Major
 // 1/2: C Major
 // 3/4: F Major
-// 1: G Major
-// 5/4: C Major
+// 1: C Major
 ```
+
+One chord per beat, or one per note when the note is longer than a beat: the
+half-note G4 gets a single chord, so five melody notes come back as five chords.
 
 ### Generate figured bass realization
 

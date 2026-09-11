@@ -325,6 +325,19 @@ follows.
   them by what carries the chord and had a remark explaining the rule; the other
   kept whichever came first, so a V7 at three tones was G-B-D one way and G-B-F the
   other
+- The CLI refuses a list item that is two integers joined by a comma ("0,25")
+  rather than splitting it: in the locales whose decimal mark is the comma --
+  where the CLI printed its own numbers with that comma -- `--durations 0,25
+  0,25 0,5` was analyzed as six durations and a rhythm nobody typed was reported
+  with exit code 0
+- The documentation says what the code does where it did not: the fermata
+  preset lengthens its note without delaying what follows, and overlaps the
+  next note in a single line; `OrchestrationPartDefinition.Kind` is the label a
+  part carries, and the slot in `OrchestrationOptions` decides its notes; the
+  `Mode.PhrygianDominant` summary quoted a step pattern with a natural sixth the
+  library never builds, and a test now holds every mode's summary to its
+  intervals; the cookbook's harmonize recipe showed a chord change inside a held
+  note and a mode confidence that had drifted
 - The documented native build script works, and says what is missing when it
   cannot: Native AOT needs `vswhere.exe`, which lives in the Visual Studio
   installer and not on PATH, and the failure blamed `link.exe` instead
@@ -357,6 +370,13 @@ Behavioral and API changes that can affect existing code:
   choosing the enharmonic root that needs fewer accidentals -- the Ionian mode on
   pitch class 8 is A flat major, not G sharp major with a double-sharped seventh
 - `ModeLibrary.GetCharacteristicNotes` populates the avoid half of its result
+- `ModalKey.ToKeySignature` reads the parity off the mode's own third. A hand
+  list named nine modes and sent the rest to major, so the minor pentatonic,
+  the blues scale, the whole-half diminished scale and Locrian natural 2 -- none
+  of which has a major third -- converted to a major key signature
+- `MidiImportOptions.SortByOffset = false` keeps the order the file lists its
+  notes in, track by track; it used to change nothing, because the notes
+  arrived already merged in time order
 - `ModeLibrary.DetectModeWithRoot(IEnumerable<NoteEvent>)` treats a collection of
   nothing but rests as it treats an empty one, and throws rather than answering in
   the key of the silence

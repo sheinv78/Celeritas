@@ -12,9 +12,22 @@ namespace Celeritas.Core.Midi;
 /// <summary>
 /// Options controlling MIDI import into a <see cref="NoteBuffer"/>.
 /// </summary>
+/// <remarks>
+/// <see cref="SortByOffset"/> used to change nothing. The notes were fetched from the whole
+/// file already merged in time order, and the sort that <see langword="false"/> skipped was a
+/// stable sort of a sequence already in that order, so a caller who asked for the file's own
+/// order got the merged one and had no way to tell.
+/// </remarks>
 /// <param name="Channel">If set, keep only notes on this MIDI channel.</param>
-/// <param name="MaxNotes">If set, stop after importing this many notes.</param>
-/// <param name="SortByOffset">Whether to sort the imported notes by offset.</param>
+/// <param name="MaxNotes">If set, stop after importing this many notes — the first so many in
+/// the order <paramref name="SortByOffset"/> chooses.</param>
+/// <param name="SortByOffset">
+/// <see langword="true"/>, the default, merges every track into one sequence in time order, so
+/// the buffer comes back ready for <see cref="NoteBuffer.GetChords()"/>. <see langword="false"/>
+/// keeps the order the file lists the notes in: each track chunk in turn, its notes in the
+/// order they occur within it, so a melody track and a bass track come out one after the
+/// other rather than interleaved.
+/// </param>
 public sealed record MidiImportOptions(
     int? Channel = null,
     int? MaxNotes = null,
@@ -115,6 +128,12 @@ public static class MidiIo
     }
 
     /// <summary>Imports notes from a MIDI <paramref name="stream"/> using hardened reading settings.</summary>
+    /// <remarks>
+    /// The notes come out in the order <see cref="MidiImportOptions.SortByOffset"/> chooses:
+    /// every track merged into one time order by default, or track by track as the file lists
+    /// them. Either way they are the same notes — a note-on is paired with a note-off in its own
+    /// track, whichever way the tracks are read.
+    /// </remarks>
     /// <exception cref="InvalidDataException">The stream is malformed or corrupt.</exception>
     /// <exception cref="NotSupportedException">The file does not use ticks-per-quarter-note time division.</exception>
     public static NoteBuffer Import(Stream stream, MidiImportOptions? options = null)
@@ -136,7 +155,14 @@ public static class MidiIo
             throw new InvalidOperationException("Invalid ticks-per-quarter-note value.");
         }
 
-        var notes = midiFile.GetNotes();
+        // GetNotes on the file merges every track into one time order; GetNotes on each chunk in
+        // turn keeps the file's own order, one track after another. Both pair a note-on with a
+        // note-off from the same chunk, so the two ways yield the same notes, differently ordered.
+        // Reading the file whole for both settings gave the merged order either way — the sort
+        // that false skipped was a stable sort of a sequence already in that order.
+        ICollection<Note> notes = options.SortByOffset
+            ? midiFile.GetNotes()
+            : midiFile.GetTrackChunks().SelectMany(chunk => chunk.GetNotes()).ToList();
 
         // Pre-size where possible.
         var capacity = options.MaxNotes is { } maxNotes

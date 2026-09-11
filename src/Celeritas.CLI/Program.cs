@@ -13,6 +13,21 @@ using Celeritas.Core.Notation;
 using Celeritas.Core.Simd;
 using Celeritas.Core.VoiceLeading;
 
+/// <summary>
+/// Turns the raw values of a list option into one item per entry. Both styles are accepted,
+/// <c>--notes C4 E4 G4</c> and <c>--notes "C4 E4 G4"</c>, as are comma- and semicolon-separated
+/// lists such as <c>--chords C,Am,F,G</c>. An item that is two integers joined by a comma, such
+/// as <c>0,25</c> or <c>1,5</c>, is refused with a <see cref="CliUsageException"/>: in the
+/// locales whose decimal mark is the comma (and the CLI prints its own numbers with that comma
+/// there) it is a decimal, while to the list syntax it is two items, and the two readings cannot
+/// be told apart.
+/// </summary>
+/// <remarks>
+/// Before, such an item was split on the comma like any other, so <c>--durations 0,25 0,25</c>
+/// was analyzed as the four durations <c>0 25 0 25</c> and reported with exit code 0 — a
+/// different rhythm, answered confidently. A list a user did not type must not be analyzed in
+/// place of the one they did.
+/// </remarks>
 static string[] ExpandListArgs(string[] raw)
 {
     if (raw.Length == 0)
@@ -28,15 +43,25 @@ static string[] ExpandListArgs(string[] raw)
             continue;
         }
 
-        // Allow both styles:
-        //   --notes C4 E4 G4
-        //   --notes "C4 E4 G4"
-        // and comma/semicolon separated lists.
-        var parts = token.Split(
-            [' ', '\t', '\r', '\n', ',', ';'],
+        // Whitespace and semicolons are unambiguous separators; a comma is checked item by item
+        // before it is treated as one, because in a comma-decimal locale "0,25" is a quarter.
+        var items = token.Split(
+            [' ', '\t', '\r', '\n', ';'],
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        result.AddRange(parts);
+        foreach (var item in items)
+        {
+            if (NotePatterns.CommaDecimalToken().IsMatch(item))
+            {
+                throw new CliUsageException(
+                    $"'{item}' is ambiguous: a comma separates list items here, it is not a decimal point. "
+                    + "Write 0.25 or 1/4, and separate list items with spaces.");
+            }
+
+            result.AddRange(item.Split(
+                ',',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
     }
 
     return [.. result];
@@ -2028,4 +2053,9 @@ internal static partial class NotePatterns
     // A bare pitch class ("C", "D#", "Bb", double accidentals allowed) with no octave.
     [GeneratedRegex("^[A-Ga-g](?:#{1,2}|b{1,2})?$")]
     public static partial Regex PitchClassToken();
+
+    // Two integers joined by one comma ("0,25", "1,5"): a decimal where the decimal mark is the
+    // comma, two list items where it is not. Three or more ("60,64,67") can only be a list.
+    [GeneratedRegex("^[0-9]+,[0-9]+$")]
+    public static partial Regex CommaDecimalToken();
 }
