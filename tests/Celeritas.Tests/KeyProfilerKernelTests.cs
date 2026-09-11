@@ -117,9 +117,14 @@ public class KeyProfilerKernelTests
         Assert.Equal(
             Enumerable.Range(0, 12),
             detected.AllCorrelations.Where(c => c.Key.IsMajor).Select(c => (int)c.Key.Root).Order());
-        Assert.Equal(
-            detected.AllCorrelations.Select(c => c.Correlation).OrderByDescending(c => c),
-            detected.AllCorrelations.Select(c => c.Correlation));
+        // Descending to within the kernels' noise: a run of keys the correlation cannot tell
+        // apart is ordered by key index, which may put a value a few 1e-7 smaller first.
+        for (var i = 1; i < detected.AllCorrelations.Length; i++)
+        {
+            Assert.True(
+                detected.AllCorrelations[i].Correlation <= detected.AllCorrelations[i - 1].Correlation + 1e-5f,
+                $"{detected.AllCorrelations[i]} follows {detected.AllCorrelations[i - 1]}");
+        }
     }
 
     [Fact]
@@ -216,5 +221,129 @@ public class KeyProfilerKernelTests
 
         Assert.Equal(new KeySignature(0, true), detected.Key);
         Assert.True(detected.Confidence > 0.05f, $"confidence collapsed to {detected.Confidence}");
+    }
+
+    // ---------- the order of the list does not depend on which kernel ran ----------
+    //
+    // The winner was already settled within the kernels' noise, but the list under it was
+    // sorted on the raw correlation, so a tie stood in whichever order the kernel's rounding
+    // put it. Over the 4095 pitch-class subsets the AVX kernels and the scalar one ordered 358
+    // lists differently, 111 of them within the top five: C and F# alone tie C minor with
+    // F# minor, and AVX-512 listed C minor third where the scalar kernel listed F# minor.
+
+    /// <summary>Every kernel this host can execute, the scalar reference always among them.</summary>
+    private static IEnumerable<(string Name, KeyProfiler.CorrelationComputer Kernel)> KernelsTheHostCanRun()
+    {
+        yield return ("scalar", KeyProfiler.ComputeCorrelationsScalar);
+        if (Avx2.IsSupported)
+            yield return ("AVX2", KeyProfiler.ComputeCorrelationsAvx2);
+        if (Avx512F.IsSupported)
+            yield return ("AVX-512", KeyProfiler.ComputeCorrelationsAvx512);
+    }
+
+    /// <summary>Every non-empty set of pitch classes, each sounded once.</summary>
+    private static IEnumerable<(int Subset, float[] Distribution)> EveryPitchClassSubset()
+    {
+        for (var subset = 1; subset < 4096; subset++)
+        {
+            var distribution = new float[12];
+            for (var pc = 0; pc < 12; pc++)
+                distribution[pc] = (subset & (1 << pc)) != 0 ? 1f : 0f;
+            yield return (subset, distribution);
+        }
+    }
+
+    private static int KeyIndex(KeySignature key) => key.IsMajor ? key.Root : 12 + key.Root;
+
+    private static string Order(KeyDetectionResult detected) =>
+        string.Join(",", detected.AllCorrelations.Select(c => KeyIndex(c.Key)));
+
+    [Fact]
+    public void TheCorrelationList_IsInTheSameOrder_WhicheverKernelRan()
+    {
+        var kernels = KernelsTheHostCanRun().ToArray();
+        var disagreements = new List<string>();
+
+        foreach (var (subset, distribution) in EveryPitchClassSubset())
+        {
+            var reference = KeyProfiler.Detect(distribution, kernels[0].Kernel);
+            var referenceOrder = Order(reference);
+
+            foreach (var (name, kernel) in kernels.Skip(1))
+            {
+                var detected = KeyProfiler.Detect(distribution, kernel);
+
+                if (detected.Key != reference.Key || Order(detected) != referenceOrder)
+                    disagreements.Add($"subset {subset:X3}: {name} [{Order(detected)}] vs {kernels[0].Name} [{referenceOrder}]");
+            }
+        }
+
+        Assert.True(
+            disagreements.Count == 0,
+            $"{disagreements.Count} of 4095 subsets are listed in a different order by different kernels:\n"
+            + string.Join("\n", disagreements.Take(10)));
+    }
+
+    [Fact]
+    public void ATieInTheCorrelationList_IsListedInKeyOrder_WhicheverKernelRan()
+    {
+        // Independent of the test above, which would pass vacuously on a host with one kernel:
+        // this states the rule itself. Every run of keys within the kernels' noise of the run's
+        // strongest is in key order, majors C..B before minors C..B.
+        foreach (var (name, kernel) in KernelsTheHostCanRun())
+        {
+            foreach (var (subset, distribution) in EveryPitchClassSubset())
+            {
+                var list = KeyProfiler.Detect(distribution, kernel).AllCorrelations;
+
+                var runStart = 0;
+                for (var i = 1; i < list.Length; i++)
+                {
+                    if (list[runStart].Correlation - list[i].Correlation > 1e-5f)
+                    {
+                        runStart = i;
+                        continue;
+                    }
+
+                    Assert.True(
+                        KeyIndex(list[i - 1].Key) < KeyIndex(list[i].Key),
+                        $"{name}, subset {subset:X3}: {list[i - 1]} is listed before {list[i]} though they tie");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void TheAugmentedTriad_ListsItsTiedKeysInKeyOrder()
+    {
+        // C, E and G# tie three majors and three minors. Sorted on the raw value the top five
+        // ended in F minor and A minor on an AVX machine but A minor and C# minor on a scalar
+        // one; now it is the same five, in key order, on every machine.
+        var detected = KeyProfiler.DetectFromPitches([60, 64, 68]);
+
+        Assert.Equal(
+            [
+                new KeySignature(0, true), new KeySignature(4, true), new KeySignature(8, true),
+                new KeySignature(1, false), new KeySignature(5, false),
+            ],
+            detected.TopKeys(5).Select(c => c.Key));
+    }
+
+    [Fact]
+    public void TheTritone_ListsCMinorBeforeFSharpMinor_OnTheScalarKernel()
+    {
+        // The scalar kernel rounds F# minor a few 1e-7 above C minor for these two notes, and
+        // the raw sort listed it first; the AVX kernels round the other way. Pinned on the one
+        // kernel every host can run, so this is not vacuous anywhere.
+        var detected = KeyProfiler.Detect(
+            [1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f],
+            KeyProfiler.ComputeCorrelationsScalar);
+
+        Assert.Equal(
+            [
+                new KeySignature(0, true), new KeySignature(6, true),
+                new KeySignature(0, false), new KeySignature(6, false),
+            ],
+            detected.TopKeys(4).Select(c => c.Key));
     }
 }

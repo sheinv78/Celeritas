@@ -311,7 +311,7 @@ Console.WriteLine(key);  // Output: C Major
 var scale = MusicNotation.Parse("D4 E4 F4 G4 A4 B4 C5 D5");
 var (mode, confidence) = ModeLibrary.DetectModeWithRoot(scale);
 Console.WriteLine(mode);        // Output: D Dorian
-Console.WriteLine(confidence);  // Output: 0.18 - confidence is the margin over
+Console.WriteLine(confidence);  // Output: 0.19 - confidence is the margin over
                                 // the runner-up mode, not a goodness-of-fit score
 ```
 

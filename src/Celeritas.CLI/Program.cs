@@ -18,9 +18,10 @@ using Celeritas.Core.VoiceLeading;
 /// <c>--notes C4 E4 G4</c> and <c>--notes "C4 E4 G4"</c>, as are comma- and semicolon-separated
 /// lists such as <c>--chords C,Am,F,G</c>. An item that is two integers joined by a comma, such
 /// as <c>0,25</c> or <c>1,5</c>, is refused with a <see cref="CliUsageException"/>: in the
-/// locales whose decimal mark is the comma (and the CLI prints its own numbers with that comma
-/// there) it is a decimal, while to the list syntax it is two items, and the two readings cannot
-/// be told apart.
+/// locales whose decimal mark is the comma it is a decimal (the CLI itself writes a dot
+/// everywhere — see <see cref="HostIndependentOutput"/> — but a user types what their locale
+/// taught them), while to the list syntax it is two items, and the two readings cannot be told
+/// apart.
 /// </summary>
 /// <remarks>
 /// Before, such an item was split on the comma like any other, so <c>--durations 0,25 0,25</c>
@@ -66,6 +67,18 @@ static string[] ExpandListArgs(string[] raw)
 
     return [.. result];
 }
+
+// The first thing the tool does. The reports below format their own numbers and draw their
+// own rules, and both must read the same on every machine: see HostIndependentOutput.
+using var hostIndependentOutput = HostIndependentOutput.Begin();
+
+/// <summary>
+/// A share as the library writes one — <c>16%</c>, no space — so a CLI line agrees with the
+/// library line beside it. <c>:P0</c> is culture-dependent, and under the invariant culture the
+/// CLI runs in it puts a space before the sign (<c>16 %</c>); the library avoids it for the same
+/// reason (see ProgressionAdvisor).
+/// </summary>
+static string Percent(double share) => $"{(int)Math.Round(share * 100)}%";
 
 Option<int> semitonesOption = new("--semitones", "-s")
 {
@@ -276,7 +289,7 @@ progressionCommand.SetAction(parseResult => RunGuarded(() =>
     var keyName = ChordLibrary.NoteNames[report.Key.Root];
     var modeName = report.Key.IsMajor ? "Major" : "Minor";
     Console.WriteLine($"  KEY: {keyName} {modeName}");
-    Console.WriteLine($"  Confidence: {report.KeyConfidence:P0}");
+    Console.WriteLine($"  Confidence: {Percent(report.KeyConfidence)}");
     Console.WriteLine($"  Pattern: {report.Pattern}");
     Console.WriteLine();
 
@@ -673,7 +686,7 @@ modeCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
     Console.WriteLine();
     Console.WriteLine($"  Detected: {key}");
-    Console.WriteLine($"  Confidence: {confidence:P0}");
+    Console.WriteLine($"  Confidence: {Percent(confidence)}");
     Console.WriteLine();
 
     // Show scale notes
@@ -774,7 +787,7 @@ polyphonyCommand.SetAction(parseResult => RunGuarded(() =>
 
     // Voice separation
     Console.WriteLine($"  VOICES DETECTED: {result.Voices.Voices.Count}");
-    Console.WriteLine($"  Separation Quality: {result.Voices.SeparationQuality:P0}");
+    Console.WriteLine($"  Separation Quality: {Percent(result.Voices.SeparationQuality)}");
     Console.WriteLine($"  Voice Crossings: {result.Voices.VoiceCrossings}");
     Console.WriteLine();
 
@@ -803,7 +816,7 @@ polyphonyCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine("----------------------------------------------------------------");
     Console.WriteLine();
     Console.WriteLine($"  Density: {result.TextureDensity:F2} voices avg");
-    Console.WriteLine($"  Voice Independence: {result.VoiceIndependence:P0}");
+    Console.WriteLine($"  Voice Independence: {Percent(result.VoiceIndependence)}");
     Console.WriteLine();
 
     // Motion analysis
@@ -864,7 +877,7 @@ polyphonyCommand.SetAction(parseResult => RunGuarded(() =>
         >= 0.5f => "😐 Fair",
         _ => "⚠️ Needs work"
     };
-    Console.WriteLine($"  OVERALL QUALITY: {result.QualityScore:P0} - {qualityEmoji}");
+    Console.WriteLine($"  OVERALL QUALITY: {Percent(result.QualityScore)} - {qualityEmoji}");
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
 }));
 
@@ -892,10 +905,10 @@ Option<int> predictCountOption = new("--predict", "-p")
     DefaultValueFactory = _ => 4
 };
 
-Option<string> meterOption = new("--meter", "-m")
+Option<string?> meterOption = new("--meter", "-m")
 {
-    Description = "Time signature (e.g., 4/4, 3/4, 6/8)",
-    DefaultValueFactory = _ => "4/4"
+    Description = "Time signature (e.g., 4/4, 3/4, 6/8). Omit to detect it from the durations",
+    Required = false
 };
 
 Command rhythmCommand = new("rhythm", "Analyze rhythm patterns and predict continuations");
@@ -909,18 +922,24 @@ rhythmCommand.SetAction(parseResult => RunGuarded(() =>
     var durationsInput = ExpandListArgs(parseResult.GetValue(rhythmDurationsOption) ?? []);
     var style = parseResult.GetValue(rhythmStyleOption) ?? "classical";
     var predictCount = parseResult.GetValue(predictCountOption);
-    var meterStr = parseResult.GetValue(meterOption) ?? "4/4";
+    var meterStr = parseResult.GetValue(meterOption);
 
-    // Parse meter
-    var meterParts = meterStr.Split('/');
-    if (meterParts.Length != 2
-        || !int.TryParse(meterParts[0], out var meterNumerator)
-        || !int.TryParse(meterParts[1], out var meterDenominator))
+    // A meter the user gives is used as given; without one it is detected from the durations.
+    // The two are reported differently below: a given meter has no detection confidence to
+    // report, and printing "Confidence: 100 %" for it read as a detection that never happened.
+    TimeSignature? givenMeter = null;
+    if (meterStr is not null)
     {
-        throw new CliUsageException($"Invalid meter '{meterStr}'. Expected a time signature like 4/4, 3/4, or 6/8.");
-    }
+        var meterParts = meterStr.Split('/');
+        if (meterParts.Length != 2
+            || !int.TryParse(meterParts[0], out var meterNumerator)
+            || !int.TryParse(meterParts[1], out var meterDenominator))
+        {
+            throw new CliUsageException($"Invalid meter '{meterStr}'. Expected a time signature like 4/4, 3/4, or 6/8.");
+        }
 
-    var meter = new TimeSignature(meterNumerator, meterDenominator);
+        givenMeter = new TimeSignature(meterNumerator, meterDenominator);
+    }
 
     Console.WriteLine();
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
@@ -954,12 +973,21 @@ rhythmCommand.SetAction(parseResult => RunGuarded(() =>
         }
 
         // Analyze
-        var analysis = RhythmAnalyzer.Analyze(buffer, meter);
+        var analysis = RhythmAnalyzer.Analyze(buffer, givenMeter);
+        var meter = analysis.Meter.TimeSignature;
 
-        Console.WriteLine($"  METER: {analysis.Meter.TimeSignature}");
-        Console.WriteLine($"  Confidence: {analysis.Meter.Confidence:P0}");
-        if (analysis.Meter.Alternatives.Count > 0)
-            Console.WriteLine($"  Alternatives: {string.Join(", ", analysis.Meter.Alternatives)}");
+        if (givenMeter.HasValue)
+        {
+            Console.WriteLine($"  METER (given): {meter}");
+        }
+        else
+        {
+            Console.WriteLine($"  METER: {meter}");
+            Console.WriteLine($"  Confidence: {Percent(analysis.Meter.Confidence)}");
+            if (analysis.Meter.Alternatives.Count > 0)
+                Console.WriteLine($"  Alternatives: {string.Join(", ", analysis.Meter.Alternatives)}");
+        }
+
         Console.WriteLine();
 
         Console.WriteLine($"  INPUT: {string.Join(" ", durations)}");
@@ -975,7 +1003,7 @@ rhythmCommand.SetAction(parseResult => RunGuarded(() =>
         Console.WriteLine($"  Measures: {stats.MeasureCount}");
         Console.WriteLine($"  Notes/measure: {stats.NotesPerMeasure:F1}");
         Console.WriteLine($"  Syncopation: {stats.SyncopationPercent:F0}%");
-        Console.WriteLine($"  Swing ratio: {analysis.SwingRatio:P0}");
+        Console.WriteLine($"  Swing ratio: {Percent(analysis.SwingRatio)}");
         Console.WriteLine($"  Density: {analysis.Density:F2} notes/beat");
         Console.WriteLine();
 
@@ -997,7 +1025,7 @@ rhythmCommand.SetAction(parseResult => RunGuarded(() =>
             foreach (var match in analysis.PatternMatches.OrderByDescending(m => m.MatchQuality))
             {
                 Console.WriteLine($"  {match.Pattern.Name} ({match.Pattern.Style ?? "Various"})");
-                Console.WriteLine($"    At beat {match.StartOffset}, quality: {match.MatchQuality:P0}");
+                Console.WriteLine($"    At beat {match.StartOffset}, quality: {Percent(match.MatchQuality)}");
                 if (match.Pattern.Description != null)
                     Console.WriteLine($"    {match.Pattern.Description}");
             }
@@ -1017,11 +1045,11 @@ rhythmCommand.SetAction(parseResult => RunGuarded(() =>
                 predictor.Train(durations);
 
             var prediction = predictor.Predict(durations);
-            Console.WriteLine($"  Next note: {prediction.MostLikely} (confidence: {prediction.Confidence:P0})");
+            Console.WriteLine($"  Next note: {prediction.MostLikely} (confidence: {Percent(prediction.Confidence)})");
 
             if (prediction.Alternatives.Count > 0)
             {
-                Console.WriteLine($"  Alternatives: {string.Join(", ", prediction.Alternatives.Select(a => $"{a.Duration} ({a.Probability:P0})"))}");
+                Console.WriteLine($"  Alternatives: {string.Join(", ", prediction.Alternatives.Select(a => $"{a.Duration} ({Percent(a.Probability)})"))}");
             }
 
             // Generate continuation
@@ -1033,9 +1061,11 @@ rhythmCommand.SetAction(parseResult => RunGuarded(() =>
     }
     else
     {
-        // Demo mode with style model
+        // Demo mode with style model. There are no durations to detect a meter from, so the
+        // generated measure is in the meter given, or in common time.
+        var meter = givenMeter ?? TimeSignature.Common;
         Console.WriteLine($"  STYLE: {style}");
-        Console.WriteLine($"  METER: {meter}");
+        Console.WriteLine(givenMeter.HasValue ? $"  METER (given): {meter}" : $"  METER: {meter}");
         Console.WriteLine();
 
         var predictor = RhythmModels.GetStyleModel(style);
@@ -1165,7 +1195,7 @@ melodyCommand.SetAction(parseResult => RunGuarded(() =>
         {
             Console.WriteLine($"  Pattern: {motif.PatternDescription}");
             Console.WriteLine($"    Length: {motif.Length} intervals, Occurrences: {motif.Occurrences.Count}");
-            Console.WriteLine($"    Significance: {motif.Significance:P0}");
+            Console.WriteLine($"    Significance: {Percent(motif.Significance)}");
         }
         Console.WriteLine();
     }
@@ -1175,8 +1205,8 @@ melodyCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine("  CHARACTER");
     Console.WriteLine("----------------------------------------------------------------");
     Console.WriteLine($"  {analysis.CharacterDescription}");
-    Console.WriteLine($"  Conjunctness: {analysis.Conjunctness:P0} (how stepwise)");
-    Console.WriteLine($"  Complexity: {analysis.Complexity:P0} (interval variety)");
+    Console.WriteLine($"  Conjunctness: {Percent(analysis.Conjunctness)} (how stepwise)");
+    Console.WriteLine($"  Complexity: {Percent(analysis.Complexity)} (interval variety)");
     Console.WriteLine();
 
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
@@ -1205,6 +1235,15 @@ Option<int?> midiChannelOption = new("--channel")
 {
     Description = "MIDI channel filter (0-15). Omit to import all channels",
     Required = false
+};
+
+// Export writes to one channel; it does not filter. Its --channel is a separate option so that
+// the help does not describe the import filter ("Omit to import all channels") on a command
+// that imports nothing.
+Option<int> midiExportChannelOption = new("--channel")
+{
+    Description = "MIDI channel to write notes on (0-15)",
+    DefaultValueFactory = _ => 0
 };
 
 Option<int> midiLimitOption = new("--limit")
@@ -1318,7 +1357,7 @@ midiImportCommand.SetAction(parseResult => RunGuarded(() =>
 Command midiExportCommand = new("export", "Export notes to a MIDI file");
 midiExportCommand.Options.Add(midiOutOption);
 midiExportCommand.Options.Add(midiNotesOption);
-midiExportCommand.Options.Add(midiChannelOption);
+midiExportCommand.Options.Add(midiExportChannelOption);
 midiExportCommand.Options.Add(midiPpqOption);
 midiExportCommand.Options.Add(midiBpmOption);
 
@@ -1326,7 +1365,7 @@ midiExportCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var outFile = parseResult.GetValue(midiOutOption);
     var notesInput = parseResult.GetValue(midiNotesOption) ?? [];
-    var channel = parseResult.GetValue(midiChannelOption) ?? 0;
+    var channel = parseResult.GetValue(midiExportChannelOption);
     var ppq = parseResult.GetValue(midiPpqOption);
     var bpm = parseResult.GetValue(midiBpmOption);
 

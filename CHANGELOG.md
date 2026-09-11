@@ -86,7 +86,13 @@ follows.
 - A sustained dissonance counts as one violation regardless of what other voices
   are doing, and imitation detection no longer labels any shared scale fragment
   a canon
-- Syncopation is measured against strong and medium beats only, not any beat
+- Syncopation is relative to where the note began: a note is syncopated when it
+  holds through a beat stronger than the one it started on. Any weak-beat note
+  that lasted past the next beat of whatever strength used to count, so a half
+  note on beat 2 of 3/4 was syncopated -- beat 3 is no stronger than beat 2 --
+  while the quarter on the "and" of 1 that lasts through beat 2, the analyzer's
+  own Syncopated pattern, still is, and a note on beat 3 of 4/4 tied through the
+  next downbeat now is
 - Swing detection pairs notes on the beat grid, so a single pickup note no longer
   inverts the measured ratio
 - Melodic contour recognizes plateau peaks, so an arch with a repeated top note
@@ -395,6 +401,24 @@ follows.
   where the CLI printed its own numbers with that comma -- `--durations 0,25
   0,25 0,5` was analyzed as six durations and a rhythm nobody typed was reported
   with exit code 0
+- The CLI writes its numbers as the library does on every machine -- a dot for
+  the decimal mark, a comma for grouping, `16%` for a share -- and hands the
+  console UTF-8. On a German or Russian host one report read `Analysis time:
+  7402,4 µs` two lines above `G Major: 1.058`, the benchmark counted `1 000 000`
+  notes in `1,46 ms`, and on a legacy code page the `µs`, `→` and box-drawing
+  rules arrived as `?`. The culture and the console's code page are put back
+  when the tool exits
+- `celeritas rhythm` says whether its meter was given or detected. `--meter`
+  defaulted to 4/4 and the default was handed to the analyzer as a known meter,
+  so every run printed "Confidence: 100 %" for a detection that never ran. A
+  meter the user gives now prints as `METER (given): 3/4` with no confidence
+  line; without `--meter` the meter is detected from the durations and the
+  detector's own confidence and alternatives are printed -- a run that omitted
+  the option and was assumed 4/4 before may now be analyzed in the meter its
+  durations imply
+- `celeritas midi export --channel` describes itself as the channel the notes
+  are written on; it shared the import option, so its help read "Omit to import
+  all channels" on a command that imports nothing
 - The documentation says what the code does where it did not: the fermata
   preset lengthens its note without delaying what follows, and overlaps the
   next note in a single line; `OrchestrationPartDefinition.Kind` is the label a

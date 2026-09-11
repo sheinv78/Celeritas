@@ -92,7 +92,7 @@ NoteEvent[] notes = MusicNotation.Parse("D4/4 E4/4 F4/4 G4/4 A4/4 B4/4 C5/4 D5/4
 var (mode, confidence) = ModeLibrary.DetectModeWithRoot(notes, rootHint: 2);
 
 Console.WriteLine(mode);                                                       // D Dorian
-Console.WriteLine(confidence.ToString("F3", CultureInfo.InvariantCulture));    // 0.183
+Console.WriteLine(confidence.ToString("F3", CultureInfo.InvariantCulture));    // 0.187
 ```
 
 A full, unambiguous D dorian scale — right in the middle of the band.

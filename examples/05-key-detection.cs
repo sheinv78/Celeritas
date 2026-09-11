@@ -29,11 +29,11 @@ class KeyDetection
         // ===== Modal Detection =====
 
         // DetectModeWithRoot returns a (key, confidence) tuple. Deconstruct it - interpolating
-        // the tuple itself prints both halves, e.g. "(D Dorian, 0.18274854)".
+        // the tuple itself prints both halves, e.g. "(D Dorian, 0.18731268)".
         //
         // That confidence is a *margin*: how far the winning mode beat the runner-up mode on
         // the same root, not how well the notes fit the mode. Margins live in a modest band
-        // (roughly 0.1-0.35), so 0.18 is a clear win, not a weak one.
+        // (roughly 0.1-0.35), so 0.19 is a clear win, not a weak one.
 
         // Dorian mode
         var dorian = MusicNotation.Parse("D4 E4 F4 G4 A4 B4 C5 D5");

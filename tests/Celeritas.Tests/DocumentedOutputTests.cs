@@ -1,5 +1,6 @@
 // Copyright (c) 2025 Vladimir V. Shein
 
+using System.Globalization;
 using Celeritas.Core;
 using Celeritas.Core.Analysis;
 using Celeritas.Core.Ornamentation;
@@ -84,5 +85,89 @@ public class DocumentedOutputTests
         };
 
         Assert.Equal(8, trill.Expand().Length);
+    }
+
+    // ---------- docs/concepts/confidence.md ----------
+    //
+    // The guide says every value in it is a real run against the current release. These pin the
+    // values it prints, so a detector change turns the guide red instead of leaving it a run
+    // against a release that no longer exists. The D Dorian margin had drifted that way: the
+    // guide read 0.183, the README 0.18 and the example's tuple 0.18274854 — written (9d56211,
+    // 2026-08-24) two days before 8350ca8 dropped DetectMode's double-counted characteristic-note
+    // bonus and the margin moved to 0.187.
+
+    [Fact]
+    public void TheConfidenceGuide_TheCMajorScaleReadsAsItSays()
+    {
+        KeyDetectionResult result = KeyProfiler.DetectFromPitches("C4 D4 E4 F4 G4 A4 B4");
+
+        Assert.Equal("C Major", result.Key.ToString());
+        Assert.Equal("0.104", result.Confidence.ToString("F3", CultureInfo.InvariantCulture));
+        Assert.Equal(
+            ["C Major: 0.955", "G Major: 0.856", "A Minor: 0.822"],
+            result.TopKeys(3).Select(c => c.ToString()));
+    }
+
+    public static TheoryData<string, string> ConfidenceGuideKeyMargins =>
+    new()
+    {
+        { "C4 D4 E4 F4 G4 A4 B4", "0.104" },
+        { "C4 E4 G4 A4", "0.121" },
+        { "C4 E4 G4 F4 A4 C5 G3 B3 D4 C4 E4 G4", "0.223" },
+        { "C4 E4 G4 F4 A4 C5 G3 B3 D4 C4 E4 G4 C4 E4 G4 C4 E4 G4", "0.262" },
+        { "C4 E4 G4 F4 A4 C5 G3 B3 D4 C4 E4 G4 C4 E4 G4 C4 E4 G4 C4 E4 G4", "0.246" },
+        { "C4 E4 G4 F4 A4 C5 G3 B3 D4 C4 E4 G4 C4 E4 G4 C4 E4 G4 C4 E4 G4 C4 E4 G4", "0.234" },
+        { "C4 E4 G4 F4 A4 C5 G3 B3 D4 C4 E4 G4 C4 E4 G4 C4 E4 G4 C4 E4 G4 C4 E4 G4 C4 E4 G4", "0.226" },
+        { "C4 C#4 D4 D#4 E4 F4 F#4 G4 G#4 A4 A#4 B4", "0.000" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ConfidenceGuideKeyMargins))]
+    public void TheConfidenceGuide_KeyMarginTableIsARealRun(string pitches, string confidence)
+    {
+        // The chromatic row's key is arbitrary by the guide's own account, so only the margin is
+        // held; every other row names C Major.
+        var result = KeyProfiler.DetectFromPitches(pitches);
+
+        Assert.Equal(confidence, result.Confidence.ToString("F3", CultureInfo.InvariantCulture));
+        if (confidence != "0.000")
+            Assert.Equal("C Major", result.Key.ToString());
+    }
+
+    [Fact]
+    public void TheConfidenceGuide_TheDDorianMarginIsARealRun()
+    {
+        // The guide's snippet: quarter notes, root hint D. README.md, docs/guide/tour.md and
+        // examples/05-key-detection.cs run the same scale without the hint and quote the raw
+        // float, its two-decimal rounding, or both.
+        NoteEvent[] notes = MusicNotation.Parse("D4/4 E4/4 F4/4 G4/4 A4/4 B4/4 C5/4 D5/4");
+        var (mode, confidence) = ModeLibrary.DetectModeWithRoot(notes, rootHint: 2);
+
+        Assert.Equal("D Dorian", mode.ToString());
+        Assert.Equal("0.187", confidence.ToString("F3", CultureInfo.InvariantCulture));
+
+        var (unhinted, margin) = ModeLibrary.DetectModeWithRoot(MusicNotation.Parse("D4 E4 F4 G4 A4 B4 C5 D5"));
+
+        Assert.Equal("D Dorian", unhinted.ToString());
+        Assert.Equal("0.18731268", margin.ToString(CultureInfo.InvariantCulture));
+        Assert.Equal("0.19", margin.ToString("F2", CultureInfo.InvariantCulture));
+    }
+
+    public static TheoryData<string, string> ConfidenceGuideProgressionKeyConfidences =>
+    new()
+    {
+        { "C Am F G", "0.773" },
+        { "C Ab F G", "0.800" },
+        { "C D E F#", "0.750" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ConfidenceGuideProgressionKeyConfidences))]
+    public void TheConfidenceGuide_ProgressionKeyConfidenceTableIsARealRun(string progression, string keyConfidence)
+    {
+        var report = ProgressionAdvisor.Analyze(progression.Split(' '));
+
+        Assert.Equal("C Major", report.Key.ToString());
+        Assert.Equal(keyConfidence, report.KeyConfidence.ToString("F3", CultureInfo.InvariantCulture));
     }
 }

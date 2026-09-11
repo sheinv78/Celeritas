@@ -80,10 +80,14 @@ class MelodyRhythmAnalysis
 
         // ===== Rhythm Analysis =====
 
-        var rhythm = MusicNotation.Parse("C4/4 C4/4 C4/8 C4/8 C4/4 C4/2");
-        using var rhythmBuf = new NoteBuffer(rhythm.Length);
-        rhythmBuf.AddRange(rhythm);
-        var rhythmAnalysis = RhythmAnalyzer.Analyze(rhythmBuf);
+        // Two bars of eighth-quarter-eighth in 4/4: each quarter starts on the "and" of the beat and
+        // holds through the next one. The meter the notation declares is passed on, so syncopation
+        // is measured against the 4/4 grid rather than a detected one.
+        var rhythm = MusicNotation.ParseFull(
+            "4/4: C4/8 E4/4 G4/8 E4/8 C4/4 E4/8 | D4/8 F4/4 A4/8 F4/8 D4/4 F4/8");
+        using var rhythmBuf = new NoteBuffer(rhythm.Notes.Length);
+        rhythmBuf.AddRange(rhythm.Notes);
+        var rhythmAnalysis = RhythmAnalyzer.Analyze(rhythmBuf, rhythm.TimeSignature);
 
         Console.WriteLine($"\nRhythm analysis:");
         Console.WriteLine($"  Texture: {rhythmAnalysis.TextureDescription}");
@@ -176,9 +180,9 @@ Motifs found: 3
   At times: 1, 9
 
 Rhythm analysis:
-  Texture: Dense, busy rhythmic texture, featuring Syncopated pattern, (Jazz/Funk style).
-  Density: 2.00 notes/beat
-  Syncopation level: 0.00
+  Texture: Active, driving rhythm, highly syncopated (33%), featuring Syncopated pattern, (Jazz/Funk style).
+  Density: 1.50 notes/beat
+  Syncopation level: 0.33
 
 Syncopation:
   Syncopation level: 0.00

@@ -30,7 +30,18 @@ public static class KeyProfiler
 
     private static readonly CorrelationComputer ComputeCorrelations = CreateCorrelationComputer();
 
-    private delegate void CorrelationComputer(ReadOnlySpan<float> input, Span<float> correlations);
+    // internal, not private, so a test can drive the whole detection through each kernel the
+    // host offers (see Detect's kernel overload): only one of them runs on any given machine.
+    internal delegate void CorrelationComputer(ReadOnlySpan<float> input, Span<float> correlations);
+
+    /// <summary>
+    /// A key's position in the 24-profile table, majors C..B at 0-11 and minors C..B at 12-23 —
+    /// the order the winner loop walks and the order a tie is listed in.
+    /// </summary>
+    private static int KeyIndex(KeySignature key) => key.IsMajor ? key.Root : 12 + key.Root;
+
+    private static readonly Comparer<KeyCorrelation> ByKeyIndex =
+        Comparer<KeyCorrelation>.Create((a, b) => KeyIndex(a.Key).CompareTo(KeyIndex(b.Key)));
 
     // Krumhansl-Kessler key profiles (from cognitive musicology research)
     // These represent the psychological "weight" of each pitch class in a key
@@ -140,7 +151,18 @@ public static class KeyProfiler
     /// lands around 0.1-0.35, and a value below 0.5 is not "low confidence".
     /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static KeyDetectionResult Detect(ReadOnlySpan<float> pitchClassCounts)
+    private static KeyDetectionResult Detect(ReadOnlySpan<float> pitchClassCounts) =>
+        Detect(pitchClassCounts, ComputeCorrelations);
+
+    /// <summary>
+    /// <see cref="Detect(ReadOnlySpan{float})"/> through a chosen kernel rather than the one the
+    /// CPU selected. Internal for the tests that run every kernel the host can execute over the
+    /// same music and require the key and the order of the list to agree (the correlations and
+    /// the confidence agree only to the kernels' noise); the public entry points always use the
+    /// selected kernel.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static KeyDetectionResult Detect(ReadOnlySpan<float> pitchClassCounts, CorrelationComputer computeCorrelations)
     {
         if (pitchClassCounts.Length < 12)
             return new KeyDetectionResult(new KeySignature(0, true), 0f, []);
@@ -152,7 +174,7 @@ public static class KeyProfiler
         // Compute correlations with all 24 key profiles
         Span<float> correlations = stackalloc float[24];
 
-        ComputeCorrelations(normalized, correlations);
+        computeCorrelations(normalized, correlations);
 
         // Find best match. A later key has to beat the incumbent by more than the noise the
         // kernels differ by, not merely by a bit.
@@ -201,10 +223,15 @@ public static class KeyProfiler
                 correlations[i]);
         }
         Array.Sort(allCorrelations, (a, b) => b.Correlation.CompareTo(a.Correlation));
+        OrderTiesByKeyIndex(allCorrelations);
 
-        // The list leads with the key that was chosen. Sorting on the raw correlation puts the
-        // noisily-larger member of a tie first, which would have TopKeys(1) name a different key
-        // from Key for exactly the symmetric music the margin above exists to settle.
+        // The list leads with the key that was chosen. The winner loop above is chained — each
+        // key is measured against the incumbent, not against the strongest — so a run of scores
+        // each a fraction of the noise apart can hand it a key that is not the first of its tie
+        // in the list. None of the 4095 pitch-class subsets produces such a run (their ties are
+        // exact or a few 1e-7 apart, their closest non-tie is 6e-4 apart), and a duration-weighted
+        // distribution would have to land two keys each within 1e-5 of a third yet more than 1e-5
+        // apart from each other by chance, but the list's promise is unconditional.
         var chosen = Array.FindIndex(allCorrelations, c => c.Key.Root == root && c.Key.IsMajor == isMajor);
         if (chosen > 0)
         {
@@ -227,6 +254,35 @@ public static class KeyProfiler
             confidence,
             allCorrelations,
             distinctPitchClasses);
+    }
+
+    /// <summary>
+    /// Puts each tie in a list already sorted strongest-first into key-index order. A tie is a
+    /// run of keys whose correlations all sit within <see cref="ScoreNoise"/> of the run's
+    /// strongest; the keys in it are listed majors C..B before minors C..B, the rule the winner
+    /// loop already applies to the top of the list.
+    /// </summary>
+    /// <remarks>
+    /// Sorting on the raw correlation alone left a tie in whichever order the kernel's rounding
+    /// put it. The tritone C–F# scores C minor and F# minor identically by symmetry, but the
+    /// kernels sum in different orders and one of them comes out a few 1e-7 larger: AVX-512 and
+    /// AVX2 listed C minor third and F# minor fourth, the scalar kernel the other way round. Over
+    /// the 4095 pitch-class subsets the kernels ordered 358 lists differently, 111 of them within
+    /// the top five, so a caller's Top-5 named a different runner-up on a different CPU.
+    /// </remarks>
+    private static void OrderTiesByKeyIndex(KeyCorrelation[] sorted)
+    {
+        var runStart = 0;
+        for (var i = 1; i <= sorted.Length; i++)
+        {
+            if (i < sorted.Length && sorted[runStart].Correlation - sorted[i].Correlation <= ScoreNoise)
+                continue;
+
+            if (i - runStart > 1)
+                Array.Sort(sorted, runStart, i - runStart, ByKeyIndex);
+
+            runStart = i;
+        }
     }
 
     /// <summary>
@@ -724,7 +780,14 @@ public static class KeyProfiler
 /// field, not how well the music fits the key. A clear detection typically lands around 0.1-0.35,
 /// so a value below 0.5 is not "low confidence".
 /// </param>
-/// <param name="AllCorrelations">All 24 key correlations, sorted most likely first.</param>
+/// <param name="AllCorrelations">
+/// All 24 key correlations, sorted most likely first. A run of keys whose correlations all lie
+/// within 1e-5 of the run's strongest is a tie, and a tie is listed in key order — majors C..B,
+/// then minors C..B — the same rule that chooses <see cref="Key"/> from a tie; the list leads
+/// with <see cref="Key"/>. The order is therefore the same on every machine: the SIMD kernels
+/// differ by about 1e-7, so sorting on the raw value alone let the CPU decide which of two
+/// symmetric keys came first.
+/// </param>
 /// <param name="DistinctPitchClasses">
 /// How many of the twelve pitch classes the analyzed material actually sounded, 0-12. This is
 /// the evidence behind <see cref="Confidence"/>, reported separately because the two answer
@@ -754,7 +817,19 @@ public readonly record struct KeyDetectionResult(
     /// </remarks>
     public bool IsDecidable => DistinctPitchClasses >= 5;
 
-    /// <summary>Top N most likely keys</summary>
+    /// <summary>
+    /// The first <paramref name="n"/> keys of <see cref="AllCorrelations"/>: the most likely
+    /// keys, a tie among them listed in key order (majors C..B, then minors C..B), so the same
+    /// <paramref name="n"/> keys in the same order on every machine.
+    /// </summary>
+    /// <remarks>
+    /// Ties were listed in whichever order the CPU's kernel rounded them into: the augmented
+    /// triad C, E, G# ties C# minor, F minor and A minor three ways, and its top five ended in
+    /// F minor and A minor on an AVX machine but A minor and C# minor on a scalar one. Over the
+    /// 4095 pitch-class subsets the AVX kernels and the scalar one disagreed on 111 top-five
+    /// lists. The winner itself was already chosen by key order within a tie; the list now
+    /// follows the same rule, so that triad's top five ends in C# minor and F minor everywhere.
+    /// </remarks>
     public IEnumerable<KeyCorrelation> TopKeys(int n) => AllCorrelations.Take(n);
 
     /// <summary>Returns the detected key and confidence percentage (e.g. "C Major (confidence: 82%)").</summary>

@@ -1,5 +1,6 @@
 // Copyright (c) 2025 Vladimir V. Shein
 
+using System.Globalization;
 using System.Reflection;
 using Celeritas.CLI;
 using Celeritas.Core;
@@ -213,6 +214,48 @@ public class CliErrorAndFormatTests : IDisposable
         Assert.Equal(0, exit);
         Assert.Contains("INPUT: 1/4 1/4 1/2", output, StringComparison.Ordinal);
         Assert.Contains("Notes: 3", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Rhythm_GivenAMeter_ReportsItAsGivenAndClaimsNoDetection()
+    {
+        // A meter the user typed was reported as "METER: 3/4" followed by "Confidence: 100 %" —
+        // the confidence of a detection that never ran, on the line where a real detection
+        // reports its own. A given meter is labelled as given and has no confidence line.
+        var (exit, output) = Run(
+            "rhythm", "--durations", "1/4 1/4 1/4 1/4 1/4 1/4", "--meter", "3/4", "--predict", "0");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("METER (given): 3/4", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Confidence:", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Alternatives:", output, StringComparison.Ordinal);
+        Assert.Contains("Measures: 2", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Rhythm_WithoutAMeter_DetectsOneAndReportsHowSureItIs()
+    {
+        // With no --meter the meter is detected, and the confidence and alternatives printed are
+        // the detector's. Before, a silent 4/4 default was analyzed as a given meter, so every
+        // run without --meter reported 4/4 at 100 % whatever the durations were.
+        var (exit, output) = Run("rhythm", "--durations", "1/4 1/8 1/8 1/4 1/4", "--predict", "0");
+
+        Assert.Equal(0, exit);
+        Assert.Matches(@"METER: \d+/\d+", output);
+        Assert.DoesNotContain("(given)", output, StringComparison.Ordinal);
+        Assert.Contains("Confidence:", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Confidence: 100", output, StringComparison.Ordinal);
+        Assert.Contains("Alternatives:", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Rhythm_Help_SaysTheMeterIsDetectedWhenOmitted()
+    {
+        var (exit, output) = Run("rhythm", "--help");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Omit to detect it from the durations", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("[default: 4/4]", output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -462,6 +505,47 @@ public class CliErrorAndFormatTests : IDisposable
 
         Assert.NotEqual(0, exit);
         Assert.Contains("No valid notes", output, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void MidiExport_Help_DescribesTheChannelAsTheOneWrittenTo()
+    {
+        // Export shared the import command's --channel, so its help read "MIDI channel filter
+        // (0-15). Omit to import all channels" on a command that imports nothing and writes
+        // every note to one channel.
+        var (exit, output) = Run("midi", "export", "--help");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("MIDI channel to write notes on (0-15)", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Omit to import all channels", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MidiImport_Help_StillDescribesTheChannelAsAFilter()
+    {
+        var (exit, output) = Run("midi", "import", "--help");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Omit to import all channels", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MidiExport_WritesToTheChannelItIsGiven()
+    {
+        // The export option is its own now; it still has to reach the file.
+        var path = Path.Combine(_work, "ch9.mid");
+
+        var (exit, output) = Run(
+            "midi", "export", "--out", path, "--notes", "4/4: C4/4 E4/4 G4/4", "--channel", "9");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Channel: 9", output, StringComparison.Ordinal);
+
+        var (onNine, onZero) = (
+            Run("midi", "import", "--in", path, "--channel", "9").Output,
+            Run("midi", "import", "--in", path, "--channel", "0").Output);
+        Assert.Contains("Notes: 3", onNine, StringComparison.Ordinal);
+        Assert.Contains("Notes: 0", onZero, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -789,5 +873,96 @@ public class CliErrorAndFormatTests : IDisposable
         Assert.NotEqual(0, exit);
         Assert.StartsWith("Error:", output.Trim(), StringComparison.Ordinal);
         Assert.DoesNotContain("at System.", output, StringComparison.Ordinal);
+    }
+
+    // ---------- the machine's locale ----------
+
+    /// <summary>
+    /// Runs the CLI as a German or Russian user does: on a machine whose decimal mark is the
+    /// comma. The entry point is driven in-process, so the culture is set on this thread and put
+    /// back afterwards, whatever the entry point did with it.
+    /// </summary>
+    private static (int ExitCode, string Output) RunUnderACommaLocale(params string[] args)
+    {
+        var culture = CultureInfo.GetCultureInfo("de-DE");
+        Assert.Equal(",", culture.NumberFormat.NumberDecimalSeparator);
+
+        var previous = CultureInfo.CurrentCulture;
+        var previousUI = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
+        try
+        {
+            return Run(args);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+            CultureInfo.CurrentUICulture = previousUI;
+        }
+    }
+
+    [Fact]
+    public void KeyDetect_OnACommaLocaleMachine_WritesItsTimingWithADot()
+    {
+        // The library lines were invariant already; the CLI's own were not, so on a German or
+        // Russian machine one report read "Analysis time: 7402,4 µs" two lines above
+        // "G Major: 1.058" — two decimal marks in one text.
+        var (exit, output) = RunUnderACommaLocale("keydetect", "--notes", "C4 E4 G4 B4 D5");
+
+        Assert.Equal(0, exit);
+        var timing = output.Split('\n').Single(l => l.Contains("Analysis time:", StringComparison.Ordinal)).Trim();
+        Assert.Matches(@"^Analysis time: [0-9]+\.[0-9] µs$", timing);
+        Assert.Matches(@"G Major: [0-9]\.[0-9]{3}", output);
+    }
+
+    [Fact]
+    public void Benchmark_OnACommaLocaleMachine_WritesItsNumbersInvariantly()
+    {
+        // {count:N0} grouped with the locale's separator and {ms:F2} took the locale's comma:
+        // "Transposed 1.000.000 notes: 1,46 ms" on a German machine, "1 000 000" on a Russian one.
+        var (exit, output) = RunUnderACommaLocale("benchmark");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Transposed 1,000,000 notes:", output, StringComparison.Ordinal);
+        Assert.Matches(@"Transposed 1,000,000 notes: [0-9]+\.[0-9]{2} ms", output);
+        Assert.Matches(@"Performance: [0-9]+\.[0-9]{3} ns/note", output);
+    }
+
+    [Fact]
+    public void RunningTheCli_LeavesTheCallersCultureAsItWas()
+    {
+        // The entry point pins the culture for its own run and must hand it back when it
+        // returns: this suite drives it in-process, and without the hand-back every test after
+        // the first CLI one would run invariant, on every thread, and never see its own machine.
+        var culture = CultureInfo.GetCultureInfo("de-DE");
+        var previous = CultureInfo.CurrentCulture;
+        var previousDefault = CultureInfo.DefaultThreadCurrentCulture;
+        CultureInfo.CurrentCulture = culture;
+        try
+        {
+            var (exit, _) = Run("info");
+
+            Assert.Equal(0, exit);
+            Assert.Equal(culture, CultureInfo.CurrentCulture);
+            Assert.Equal(previousDefault, CultureInfo.DefaultThreadCurrentCulture);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+            CultureInfo.DefaultThreadCurrentCulture = previousDefault;
+        }
+    }
+
+    [Fact]
+    public void Mode_OnAnyMachine_WritesItsShareAsTheLibraryDoes()
+    {
+        // {x:P0} under the invariant culture is "19 %"; the library writes "19%" (KeyProfiler,
+        // ProgressionAdvisor), and one tool must not carry two spellings of a percentage.
+        var (exit, output) = RunUnderACommaLocale("mode", "--notes", "D4 E4 F4 G4 A4 B4 C5 D5");
+
+        Assert.Equal(0, exit);
+        Assert.Matches(@"Confidence: [0-9]+%", output);
+        Assert.DoesNotMatch(@"[0-9] %", output);
     }
 }

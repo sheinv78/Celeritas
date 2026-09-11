@@ -62,7 +62,17 @@ public readonly record struct RhythmEvent
     /// <summary>Metrical strength of the onset position.</summary>
     public BeatStrength Strength { get; init; }
 
-    /// <summary>Whether the note is syncopated (weak-beat onset sustained over the next strong beat).</summary>
+    /// <summary>
+    /// Whether the note is syncopated: it starts on a weaker metrical position than the strongest
+    /// beat it holds through, such as a quarter on the "and" of 1 lasting through beat 2.
+    /// </summary>
+    /// <remarks>
+    /// This used to ask only whether the note held through a strong or medium beat, so the quarter
+    /// on the "and" of 1 in the analyzer's own Syncopated pattern (eighth, quarter, eighth) was not
+    /// syncopated, and two bars of it scored 0.00 in the same result that said "featuring
+    /// Syncopated pattern". A half note on beat 2 of 3/4 still is not syncopated: beat 3, which it
+    /// holds through, is no stronger than the beat it began on.
+    /// </remarks>
     public bool IsSyncopated { get; init; }
 
     /// <summary>Index of the note in the original input buffer.</summary>
@@ -764,7 +774,7 @@ public static class RhythmAnalyzer
             var posInMeasure = GetPositionInMeasure(offset, measureDur);
             var strength = GetBeatStrength(posInMeasure, meter);
 
-            // Detect syncopation: note on weak beat that ties over the next strong beat
+            // Syncopation: the note holds through a beat stronger than the one it started on
             var isSyncopated = IsSyncopated(strength, offset, duration, meter);
 
             events.Add(new RhythmEvent
@@ -782,36 +792,55 @@ public static class RhythmAnalyzer
         return events;
     }
 
-    private static Rational GetNextStrongBeat(Rational offset, TimeSignature meter)
+    /// <summary>
+    /// The strongest beat the note holds through — a beat strictly after its onset and strictly
+    /// before its end — or <see langword="null"/> when it holds through none. A note that ends
+    /// exactly on a beat arrives at it rather than holding through it.
+    /// </summary>
+    private static BeatStrength? StrongestBeatHeldThrough(Rational offset, Rational duration, TimeSignature meter)
     {
         var beatDur = meter.BeatDuration;
         var measureDur = meter.MeasureDuration;
+        var end = offset + duration;
         var currentBeat = (long)(offset.ToDouble() / beatDur.ToDouble());
 
-        // Scan forward for the next metrically STRONG position (Strong or Medium).
-        // Returning just the next beat of any strength made every weak-beat note
-        // longer than a beat "syncopated" (e.g. a half note on beat 2 of 3/4).
+        // A note longer than a measure holds through a downbeat inside its first measure, and
+        // nothing outranks a downbeat, so a measure's worth of beats is all there is to look at.
+        BeatStrength? strongest = null;
         for (var beat = currentBeat + 1; beat <= currentBeat + meter.BeatsPerMeasure + 1; beat++)
         {
             var beatTime = beatDur * beat;
+            if (beatTime >= end)
+                break;
+
             var strength = GetBeatStrength(GetPositionInMeasure(beatTime, measureDur), meter);
-            if (strength is BeatStrength.Strong or BeatStrength.Medium)
-                return beatTime;
+            if (strongest is null || Outranks(strength, strongest.Value))
+                strongest = strength;
+            if (strength == BeatStrength.Strong)
+                break;
         }
 
-        // Unreachable for well-formed meters (every measure has a strong downbeat);
-        // fall back to the next downbeat.
-        var currentMeasure = (long)(offset.ToDouble() / measureDur.ToDouble());
-        return measureDur * (currentMeasure + 1);
+        return strongest;
     }
 
+    /// <summary>
+    /// Whether <paramref name="a"/> is a stronger metrical position than <paramref name="b"/>;
+    /// <see cref="BeatStrength"/> lists its members strongest first.
+    /// </summary>
+    private static bool Outranks(BeatStrength a, BeatStrength b) => a < b;
+
+    /// <summary>
+    /// Whether a note is syncopated: it starts on a weaker metrical position than the strongest
+    /// beat it holds through. The criterion is relative, not "holds through a strong or medium
+    /// beat": measured that way, the quarter on the "and" of 1 that lasts through beat 2 — the
+    /// analyzer's own Syncopated pattern — was not syncopated, and two bars of it scored 0.00 in
+    /// the result that named the pattern; measured against the next beat of any strength, a half
+    /// note on beat 2 of 3/4 was. Held through a beat no stronger than its own, a note is not.
+    /// </summary>
     private static bool IsSyncopated(BeatStrength strength, Rational offset, Rational duration, TimeSignature meter)
     {
-        if (strength is not (BeatStrength.Weak or BeatStrength.Subdivision))
-            return false;
-        var noteEnd = offset + duration;
-        var nextStrong = GetNextStrongBeat(offset, meter);
-        return noteEnd.CompareTo(nextStrong) > 0;
+        return StrongestBeatHeldThrough(offset, duration, meter) is { } heldThrough
+            && Outranks(heldThrough, strength);
     }
 
     private static List<RhythmPatternMatch> DetectPatterns(
