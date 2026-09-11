@@ -271,10 +271,10 @@ Borrowed chords: True
   Fm from C Minor
 
 C - F - G - C voice leading:
-  Smoothness: 66.7 %
-  Average movement: 4.00 semitones
-  Parallel fifths: 3
+  Smoothness: 88.9 %
+  Average movement: 1.33 semitones
+  Parallel fifths: 0
   Parallel octaves: 0
-  Quality: Rough
+  Quality: Excellent
 
 */

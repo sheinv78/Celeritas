@@ -202,6 +202,15 @@ follows.
   substitution resolving, a major chord is evidence for the minor key it is V
   of, and a Picardy third does not hand the mode to major. The twenty-six
   progressions are a test, asked in every key
+- `ProgressionReport.ParallelFifths`, `Smoothness` and `QualityRating` are
+  measured on the voicing a musician would write -- each chord tone led to the
+  nearest tone of the next chord, common tones held, and among equally small
+  motions the one with the fewest parallels. They were measured between the
+  chords stacked in root position in one octave, on which every change of root
+  between two triads is a parallel fifth: I - IV - V - I had three and was rated
+  "Rough", ii7 - V7 - Imaj7 "Fair", and "Excellent" was reachable only by a chord
+  that never changes. A power-chord riff is still counted as the parallel fifths
+  it is
 - A modal pattern label writes the quality its degree has in the mode. Lydian's
   seventh-degree triad is minor and was labelled "vii°", the Dorian ii is minor and
   was described as major, the Locrian and Phrygian seventh-degree chords are minor

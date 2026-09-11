@@ -112,7 +112,16 @@ public sealed class ProgressionReport
     /// <summary>Average voice movement between chords in semitones.</summary>
     public float AverageMovement { get; init; }
 
-    /// <summary>Approximate count of parallel fifths detected between adjacent chords.</summary>
+    /// <summary>
+    /// Count of parallel fifths between adjacent chords, measured on the voicing a musician
+    /// would write — each chord tone led to the nearest tone of the next chord, common tones
+    /// held — since a chord symbol carries no voicing of its own.
+    /// </summary>
+    /// <remarks>
+    /// It used to be counted between the chords stacked in root position in one octave, on
+    /// which every change of root between two triads is a parallel fifth: I - IV - V - I had
+    /// three and was rated "Rough".
+    /// </remarks>
     public int ParallelFifths { get; init; }
 
     /// <summary>

@@ -34,8 +34,12 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal(0.425f, r.AverageTension);
         // V (major-key dominant) is now Tense (0.85) so the dominant out-ranks IV.
         Assert.Equal([0.2f, 0.85f, 0.4f, 0.25f], r.TensionCurve!);
-        Assert.Equal(3, r.ParallelFifths);
-        Assert.Equal("Rough", r.QualityRating);
+        // Voice leading is measured on the voicing a musician would write — each tone to the
+        // nearest tone of the next chord — not on root-position stacks planed in parallel, on
+        // which this test used to pin three parallel fifths and "Rough" for I - V - vi - IV.
+        // G -> Am with three voices does plane (G-B-D up to A-C-E), and that one fifth stays.
+        Assert.Equal(1, r.ParallelFifths);
+        Assert.Equal("Good", r.QualityRating);
 
         Assert.Equal(["I", "V", "vi", "IV"], r.Chords.Select(c => c.RomanNumeral));
         Assert.Equal(
@@ -78,7 +82,7 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal("C Major", r.Key.ToString());
         Assert.Equal("ii7 - V7 - Imaj7", r.Pattern);
         Assert.Equal("ii7 - V7 - Imaj7 in C Major (tension 50%, complexity 39%)", r.Summary);
-        Assert.Equal("Fair", r.QualityRating);
+        Assert.Equal("Excellent", r.QualityRating);   // was "Fair", with two parallel fifths the ii-V-I does not have
 
         Assert.Equal(["ii7", "V7", "Imaj7"], r.Chords.Select(c => c.RomanNumeral));
         Assert.Equal(
@@ -261,7 +265,7 @@ public class ProgressionAdvisorCharacterizationTests
         // pitches voiced into one fixed octave: Dm/F puts its D an octave above its F, which
         // inflated every move away from it. i - iv6 - V moves by a fourth and then a semitone,
         // which is smooth, and the same progression in every other key now agrees.
-        Assert.Equal("Good", r.QualityRating);
+        Assert.Equal("Excellent", r.QualityRating);   // "Good" while the fifths were counted on planed stacks
 
         Assert.Equal(
             "This progression is in A Minor, giving it a darker and more dramatic character.\n"

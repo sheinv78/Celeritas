@@ -153,6 +153,25 @@ public class RealProgressionsAreReadAsAMusicianReadsThemTests
     }
 
     [Fact]
+    public void TheVoiceLeadingOfATextbookProgressionIsNotRough()
+    {
+        // The parallel fifths were counted between root-position stacks planed in parallel, on
+        // which every change of root is a fifth: I - IV - V - I had three and was "Rough", and
+        // "Excellent" was reachable only by a chord that never changes. Measured on the voicing
+        // a musician writes — each tone to the nearest tone of the next chord — it has none.
+        var textbook = ProgressionAdvisor.Analyze(["C", "F", "G", "C"]);
+        Assert.Equal(0, textbook.ParallelFifths);
+        Assert.Equal("Excellent", textbook.QualityRating);
+
+        Assert.Equal(0, ProgressionAdvisor.Analyze(["Dm7", "G7", "Cmaj7"]).ParallelFifths);
+        Assert.Equal(0, ProgressionAdvisor.Analyze(["C", "Am"]).ParallelFifths);
+
+        // Triads planed by semitone cannot avoid them, and a power-chord riff is made of them.
+        Assert.Equal(3, ProgressionAdvisor.Analyze(["C", "Db", "D", "Eb"]).ParallelFifths);
+        Assert.Equal(2, ProgressionAdvisor.Analyze(["C5", "G5", "C5"]).ParallelFifths);
+    }
+
+    [Fact]
     public void ADirectModulationIsPlacedOnTheFirstChordOfTheNewKey()
     {
         var report = ProgressionAdvisor.Analyze(["C", "F", "G", "C", "Db", "Gb", "Ab", "Db"]);

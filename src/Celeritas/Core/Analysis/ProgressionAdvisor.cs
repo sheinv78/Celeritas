@@ -715,6 +715,21 @@ public static class ProgressionAdvisor
         _ => 0.50f
     };
 
+    /// <summary>
+    /// The movement and the parallel perfect intervals between each pair of adjacent chords,
+    /// measured on the voicing a musician would write: each chord tone goes to the nearest tone
+    /// of the next chord, common tones held, and among alignments that move equally little the
+    /// one with the fewest parallel fifths and octaves.
+    /// </summary>
+    /// <remarks>
+    /// Chord symbols carry no voicing, and the voices used to be aligned by sorting each chord's
+    /// pitches within one fixed octave and pairing them index to index — root with root, fifth
+    /// with fifth — which is the one voicing no one writes: every root-position triad planed in
+    /// parallel. On that stacking every change of root between two triads is a parallel fifth,
+    /// so I - IV - V - I was rated "Rough" with three of them, and "Excellent" was reachable only
+    /// by a chord that never changes. The library's own voice-leading solver finds a voicing of
+    /// the same progression with none.
+    /// </remarks>
     private static (float avgMovement, int parallel5ths, int parallelOctaves) AnalyzeVoiceLeading(
         List<ParsedChord> chords)
     {
@@ -728,66 +743,135 @@ public static class ProgressionAdvisor
         var p5 = 0;
         var p8 = 0;
 
-        // Pre-allocate one buffer: first 12 slots = chord A, next 12 = chord B.
-        // 12 is the chromatic ceiling — no chord can have more unique pitch classes.
-        Span<int> sortBuf = stackalloc int[24];
-
         for (var i = 0; i < chords.Count - 1; i++)
         {
-            var rawA = chords[i].Pitches;
-            var rawB = chords[i + 1].Pitches;
-            var aLen = Math.Min(rawA.Length, 12);
-            var bLen = Math.Min(rawB.Length, 12);
-            var voices = Math.Min(aLen, bLen);
-            if (voices == 0)
+            var a = PitchClassesOf(chords[i].Pitches);
+            var b = PitchClassesOf(chords[i + 1].Pitches);
+            if (a.Length == 0 || b.Length == 0)
             {
                 continue;
             }
 
-            // Copy and sort both into the fixed-split pre-allocated buffer.
-            rawA.AsSpan(0, aLen).CopyTo(sortBuf);
-            rawB.AsSpan(0, bLen).CopyTo(sortBuf[12..]);
-            sortBuf[..aLen].Sort();
-            sortBuf[12..(12 + bLen)].Sort();
-
-            for (var v = 0; v < voices; v++)
+            // A power chord IS a fifth, and a riff of them is played as parallel fifths — root
+            // to root and fifth to fifth, however far that is — so two of them are not led by
+            // the nearest tone: C5 - G5 with the G held is a voicing no guitarist plays.
+            if (chords[i].Info.Quality == ChordQuality.Power && chords[i + 1].Info.Quality == ChordQuality.Power)
             {
-                totalMoves += Math.Abs(ShortestMove(sortBuf[v], sortBuf[12 + v]));
-                totalVoices++;
+                var shift = ShortestMove(chords[i].Info.RootPitchClass, chords[i + 1].Info.RootPitchClass);
+                totalMoves += 2 * Math.Abs(shift);
+                totalVoices += 2;
+                if (shift != 0) p5++;
+                continue;
             }
 
-            // Parallel perfect intervals between any pair of aligned voices.
-            for (var v1 = 0; v1 < voices; v1++)
-            {
-                for (var v2 = v1 + 1; v2 < voices; v2++)
-                {
-                    var intA = Math.Abs(sortBuf[v2] - sortBuf[v1]) % 12;
-                    var intB = Math.Abs(sortBuf[12 + v2] - sortBuf[12 + v1]) % 12;
+            // The smaller chord's tones each choose a tone of the larger; the larger chord's
+            // extra tones are doublings or additions no voice of the smaller chord led into.
+            var (from, to) = a.Length <= b.Length ? (a, b) : (b, a);
+            var (moves, fifths, octaves) = BestAlignment(from, to);
 
-                    var dir1 = Math.Sign(ShortestMove(sortBuf[v1], sortBuf[12 + v1]));
-                    var dir2 = Math.Sign(ShortestMove(sortBuf[v2], sortBuf[12 + v2]));
-                    var isParallelMotion = dir1 != 0 && dir1 == dir2;
-
-                    if (!isParallelMotion)
-                    {
-                        continue;
-                    }
-
-                    if (intA == 7 && intB == 7)
-                    {
-                        p5++;
-                    }
-
-                    if (intA is 0 or 12 && intB is 0 or 12)
-                    {
-                        p8++;
-                    }
-                }
-            }
+            totalMoves += moves;
+            totalVoices += from.Length;
+            p5 += fifths;
+            p8 += octaves;
         }
 
         var avg = totalVoices > 0 ? totalMoves / totalVoices : 0f;
         return (avg, p5, p8);
+    }
+
+    /// <summary>The distinct pitch classes of a chord's pitches, in the order they are voiced.</summary>
+    private static int[] PitchClassesOf(int[] pitches)
+    {
+        var seen = 0;
+        var classes = new List<int>(pitches.Length);
+        foreach (var pitch in pitches)
+        {
+            var pc = PitchMath.Fold(pitch);
+            if ((seen & (1 << pc)) != 0) continue;
+            seen |= 1 << pc;
+            classes.Add(pc);
+        }
+
+        return [.. classes];
+    }
+
+    /// <summary>
+    /// Leads every tone of <paramref name="from"/> to a distinct tone of <paramref name="to"/>
+    /// so that the voices move as little as possible in total, and among such alignments make
+    /// the fewest parallel fifths and octaves; returns the total movement and those counts.
+    /// </summary>
+    private static (int Moves, int Fifths, int Octaves) BestAlignment(int[] from, int[] to)
+    {
+        var best = (Moves: int.MaxValue, Fifths: int.MaxValue, Octaves: int.MaxValue);
+        var chosen = new int[from.Length];
+        var used = new bool[to.Length];
+
+        void Search(int depth, int movesSoFar)
+        {
+            if (movesSoFar > best.Moves)
+            {
+                return;
+            }
+
+            if (depth == from.Length)
+            {
+                var (fifths, octaves) = Parallels(from, to, chosen);
+                if (movesSoFar < best.Moves
+                    || (movesSoFar == best.Moves && fifths + octaves < best.Fifths + best.Octaves))
+                {
+                    best = (movesSoFar, fifths, octaves);
+                }
+
+                return;
+            }
+
+            for (var t = 0; t < to.Length; t++)
+            {
+                if (used[t]) continue;
+                used[t] = true;
+                chosen[depth] = t;
+                Search(depth + 1, movesSoFar + Math.Abs(ShortestMove(from[depth], to[t])));
+                used[t] = false;
+            }
+        }
+
+        Search(0, 0);
+        return best;
+    }
+
+    /// <summary>Counts the parallel fifths and octaves between the voices of an alignment.</summary>
+    private static (int Fifths, int Octaves) Parallels(int[] from, int[] to, int[] chosen)
+    {
+        var fifths = 0;
+        var octaves = 0;
+        for (var v1 = 0; v1 < from.Length; v1++)
+        {
+            var move1 = ShortestMove(from[v1], to[chosen[v1]]);
+            for (var v2 = v1 + 1; v2 < from.Length; v2++)
+            {
+                var move2 = ShortestMove(from[v2], to[chosen[v2]]);
+                if (move1 == 0 || Math.Sign(move1) != Math.Sign(move2))
+                {
+                    continue;
+                }
+
+                // The interval from voice 1 up to voice 2, before and after: a fifth stays a
+                // fifth (7) or, with the voices the other way up, a fourth stays a fourth (5).
+                var before = PitchMath.Fold(from[v2] - from[v1]);
+                var after = PitchMath.Fold(to[chosen[v2]] - to[chosen[v1]]);
+                if ((before == 7 && after == 7) || (before == 5 && after == 5))
+                {
+                    fifths++;
+                }
+
+                if (before == 0 && after == 0)
+                {
+                    octaves++;
+                }
+            }
+        }
+
+        return (fifths, octaves);
     }
 
     /// <summary>
