@@ -257,71 +257,50 @@ public static class FormAnalyzer
         List<CadenceInfo> cadences,
         int phraseIdx)
     {
-        // Get last two distinct pitch classes at phrase end
-        // We look at the final notes and try to identify chord progression
-        var noteCount = endIdx - startIdx + 1;
-        if (noteCount < 2) return CadenceType.None;
+        if (endIdx - startIdx + 1 < 2) return CadenceType.None;
 
-        // Collect last notes (up to 4) to identify final chord(s)
-        var lastNotes = new List<int>();
-        var secondLastNotes = new List<int>();
-
-        // Get the ending time
-        var endTime = notes[endIdx].Offset + notes[endIdx].Duration;
-
-        // Collect notes sounding at the end (final chord)
+        // The final chord is what is struck at the phrase's last onset, and the chord before it
+        // what is struck at the onset before that — gathered by time. They used to be gathered
+        // by walking back from the last note in the list and stopping at the first note that
+        // ended earlier than it, so whether a phrase cadenced depended on the order the notes of
+        // its final chord had been appended: with a held bass entered last, the walk stopped at
+        // once and the "chord" was one pitch. MusicXML and notation both list a chord's notes in
+        // an order of their own, and the same V - I read as a cadence one way and not the other.
+        // A voice held from the previous chord is not restruck and is left to that chord; a
+        // pedal under a cadence would otherwise turn V into a chord no key has.
+        var lastOnset = notes[endIdx].Offset;
+        Rational? previousOnset = null;
         for (var i = endIdx; i >= startIdx; i--)
         {
-            var noteEnd = notes[i].Offset + notes[i].Duration;
-            if (noteEnd >= endTime - new Rational(1, 8)) // Within last 1/8th beat
+            if (notes[i].Offset < lastOnset)
             {
-                lastNotes.Add(notes[i].Pitch);
-            }
-            else
-            {
+                previousOnset = notes[i].Offset;
                 break;
             }
         }
 
-        if (lastNotes.Count == 0) return CadenceType.None;
+        if (previousOnset is not { } prevOnset) return CadenceType.None;
 
-        // Find second-to-last chord
-        var searchEnd = endIdx - lastNotes.Count;
-        if (searchEnd < startIdx) return CadenceType.None;
-
-        var secondChordEndTime = notes[searchEnd].Offset + notes[searchEnd].Duration;
-        for (var i = searchEnd; i >= startIdx; i--)
-        {
-            var noteEnd = notes[i].Offset + notes[i].Duration;
-            if (noteEnd >= secondChordEndTime - new Rational(1, 8))
-            {
-                secondLastNotes.Add(notes[i].Pitch);
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        if (secondLastNotes.Count == 0) return CadenceType.None;
+        var lastNotes = StruckAt(notes, startIdx, endIdx, lastOnset);
+        var secondLastNotes = StruckAt(notes, startIdx, endIdx, prevOnset);
 
         // Analyze chords in key context
-        var lastChord = KeyAnalyzer.Analyze(lastNotes.ToArray(), key);
-        var prevChord = KeyAnalyzer.Analyze(secondLastNotes.ToArray(), key);
+        var lastChord = KeyAnalyzer.Analyze(lastNotes, key);
+        var prevChord = KeyAnalyzer.Analyze(secondLastNotes, key);
 
         if (!lastChord.IsValid || !prevChord.IsValid)
             return CadenceType.None;
 
         // Detect cadence patterns
-        var cadenceType = ClassifyCadence(prevChord.Degree, lastChord.Degree, key.IsMajor);
+        var cadenceType = ClassifyCadence(prevChord, lastChord, secondLastNotes, key.IsMajor);
 
         if (cadenceType == CadenceType.None)
         {
             return cadenceType;
         }
 
-        var fromChord = FormatRomanNumeral(prevChord);
-        var toChord = FormatRomanNumeral(lastChord);
+        var fromChord = prevChord.ToRomanNumeral();
+        var toChord = lastChord.ToRomanNumeral();
         var description = GetCadenceDescription(cadenceType);
 
         cadences.Add(new CadenceInfo(cadenceType, phraseIdx, fromChord, toChord, description));
@@ -329,60 +308,54 @@ public static class FormAnalyzer
         return cadenceType;
     }
 
-    private static CadenceType ClassifyCadence(ScaleDegree from, ScaleDegree to, bool isMajor)
+    /// <summary>The pitches of every note in the phrase that begins at <paramref name="onset"/>.</summary>
+    private static int[] StruckAt(NoteEvent[] notes, int startIdx, int endIdx, Rational onset)
     {
-        return from switch
+        var struck = new List<int>();
+        for (var i = startIdx; i <= endIdx; i++)
         {
-            // V → I = Authentic
-            ScaleDegree.V when to == ScaleDegree.I => CadenceType.Authentic,
-            // vii° → I = Authentic (dominant substitute)
-            ScaleDegree.Vii when to == ScaleDegree.I => CadenceType.Authentic,
-            // IV → I = Plagal
-            ScaleDegree.Iv when to == ScaleDegree.I => CadenceType.Plagal,
-            // V → vi = Deceptive
-            ScaleDegree.V when to == ScaleDegree.Vi => CadenceType.Deceptive,
-            // iv → V in minor = Phrygian half cadence.
-            // Must be checked BEFORE the generic "any → V = Half" arm, which
-            // would otherwise shadow it and make this arm unreachable.
-            ScaleDegree.Iv when to == ScaleDegree.V && !isMajor => CadenceType.Phrygian,
-            _ => to switch
+            if (notes[i].Offset == onset)
             {
-                // any → V = Half cadence
-                ScaleDegree.V => CadenceType.Half,
-                _ => CadenceType.None
+                struck.Add(notes[i].Pitch);
             }
-        };
+        }
+
+        return [.. struck];
     }
 
-    private static string FormatRomanNumeral(RomanNumeralChord chord)
+    /// <summary>
+    /// The cadence two chords make, judged the way <see cref="ProgressionAdvisor.DetectCadence"/>
+    /// judges it, so a form analysis and a progression report of the same chords agree.
+    /// </summary>
+    /// <remarks>
+    /// This used to have a table of its own, read from degrees alone: the major subtonic of a
+    /// minor key (VII, the sound of Aeolian rock) moving to i was an "authentic cadence" from
+    /// "vii°", and a root-position iv → V was Phrygian — which <see cref="CadenceType.Phrygian"/>
+    /// documents as the first-inversion iv only, and which the analyzer can tell, because it has
+    /// the notes. vii° → I is no longer called authentic: the enum defines Authentic as V → I,
+    /// and the progression analyzer reports none for it either.
+    /// </remarks>
+    private static CadenceType ClassifyCadence(RomanNumeralChord from, RomanNumeralChord to, int[] fromPitches, bool isMajor)
     {
-        var numeral = chord.Degree switch
-        {
-            ScaleDegree.I => "I",
-            ScaleDegree.Ii => "ii",
-            ScaleDegree.Iii => "iii",
-            ScaleDegree.Iv => "IV",
-            ScaleDegree.V => "V",
-            ScaleDegree.Vi => "vi",
-            ScaleDegree.Vii => "vii°",
-            _ => "?"
-        };
+        if (from.Degree == ScaleDegree.V && to.Degree == ScaleDegree.I)
+            return CadenceType.Authentic;
 
-        numeral = chord switch
-        {
-            // Adjust for quality
-            {
-                Quality: ChordQuality.Minor or ChordQuality.Minor6,
-                Degree: ScaleDegree.I or ScaleDegree.Iv or ScaleDegree.V
-            } => numeral.ToLowerInvariant(),
-            {
-                Quality: ChordQuality.Major or ChordQuality.Major6,
-                Degree: ScaleDegree.Ii or ScaleDegree.Iii or ScaleDegree.Vi
-            } => numeral.ToUpperInvariant(),
-            _ => numeral
-        };
+        if (from.Degree == ScaleDegree.Iv && to.Degree == ScaleDegree.I)
+            return CadenceType.Plagal;
 
-        return numeral;
+        if (from.Degree == ScaleDegree.V && to.Degree == ScaleDegree.Vi)
+            return CadenceType.Deceptive;
+
+        if (to.Degree == ScaleDegree.V)
+        {
+            // The Phrygian half cadence is the minor subdominant in first inversion leaning
+            // into the dominant; with its root in the bass it is an ordinary half cadence.
+            return !isMajor && from.Degree == ScaleDegree.Iv && ProgressionAdvisor.GetInversion(fromPitches) == 1
+                ? CadenceType.Phrygian
+                : CadenceType.Half;
+        }
+
+        return CadenceType.None;
     }
 
     private static string GetCadenceDescription(CadenceType type) => type switch
@@ -393,7 +366,7 @@ public static class FormAnalyzer
         CadenceType.Plagal => "IV→I plagal (amen) cadence",
         CadenceType.Deceptive => "V→vi deceptive cadence",
         CadenceType.Half => "Half cadence (ending on V)",
-        CadenceType.Phrygian => "Phrygian half cadence (iv→V)",
+        CadenceType.Phrygian => "Phrygian half cadence (iv6→V)",
         _ => ""
     };
 

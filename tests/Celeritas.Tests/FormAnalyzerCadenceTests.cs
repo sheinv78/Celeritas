@@ -92,10 +92,59 @@ public class FormAnalyzerCadenceTests
     }
 
     [Fact]
-    public void TheLeadingToneChordToTonic_IsAlsoAuthentic()
+    public void TheLeadingToneChordToTonic_IsNotCalledAuthentic()
     {
-        // vii° stands in for the dominant, so it cadences the same way.
-        Assert.Equal(CadenceType.Authentic, CadenceOf(CMajor, [59, 62, 65], [60, 64, 67]));
+        // CadenceType.Authentic is defined as V → I, and ProgressionAdvisor.DetectCadence reports
+        // no cadence for vii° → I; this analyzer used to call it authentic on its own — and, the
+        // same arm firing on the degree alone, called the major subtonic of a minor key going to
+        // i an authentic cadence from "vii°".
+        Assert.Equal(CadenceType.None, CadenceOf(CMajor, [59, 62, 65], [60, 64, 67]));
+        Assert.Equal(CadenceType.None, CadenceOf(CMinor, [70, 74, 77], [60, 63, 67]));   // Bb → Cm
+    }
+
+    [Fact]
+    public void ACadenceIsReadTheSameWhicheverOrderTheFinalChordsNotesWereAdded()
+    {
+        // A held bass under a shorter chord is the ordinary shape of a final cadence, and the
+        // notes of a chord arrive in whatever order the caller — or MusicXmlIo.Parse, or
+        // MusicNotation.Parse — lists them. The analyzer used to walk back from the last note
+        // in the list and stop at the first that ended earlier, so with the long bass entered
+        // last the "chord" was one pitch and the V → I was not heard.
+        foreach (var bassFirst in new[] { true, false })
+        {
+            var buffer = new NoteBuffer(8);
+            void Chord(int at, int bass, int[] upper, Rational bassDuration)
+            {
+                var offset = new Rational(at, 4);
+                if (bassFirst) buffer.AddNote(bass, offset, bassDuration);
+                foreach (var p in upper) buffer.AddNote(p, offset, Rational.Quarter);
+                if (!bassFirst) buffer.AddNote(bass, offset, bassDuration);
+            }
+
+            Chord(0, 55, [59, 62, 67], Rational.Quarter);   // G3 B3 D4 G4
+            Chord(1, 48, [60, 64, 67], Rational.Half);      // C3 held under C4 E4 G4
+
+            var result = FormAnalyzer.Analyze(buffer, FormAnalysisOptions.Default with { Key = CMajor });
+
+            var cadence = Assert.Single(result.Cadences);
+            Assert.Equal(CadenceType.Authentic, cadence.Type);
+            Assert.Equal("V", cadence.FromChord);
+            Assert.Equal("I", cadence.ToChord);
+        }
+    }
+
+    [Fact]
+    public void TheRomanNumeralsOfACadenceCarryTheirRealQuality()
+    {
+        // The analyzer kept a third copy of the numeral table that wrote "vii°" for any seventh
+        // degree and "ii" for the diminished supertonic; it uses the one table now.
+        using var buffer = PhraseOf([62, 65, 68], [67, 71, 74]);   // D° → G in C minor
+        var result = FormAnalyzer.Analyze(buffer, FormAnalysisOptions.Default with { Key = CMinor });
+
+        var cadence = Assert.Single(result.Cadences);
+        Assert.Equal(CadenceType.Half, cadence.Type);
+        Assert.Equal("ii°", cadence.FromChord);
+        Assert.Equal("V", cadence.ToChord);
     }
 
     [Fact]
@@ -120,7 +169,12 @@ public class FormAnalyzerCadenceTests
     [Fact]
     public void MinorSubdominantToDominantInMinor_IsAPhrygianHalfCadence()
     {
-        Assert.Equal(CadenceType.Phrygian, CadenceOf(CMinor, [65, 68, 72], [67, 71, 74]));
+        // With the third in the bass — Ab under F and C, falling a semitone to G — it is the
+        // Phrygian half cadence; with the root in the bass it is an ordinary half cadence, as
+        // CadenceType.Phrygian documents and ProgressionAdvisor.DetectCadence answers. This test
+        // used to pin the root-position shape as Phrygian.
+        Assert.Equal(CadenceType.Phrygian, CadenceOf(CMinor, [56, 65, 72], [55, 59, 62]));
+        Assert.Equal(CadenceType.Half, CadenceOf(CMinor, [65, 68, 72], [67, 71, 74]));
     }
 
     [Fact]

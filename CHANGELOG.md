@@ -211,6 +211,18 @@ follows.
   no catalogue -- the pentatonics, blues, whole tone, the diminished scales,
   altered, Locrian natural 2 -- rather than the major table, which could report a
   whole-tone progression as an "Authentic cadence"
+- `FormAnalyzer` hears a cadence whichever order the final chord's notes were
+  added in. It gathered the last chord by walking back from the last note in
+  the list and stopping at the first that ended earlier, so with a held bass
+  entered last the "chord" was one pitch and V - I was not a cadence -- 200 of
+  300 random four-voice cadences read differently in different insertion orders,
+  and the library's own MusicXML and notation readers list a chord's notes in an
+  order of their own. Chords are gathered by onset now. Its cadence table is the
+  progression analyzer's: a root-position iv -> V in minor is a half cadence, not
+  Phrygian (which `CadenceType` documents as the first-inversion iv), the major
+  subtonic of a minor key going to i is not an "authentic cadence" from "vii°",
+  and the roman numerals it prints carry the chord's real quality ("ii°", "VII",
+  "V7") from the one numeral table rather than a third copy
 - A two-note melody has the contour of its leap. A guard answered Static for
   anything under three notes, so C4 -> C5 was "Level/static melody with little
   movement" beside a character line reading "Angular, leaping"
