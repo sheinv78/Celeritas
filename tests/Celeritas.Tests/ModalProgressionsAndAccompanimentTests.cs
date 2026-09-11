@@ -44,13 +44,14 @@ public class ModalProgressionsAndAccompanimentTests
     }
 
     [Fact]
-    public void AModeWithNoCatalogueOfItsOwn_FallsBackToTheMajorSet()
+    public void AModeWithNoCatalogueOfItsOwn_HasNoProgressionsToOffer()
     {
-        // Blues and the other exotic scales share the Ionian table rather than returning empty.
-        var fallback = ModalProgressions.GetProgressionsForMode(Mode.Blues);
-
-        Assert.NotEmpty(fallback);
-        Assert.Equal(ModalProgressions.IonianProgressions, fallback);
+        // This test used to pin the opposite — "Blues and the other exotic scales share the
+        // Ionian table rather than returning empty" — which is how a whole-tone progression came
+        // to be labelled an authentic cadence. A mode with no catalogue says so.
+        Assert.Empty(ModalProgressions.GetProgressionsForMode(Mode.Blues));
+        Assert.Empty(ModalProgressions.GetProgressionsForMode(Mode.WholeTone));
+        Assert.Empty(ModalProgressions.GetProgressionsForMode(Mode.MajorPentatonic));
     }
 
     [Fact]

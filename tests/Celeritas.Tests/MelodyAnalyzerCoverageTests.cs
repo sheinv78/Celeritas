@@ -100,6 +100,25 @@ public class MelodyAnalyzerCoverageTests
         Assert.Empty(result.Statistics.IntervalHistogram);
     }
 
+    [Theory]
+    [InlineData(new[] { 60, 72 }, MelodicContour.Ascending)]
+    [InlineData(new[] { 72, 60 }, MelodicContour.Descending)]
+    [InlineData(new[] { 60, 62 }, MelodicContour.Static)]
+    [InlineData(new[] { 60 }, MelodicContour.Static)]
+    public void ATwoNoteMelodyHasTheContourOfItsLeap(int[] pitches, MelodicContour expected)
+    {
+        // A guard answered Static for anything under three notes, so C4 -> C5 was "Level/static
+        // melody with little movement" in the same result whose character line read "Angular,
+        // leaping". The net-change rule that judges longer lines judges these the same way.
+        var result = MelodyAnalyzer.Analyze(pitches);
+
+        Assert.Equal(expected, result.Contour);
+        if (expected != MelodicContour.Static)
+        {
+            Assert.DoesNotContain("static", result.ContourDescription, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     [Fact]
     public void ASingleNote_HasNoIntervalsAndNoComplexity()
     {

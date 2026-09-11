@@ -11,8 +11,16 @@ namespace Celeritas.Core.Analysis;
 public static class ModalProgressions
 {
     /// <summary>
-    /// Get characteristic progressions for a given mode.
+    /// Get characteristic progressions for a given mode. The seven diatonic modes, harmonic and
+    /// melodic minor, Phrygian dominant and Lydian dominant have a catalogue each; a mode with
+    /// none — the pentatonics, blues, whole tone, the diminished scales, altered, Locrian
+    /// natural 2 — returns an empty list.
     /// </summary>
+    /// <remarks>
+    /// Those modes used to return the major catalogue instead, so a whole-tone progression could
+    /// be reported as an "Authentic cadence" — a progression built on the perfect fifth the
+    /// whole-tone scale does not contain.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="Mode"/> value.</exception>
     public static IReadOnlyList<ModalProgression> GetProgressionsForMode(Mode mode)
     {
@@ -21,6 +29,7 @@ public static class ModalProgressions
 
         return mode switch
         {
+            Mode.Ionian => IonianProgressions,
             Mode.Dorian => DorianProgressions,
             Mode.Phrygian => PhrygianProgressions,
             Mode.Lydian => LydianProgressions,
@@ -31,7 +40,7 @@ public static class ModalProgressions
             Mode.MelodicMinor => MelodicMinorProgressions,
             Mode.PhrygianDominant => PhrygianDominantProgressions,
             Mode.LydianDominant => LydianDominantProgressions,
-            _ => IonianProgressions // Default to major
+            _ => []
         };
     }
 
@@ -55,10 +64,10 @@ public static class ModalProgressions
     [
         new("i - IV - i", "Dorian vamp", [1, 4, 1]),
         new("i - bVII - i", "Modal rock", [1, 7, 1]),
-        new("i - ii - i", "Dorian ii chord (major)", [1, 2, 1]),
+        new("i - ii - i", "Dorian ii chord (minor, a whole step above the tonic)", [1, 2, 1]),
         new("i - IV - bVII - i", "Dorian groove", [1, 4, 7, 1]),
-        new("ii - i", "Major II to i", [2, 1]),
-        new("i - bVI - bVII - i", "Dorian circle", [1, 6, 7, 1])
+        new("ii - i", "Whole-step ii to i", [2, 1]),
+        new("i - vi° - bVII - i", "Dorian circle", [1, 6, 7, 1])
     ];
 
     /// <summary>
@@ -68,7 +77,7 @@ public static class ModalProgressions
     [
         new("i - bII - i", "Phrygian cadence", [1, 2, 1]),
         new("bII - i", "Half cadence", [2, 1]),
-        new("i - bVII - bVI - bII - i", "Phrygian descent", [1, 7, 6, 2, 1]),
+        new("i - bvii - bVI - bII - i", "Phrygian descent", [1, 7, 6, 2, 1]),
         new("i - bII - bIII - i", "Spanish progression", [1, 2, 3, 1]),
         new("bII - bIII - i", "Flamenco cadence", [2, 3, 1])
     ];
@@ -79,10 +88,10 @@ public static class ModalProgressions
     public static readonly IReadOnlyList<ModalProgression> LydianProgressions =
     [
         new("I - II - I", "Lydian vamp (major II)", [1, 2, 1]),
-        new("I - II - vii°", "Lydian brightness", [1, 2, 7]),
-        new("I - #IV° - I", "Tritone highlight", [1, 4, 1]),
+        new("I - II - vii", "Lydian brightness", [1, 2, 7]),
+        new("I - #iv° - I", "Tritone highlight", [1, 4, 1]),
         new("II - I", "Lydian resolution", [2, 1]),
-        new("I - II - vii° - I", "Lydian cycle", [1, 2, 7, 1])
+        new("I - II - vii - I", "Lydian cycle", [1, 2, 7, 1])
     ];
 
     /// <summary>
@@ -118,7 +127,7 @@ public static class ModalProgressions
         new("i° - bII - i°", "Locrian instability", [1, 2, 1]),
         new("bII - i°", "Half-diminished resolution", [2, 1]),
         new("bV - i°", "Tritone center", [5, 1]),
-        new("i° - bVII - bII", "Locrian movement", [1, 7, 2])
+        new("i° - bvii - bII", "Locrian movement", [1, 7, 2])
     ];
 
     /// <summary>
@@ -142,7 +151,7 @@ public static class ModalProgressions
         new("i - ii - V - i", "Jazz minor ii-V", [1, 2, 5, 1]),
         new("i - IV7 - i", "Lydian dominant IV", [1, 4, 1]),
         new("ii - V7alt - i", "Altered dominant", [2, 5, 1]),
-        new("i - bIII+  - i", "Augmented mediant", [1, 3, 1])
+        new("i - bIII+ - i", "Augmented mediant", [1, 3, 1])
     ];
 
     /// <summary>
@@ -153,7 +162,7 @@ public static class ModalProgressions
         new("I - bII - I", "Flamenco cadence", [1, 2, 1]),
         new("I - bII - bIII - bII", "Spanish vamp", [1, 2, 3, 2]),
         new("bII - I", "Phrygian dominant resolution", [2, 1]),
-        new("I - bVII - bVI - bII - I", "Andalusian", [1, 7, 6, 2, 1])
+        new("I - bVII - bVI - bII - I", "Phrygian descent over a major tonic", [1, 7, 6, 2, 1])
     ];
 
     /// <summary>
@@ -162,7 +171,7 @@ public static class ModalProgressions
     public static readonly IReadOnlyList<ModalProgression> LydianDominantProgressions =
     [
         new("I7 - bVII7 - I7", "Fusion vamp", [1, 7, 1]),
-        new("I7 - #IV - I7", "Lydian color", [1, 4, 1]),
+        new("I7 - #iv° - I7", "Lydian color", [1, 4, 1]),
         new("II7 - I7", "Lydian dominant turnaround", [2, 1])
     ];
 
@@ -448,6 +457,17 @@ public static class ModalProgressions
 /// <summary>
 /// A named modal progression with scale degrees.
 /// </summary>
+/// <remarks>
+/// <see cref="Name"/> writes each chord with the quality its degree has in the mode — upper
+/// case for major, lower for minor, ° for diminished, + for augmented, an accidental where the
+/// degree differs from the major scale's — so a reader can check the label against the scale.
+/// A few named progressions borrow a chord from a neighbouring mode and are named for it: the
+/// Aeolian "Andalusian cadence" ends on the harmonic-minor V, the harmonic-minor "Harmonic
+/// descent" passes through the natural-minor bVII, the Phrygian dominant "Spanish vamp" and
+/// "Phrygian descent over a major tonic" take their bIII, bVI and bVII from Phrygian, and the
+/// Lydian dominant "Fusion vamp" its bVII7 from Mixolydian. The tables used to write "vii°" for
+/// the minor seventh-degree triad of Lydian and describe the Dorian ii as major.
+/// </remarks>
 public readonly record struct ModalProgression(
     string Name,
     string Description,

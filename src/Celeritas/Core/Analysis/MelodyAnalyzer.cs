@@ -342,10 +342,11 @@ public static class MelodyAnalyzer
 
     private static MelodicContour DetectContour(int[] pitches)
     {
-        if (pitches.Length < 3)
-        {
-            return MelodicContour.Static;
-        }
+        // No short-circuit for one or two notes: the turning-point loop below simply does not
+        // run for them, and the net-change rule at the end answers them the way it answers a
+        // longer line. A guard that returned Static for fewer than three notes called C4 -> C5
+        // "Level/static melody with little movement" in the same result whose character line
+        // read "Angular, leaping".
 
         // Find turning points, comparing each pitch against the nearest DIFFERENT
         // neighboring pitches so plateau peaks/troughs (C D E E D C) are detected —

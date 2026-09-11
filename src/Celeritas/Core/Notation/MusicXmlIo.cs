@@ -538,10 +538,14 @@ public static class MusicXmlIo
         var sound = element.Name.LocalName == "sound"
             ? element
             : element.Descendants().FirstOrDefault(e => e.Name.LocalName == "sound");
+        // Zero is a dynamic, not the absence of one: the writer emits <sound dynamics="0"/> for a
+        // silent note, and a reader that took only positive values handed that note the running
+        // velocity of the note before it — a velocity-0 note came back as loud as its
+        // neighbour. Negative values are still no dynamic at all.
         var dynamicsAttr = sound?.Attribute("dynamics")?.Value;
         if (dynamicsAttr is not null
             && double.TryParse(dynamicsAttr.Trim(), System.Globalization.CultureInfo.InvariantCulture, out var pct)
-            && pct > 0)
+            && pct >= 0)
         {
             return (float)Math.Clamp(pct * 0.9 / 127.0, 0.0, 1.0);
         }
@@ -557,9 +561,11 @@ public static class MusicXmlIo
         return null;
     }
 
-    // Standard dynamic levels as a fraction of MIDI velocity 127.
+    // Standard dynamic levels as a fraction of MIDI velocity 127. Niente ("n") is silence,
+    // the same answer a <sound dynamics="0"/> gives.
     private static float? NamedDynamicVelocity(string name) => name switch
     {
+        "n" => 0f,
         "pppp" => 8f / 127f,
         "ppp" => 16f / 127f,
         "pp" => 33f / 127f,

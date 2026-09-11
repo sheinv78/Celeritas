@@ -201,4 +201,54 @@ public class MusicXmlExportTests
     [Fact]
     public void ToXml_Null_Throws() =>
         Assert.Throws<ArgumentNullException>(() => MusicXmlIo.ToXml(null!));
+
+    [Fact]
+    public void ASilentNoteReadsBackSilent()
+    {
+        // The writer emits <sound dynamics="0"/> for velocity 0 and the reader took only
+        // positive values as a dynamic, so a silent note after a loud one came back loud, and a
+        // lone silent note at the default velocity.
+        var buffer = new NoteBuffer(2);
+        buffer.AddNote(60, Rational.Zero, Rational.Quarter, 1.0f);
+        buffer.AddNote(64, Rational.Quarter, Rational.Quarter, 0.0f);
+
+        using var back = MusicXmlIo.Parse(MusicXmlIo.ToXml(buffer));
+
+        Assert.Equal(2, back.Count);
+        Assert.Equal(1.0f, back.Get(0).Velocity, 0.001f);
+        Assert.Equal(0.0f, back.Get(1).Velocity, 0.001f);
+
+        var lone = new NoteBuffer(1);
+        lone.AddNote(60, Rational.Zero, Rational.Quarter, 0f);
+        using var loneBack = MusicXmlIo.Parse(MusicXmlIo.ToXml(lone));
+        Assert.Equal(0f, loneBack.Get(0).Velocity, 0.001f);
+    }
+
+    [Fact]
+    public void NienteIsSilence()
+    {
+        // <n/> is the niente dynamic, MusicXML's own word for nothing; it read as no dynamic
+        // and the note inherited its neighbour's loudness.
+        const string xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <score-partwise version="4.0">
+              <part-list><score-part id="P1"><part-name>M</part-name></score-part></part-list>
+              <part id="P1">
+                <measure number="1">
+                  <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+                  <direction><direction-type><dynamics><f/></dynamics></direction-type></direction>
+                  <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>
+                  <direction><direction-type><dynamics><n/></dynamics></direction-type></direction>
+                  <note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>
+                </measure>
+              </part>
+            </score-partwise>
+            """;
+
+        using var parsed = MusicXmlIo.Parse(xml);
+
+        Assert.Equal(2, parsed.Count);
+        Assert.True(parsed.Get(0).Velocity > 0.5f);
+        Assert.Equal(0f, parsed.Get(1).Velocity, 0.001f);
+    }
 }

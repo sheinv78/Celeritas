@@ -165,6 +165,18 @@ follows.
 - `ModalProgressions.DetectModalProgression` prefers the pattern accounting for
   more of the music, so a progression handed in complete is no longer reported as
   a fragment of itself
+- A modal pattern label writes the quality its degree has in the mode. Lydian's
+  seventh-degree triad is minor and was labelled "vii°", the Dorian ii is minor and
+  was described as major, the Locrian and Phrygian seventh-degree chords are minor
+  and were written "bVII"; a table test now checks every label against the scale,
+  with the named borrowings (the Andalusian V, the fusion vamp's bVII7) listed
+- `ModalProgressions.GetProgressionsForMode` returns an empty list for a mode with
+  no catalogue -- the pentatonics, blues, whole tone, the diminished scales,
+  altered, Locrian natural 2 -- rather than the major table, which could report a
+  whole-tone progression as an "Authentic cadence"
+- A two-note melody has the contour of its leap. A guard answered Static for
+  anything under three notes, so C4 -> C5 was "Level/static melody with little
+  movement" beside a character line reading "Angular, leaping"
 
 #### Notation and I/O
 
@@ -176,6 +188,10 @@ follows.
 - MusicXML import accepts fractional `<duration>` values, which the specification
   allows and some engravers emit
 - Zero-duration notes survive MusicXML export instead of vanishing
+- A silent note reads back silent from MusicXML. The writer emits
+  `<sound dynamics="0"/>` for velocity 0 and the reader took only positive values
+  as a dynamic, so the note inherited its neighbour's loudness; the niente
+  dynamic `<n/>` is read as silence too
 - `MidiFile.SetTempo` replaces the initial tempo instead of being overridden by
   an existing tempo event at tick 0 — it was a no-op on files this library wrote
 - `GetTempoChanges` and `GetTimeSignatureChanges` return events ordered by offset
