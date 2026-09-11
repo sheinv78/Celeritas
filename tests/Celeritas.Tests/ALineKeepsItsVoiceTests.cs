@@ -189,4 +189,157 @@ public class ALineKeepsItsVoiceTests
         Assert.All(separated.NoteToVoice, entry =>
             Assert.Contains(separated.Voices[entry.Value].Notes, n => n.OriginalIndex == entry.Key));
     }
+
+    // ---------- every canon that pitch and time can read is heard ----------
+
+    /// <summary>
+    /// Six subjects x four delays x six transpositions x four leader registers, stated once and
+    /// twice: 1152 two-voice canons. A separator that hears only pitch and time cannot read every
+    /// one of them — when the voices never sound together they are one line by construction,
+    /// when both strike the same pitch at the same moment nothing tells them apart, when a swap
+    /// at some onset is as smooth as the true reading proximity has no say, and when the true
+    /// reading leaps beyond <c>MaxMelodicInterval</c> the option itself forbids it. Every canon
+    /// outside those four classes is unambiguous, and every one of them must come back with the
+    /// answer's interval and delay. Before the repair 298 of the 560 unambiguous canons did
+    /// (149 of 292 stated once, 149 of 268 stated twice); the sweep that measured the repair
+    /// classified each canon this way, and this is that classification kept as a property.
+    /// </summary>
+    [Fact]
+    public void EveryCanonThatProximityCanReadIsHeard()
+    {
+        (string Name, int[] Subject)[] subjects =
+        [
+            ("C E D G", [0, 4, 2, 7]),
+            ("C E G A", [0, 4, 7, 9]),
+            ("C G F E", [0, 7, 5, 4]),
+            ("C D E F", [0, 2, 4, 5]),
+            ("C C E D", [0, 0, 4, 2]),
+            ("C D E C G F E D", [0, 2, 4, 0, 7, 5, 4, 2]),
+        ];
+        Rational[] delays = [Rational.Quarter, Rational.Half, new Rational(3, 4), Rational.Whole];
+        int[] transpositions = [12, 7, 5, -5, -7, -12];
+        int[] registers = [55, 60, 67, 72];
+
+        var unambiguous = 0;
+        var wrong = new List<string>();
+        foreach (var statements in new[] { 1, 2 })
+            foreach (var (name, subject) in subjects)
+                foreach (var delay in delays)
+                    foreach (var transposition in transpositions)
+                        foreach (var register in registers)
+                        {
+                            if (!ProximityCanRead(subject, register, transposition, delay, statements))
+                            {
+                                continue;
+                            }
+
+                            unambiguous++;
+                            using var buffer = CanonOf(subject, register, transposition, delay, statements);
+                            var imitation = PolyphonyAnalyzer.DetectImitation(buffer);
+                            if (!imitation.HasImitation || imitation.Interval != transposition || imitation.TimeDelay != delay)
+                            {
+                                wrong.Add($"{name} x{statements}, answer {transposition:+#;-#} after {delay}, leader from {register}: "
+                                    + (imitation.HasImitation ? $"{imitation.Interval} after {imitation.TimeDelay}" : "not heard"));
+                            }
+                        }
+
+        Assert.True(unambiguous > 500, $"only {unambiguous} canons classified as unambiguous; the classifier is broken");
+        Assert.True(wrong.Count == 0, $"{wrong.Count} of {unambiguous} unambiguous canons misread:\n" + string.Join('\n', wrong));
+    }
+
+    private static NoteBuffer CanonOf(int[] subject, int leaderStart, int transposition, Rational delay, int statements)
+    {
+        var buffer = new NoteBuffer(subject.Length * statements * 2);
+        var k = 0;
+        for (var s = 0; s < statements; s++)
+        {
+            foreach (var step in subject)
+            {
+                buffer.AddNote(leaderStart + step, new Rational(k, 4), Rational.Quarter);
+                buffer.AddNote(leaderStart + step + transposition, new Rational(k, 4) + delay, Rational.Quarter);
+                k++;
+            }
+        }
+
+        buffer.Sort();
+        return buffer;
+    }
+
+    /// <summary>
+    /// Whether pitch and time alone tell the two voices of this canon apart: they sound together,
+    /// never strike one pitch at one moment, at no onset is the swapped reading as smooth as the
+    /// true one, and neither voice leaps beyond the separator's default <c>MaxMelodicInterval</c>.
+    /// </summary>
+    private static bool ProximityCanRead(int[] subject, int register, int transposition, Rational delay, int statements)
+    {
+        if (delay >= new Rational(subject.Length * statements, 4))
+        {
+            return false;
+        }
+
+        var notes = new List<(Rational At, int Pitch, int Voice)>();
+        var k = 0;
+        for (var s = 0; s < statements; s++)
+        {
+            foreach (var step in subject)
+            {
+                notes.Add((new Rational(k, 4), register + step, 0));
+                notes.Add((new Rational(k, 4) + delay, register + step + transposition, 1));
+                k++;
+            }
+        }
+
+        if (notes.Where(n => n.Voice == 0).Any(l => notes.Any(a => a.Voice == 1 && a.At == l.At && a.Pitch == l.Pitch)))
+        {
+            return false;
+        }
+
+        var last = new int?[2];
+        foreach (var onset in notes.GroupBy(n => n.At).OrderBy(g => g.Key))
+        {
+            var sounding = onset.ToList();
+            if (sounding.Count == 2 && last[0] is { } l0 && last[1] is { } l1)
+            {
+                var own = Math.Abs(sounding[0].Pitch - (sounding[0].Voice == 0 ? l0 : l1)) + Math.Abs(sounding[1].Pitch - (sounding[1].Voice == 0 ? l0 : l1));
+                var swapped = Math.Abs(sounding[0].Pitch - (sounding[0].Voice == 0 ? l1 : l0)) + Math.Abs(sounding[1].Pitch - (sounding[1].Voice == 0 ? l1 : l0));
+                if (swapped <= own)
+                {
+                    return false;
+                }
+            }
+            else if (sounding.Count == 2 && (last[0] is { } || last[1] is { }))
+            {
+                var active = last[0] is { } ? 0 : 1;
+                var activeLast = last[active]!.Value;
+                var own = Math.Abs(sounding.First(n => n.Voice == active).Pitch - activeLast);
+                var entrant = Math.Abs(sounding.First(n => n.Voice != active).Pitch - activeLast);
+                if (entrant <= own)
+                {
+                    return false;
+                }
+            }
+            else if (sounding.Count == 1 && last[0] is { } m0 && last[1] is { } m1)
+            {
+                var note = sounding[0];
+                var own = Math.Abs(note.Pitch - (note.Voice == 0 ? m0 : m1));
+                var other = Math.Abs(note.Pitch - (note.Voice == 0 ? m1 : m0));
+                if (other <= own)
+                {
+                    return false;
+                }
+            }
+
+            foreach (var note in sounding)
+            {
+                if (last[note.Voice] is { } previous && Math.Abs(note.Pitch - previous) > 7)
+                {
+                    return false;
+                }
+
+                last[note.Voice] = note.Pitch;
+            }
+        }
+
+        return true;
+    }
 }
