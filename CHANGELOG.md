@@ -39,6 +39,18 @@ follows.
   position, so the same chord moved up a semitone reported a key a fourth away. The tied
   candidate rooted nearest above the bass now wins, and transposing a passage transposes
   the answer with it
+- Mode detection is transposition-equivariant, and its two overloads agree. Roots that
+  fit a passage equally were settled by pitch-class number, with the confidence measured
+  on that root: an octatonic lick read as C# half-whole in one key, as C half-whole a
+  whole tone higher and as C whole-half at twice the confidence a major third higher; a
+  melodic-minor cell read as C harmonic minor eight semitones up. The distribution now
+  breaks the tie -- the root carrying the most weight, then the root nearest above the
+  heaviest note -- so the answer moves with the music. On one root the mode is the best
+  raw fit for both overloads, with the common-mode preference only as a tie-break, so
+  `DetectModeWithRoot` asked with the root `DetectMode` found names the same mode at
+  the same confidence (they differed on one random distribution in ten); an unstressed
+  minor pentatonic is "C Minor" rather than "C Dorian" when its root is hinted, and an
+  unstressed F major pentatonic is F major rather than C major
 - `DetectKey` / `IdentifyKey` tell a key from its relative. Scoring ran on a
   12-bit pitch-class set, and a key and its relative have identical sets, so the
   two always tied and iteration order decided: unambiguous G-major material

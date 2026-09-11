@@ -103,6 +103,38 @@ public class PropertyModeAndFiguredBassTests
         }, iter: 1000);
     }
 
+    // ---------- the two detection overloads tell one story ----------
+
+    /// <summary>
+    /// Detecting a mode and then asking again with the root just detected must give the same
+    /// mode and the same confidence: the second question is the first one with part of the
+    /// answer supplied. The unhinted overload used to let its preference for the common modes
+    /// pick between modes on one root, which the hinted overload never does, so on about one
+    /// random distribution in ten the two named different modes for the same root — and the
+    /// confidence, a margin among the modes on that root, described the hinted one's answer.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void TheHintedOverloadAgreesWithTheRootTheUnhintedOneDetected(bool dense)
+    {
+        var distributions = dense
+            ? Gen.Float[0f, 1f].Array[12, 12]
+            : Gen.Int[0, 3].Array[12, 12].Select(counts => counts.Select(c => (float)c).ToArray());
+
+        distributions.Sample(distribution =>
+        {
+            if (distribution.All(w => w == 0f))
+                return;
+
+            var (key, confidence) = ModeLibrary.DetectMode(distribution);
+            var (hinted, hintedConfidence) = ModeLibrary.DetectModeWithRoot(distribution, key.Root);
+
+            Assert.Equal(key, hinted);
+            Assert.Equal(confidence, hintedConfidence);
+        }, iter: 500);
+    }
+
     // ---------- figured bass reads the same in every key ----------
 
     [Fact]

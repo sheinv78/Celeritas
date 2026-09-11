@@ -76,9 +76,9 @@ public enum Mode
     /// Never the answer of <see cref="ModeLibrary.DetectMode"/> or
     /// <see cref="ModeLibrary.DetectModeWithRoot(float[], int)"/>. Its five notes are contained
     /// in Dorian, Phrygian and Aeolian on the same root and in three major keys, so the scale is
-    /// reported as a heptatonic mode that contains it, at confidence 0: Dorian on its own root
-    /// when the root is hinted, Aeolian on it when the root is the most prominent note; which
-    /// mode and root otherwise is documented on each method.
+    /// reported as a heptatonic mode that contains it, at confidence 0: Aeolian on its own root
+    /// when the root is hinted or is the most prominent note; which mode and root otherwise is
+    /// documented on each method.
     /// </remarks>
     MinorPentatonic = 18
 }
@@ -555,12 +555,36 @@ public static class ModeLibrary
     /// margin that says several modes fit equally. Which mode depends on whether a note stands
     /// out. When the pentatonic's own root is the most prominent note, a major pentatonic comes
     /// back as Ionian on that root and a minor pentatonic as Aeolian on it. When no note stands
-    /// out — each of the five played equally — both come back as Ionian, on the lowest-numbered
-    /// pitch class (C being 0) of the three major keys that contain the five notes. For a major
-    /// pentatonic those are the keys of its tonic, subdominant and dominant, so C major
-    /// pentatonic is C major but so is G major pentatonic; for a minor pentatonic they are its
-    /// relative major and that key's subdominant and dominant, so A minor pentatonic is C major
-    /// and C minor pentatonic is E flat major.
+    /// out — each of the five played equally — both come back as Ionian, on the one of the three
+    /// major keys that contain the five notes that the tie-break below points to: for a major
+    /// pentatonic that is its own tonic, so C major pentatonic is C major and G major pentatonic
+    /// is G major; for a minor pentatonic it is the relative major, so A minor pentatonic is
+    /// C major and C minor pentatonic is E flat major.
+    /// </para>
+    /// <para>
+    /// On each root the mode is the one <see cref="DetectModeWithRoot(float[], int)"/> names there,
+    /// so asking again with the detected root gives the same answer; the preferences for a
+    /// prominent root and for the common modes then decide between roots. When roots still tie —
+    /// six notes of an octatonic scale fit four half-whole and four whole-half roots exactly, and
+    /// the tonic, third, fifth, sixth and seventh of a melodic minor also fit the harmonic minor a
+    /// major third up — the tie is broken by the distribution itself: the root carrying the most
+    /// weight, then the root nearest above the heaviest pitch class, then the root from which the
+    /// weights read heaviest-first, and only then the order of the modes. Each of those moves with
+    /// the music, so a transposed passage is answered in the transposed key with the same mode and
+    /// the same confidence.
+    /// </para>
+    /// <para>
+    /// The tie used to go to the lowest-numbered root, and the confidence was measured on it: the
+    /// same octatonic lick read as C# half-whole in one key, as C half-whole a whole tone higher
+    /// and as C whole-half, at twice the confidence, a major third higher; and a cell that read as
+    /// C melodic minor read as C harmonic minor eight semitones up. Confidence is the margin among
+    /// modes on the chosen root, not "how well it fits": a single note fits many modes, so a
+    /// fit-based score reported false certainty (#30).
+    /// The common-mode preference also used to be added to every mode on every root, so it picked
+    /// between modes on one root as well: a set that fit Lydian a little better was still named
+    /// Ionian, and the confidence — that margin — then described Lydian's lead over the mode
+    /// actually named, while <see cref="DetectModeWithRoot(float[], int)"/> on the same root said
+    /// Lydian.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="distribution"/> is <see langword="null"/>.</exception>
@@ -573,12 +597,6 @@ public static class ModeLibrary
 
         if (!HasWeight(distribution))
             return (new ModalKey(0, Mode.Ionian), 0f);
-
-        ModalKey bestKey = new(0, Mode.Ionian);
-        float bestScore = float.MinValue;
-
-        // Test all roots and common modes
-        var modesToTest = DetectableModes;
 
         // Find the most prominent note (likely the root). When several notes carry the same top
         // weight there is no most prominent note, and awarding the bonus below to the
@@ -608,51 +626,73 @@ public static class ModeLibrary
             likelyRoot = -1;
         }
 
-        for (int root = 0; root < 12; root++)
+        // Every pitch class carrying the top weight, for the tie-break below; the prominent-root
+        // bonus stands down when the top weight is shared, but the tie-break can still use it.
+        var heaviest = 0;
+        for (int i = 0; i < 12; i++)
         {
-            foreach (var mode in modesToTest)
+            if (distribution[i] == maxWeight)
             {
-                var testKey = new ModalKey((byte)root, mode);
-                var score = ScoreAgainstMode(distribution, testKey);
-
-                // Bonus for matching the most prominent note as root
-                if (root == likelyRoot)
-                {
-                    score += 0.15f;
-                }
-
-                // Slight preference for common modes. With no root hint, every rotation of a
-                // scale fits its notes exactly, so this is what decides which of them to name —
-                // and thereby where the root is. Harmonic and melodic minor need an entry for
-                // the same reason Ionian does: they are the ordinary name for their rotations.
-                // Without one, F harmonic minor tied with C Phrygian Dominant (its fifth mode)
-                // and A melodic minor with C altered (its seventh), both were settled by the
-                // order of the root loop, and the answer stopped following the music: every
-                // transposition of the scale came back rooted on pitch class 0.
-                score += mode switch
-                {
-                    Mode.Ionian => 0.05f,
-                    Mode.Aeolian => 0.04f,
-                    Mode.Dorian => 0.03f,
-                    Mode.Mixolydian => 0.02f,
-                    Mode.Phrygian => 0.01f,
-                    Mode.Lydian => 0.01f,
-                    Mode.HarmonicMinor => 0.01f,
-                    Mode.MelodicMinor => 0.01f,
-                    _ => 0f
-                };
-
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestKey = testKey;
-                }
+                heaviest |= 1 << i;
             }
         }
 
-        // Confidence is the margin among modes on the winning root, not "how well it fits":
+        // One candidate per root: the mode DetectModeWithRoot would name there, scored with the
+        // preferences that decide between roots.
+        Span<Mode> modes = stackalloc Mode[12];
+        Span<float> scores = stackalloc float[12];
+        float bestScore = float.MinValue;
+
+        for (int root = 0; root < 12; root++)
+        {
+            var (mode, score) = BestModeOnRoot(distribution, root);
+
+            // Bonus for matching the most prominent note as root
+            if (root == likelyRoot)
+            {
+                score += 0.15f;
+            }
+
+            // Slight preference for common modes. With no root hint, every rotation of a
+            // scale fits its notes exactly, so this is what decides which of them to name —
+            // and thereby where the root is. Harmonic and melodic minor need an entry for
+            // the same reason Ionian does: they are the ordinary name for their rotations.
+            // Without one, F harmonic minor tied with C Phrygian Dominant (its fifth mode)
+            // and A melodic minor with C altered (its seventh), both were settled by the
+            // order of the root loop, and the answer stopped following the music: every
+            // transposition of the scale came back rooted on pitch class 0.
+            score += CommonModePreference(mode);
+
+            modes[root] = mode;
+            scores[root] = score;
+            if (score > bestScore)
+            {
+                bestScore = score;
+            }
+        }
+
+        // Every root within epsilon of the best is a candidate, and the distribution — not the
+        // root's number — decides between them. The first root within reach is the incumbent, so
+        // the lowest number wins only when nothing about the music tells the roots apart.
+        var chosen = -1;
+        for (int root = 0; root < 12; root++)
+        {
+            if (scores[root] < bestScore - ScoreEpsilon)
+            {
+                continue;
+            }
+
+            if (chosen < 0 || PrefersRoot(distribution, heaviest, root, modes[root], chosen, modes[chosen]))
+            {
+                chosen = root;
+            }
+        }
+
+        var bestKey = new ModalKey((byte)chosen, modes[chosen]);
+
+        // Confidence is the margin among modes on the chosen root, not "how well it fits":
         // a single note fits many modes, so a fit-based score reported false certainty (#30).
-        var confidence = ModeMargin(distribution, bestKey.Root);
+        var confidence = ModeMargin(distribution, chosen);
 
         return (bestKey, confidence);
     }
@@ -662,13 +702,22 @@ public static class ModeLibrary
     /// More accurate when the first note of a melody/scale is provided.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The answer is never <see cref="Mode.MajorPentatonic"/> or <see cref="Mode.MinorPentatonic"/>.
     /// Each is contained in seven-note modes on the same root that are candidates, and the score
     /// rewards containing the notes played, so a contained scale can only tie with its container.
     /// A major pentatonic on the hinted root comes back as Ionian on that root, and a minor
-    /// pentatonic as Dorian on it — the first on the candidate list of Dorian, Phrygian and
-    /// Aeolian, which the five notes do not tell apart — both at confidence 0, the margin that
-    /// says so.
+    /// pentatonic as Aeolian on it — the most common of Dorian, Phrygian and Aeolian, which the
+    /// five notes do not tell apart — both at confidence 0, the margin that says so.
+    /// </para>
+    /// <para>
+    /// Modes that fit the hinted root equally — a minor pentatonic fits Aeolian, Dorian, Phrygian
+    /// and the blues scale alike — are settled by the same preference for the common modes that
+    /// <see cref="DetectMode"/> applies, so the two name the same mode on the same root. The first
+    /// in the candidate list used to win here: that pentatonic with its root stressed was C Dorian
+    /// from this overload and C minor from <see cref="DetectMode"/>, so the two could disagree about
+    /// the very root one of them had just detected.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="distribution"/> is <see langword="null"/>.</exception>
     public static (ModalKey key, float confidence) DetectModeWithRoot(float[] distribution, int rootHint)
@@ -685,26 +734,136 @@ public static class ModeLibrary
 
         if (!HasWeight(distribution))
             return (new ModalKey((byte)rootHint, Mode.Ionian), 0f);
-        ModalKey bestKey = new((byte)rootHint, Mode.Ionian);
-        float bestScore = float.MinValue;
-
-        var modesToTest = DetectableModes;
 
         // Only test with the hinted root
-        foreach (var mode in modesToTest)
-        {
-            var testKey = new ModalKey((byte)rootHint, mode);
-            var score = ScoreAgainstMode(distribution, testKey);
+        var (mode, _) = BestModeOnRoot(distribution, rootHint);
 
-            if (score > bestScore)
+        var confidence = ModeMargin(distribution, rootHint);
+        return (new ModalKey((byte)rootHint, mode), confidence);
+    }
+
+    /// <summary>
+    /// A score difference smaller than this is a tie. Scores are sums of a dozen floats, so the same
+    /// set of notes summed in a different order — a half-whole scale and the whole-half scale a
+    /// semitone up — can differ in the last digit without differing in the music.
+    /// </summary>
+    private const float ScoreEpsilon = 1e-4f;
+
+    /// <summary>
+    /// The mode that fits <paramref name="distribution"/> best on <paramref name="root"/>, and its
+    /// raw score. Both detection overloads name a root's mode through this, which is what makes them
+    /// agree.
+    /// </summary>
+    /// <remarks>
+    /// Modes that tie are settled by <see cref="CommonModePreference"/> and then by the order of
+    /// <see cref="DetectableModes"/>: the more common reading of an ambiguous set is the better
+    /// answer, and it is the one <see cref="DetectMode"/> already gave.
+    /// </remarks>
+    private static (Mode mode, float score) BestModeOnRoot(float[] distribution, int root)
+    {
+        Span<float> scores = stackalloc float[DetectableModes.Length];
+        float bestScore = float.MinValue;
+        for (int i = 0; i < DetectableModes.Length; i++)
+        {
+            scores[i] = ScoreAgainstMode(distribution, new ModalKey((byte)root, DetectableModes[i]));
+            if (scores[i] > bestScore)
             {
-                bestScore = score;
-                bestKey = testKey;
+                bestScore = scores[i];
             }
         }
 
-        var confidence = ModeMargin(distribution, rootHint);
-        return (bestKey, confidence);
+        var best = -1;
+        for (int i = 0; i < DetectableModes.Length; i++)
+        {
+            if (scores[i] < bestScore - ScoreEpsilon)
+            {
+                continue;
+            }
+
+            if (best < 0 || CommonModePreference(DetectableModes[i]) > CommonModePreference(DetectableModes[best]))
+            {
+                best = i;
+            }
+        }
+
+        return (DetectableModes[best], scores[best]);
+    }
+
+    /// <summary>
+    /// How much more readily <paramref name="mode"/> is named than an equally fitting rarer one:
+    /// the ordinary names first, their rotations after.
+    /// </summary>
+    private static float CommonModePreference(Mode mode) => mode switch
+    {
+        Mode.Ionian => 0.05f,
+        Mode.Aeolian => 0.04f,
+        Mode.Dorian => 0.03f,
+        Mode.Mixolydian => 0.02f,
+        Mode.Phrygian => 0.01f,
+        Mode.Lydian => 0.01f,
+        Mode.HarmonicMinor => 0.01f,
+        Mode.MelodicMinor => 0.01f,
+        _ => 0f
+    };
+
+    /// <summary>
+    /// Whether <paramref name="candidate"/> is the better root than <paramref name="incumbent"/> for
+    /// a distribution that fits both equally well, judged by the distribution alone.
+    /// </summary>
+    /// <remarks>
+    /// Every test here is about where the weight lies relative to the root, never about the root's
+    /// number, so the answer transposes with the music. The last resort — the earlier mode, and
+    /// failing that the incumbent — is reached only when the weights read identically from both
+    /// roots, which means the distribution repeats at that interval (a whole-tone scale, an
+    /// augmented triad) and the two roots are the same music.
+    /// </remarks>
+    private static bool PrefersRoot(
+        float[] distribution, int heaviest, int candidate, Mode candidateMode, int incumbent, Mode incumbentMode)
+    {
+        // The root that carries the most weight.
+        if (distribution[candidate] != distribution[incumbent])
+        {
+            return distribution[candidate] > distribution[incumbent];
+        }
+
+        // The root nearest above the heaviest pitch class: a prominent note that is not the root
+        // is most often the leading tone, resolving up to it.
+        var candidateDistance = DistanceAboveHeaviest(candidate, heaviest);
+        var incumbentDistance = DistanceAboveHeaviest(incumbent, heaviest);
+        if (candidateDistance != incumbentDistance)
+        {
+            return candidateDistance < incumbentDistance;
+        }
+
+        // The root from which the weights read heaviest-first: the start of a scalar run.
+        for (int i = 1; i < 12; i++)
+        {
+            var fromCandidate = distribution[(candidate + i) % 12];
+            var fromIncumbent = distribution[(incumbent + i) % 12];
+            if (fromCandidate != fromIncumbent)
+            {
+                return fromCandidate > fromIncumbent;
+            }
+        }
+
+        return Array.IndexOf(DetectableModes, candidateMode) < Array.IndexOf(DetectableModes, incumbentMode);
+    }
+
+    /// <summary>
+    /// How many semitones <paramref name="root"/> sits above the nearest pitch class in the
+    /// <paramref name="heaviest"/> mask below it: 0 when the root is itself one of them.
+    /// </summary>
+    private static int DistanceAboveHeaviest(int root, int heaviest)
+    {
+        for (int distance = 0; distance < 12; distance++)
+        {
+            if ((heaviest & (1 << PitchMath.Fold(root - distance))) != 0)
+            {
+                return distance;
+            }
+        }
+
+        return 12;
     }
 
     /// <summary>
@@ -870,9 +1029,12 @@ public static class ModeLibrary
         float inScale = 0f;
         float total = 0f;
 
+        // Summed from the root, like inScale below, so that a transposed distribution scores
+        // bit-for-bit the same. Float addition is not associative: summed from pitch class 0,
+        // the same music reported a confidence that differed in its last digits from key to key.
         for (int i = 0; i < 12; i++)
         {
-            total += distribution[i];
+            total += distribution[(key.Root + i) % 12];
         }
 
         if (total == 0) return 0f;

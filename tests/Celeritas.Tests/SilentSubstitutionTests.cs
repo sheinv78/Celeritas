@@ -109,6 +109,58 @@ public class SilentSubstitutionTests
         }
     }
 
+    [Theory]
+    [InlineData(new[] { 1, 2, 4, 5, 7, 8 }, 1, Mode.DiminishedHalfWhole)]   // C# D E F G G#: six notes of an octatonic scale
+    [InlineData(new[] { 0, 3, 7, 9, 11 }, 0, Mode.MelodicMinor)]            // C Eb G A B: a melodic-minor cell
+    [InlineData(new[] { 8, 11, 3, 5, 7 }, 8, Mode.MelodicMinor)]            // the same cell eight semitones up
+    public void ALickIsDetectedInTheKeyItIsPlayedIn(int[] lick, int expectedRoot, Mode expected)
+    {
+        // Several roots fit a lick exactly — an octatonic fragment fits four half-whole and four
+        // whole-half roots, and the tonic, third, fifth, sixth and seventh of a melodic minor also
+        // fit the harmonic minor a major third up — and the tie went to the lowest-numbered root,
+        // with the confidence measured there. So the octatonic lick read as C# half-whole at 0.25
+        // in C#, as C half-whole a whole tone higher and as C whole-half at 0.50 a major third
+        // higher, and the cell read as C melodic minor at 0.30 in C and as C harmonic minor, at
+        // the same 0.30, eight semitones up.
+        var distribution = new float[12];
+        foreach (var pc in lick)
+            distribution[pc] = 1f;
+
+        var (key, confidence) = ModeLibrary.DetectMode(distribution);
+
+        Assert.Equal(expectedRoot, key.Root);
+        Assert.Equal(expected, key.Mode);
+
+        for (var semitones = 1; semitones < 12; semitones++)
+        {
+            var transposed = new float[12];
+            foreach (var pc in lick)
+                transposed[(pc + semitones) % 12] = 1f;
+
+            var (transposedKey, transposedConfidence) = ModeLibrary.DetectMode(transposed);
+
+            Assert.Equal((expectedRoot + semitones) % 12, transposedKey.Root);
+            Assert.Equal(expected, transposedKey.Mode);
+            Assert.Equal(confidence, transposedConfidence);
+        }
+    }
+
+    [Fact]
+    public void TheHintedOverloadNamesTheModeTheUnhintedOneDetected()
+    {
+        // C D Eb F G Bb with C prominent fits C Aeolian and C Dorian alike. DetectMode named
+        // Aeolian, the more common reading; DetectModeWithRoot, told the same root, named Dorian
+        // because it broke the tie by the order of its candidate list instead.
+        float[] distribution = [2f, 0f, 1f, 1f, 0f, 1f, 0f, 1f, 0f, 0f, 1f, 0f];
+
+        var (key, confidence) = ModeLibrary.DetectMode(distribution);
+        var (hinted, hintedConfidence) = ModeLibrary.DetectModeWithRoot(distribution, key.Root);
+
+        Assert.Equal(new ModalKey(0, Mode.Aeolian), key);
+        Assert.Equal(key, hinted);
+        Assert.Equal(confidence, hintedConfidence);
+    }
+
     [Fact]
     public void ATonicThatIsActuallyProminent_StillDecidesTheMode()
     {

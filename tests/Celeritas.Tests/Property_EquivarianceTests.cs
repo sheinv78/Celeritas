@@ -209,6 +209,62 @@ public class PropertyEquivarianceTests
         }, iter: 300);
     }
 
+    // ---------- mode detection ----------
+
+    /// <summary>Weights on every pitch class, as a played passage with chromatic notes has.</summary>
+    private static readonly Gen<float[]> DenseDistribution = Gen.Float[0f, 1f].Array[12, 12];
+
+    /// <summary>
+    /// A few pitch classes with small whole counts, as a short lick has. Equal weights are where
+    /// roots tie, which is exactly where the answer used to depend on pitch-class numbering.
+    /// </summary>
+    private static readonly Gen<float[]> SparseDistribution =
+        Gen.Int[0, 3].Array[12, 12].Select(counts => counts.Select(c => (float)c).ToArray());
+
+    private static float[] Rotated(float[] distribution, int n)
+    {
+        var rotated = new float[12];
+        for (var pc = 0; pc < 12; pc++)
+            rotated[PitchMath.Fold(pc + n)] = distribution[pc];
+        return rotated;
+    }
+
+    /// <summary>
+    /// A transposed passage must be answered in the transposed key, with the same mode and the
+    /// same confidence. The root is compared through the music rather than by number: a
+    /// distribution that repeats every three semitones (a bare octatonic scale) has four roots
+    /// that are the same scale, and any of them names it correctly in every key.
+    /// </summary>
+    private static void ModeDetectionMovesWith(Gen<float[]> distributions)
+    {
+        distributions.Sample(distribution =>
+        {
+            if (distribution.All(w => w == 0f))
+                return;
+
+            var (key, confidence) = ModeLibrary.DetectMode(distribution);
+            var fromRoot = Rotated(distribution, -key.Root);
+
+            for (var n = 1; n < 12; n++)
+            {
+                var shifted = Rotated(distribution, n);
+                var (shiftedKey, shiftedConfidence) = ModeLibrary.DetectMode(shifted);
+
+                Assert.Equal(key.Mode, shiftedKey.Mode);
+                Assert.Equal(confidence, shiftedConfidence);
+                Assert.Equal(fromRoot, Rotated(shifted, -shiftedKey.Root));
+            }
+        }, iter: 200);
+    }
+
+    [Fact]
+    public void ModeDetection_MovesWithTheMusic_WhenEveryNoteSounds() =>
+        ModeDetectionMovesWith(DenseDistribution);
+
+    [Fact]
+    public void ModeDetection_MovesWithTheMusic_WhenAFewNotesTie() =>
+        ModeDetectionMovesWith(SparseDistribution);
+
     // ---------- rhythm does not care about pitch at all ----------
 
     [Fact]

@@ -162,15 +162,16 @@ public class ModalSystemTests
     /// The exact answer the documentation of <see cref="Mode.MajorPentatonic"/>,
     /// <see cref="Mode.MinorPentatonic"/>, <see cref="ModeLibrary.DetectMode"/> and
     /// <see cref="ModeLibrary.DetectModeWithRoot(float[], int)"/> promises for a pentatonic, on
-    /// every root. Told the root, the detector answers Ionian for a major pentatonic and Dorian
+    /// every root. Told the root, the detector answers Ionian for a major pentatonic and Aeolian
     /// for a minor one, on that root. Left to find the root, it answers Ionian on the
     /// pentatonic's own root when that root is the most prominent note — Aeolian there for a
-    /// minor pentatonic — and, when no note stands out, Ionian on the lowest-numbered pitch
-    /// class of the three major keys that contain the five notes. All at confidence 0.
+    /// minor pentatonic — and, when no note stands out, Ionian on the major pentatonic's own
+    /// root and on the minor pentatonic's relative major: the one of the three major keys that
+    /// contain the five notes that the notes themselves point to. All at confidence 0.
     /// </summary>
     [Theory]
     [InlineData(Mode.MajorPentatonic, Mode.Ionian, Mode.Ionian, 0)]
-    [InlineData(Mode.MinorPentatonic, Mode.Dorian, Mode.Aeolian, 3)]
+    [InlineData(Mode.MinorPentatonic, Mode.Aeolian, Mode.Aeolian, 3)]
     public void APentatonicIsAnsweredAsItsDocumentationSays(
         Mode pentatonic, Mode withRootHint, Mode withProminentRoot, int semitonesToRelativeMajor)
     {
@@ -193,11 +194,12 @@ public class ModalSystemTests
             rootHeavy[root] = 3f;
             Assert.Equal((new ModalKey((byte)root, withProminentRoot), 0f), ModeLibrary.DetectMode(rootHeavy));
 
-            // No note stands out: the lowest-numbered of the three major keys holding the five
-            // notes — the pentatonic's relative major and that key's subdominant and dominant.
+            // No note stands out: of the three major keys holding the five notes — the
+            // pentatonic's relative major and that key's subdominant and dominant — the relative
+            // major, which is the one the notes point to. It used to be the lowest-numbered, so F
+            // major pentatonic was C major.
             var relativeMajor = (root + semitonesToRelativeMajor) % 12;
-            var lowestMajorKey = Math.Min(relativeMajor, Math.Min((relativeMajor + 5) % 12, (relativeMajor + 7) % 12));
-            Assert.Equal((new ModalKey((byte)lowestMajorKey, Mode.Ionian), 0f), ModeLibrary.DetectMode(even));
+            Assert.Equal((new ModalKey((byte)relativeMajor, Mode.Ionian), 0f), ModeLibrary.DetectMode(even));
         }
     }
 
