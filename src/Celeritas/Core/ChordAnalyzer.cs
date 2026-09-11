@@ -205,6 +205,27 @@ public static unsafe class ChordAnalyzer
         return info;
     }
 
+    /// <summary>
+    /// Identifies the chord <paramref name="pitches"/> spell when their root is already known —
+    /// from a chord symbol that named it. The answer is rooted on
+    /// <paramref name="rootPitchClass"/> whatever the bass, and is
+    /// <see cref="ChordQuality.Unknown"/> <em>on that root</em> when no template has those
+    /// intervals above it, so a caller holding a ninth chord keeps its root.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Identify(ReadOnlySpan{int})"/> reads the bass to root what it hears, which is
+    /// the right question for notes and the wrong one for a symbol: "Am7/C" is A minor seventh
+    /// in first inversion and was identified as C6, and "G9", which no template covers, as an
+    /// Unknown chord rooted on C — so a ii7-V9-I was read in the key of its ii chord in eleven
+    /// of twelve transpositions.
+    /// </remarks>
+    internal static ChordInfo Identify(ReadOnlySpan<int> pitches, int rootPitchClass)
+    {
+        var root = (byte)PitchMath.Fold(rootPitchClass);
+        ChordLibrary.TryGetQuality(GetMask(pitches), root, out var quality);
+        return new ChordInfo(root, quality);
+    }
+
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ChordInfo Identify(NoteBuffer buffer)

@@ -61,7 +61,8 @@ public class AdvisorDetailTests
     [Fact]
     public void GetInversion_RejectsNull()
     {
-        Assert.Throws<ArgumentNullException>(() => ProgressionAdvisor.GetInversion(null!));
+        Assert.Throws<ArgumentNullException>(() => ProgressionAdvisor.GetInversion((int[])null!));
+        Assert.Throws<ArgumentNullException>(() => ProgressionAdvisor.GetInversion((string)null!));
     }
 
     // ---------- cadence detection with too little to go on ----------

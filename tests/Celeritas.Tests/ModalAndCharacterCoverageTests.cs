@@ -191,9 +191,11 @@ public class ModalAndCharacterCoverageTests
     [Fact]
     public void AStackOfFourthsInTheBassReadsAsModal()
     {
-        // G-C-D over D is a stack of fourths, and reading the bass is what tells it apart from
-        // the sus chords it shares a pitch-class set with.
-        var classification = ChordCharacterClassifier.Classify("Gsus4/D");
+        // A stack of fourths written as one: C7sus4 with its fifth omitted is C-F-Bb. (This test
+        // used to write "Gsus4/D" and expect Quartal — but that symbol names a G sus4 chord over
+        // its fifth, and re-rooting a symbol on its slash bass is the defect that read Am7/C as
+        // C6. A symbol is what it says.)
+        var classification = ChordCharacterClassifier.Classify("C7sus4(omit5)");
 
         Assert.Equal(ChordQuality.Quartal, classification.Quality);
         Assert.Equal(ChordCharacter.Modal, classification.Character);

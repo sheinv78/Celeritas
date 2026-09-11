@@ -328,24 +328,19 @@ public static class ModalProgressions
         for (var i = 0; i < chordSymbols.Length; i++)
         {
             var symbol = chordSymbols[i];
-            var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
 
-            if (pitches.Length == 0)
+            // The symbol names its root; ParsedChord keeps it, for a ninth chord the templates
+            // cannot name as much as for a slash chord whose bass is not its root.
+            if (ParsedChord.FromSymbol(symbol) is not { } parsed)
             {
                 chordPitchClasses.Add([]);
                 chordRootPitchClasses.Add(-1);
                 continue;
             }
 
-            // Identify, not GetChord(GetMask(...)): a symbol states its own root, and
-            // ParseChordSymbol puts it at the bottom, but the bare mask lookup throws that away
-            // and answers the lowest-numbered registered root of the pitch-class set. Csus4 came
-            // back as F sus2, Eaug as C augmented, F#7b5 as C7b5 — 59 of 252 symbols named a root
-            // their caller did not write. Identify reads the bass, which is the root here.
-            var chord = ChordAnalyzer.Identify(pitches);
-            var rootPc = chord.Quality != ChordQuality.Unknown
-                ? chord.RootPitchClass
-                : PitchMath.Fold(pitches[0]);
+            var pitches = parsed.Pitches;
+            var chord = parsed.Info;
+            var rootPc = chord.RootPitchClass;
 
             chordRootPitchClasses.Add(rootPc);
 

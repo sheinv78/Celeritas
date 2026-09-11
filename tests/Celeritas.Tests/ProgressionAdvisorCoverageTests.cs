@@ -111,7 +111,8 @@ public class ProgressionAdvisorCoverageTests
 
     [Theory]
     [InlineData("C5", ChordCharacter.Powerful)]
-    [InlineData("Gsus4/D", ChordCharacter.Modal)]
+    [InlineData("C7sus4(omit5)", ChordCharacter.Modal)]
+    [InlineData("Gsus4/D", ChordCharacter.Suspended)]
     [InlineData("C", ChordCharacter.Stable)]
     [InlineData("Cm", ChordCharacter.Melancholic)]
     public void ChordQualityDecidesCharacter(string symbol, ChordCharacter expected)

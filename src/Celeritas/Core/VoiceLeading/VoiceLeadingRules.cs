@@ -305,10 +305,25 @@ public static class VoiceLeadingRules
     /// reuse it across many transitions from the same source voicing (see the
     /// <see cref="Check(Voicing, Voicing, int, int)"/> overload).
     /// </summary>
+    /// <remarks>
+    /// A four-note set that is both a sixth chord and a seventh chord — F-A-C-D is F6 and Dm7 —
+    /// is read as the seventh chord here whatever the bass. These rules describe common-practice
+    /// voice leading, in which that sonority with F at the bottom is ii6/5, whose seventh C must
+    /// still fall, and not an added-sixth chord. <see cref="ChordAnalyzer.Identify(ReadOnlySpan{int})"/>
+    /// reads it as the sixth chord for a lead sheet, and when it did so here a first-inversion
+    /// m7 or ø7 chord lost its resolution rule.
+    /// </remarks>
     internal static int GetChordalSeventhPitchClass(Voicing voicing)
     {
         Span<int> pitches = [voicing.Bass, voicing.Tenor, voicing.Alto, voicing.Soprano];
         var info = ChordAnalyzer.Identify(pitches);
+
+        if (info.Quality is ChordQuality.Major6 or ChordQuality.Minor6)
+        {
+            info = new ChordInfo(
+                (byte)((info.RootPitchClass + 9) % 12),
+                info.Quality == ChordQuality.Major6 ? ChordQuality.Minor7 : ChordQuality.HalfDim7);
+        }
 
         var seventhInterval = info.Quality switch
         {

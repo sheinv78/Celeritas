@@ -124,6 +124,12 @@ public static class ChordLibrary
     private static readonly ChordInfo[] Lookup = new ChordInfo[4096];
     private static readonly bool[] HasChord = new bool[4096];
 
+    // The same templates keyed by their intervals above a known root, for the callers that
+    // already know the root — a chord symbol names its own. With the root fixed there is no
+    // ambiguity left to resolve: {C,E,G,A} rooted on C is a Major6 and rooted on A a Minor7.
+    private static readonly ChordQuality[] QualityByIntervals = new ChordQuality[4096];
+    private static readonly bool[] HasQuality = new bool[4096];
+
     // What third each quality has, read off the same interval templates below rather than
     // written out again, so a quality added there classifies itself here. Callers that ask
     // "major or minor?" of a chord kept their own list and left half the enum out of it.
@@ -205,8 +211,41 @@ public static class ChordLibrary
                     Lookup[mask] = new ChordInfo((byte)root, quality);
                     HasChord[mask] = true;
                 }
+
+                if (root == 0 && !HasQuality[mask])
+                {
+                    QualityByIntervals[mask] = quality;
+                    HasQuality[mask] = true;
+                }
             }
         }
+    }
+
+    /// <summary>
+    /// The quality of the chord whose pitch classes form <paramref name="mask"/> when its root
+    /// is <paramref name="rootPitchClass"/>, or <see cref="ChordQuality.Unknown"/> with
+    /// <see langword="false"/> when no template has those intervals above that root.
+    /// </summary>
+    /// <remarks>
+    /// A chord symbol names its root, and the readers that used to discard it and rediscover
+    /// the root from the notes named chords their caller did not write: "Am7/C" — A minor
+    /// seventh over its third — came back as C6, and every ninth chord, which no template
+    /// covers, as Unknown rooted on C. Given the root, the intervals settle the quality and
+    /// nothing is left to guess.
+    /// </remarks>
+    internal static bool TryGetQuality(ushort mask, int rootPitchClass, out ChordQuality quality)
+    {
+        var root = PitchMath.Fold(rootPitchClass);
+        var intervals = (ushort)(((mask >> root) | (mask << (12 - root))) & 0xFFF);
+
+        if (HasQuality[intervals])
+        {
+            quality = QualityByIntervals[intervals];
+            return true;
+        }
+
+        quality = ChordQuality.Unknown;
+        return false;
     }
 
     /// <summary>

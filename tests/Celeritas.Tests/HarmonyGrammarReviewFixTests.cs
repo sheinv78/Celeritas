@@ -301,6 +301,11 @@ public class HarmonyGrammarReviewFixTests
 
         Assert.Equal(ChordCharacterClassification.Unknown.Stability, classification.Stability);
         Assert.NotEqual(ChordCharacterClassifier.Classify("C").Stability, classification.Stability);
+
+        // "Unknown" and "Stable" cannot both be true of one chord: the fallback used to carry the
+        // character of a tonic at rest beside the mood Unknown.
+        Assert.NotEqual(ChordCharacter.Stable, classification.Character);
+        Assert.Equal(ChordCharacter.Modal, classification.Character);
     }
 
     [Theory]

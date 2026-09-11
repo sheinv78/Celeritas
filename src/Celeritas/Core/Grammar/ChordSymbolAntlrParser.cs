@@ -38,9 +38,18 @@ internal static class ChordSymbolAntlrParser
         return TryParsePitches(input, out pitches, out _);
     }
 
-    public static bool TryParsePitches(string input, out int[] pitches, out IReadOnlyList<string> errors)
+    public static bool TryParsePitches(string input, out int[] pitches, out IReadOnlyList<string> errors) =>
+        TryParsePitches(input, out pitches, out _, out errors);
+
+    /// <summary>
+    /// Parses a chord symbol into its pitches and the pitch class of the root it names — the
+    /// root of the first chord of a polychord. A symbol states its root; the readers that
+    /// rediscovered it from the pitches named chords their caller did not write.
+    /// </summary>
+    public static bool TryParsePitches(string input, out int[] pitches, out int rootPitchClass, out IReadOnlyList<string> errors)
     {
         pitches = [];
+        rootPitchClass = 0;
 
         // Null is unparsable input, not an empty chord: report failure the way
         // int.TryParse(null, out _) does, rather than claiming a successful parse.
@@ -89,6 +98,7 @@ internal static class ChordSymbolAntlrParser
         {
             var visitor = new ChordSymbolVisitorImpl();
             pitches = visitor.Visit(tree);
+            rootPitchClass = visitor.RootPitchClass ?? 0;
         }
         catch (ChordSymbolParseException ex)
         {
@@ -168,6 +178,9 @@ internal sealed class ChordSymbolParseException(string message) : Exception(mess
 
 internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
 {
+    /// <summary>The pitch class of the root the symbol names; of the first chord for a polychord.</summary>
+    public int? RootPitchClass { get; private set; }
+
     public override int[] VisitSymbol(ChordSymbolParser.SymbolContext context)
     {
         return Visit(context.polychord());
@@ -198,9 +211,10 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
         return [.. BuildChordPitches(context, 60)];
     }
 
-    private static List<int> BuildChordPitches(ChordSymbolParser.ChordContext chord, int rootBase)
+    private List<int> BuildChordPitches(ChordSymbolParser.ChordContext chord, int rootBase)
     {
         var rootPc = ParsePitchClass(chord.note());
+        RootPitchClass ??= rootPc;
         var builder = new ChordBuildState();
 
         // Preserve suffix ordering as written.

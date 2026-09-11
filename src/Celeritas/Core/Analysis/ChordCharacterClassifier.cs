@@ -21,22 +21,16 @@ public static class ChordCharacterClassifier
 
         try
         {
-            var pitches = ProgressionAdvisor.ParseChordSymbol(chordSymbol.Trim());
-            if (pitches.Length == 0)
+            // The symbol names its root and the quality follows from the intervals above it:
+            // "Csus4" is a Sus4 and "Am7/C" a Minor7, whatever the bass. An unparsable symbol
+            // must not fall through to a zero mask, which the quality switch's default arm
+            // would report as a maximally stable chord instead of Unknown.
+            if (ParsedChord.FromSymbol(chordSymbol.Trim()) is not { } chord)
             {
-                // ParseChordSymbol yields an empty array for anything it cannot parse.
-                // Falling through would build a zero mask, and ChordLibrary.GetChord(0)
-                // lands on the quality switch's default arm — reporting unparsable input
-                // as a maximally stable chord instead of Unknown.
                 return ChordCharacterClassification.Unknown;
             }
 
-            // Identify, not GetChord(GetMask(...)): several qualities share one pitch-class set
-            // and the bare mask lookup can only answer the lowest registered root, so every
-            // "Csus4" came back as a Sus2 and every dim7 and augmented chord as its lowest
-            // rotation. Identify reads the bass to tell those rotations apart.
-            var info = ChordAnalyzer.Identify(pitches);
-            return FromQuality(info.Quality);
+            return FromQuality(chord.Info.Quality);
         }
         catch
         {
@@ -155,11 +149,22 @@ public sealed record ChordCharacterClassification
     /// <summary>The underlying chord quality.</summary>
     public ChordQuality Quality { get; init; }
 
-    /// <summary>Fallback classification for blank or unparsable chord symbols.</summary>
+    /// <summary>
+    /// Fallback classification for blank or unparsable chord symbols, and for a chord whose
+    /// quality this table does not name. Its character is <see cref="ChordCharacter.Modal"/> —
+    /// "non-functional harmony", the same reading <see cref="ProgressionAdvisor"/> gives a
+    /// sonority it cannot name — with both scales at the midpoint.
+    /// </summary>
+    /// <remarks>
+    /// It carried <see cref="ChordCharacter.Stable"/>, "tonic, at rest", the highest stability
+    /// there is, beside the mood "Unknown": one answer saying the chord is unknown and the
+    /// other that it is home. A 7sus4, which no template names, was a resting chord here and a
+    /// non-functional one in the advisor's report of the same progression.
+    /// </remarks>
     public static ChordCharacterClassification Unknown { get; } = new(
         "Unknown",
         0.5f,
         0.5f,
-        ChordCharacter.Stable,
+        ChordCharacter.Modal,
         ChordQuality.Unknown);
 }

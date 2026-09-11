@@ -98,8 +98,10 @@ public static class HarmonicColorAnalyzer
             if (end <= start)
                 end = start + Rational.Whole;
 
-            var pitches = ProgressionAdvisor.ParseChordSymbol(symbol);
-            if (pitches.Length == 0)
+            // The symbol names its root; ParsedChord keeps it. Rooting the chord on its bass
+            // instead read "Am7/C" as C6, and a bare mask lookup before that had named a root
+            // the caller did not write for 59 of 252 symbols.
+            if (ParsedChord.FromSymbol(symbol) is not { } chord)
             {
                 // A silent empty pitch set would produce a zero chord mask, making
                 // every melody note over this chord an "OtherNonChordTone".
@@ -108,14 +110,7 @@ public static class HarmonicColorAnalyzer
                     nameof(chordProgression));
             }
 
-            // Identify, not GetChord(GetMask(...)): a symbol states its own root, and
-            // ParseChordSymbol puts it at the bottom, but the bare mask lookup throws that away
-            // and answers the lowest-numbered registered root of the pitch-class set. Csus4 came
-            // back as F sus2, Eaug as C augmented, F#7b5 as C7b5 — 59 of 252 symbols named a root
-            // their caller did not write. Identify reads the bass, which is the root here.
-            var info = ChordAnalyzer.Identify(pitches);
-
-            chords[i] = new ChordAssignment(start, end, info, pitches);
+            chords[i] = new ChordAssignment(start, end, chord.Info, chord.Pitches);
         }
 
         return chords;

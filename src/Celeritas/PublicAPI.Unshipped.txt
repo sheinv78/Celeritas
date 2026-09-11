@@ -1626,6 +1626,7 @@ static Celeritas.Core.Analysis.ProgressionAdvisor.Analyze(string![]! chordSymbol
 static Celeritas.Core.Analysis.ProgressionAdvisor.AnalyzeFromSymbols(string![]! chordSymbols) -> Celeritas.Core.Analysis.ProgressionReport!
 static Celeritas.Core.Analysis.ProgressionAdvisor.DetectCadence(string![]! chordSymbols, Celeritas.Core.KeySignature? key = null) -> Celeritas.Core.Analysis.CadenceType
 static Celeritas.Core.Analysis.ProgressionAdvisor.GetInversion(int[]! pitches) -> int
+static Celeritas.Core.Analysis.ProgressionAdvisor.GetInversion(string! chordSymbol) -> int
 static Celeritas.Core.Analysis.ProgressionAdvisor.GetInversionName(int inversion) -> string!
 static Celeritas.Core.Analysis.ProgressionAdvisor.ParseChordSymbol(string! symbol) -> int[]!
 static Celeritas.Core.Analysis.ProgressionAdvisor.SuggestNext(string![]! chordSymbols, int maxSuggestions = 5) -> System.Collections.Generic.List<Celeritas.Core.Analysis.ChordSuggestion!>!

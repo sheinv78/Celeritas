@@ -93,15 +93,21 @@ public static class KeyAnalyzer
             return RomanNumeralChord.Invalid;
 
         // First, identify the chord quality independently
-        var chord = ChordAnalyzer.Identify(pitches);
+        return Analyze(ChordAnalyzer.Identify(pitches), key);
+    }
+
+    /// <summary>
+    /// Analyze an already identified chord in the context of a key signature. The analyzers
+    /// that read chord symbols come here with the root the symbol named, so "Am7/C" is vi7 and
+    /// not I6; identifying the pitches afresh would root it on its bass.
+    /// </summary>
+    internal static RomanNumeralChord Analyze(ChordInfo chord, KeySignature key)
+    {
         if (chord.Quality == ChordQuality.Unknown)
             return RomanNumeralChord.Invalid;
 
-        // Get chord root pitch class
-        var chordRoot = ChordLibrary.GetPitchClass(chord.Root);
-
         // Calculate interval from key root to chord root
-        var interval = (chordRoot - key.Root + 12) % 12;
+        var interval = (chord.RootPitchClass - key.Root + 12) % 12;
 
         // Map interval to scale degree and function
         return key.IsMajor

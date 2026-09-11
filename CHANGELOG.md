@@ -310,6 +310,21 @@ Behavioral and API changes that can affect existing code:
 - The progression, modal, colour and cadence analyses give different -- and
   correct -- answers wherever a chord symbol was previously rooted by pitch-class
   numbering
+- A chord symbol names its own root, and every reader of symbols now keeps it.
+  They rediscovered the root from the pitches with the bass at the bottom, which a
+  slash chord contradicts by design: "Am7/C" was identified as C6 and reported as
+  I6, "Dm7/F" as IV6, and "Csus4/G" as a quartal chord on G that made an authentic
+  cadence out of C - Csus4/G - C. A ninth chord, which no template names, came
+  back as Unknown rooted on C, so ii7-V9-I was read in the minor key of its ii
+  chord in eleven of twelve transpositions. `ProgressionAdvisor.GetInversion(string)`
+  reads the inversion a symbol writes
+- The voice-leading rules read F-A-C-D as Dm7 whatever the bass: in the
+  common-practice voice leading they describe that sonority over F is ii6/5,
+  whose seventh must still fall. Identified as F6, a first-inversion m7 or ø7
+  chord had lost its resolution rule
+- `ChordCharacterClassification.Unknown` carries the character Modal --
+  non-functional harmony, the advisor's reading of a sonority it cannot name --
+  rather than Stable, "tonic, at rest", beside the mood Unknown
 
 ### Added
 

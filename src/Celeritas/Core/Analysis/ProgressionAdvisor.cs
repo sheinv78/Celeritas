@@ -51,8 +51,23 @@ public static class ProgressionAdvisor
         ChordSymbolAntlrParser.TryParsePitches(symbol, out pitches, out errors);
 
     /// <summary>
+    /// Try to parse a chord symbol into MIDI pitches and the pitch class of the root it names.
+    /// The analyzers that take symbols read the root from here rather than rediscovering it from
+    /// the pitches, which a slash chord contradicts by design.
+    /// </summary>
+    internal static bool TryParseRootedChordSymbol(string symbol, out int[] pitches, out int rootPitchClass) =>
+        ChordSymbolAntlrParser.TryParsePitches(symbol, out pitches, out rootPitchClass, out _);
+
+    /// <summary>
     /// Get the inversion of a chord based on the bass note.
     /// </summary>
+    /// <remarks>
+    /// The chord is identified from its pitches by <see cref="ChordAnalyzer.Identify(ReadOnlySpan{int})"/>,
+    /// which roots a set that is both a sixth chord and a seventh chord on its bass: F-A-C-D
+    /// with F at the bottom is F6 in root position here, not Dm7 in first inversion. When the
+    /// chord came from a symbol, ask <see cref="GetInversion(string)"/>, which knows the root
+    /// the symbol named.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="pitches"/> is <see langword="null"/>.</exception>
     public static int GetInversion(int[] pitches)
     {
@@ -94,6 +109,39 @@ public static class ProgressionAdvisor
     }
 
     /// <summary>
+    /// Get the inversion a chord symbol writes: 0 for root position, 1 for the third in the
+    /// bass, 2 for the fifth, 3 for the seventh. The root is the one the symbol names, so
+    /// "Dm7/F" is 1 and "Am7/C" is 1; a symbol that does not parse, or whose bass is not a
+    /// chord tone, is 0.
+    /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="chordSymbol"/> is <see langword="null"/>.</exception>
+    public static int GetInversion(string chordSymbol)
+    {
+        ArgumentNullException.ThrowIfNull(chordSymbol);
+
+        return ParsedChord.FromSymbol(chordSymbol) is { } chord ? InversionOf(chord) : 0;
+    }
+
+    /// <summary>The inversion of a parsed chord, read against the root its symbol names.</summary>
+    private static int InversionOf(ParsedChord chord)
+    {
+        if (chord.Pitches.Length < 2)
+        {
+            return 0;
+        }
+
+        var bassPc = PitchMath.Fold(chord.Pitches.Min());
+        return ((bassPc - chord.Info.RootPitchClass + 12) % 12) switch
+        {
+            0 => 0,
+            3 or 4 => 1,
+            6 or 7 or 8 => 2,
+            10 or 11 => 3,
+            _ => 0
+        };
+    }
+
+    /// <summary>
     /// Get inversion name for display.
     /// </summary>
     public static string GetInversionName(int inversion) => inversion switch
@@ -125,19 +173,10 @@ public static class ProgressionAdvisor
         var parsedChords = new List<ParsedChord>();
         foreach (var symbol in chordSymbols)
         {
-            var pitches = ParseChordSymbol(symbol);
-            if (pitches.Length == 0)
+            if (ParsedChord.FromSymbol(symbol) is { } chord)
             {
-                continue;
+                parsedChords.Add(chord);
             }
-
-            // Identify, not GetChord(GetMask(...)): a symbol states its own root, and
-            // ParseChordSymbol puts it at the bottom, but the bare mask lookup throws that away
-            // and answers the lowest-numbered registered root of the pitch-class set. Csus4 came
-            // back as F sus2, Eaug as C augmented, F#7b5 as C7b5 — 59 of 252 symbols named a root
-            // their caller did not write. Identify reads the bass, which is the root here.
-            var info = ChordAnalyzer.Identify(pitches);
-            parsedChords.Add(new ParsedChord(symbol, pitches, info));
         }
 
         if (parsedChords.Count < 2)
@@ -152,8 +191,8 @@ public static class ProgressionAdvisor
         var prev = parsedChords[^2];
         var curr = parsedChords[^1];
 
-        var prevRoman = KeyAnalyzer.Analyze(prev.Pitches, detectedKey);
-        var currRoman = KeyAnalyzer.Analyze(curr.Pitches, detectedKey);
+        var prevRoman = KeyAnalyzer.Analyze(prev.Info, detectedKey);
+        var currRoman = KeyAnalyzer.Analyze(curr.Info, detectedKey);
 
         // A chromatic chord yields RomanNumeralChord.Invalid, whose default Degree
         // (ScaleDegree.I) would otherwise masquerade as the tonic and fabricate
@@ -183,7 +222,7 @@ public static class ProgressionAdvisor
         // "any -> V = Half" arm, which would otherwise shadow it.
         if (!detectedKey.IsMajor && prevRoman.Degree == ScaleDegree.Iv && currRoman.Degree == ScaleDegree.V)
         {
-            var inv = GetInversion(prev.Pitches);
+            var inv = InversionOf(prev);
             if (inv == 1)
             {
                 return CadenceType.Phrygian;
@@ -224,19 +263,10 @@ public static class ProgressionAdvisor
         var parsedChords = new List<ParsedChord>();
         foreach (var symbol in chordSymbols)
         {
-            var pitches = ParseChordSymbol(symbol);
-            if (pitches.Length == 0)
+            if (ParsedChord.FromSymbol(symbol) is { } chord)
             {
-                continue;
+                parsedChords.Add(chord);
             }
-
-            // Identify, not GetChord(GetMask(...)): a symbol states its own root, and
-            // ParseChordSymbol puts it at the bottom, but the bare mask lookup throws that away
-            // and answers the lowest-numbered registered root of the pitch-class set. Csus4 came
-            // back as F sus2, Eaug as C augmented, F#7b5 as C7b5 — 59 of 252 symbols named a root
-            // their caller did not write. Identify reads the bass, which is the root here.
-            var info = ChordAnalyzer.Identify(pitches);
-            parsedChords.Add(new ParsedChord(symbol, pitches, info));
         }
 
         if (parsedChords.Count == 0)
@@ -246,7 +276,7 @@ public static class ProgressionAdvisor
 
         var (key, _) = DetectKeyFromProgression(parsedChords);
         var lastChord = parsedChords[^1];
-        var lastRoman = KeyAnalyzer.Analyze(lastChord.Pitches, key);
+        var lastRoman = KeyAnalyzer.Analyze(lastChord.Info, key);
 
         var suggestions = new List<ChordSuggestion>();
 
@@ -432,11 +462,9 @@ public static class ProgressionAdvisor
         var skippedSymbols = new List<(int Index, string Symbol)>();
         for (var i = 0; i < chordSymbols.Length; i++)
         {
-            var pitches = ParseChordSymbol(chordSymbols[i]);
-            if (pitches.Length > 0)
+            if (ParsedChord.FromSymbol(chordSymbols[i]) is { } chord)
             {
-                var info = ChordAnalyzer.Identify(pitches);
-                parsedChords.Add(new ParsedChord(chordSymbols[i], pitches, info));
+                parsedChords.Add(chord);
             }
             else
             {
@@ -458,7 +486,7 @@ public static class ProgressionAdvisor
         var romans = new RomanNumeralChord[parsedChords.Count];
         for (var i = 0; i < parsedChords.Count; i++)
         {
-            romans[i] = KeyAnalyzer.Analyze(parsedChords[i].Pitches, key);
+            romans[i] = KeyAnalyzer.Analyze(parsedChords[i].Info, key);
         }
 
         // Check for harmonic minor (raised 7th in minor key)
@@ -968,7 +996,7 @@ public static class ProgressionAdvisor
             // checked BEFORE the generic "any -> V = Half" arm, which would
             // otherwise shadow it.
             else if (!key.IsMajor && prevRoman.Degree == ScaleDegree.Iv && currRoman.Degree == ScaleDegree.V
-                     && i == chords.Count - 1 && GetInversion(prev.Pitches) == 1)
+                     && i == chords.Count - 1 && InversionOf(prev) == 1)
             {
                 cadences.Add(new CadenceInfo(
                     CadenceType.Phrygian, i - 1, prev.Symbol, curr.Symbol,
@@ -1105,8 +1133,8 @@ public static class ProgressionAdvisor
                             {
                                 modType = ModulationType.PivotChord;
                                 pivotChord = prev.Symbol;
-                                var oldRoman = KeyAnalyzer.Analyze(prev.Pitches, currentKey);
-                                var newRoman = KeyAnalyzer.Analyze(prev.Pitches, altKey);
+                                var oldRoman = KeyAnalyzer.Analyze(prev.Info, currentKey);
+                                var newRoman = KeyAnalyzer.Analyze(prev.Info, altKey);
                                 pivotAnalysis = $"{FormatRomanNumeral(oldRoman, prev.Info.Quality)} in {currentKey} = {FormatRomanNumeral(newRoman, prev.Info.Quality)} in {altKey}";
                             }
                             else
@@ -1306,31 +1334,25 @@ public static class ProgressionAdvisor
     /// </summary>
     /// <remarks>
     /// The library has no <see cref="ChordQuality"/> for a ninth, eleventh or thirteenth chord,
-    /// so <see cref="ChordAnalyzer.Identify(ReadOnlySpan{int})"/> answers Unknown for them — but
-    /// <see cref="ParseChordSymbol"/> parsed the symbol and put its root at the bottom, and the
-    /// third is a semitone count away. A key scorer that reads only the named quality throws all
-    /// of that away and treats "C9" as no evidence of anything.
+    /// so their quality is Unknown — but the symbol named the root, <see cref="ParsedChord"/>
+    /// kept it, and the third is a semitone count above it. A key scorer that reads only the
+    /// named quality throws all of that away and treats "C9" as no evidence of anything; one that
+    /// took the lowest pitch for the root read "Am7/C" as a chord on C.
     /// </remarks>
     private static (int Root, ChordThird Third) RootAndThird(int[] pitches, ChordInfo info)
     {
+        var root = info.RootPitchClass;
+
         if (info.Quality != ChordQuality.Unknown)
         {
-            return (info.RootPitchClass, ChordLibrary.ThirdOf(info.Quality));
+            return (root, ChordLibrary.ThirdOf(info.Quality));
         }
 
         if (pitches.Length == 0)
         {
-            return (0, ChordThird.None);
+            return (root, ChordThird.None);
         }
 
-        // ParseChordSymbol voices a chord from its root up, so the lowest note is the root.
-        var lowest = pitches[0];
-        foreach (var pitch in pitches)
-        {
-            if (pitch < lowest) lowest = pitch;
-        }
-
-        var root = PitchMath.Fold(lowest);
         var present = 0;
         foreach (var pitch in pitches)
         {

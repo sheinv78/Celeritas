@@ -274,7 +274,7 @@ public class NullArgumentContractTests
     {
         Assert.Equal(0, KeyAnalyzer.DetectKey("").Root);
         Assert.Equal(ChordQuality.Unknown, ChordAnalyzer.Identify("").Quality);
-        Assert.Equal(ChordCharacter.Stable, ChordCharacterClassifier.Classify("   ").Character);
+        Assert.Equal(ChordCharacterClassification.Unknown, ChordCharacterClassifier.Classify("   "));
         Assert.Empty(ProgressionAdvisor.ParseChordSymbol(""));
         Assert.Empty(MusicNotation.Parse(""));
     }
