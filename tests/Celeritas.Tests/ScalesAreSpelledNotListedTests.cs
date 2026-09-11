@@ -102,6 +102,46 @@ public class ScalesAreSpelledNotListedTests
             ModeLibrary.GetScaleNoteNames(new ModalKey((byte)root, mode)));
     }
 
+    [Theory]
+    [InlineData(5, Mode.Locrian, "F Gb Ab Bb Cb Db Eb")]
+    [InlineData(11, Mode.Lydian, "B C# D# E# F# G# A#")]
+    public void ARootWithALetterOfItsOwnKeepsIt(int root, Mode mode, string expected)
+    {
+        // F Locrian with flats and E sharp Locrian with sharps both need six accidentals, and
+        // the earlier-letter tie rule chose E: a chart of F Locrian opened on E sharp. A mode is
+        // named by its final, so a root that has a letter keeps it whenever the scale can be
+        // written from that letter.
+        Assert.Equal(
+            expected.Split(' '),
+            ModeLibrary.GetScaleNoteNames(new ModalKey((byte)root, mode)));
+    }
+
+    [Fact]
+    public void EveryWhiteKeyRootSpellsItsScaleFromItsOwnLetterWhenItCan()
+    {
+        // The one exception is documented: F Altered would need a B double-flat, so it is the
+        // only heptatonic scale on a white-key root whose spelling starts on another letter.
+        var exceptions = new List<string>();
+        foreach (var mode in Enum.GetValues<Mode>())
+        {
+            if (ModeLibrary.GetScaleNotes(new ModalKey(0, mode)).Length != 7)
+            {
+                continue;
+            }
+
+            foreach (var (root, letter) in new[] { (0, 'C'), (2, 'D'), (4, 'E'), (5, 'F'), (7, 'G'), (9, 'A'), (11, 'B') })
+            {
+                var names = ModeLibrary.GetScaleNoteNames(new ModalKey((byte)root, mode));
+                if (names[0] != letter.ToString())
+                {
+                    exceptions.Add($"{letter} {mode}: {string.Join(" ", names)}");
+                }
+            }
+        }
+
+        Assert.Equal(["F Altered: E# F# G# A B C# D#"], exceptions);
+    }
+
     [Fact]
     public void AScaleWithNoLetterPerDegreeIsStillNamed()
     {

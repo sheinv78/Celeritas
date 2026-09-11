@@ -151,8 +151,9 @@ public class FiguredBassFigureSetTests
     [Fact]
     public void ASingleUpperVoiceNeedsNoReordering()
     {
+        // A bare fourth is one upper voice; a bare third would name the whole 5/3 triad.
         var notes = new FiguredBassRealizer(new FiguredBassOptions { Style = VoiceLeadingStyle.Smooth }).Realize(
-            [new FiguredBassSymbol { BassPitch = 60, Figures = [3], Duration = Rational.Quarter, Time = Rational.Zero }]);
+            [new FiguredBassSymbol { BassPitch = 60, Figures = [4], Duration = Rational.Quarter, Time = Rational.Zero }]);
 
         Assert.Equal(2, notes.Length);
         Assert.True(notes[1].Pitch > notes[0].Pitch);
@@ -245,11 +246,14 @@ public class FiguredBassFigureSetTests
     [Fact]
     public void ANaturalOverAChromaticBass_IsSpelledFromTheLetterBelow()
     {
-        // C sharp is not a natural letter, so the realizer counts the degree from C.
+        // C sharp is not a natural letter, so the realizer counts the degree from C: the
+        // natural third above it is E, not E sharp. (A lone "3" names the whole 5/3 triad, so
+        // the fifth comes too.)
         var natural = RealizeWith(61, [3], new Dictionary<int, char> { [3] = 'n' });
 
-        Assert.Equal(2, natural.Length);
-        Assert.True(natural[1].Pitch > 61);
+        Assert.Equal(3, natural.Length);
+        Assert.Contains(natural, n => n.Pitch % 12 == 4);
+        Assert.All(natural.Skip(1), n => Assert.True(n.Pitch > 61));
     }
 
     // ---------- degenerate and generic figures ----------

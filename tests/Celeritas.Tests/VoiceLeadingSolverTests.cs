@@ -32,6 +32,29 @@ public class VoiceLeadingSolverTests
         Assert.Empty(solution.Warnings);
     }
 
+    [Theory]
+    [InlineData(12)]
+    [InlineData(-1)]
+    [InlineData(-12)]
+    [InlineData(-13)]
+    [InlineData(99)]
+    public void Solve_FoldsTheKeyRootLikeTheRulesItApplies(int keyRoot)
+    {
+        // VoiceLeadingRules.Check folds its key root, so -1 is B and 12 is C. The solver handed
+        // the raw value to the rules, and a root of -12 or below — a tonic an octave down —
+        // indexed an array by a negative number inside the parallel search: an AggregateException
+        // naming no argument, where -1..-11 worked by arithmetic accident.
+        var solver = new VoiceLeadingSolver();
+        List<int[]> progression = [CMajor, FMajor, GMajor, CMajor];
+
+        var folded = solver.Solve(progression, PitchMath.Fold(keyRoot));
+        var raw = solver.Solve(progression, keyRoot);
+
+        Assert.True(raw.IsValid);
+        Assert.Equal(folded.TotalCost, raw.TotalCost);
+        Assert.Equal(folded.Voicings, raw.Voicings);
+    }
+
     [Fact]
     public void Solve_EmptyProgression_IsAnEmptySolution_NotAFailure()
     {

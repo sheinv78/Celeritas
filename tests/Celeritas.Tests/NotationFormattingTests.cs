@@ -39,12 +39,22 @@ public class NotationFormattingTests
         Assert.Equal(expected, MusicNotation.FormatDuration(new Rational(num, den), useDot: true, useLetters: false));
     }
 
-    [Fact]
-    public void ADotShorterThanASixtyFourth_FallsBackToTheRatio()
+    [Theory]
+    [InlineData(3, 128, "64.")]
+    [InlineData(3, 256, "128.")]
+    [InlineData(3, 2048, "1024.")]
+    public void ADotShorterThanASixtyFourth_IsStillADot(int num, int den, string expected)
     {
-        // The table stops at a dotted 32nd; anything shorter has no name to give.
-        Assert.Equal("3/128", MusicNotation.FormatDuration(new Rational(3, 128), useDot: true, useLetters: false));
-        Assert.Equal("3/128", MusicNotation.FormatDuration(new Rational(3, 128), useDot: true, useLetters: true));
+        // This test used to pin "3/128" with the comment "anything shorter has no name to give".
+        // The reader gives it one — ParseDuration("64.") is 3/128 — so the pin cemented a writer
+        // whose text its own reader refused: a passage holding a dotted 64th could not be saved
+        // and read back at all.
+        Assert.Equal(expected, MusicNotation.FormatDuration(new Rational(num, den), useDot: true, useLetters: false));
+        Assert.Equal(expected, MusicNotation.FormatDuration(new Rational(num, den), useDot: true, useLetters: true));
+        Assert.Equal(new Rational(num, den), MusicNotation.ParseDuration(expected));
+
+        var text = MusicNotation.FormatNoteSequence([new NoteEvent(60, Rational.Zero, new Rational(num, den))]);
+        Assert.Equal(new Rational(num, den), Assert.Single(MusicNotation.Parse(text)).Duration);
     }
 
     [Fact]

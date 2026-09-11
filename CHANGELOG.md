@@ -155,7 +155,9 @@ follows.
   that knows nothing about letters, so F sharp Ionian read `F# G# A# B C# D# F` --
   an F sharp and an F natural in one scale, no E at all, and a diminished octave
   printed where the leading tone belongs. 92 of the 156 heptatonic mode and root
-  pairs were spelled that way
+  pairs were spelled that way. A root that has a letter of its own keeps it: with
+  the accidentals tied at six, the tie rule had spelled F Locrian from E sharp and
+  B Lydian from C flat
 - A mode names its avoid note. `GetCharacteristicNotes` returns a pair and the
   second half of it was empty for all nineteen modes
 - `RhythmPredictor` discounts a whole short-context prediction, not only its
@@ -190,6 +192,9 @@ follows.
   wrote "1/64" where the numeric arm beside it already answered "64"
 - `ParseDuration` reads what `FormatDuration` writes. It stopped at a 32nd and
   refused "64", and every tuplet value the grammar reads happily inside a note
+- `FormatDuration` writes every dotted power of two as a dot. Its table stopped at
+  "32." and wrote a dotted 64th as "3/128" -- text the reader refuses, so a passage
+  holding one could not be saved and read back
 - `FormatWithDirectives` writes the music its sibling writes. It kept the old
   flattening implementation that `FormatNoteSequence` had been rewritten to
   replace, so four of eight test passages came back as different music -- with no
@@ -235,6 +240,17 @@ follows.
   styles; they could previously sound below it, inverting the notated chord
 - The natural (`n`) figure cancels a key-signature alteration, which is its
   purpose; it previously had no effect outside C major
+- A lone "3" or "5" figure -- and so a bare accidental, which reads as "#3" --
+  realizes the whole root-position triad. The realizer built only the interval it
+  was handed, so the dominant of every minor-key cadence written the historical
+  way, a bare sharp under the bass, came out as two notes with no fifth
+- `Trill.HasTurnEnding` is the alias of `EndWithTurn` its documentation says. It
+  was a second flag that only `Expand` OR-ed with the first, so a trill built with
+  `endWithTurn: true` answered `HasTurnEnding == false` and a trill copied through
+  the alias lost its closing turn
+- `VoiceLeadingSolver.Solve` folds its key root the way `VoiceLeadingRules.Check`
+  does. A root of -12 or below reached the rules unfolded and came back as an
+  `AggregateException` from inside the parallel search
 - `Rational` addition and subtraction no longer overflow when the exact reduced
   result is representable
 - `SpnNote.ToString()` and note subtraction work outside the MIDI range instead

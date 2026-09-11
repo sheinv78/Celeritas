@@ -263,6 +263,13 @@ public sealed class FiguredBassRealizer
     /// <summary>
     /// Normalize figured bass figures to standard intervals
     /// </summary>
+    /// <remarks>
+    /// A lone "3" or "5" — which is how an accidental on the third is written, "#" standing for
+    /// "#3" — names one interval of a root-position triad and implies the other, exactly as an
+    /// unfigured bass implies both. Without that entry the figure fell through to "use as-is"
+    /// and the dominant of every minor-key cadence written the historical way, a bare sharp
+    /// under the bass, realized as a two-note chord with no fifth.
+    /// </remarks>
     private static int[] NormalizeFigures(int[] figures)
     {
         return figures.Length switch
@@ -270,6 +277,7 @@ public sealed class FiguredBassRealizer
             0 => [3, 5],
             _ => figures switch
             {
+                [3] or [5] or [3, 5] => [3, 5], // one figure of the triad names the whole 5/3
                 [6] => [3, 6], // 6 = first inversion (6/3)
                 [6, 4] => [4, 6], // 6/4 = second inversion
                 [7] => [3, 5, 7], // 7 = dominant seventh

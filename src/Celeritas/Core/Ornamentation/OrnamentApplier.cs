@@ -59,8 +59,7 @@ public static class OrnamentApplier
                 Interval = trill.Interval,
                 Speed = trill.Speed,
                 StartWithUpper = trill.StartWithUpper,
-                EndWithTurn = trill.EndWithTurn,
-                HasTurnEnding = trill.HasTurnEnding
+                EndWithTurn = trill.EndWithTurn
             },
             Mordent mordent => new Mordent
             {

@@ -65,6 +65,25 @@ public class OrnamentsTests
     }
 
     [Fact]
+    public void Trill_HasTurnEnding_IsTheSameFlagAsEndWithTurn()
+    {
+        // HasTurnEnding is documented as the alias earlier examples used. It was a second flag
+        // that only Expand OR-ed with the first: a trill built with endWithTurn: true answered
+        // HasTurnEnding == false, and a trill copied through the alias lost its closing turn.
+        var baseNote = new NoteEvent(64, Rational.Zero, new Rational(1, 2));
+
+        var built = OrnamentApplier.CreateTrill(baseNote, endWithTurn: true);
+        Assert.True(built.HasTurnEnding);
+
+        var viaAlias = new Trill { BaseNote = baseNote, HasTurnEnding = true };
+        Assert.True(viaAlias.EndWithTurn);
+
+        var copy = new Trill { BaseNote = baseNote, Interval = built.Interval, Speed = built.Speed, HasTurnEnding = built.HasTurnEnding };
+        Assert.Equal(built.Expand().Select(n => n.Pitch), copy.Expand().Select(n => n.Pitch));
+        Assert.Equal(62, copy.Expand()[^2].Pitch);
+    }
+
+    [Fact]
     public void Mordent_Upper_CreatesThreeNotes()
     {
         // Arrange

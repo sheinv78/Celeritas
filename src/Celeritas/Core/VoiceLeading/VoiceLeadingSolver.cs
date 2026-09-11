@@ -30,10 +30,18 @@ public sealed class VoiceLeadingSolver(VoiceLeadingSolverOptions? options = null
     /// Solve voice leading for a progression of chords.
     /// Returns optimal SATB voicings for each chord.
     /// </summary>
+    /// <param name="chordPitchClasses">One pitch-class set per chord.</param>
+    /// <param name="keyRoot">Pitch class of the tonic, 0=C .. 11=B. Folded into that range, as
+    /// <see cref="VoiceLeadingRules.Check(Voicing, Voicing, int)"/> folds its own, so -1 is B and
+    /// 12 is C. It was handed to the rules unfolded, and a root of -12 or below — a tonic an
+    /// octave down — indexed an array by a negative number inside the parallel search and came
+    /// back as an <see cref="AggregateException"/> naming no argument.</param>
     /// <exception cref="ArgumentNullException"><paramref name="chordPitchClasses"/> is <see langword="null"/>.</exception>
     public VoiceLeadingSolution Solve(IReadOnlyList<int[]> chordPitchClasses, int keyRoot = 0)
     {
         ArgumentNullException.ThrowIfNull(chordPitchClasses);
+
+        keyRoot = PitchMath.Fold(keyRoot);
 
         if (chordPitchClasses.Count == 0)
             return new VoiceLeadingSolution([], 0, []);

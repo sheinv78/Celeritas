@@ -283,10 +283,16 @@ public static class ModeLibrary
     /// and root pairs came back spelled that way.
     /// </para>
     /// <para>
-    /// Where a root sounds the same as two letters, the spelling that needs the fewest
-    /// accidentals wins, which is what a musician writes: the Ionian mode on pitch class 8 is A
-    /// flat major, not G sharp major with a double-sharped seventh. Ties go to the earlier
-    /// letter, so pitch class 6 is spelled F sharp rather than G flat.
+    /// A root that has a letter of its own keeps it whenever the scale can be written from that
+    /// letter: F Locrian is F Gb Ab Bb Cb Db Eb, not E# Locrian, though both need six
+    /// accidentals — a mode is named by its final, and a chart of F Locrian that opens on E
+    /// sharp tells the player the tonic is a raised E. Where a root sounds the same as two
+    /// letters, the spelling that needs the fewest accidentals wins, which is what a musician
+    /// writes: the Ionian mode on pitch class 8 is A flat major, not G sharp major with a
+    /// double-sharped seventh. Ties between those go to the earlier letter, so pitch class 6 is
+    /// spelled F sharp rather than G flat. The one heptatonic scale whose natural root cannot
+    /// be written is F Altered, whose third degree would be B double-flat; it is spelled from E
+    /// sharp.
     /// </para>
     /// <para>
     /// A scale that is not heptatonic — the pentatonics, the blues scale, whole tone, the
@@ -321,11 +327,18 @@ public static class ModeLibrary
 
     /// <summary>
     /// The seven notes spelled one letter per degree, or <see langword="null"/> when no starting
-    /// letter can write them all within a single accidental.
+    /// letter can write them all within a single accidental. A spelling whose root carries no
+    /// accidental beats one whose root does; among the rest, fewer accidentals win, then the
+    /// earlier letter.
     /// </summary>
+    /// <remarks>
+    /// The root's own letter used to count for nothing: with the accidentals tied at six, the
+    /// earlier-letter rule spelled F Locrian from E sharp and B Lydian from C flat.
+    /// </remarks>
     private static string[]? TrySpellByLetter(int[] notes)
     {
         string[]? best = null;
+        var bestRootAltered = true;
         var fewestAccidentals = int.MaxValue;
 
         for (var startLetter = 0; startLetter < LetterCount; startLetter++)
@@ -354,8 +367,19 @@ public static class ModeLibrary
                 };
             }
 
-            if (writable && accidentals < fewestAccidentals)
+            if (!writable)
             {
+                continue;
+            }
+
+            var rootAltered = notes[0] != LetterPitchClasses[startLetter];
+            var beats = best is null
+                || (!rootAltered && bestRootAltered)
+                || (rootAltered == bestRootAltered && accidentals < fewestAccidentals);
+
+            if (beats)
+            {
+                bestRootAltered = rootAltered;
                 fewestAccidentals = accidentals;
                 best = candidate;
             }

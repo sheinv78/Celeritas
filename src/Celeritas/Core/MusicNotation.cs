@@ -220,21 +220,13 @@ public static class MusicNotation
                         8 => "e.",
                         16 => "s.",
                         32 => "t.",
-                        // No letter goes finer than a 32nd, so fall back the way the numeric arm
-                        // below does rather than emitting the raw rational: "1/64" is not
-                        // notation and nothing reads it, while "64" is what the grammar expects.
-                        _ => FallbackForm(duration)
+                        // No letter goes finer than a 32nd, so fall back to the numeric dotted
+                        // form: "64." is what the grammar reads as a dotted 64th, while "3/128"
+                        // — which both arms used to emit here — is not notation and nothing
+                        // reads it.
+                        _ => DottedNumeric(baseNote)
                     },
-                    _ => baseNote switch
-                    {
-                        1 => "1.",
-                        2 => "2.",
-                        4 => "4.",
-                        8 => "8.",
-                        16 => "16.",
-                        32 => "32.",
-                        _ => $"{duration.Numerator}/{duration.Denominator}"
-                    }
+                    _ => DottedNumeric(baseNote)
                 };
             }
         }
@@ -269,6 +261,15 @@ public static class MusicNotation
             _ => FallbackForm(duration)
         };
     }
+
+    /// <summary>
+    /// The numeric written form of a dotted note value: the base value followed by a dot, which
+    /// <see cref="ParseDuration"/> reads back as three halves of it. Every power of two has one,
+    /// down to a dotted 1024th; the table used to stop at "32." and write a dotted 64th as
+    /// "3/128", a text the reader refuses.
+    /// </summary>
+    private static string DottedNumeric(long baseNote) =>
+        $"{baseNote.ToString(System.Globalization.CultureInfo.InvariantCulture)}.";
 
     /// <summary>
     /// The written form of a duration outside the plain note values, chosen so the parser can

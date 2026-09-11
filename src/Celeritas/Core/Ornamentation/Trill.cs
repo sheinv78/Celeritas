@@ -28,9 +28,19 @@ public sealed class Trill : Ornament
     public bool EndWithTurn { get; init; } = false;
 
     /// <summary>
-    /// Backward/compat alias used by examples.
+    /// The same flag as <see cref="EndWithTurn"/> under the name earlier examples used: reading
+    /// either reports the trill's ending, setting either sets it.
     /// </summary>
-    public bool HasTurnEnding { get; init; } = false;
+    /// <remarks>
+    /// It was a second, independent flag that only <see cref="Expand"/> OR-ed with the first, so
+    /// a trill built with <c>endWithTurn: true</c> answered <c>HasTurnEnding == false</c>, and a
+    /// trill copied through this property lost its closing turn.
+    /// </remarks>
+    public bool HasTurnEnding
+    {
+        get => EndWithTurn;
+        init => EndWithTurn = value;
+    }
 
     /// <summary>Expands into a rapid alternation of main and upper notes, optionally closing with a turn.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><see cref="Speed"/> is not positive.</exception>
@@ -39,7 +49,7 @@ public sealed class Trill : Ornament
         if (Speed <= 0)
             throw new ArgumentOutOfRangeException(nameof(Speed), Speed, "Trill speed must be positive");
 
-        var endWithTurn = EndWithTurn || HasTurnEnding;
+        var endWithTurn = EndWithTurn;
         var noteDuration = new Rational(1, Speed * 4); // Duration per trill note
         var upperNote = Playable(BaseNote.Pitch + Interval);
         var lowerNote = Playable(BaseNote.Pitch - (Interval == 2 ? 2 : 1)); // For turn ending

@@ -88,6 +88,35 @@ public class FiguredBassTextMeansWhatAMusicianWritesTests
         }
     }
 
+    [Theory]
+    [InlineData("", new[] { 7, 10, 2 })]        // G Bb D: the unfigured dominant of C minor
+    [InlineData("#", new[] { 7, 11, 2 })]       // G B D: the bare sharp raises the third
+    [InlineData("#3", new[] { 7, 11, 2 })]
+    [InlineData("3", new[] { 7, 10, 2 })]       // one figure of the triad names the whole 5/3
+    [InlineData("5", new[] { 7, 10, 2 })]
+    [InlineData("5/3", new[] { 7, 10, 2 })]
+    [InlineData("3/5", new[] { 7, 10, 2 })]
+    public void OneFigureOfATriadRealizesTheWholeTriad(string figures, int[] expectedPitchClasses)
+    {
+        // The reader learned that a bare accidental means "#3"; the realizer had no entry for a
+        // lone 3 and built the one interval it was handed, so the dominant of every minor-key
+        // cadence written the historical way came out as a two-note chord with no fifth.
+        var realizer = new FiguredBassRealizer(new FiguredBassOptions { Key = new Celeritas.Core.KeySignature(0, false) });
+        var realized = realizer.Realize(
+        [
+            new FiguredBassSymbol
+            {
+                BassPitch = 43,
+                Figures = FiguredBassRealizer.ParseFigures(figures),
+                Accidentals = FiguredBassRealizer.ParseAccidentals(figures),
+                Time = Celeritas.Core.Rational.Zero,
+                Duration = Celeritas.Core.Rational.Quarter,
+            },
+        ]);
+
+        Assert.Equal(expectedPitchClasses.Order(), realized.Select(n => n.Pitch % 12).Distinct().Order());
+    }
+
     [Fact]
     public void ARaisedSixthRealizesRaisedWhicheverWayItIsWritten()
     {
