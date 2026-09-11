@@ -872,8 +872,8 @@ public static class ProgressionAdvisor
         // for non-diatonic roots, so checking Function alone would never fire.)
         var isBorrowed = !roman.IsValid
             || roman.Function == HarmonicFunction.Chromatic
-            || (!IsDiatonicChord(pitches, key)
-                && IsDiatonicChord(pitches, new KeySignature(key.Root, !key.IsMajor)));
+            || (!FitsKey(new ParsedChord(symbol, pitches, info), key)
+                && FitsKey(new ParsedChord(symbol, pitches, info), new KeySignature(key.Root, !key.IsMajor)));
 
         return new ChordAnalysisDetail
         {
@@ -1036,23 +1036,11 @@ public static class ProgressionAdvisor
             var next = chords[i + 1];
 
             // Check for secondary dominants (V7/x pattern = tonicization)
-            if (curr.Info.Quality is ChordQuality.Dominant7 or ChordQuality.Major)
+            if (IsAppliedDominant(chords, i, currentKey))
             {
-                // Use the identified chord roots (pitches[0] is the bass, which is
-                // wrong for slash chords / inversions)
-                var currRoot = curr.Info.RootPitchClass;
                 var nextRoot = next.Info.RootPitchClass;
 
-                // Check if next chord's root is a perfect fifth below (= resolution)
-                var expectedResolution = (currRoot + 5) % 12; // P5 down = P4 up
-
-                if (nextRoot == expectedResolution)
                 {
-                    // Check if this resolution target is NOT the tonic
-                    var targetDegree = (nextRoot - mainKey.Root + 12) % 12;
-
-                    // Secondary dominant targets: ii, iii, IV, V, vi (not I)
-                    if (targetDegree != 0) // Not tonic
                     {
                         // Dominant-family targets are MAJOR-mode keys: a V7/V
                         // chain resolving to G7 tonicizes G MAJOR, not G minor.
@@ -1061,26 +1049,53 @@ public static class ProgressionAdvisor
                                 or ChordQuality.Dominant7 or ChordQuality.Dominant7Flat5
                                 or ChordQuality.Augmented7);
 
-                        // If it's not diatonic to main key, it's likely a secondary dominant.
-                        //
-                        // The second half matters once the music has already moved: a chord
-                        // cannot tonicize the key it is already in. After an earlier modulation
-                        // sets currentKey to G major, D → G is simply V → I there, but the
-                        // diatonic test only rules out secondary dominants of the MAIN key, so
-                        // the report gained an entry reading "Modulation to G Major (same key)"
-                        // — a modulation from a key to itself, and one more on the count.
-                        if (!IsDiatonicChord(curr.Pitches, mainKey) && !KeysEqual(tonicizedKey, currentKey))
+                        // A chord cannot tonicize the key it is already in. After an earlier
+                        // modulation sets currentKey to G major, D → G is simply V → I there;
+                        // tested against the MAIN key only, the report gained an entry reading
+                        // "Modulation to G Major (same key)" — a modulation from a key to itself.
+                        if (!KeysEqual(tonicizedKey, currentKey))
                         {
-                            // Determine if this is tonicization or modulation
-                            // Check how many subsequent chords fit the new key
-                            var durationInNewKey = CountChordsInKey(chords, i + 1, tonicizedKey);
-                            var isModulation = durationInNewKey >= 3;
+                            // Tonicization or modulation? Related keys share most of their chords,
+                            // so a count of chords that fit the new key proved nothing: after
+                            // V7/vi the run "Am - D7 - G - C" counted three in A minor, and the
+                            // tonicization was reported as a pivot-chord modulation. The music
+                            // has to stay AND be told apart from the key it left.
+                            var run = RunIn(chords, i + 1, tonicizedKey);
+                            var durationInNewKey = run.Count;
+                            var isModulation = IsModulation(run, tonicizedKey);
 
                             var keyRel = KeyRelationships.Describe(currentKey, tonicizedKey);
-                            var modType = isModulation ? ModulationType.PivotChord : ModulationType.Tonicization;
-                            var modDesc = isModulation
-                                ? $"Modulation to {tonicizedKey} ({keyRel}) - stays in new key for {durationInNewKey} chords"
-                                : $"Tonicization: {curr.Symbol} → {next.Symbol} briefly emphasizes {tonicizedKey} ({keyRel})";
+
+                            // A modulation through an applied dominant pivots on the chord BEFORE
+                            // it, when that chord belongs to both keys — vi of C is ii of G ahead
+                            // of D7 → G. The applied dominant itself belongs to neither key, and
+                            // naming it the pivot ("E7 = pivot to A minor") named a chord that is
+                            // in no sense common to the two.
+                            var modType = ModulationType.Tonicization;
+                            string? pivotChord = null;
+                            string? pivotAnalysis = null;
+                            if (isModulation)
+                            {
+                                modType = ModulationType.Direct;
+                                if (i > 0 && FitsKey(chords[i - 1], currentKey) && FitsKey(chords[i - 1], tonicizedKey))
+                                {
+                                    var pivot = chords[i - 1];
+                                    modType = ModulationType.PivotChord;
+                                    pivotChord = pivot.Symbol;
+                                    var oldRoman = KeyAnalyzer.Analyze(pivot.Info, currentKey);
+                                    var newRoman = KeyAnalyzer.Analyze(pivot.Info, tonicizedKey);
+                                    pivotAnalysis = $"{FormatRomanNumeral(oldRoman, pivot.Info.Quality)} in {currentKey} = {FormatRomanNumeral(newRoman, pivot.Info.Quality)} in {tonicizedKey}";
+                                }
+                            }
+
+                            var modDesc = modType switch
+                            {
+                                ModulationType.PivotChord =>
+                                    $"Pivot chord modulation via {pivotChord}, then {curr.Symbol} → {next.Symbol}: {currentKey} → {tonicizedKey} ({keyRel}) - stays in new key for {durationInNewKey} chords",
+                                ModulationType.Direct =>
+                                    $"Modulation through {curr.Symbol} → {next.Symbol}: {currentKey} → {tonicizedKey} ({keyRel}) - stays in new key for {durationInNewKey} chords",
+                                _ => $"Tonicization: {curr.Symbol} → {next.Symbol} briefly emphasizes {tonicizedKey} ({keyRel})",
+                            };
 
                             modulations.Add(new ModulationInfo
                             {
@@ -1088,7 +1103,8 @@ public static class ProgressionAdvisor
                                 FromKey = currentKey,
                                 ToKey = tonicizedKey,
                                 Type = modType,
-                                PivotChord = isModulation ? curr.Symbol : null,
+                                PivotChord = pivotChord,
+                                PivotAnalysis = pivotAnalysis,
                                 Duration = durationInNewKey,
                                 KeyRelationship = keyRel,
                                 Description = modDesc
@@ -1109,14 +1125,22 @@ public static class ProgressionAdvisor
             if (i < chords.Count - 2 && !modulations.Any(m => m.Position >= i - 1 && m.Position <= i + 1))
             {
                 var window = new[] { chords[i], chords[i + 1], chords[i + 2] };
-                var bestAltKey = FindBetterKey(window, currentKey);
+
+                // A window whose one foreign chord is an applied dominant resolving into a chord
+                // of the current key is that key tonicizing one of its degrees, not leaving.
+                var bestAltKey = HoldsAnAppliedDominant(chords, i, window.Length, currentKey)
+                    ? null
+                    : FindBetterKey(window, currentKey);
 
                 if (bestAltKey is { } altKey && !KeysEqual(altKey, mainKey) && !KeysEqual(altKey, currentKey))
                 {
-                    var durationInNewKey = CountChordsInKey(chords, i, altKey);
+                    var run = RunIn(chords, i, altKey);
+                    var durationInNewKey = run.Count;
 
-                    // Only report as modulation if we stay in new key long enough
-                    if (durationInNewKey >= 3)
+                    // Only a run that is in the new key on its own is a modulation: the Neapolitan
+                    // in "Am - Dm/F - Bb - E7 - Am" fits D minor with the two chords around it,
+                    // and was reported as a direct modulation to D minor at the first chord.
+                    if (IsModulation(run, altKey))
                     {
                         // Check if previous chord could be a pivot
                         ModulationType modType;
@@ -1126,8 +1150,8 @@ public static class ProgressionAdvisor
                         if (i > 0)
                         {
                             var prev = chords[i - 1];
-                            var fitsOld = IsDiatonicChord(prev.Pitches, currentKey);
-                            var fitsNew = IsDiatonicChord(prev.Pitches, altKey);
+                            var fitsOld = FitsKey(prev, currentKey);
+                            var fitsNew = FitsKey(prev, altKey);
 
                             if (fitsOld && fitsNew)
                             {
@@ -1147,8 +1171,18 @@ public static class ProgressionAdvisor
                             modType = ModulationType.Direct;
                         }
 
+                        // The modulation is placed on the first chord of the new key: the window
+                        // may open on the last chord of the old one, and a direct modulation
+                        // reported there — "C - F - G - C | Db ..." at the C — pointed the caller at
+                        // a chord that had not moved.
+                        var position = i;
+                        while (position < i + window.Length - 1 && !FitsKey(chords[position], altKey))
+                        {
+                            position++;
+                        }
+
                         // Avoid duplicate modulations
-                        if (!modulations.Any(m => m.Position == i && KeysEqual(m.ToKey, altKey)))
+                        if (!modulations.Any(m => m.Position == position && KeysEqual(m.ToKey, altKey)))
                         {
                             var keyRel = KeyRelationships.Describe(currentKey, altKey);
                             var modDesc = modType == ModulationType.PivotChord
@@ -1157,7 +1191,7 @@ public static class ProgressionAdvisor
 
                             modulations.Add(new ModulationInfo
                             {
-                                Position = i,
+                                Position = position,
                                 FromKey = currentKey,
                                 ToKey = altKey,
                                 Type = modType,
@@ -1179,23 +1213,67 @@ public static class ProgressionAdvisor
     }
 
     /// <summary>
-    /// Count the consecutive run of diatonic chords (starting from index) that fit
-    /// the given key, tolerating at most one non-diatonic (passing/chromatic) chord;
-    /// the run ends at the second non-diatonic chord.
+    /// Whether <paramref name="chord"/> is one of <paramref name="key"/>'s own chords — the test
+    /// every modulation, borrowing and pivot judgement in this class rests on.
     /// </summary>
-    private static int CountChordsInKey(
-        List<ParsedChord> chords,
-        int startIndex,
-        KeySignature key)
+    /// <remarks>
+    /// A minor key is its composite scale: natural minor with the raised sixth and seventh of
+    /// the melodic and harmonic forms, so V, V7 and vii° — the chords every minor-key cadence is
+    /// made of — are the key's own. Tested against natural minor alone, the dominant of every
+    /// minor key was reported as borrowed from the parallel major in the same report whose
+    /// highlight called it the harmonic-minor raised seventh. In a major key a dominant seventh
+    /// on I, IV or V is the mixolydian colour of blues, rock and funk — the flat seventh on I is
+    /// the sound of the key, not a departure from it — and a twelve-bar blues judged by strict
+    /// scale membership scored nothing at home and was reported as modulating to the
+    /// supertonic minor at its first chord.
+    /// </remarks>
+    private static bool FitsKey(ParsedChord chord, KeySignature key)
     {
-        int count = 0;
-        int nonDiatonic = 0;
-
-        for (int i = startIndex; i < chords.Count; i++)
+        var chordMask = ChordAnalyzer.GetMask(chord.Pitches);
+        if ((chordMask & ~KeyMask(key)) == 0)
         {
-            if (IsDiatonicChord(chords[i].Pitches, key))
+            return true;
+        }
+
+        if (key.IsMajor && chord.Info.Quality == ChordQuality.Dominant7)
+        {
+            var degree = PitchMath.Fold(chord.Info.RootPitchClass - key.Root);
+            return degree is 0 or 5 or 7;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The pitch classes a key owns: the major scale, or for a minor key the composite of its
+    /// natural, harmonic and melodic forms.
+    /// </summary>
+    private static ushort KeyMask(KeySignature key)
+    {
+        var mask = KeyAnalyzer.GetScaleMask(key.Root, key.IsMajor);
+        if (!key.IsMajor)
+        {
+            mask |= (ushort)(1 << PitchMath.Fold(key.Root + 9));   // raised sixth
+            mask |= (ushort)(1 << PitchMath.Fold(key.Root + 11));  // raised seventh
+        }
+
+        return mask;
+    }
+
+    /// <summary>
+    /// The chords from <paramref name="startIndex"/> that stay in <paramref name="newKey"/>,
+    /// tolerating one that does not; the run ends at the second chord that does not fit.
+    /// </summary>
+    private static List<ParsedChord> RunIn(List<ParsedChord> chords, int startIndex, KeySignature newKey)
+    {
+        var run = new List<ParsedChord>();
+        var nonDiatonic = 0;
+
+        for (var i = startIndex; i < chords.Count; i++)
+        {
+            if (FitsKey(chords[i], newKey))
             {
-                count++;
+                run.Add(chords[i]);
             }
             else if (++nonDiatonic >= 2)
             {
@@ -1203,16 +1281,95 @@ public static class ProgressionAdvisor
             }
         }
 
-        return count;
+        return run;
     }
 
-    private static bool IsDiatonicChord(int[] pitches, KeySignature key)
-    {
-        var chordMask = ChordAnalyzer.GetMask(pitches);
-        var scaleMask = KeyAnalyzer.GetScaleMask(key.Root, key.IsMajor);
+    /// <summary>
+    /// Whether a run of chords that fit <paramref name="newKey"/> is a modulation to it: the
+    /// music stays for at least three chords, and the run, heard on its own, is in the new key.
+    /// </summary>
+    /// <remarks>
+    /// A count of chords that fit the new key proved nothing, because related keys share most
+    /// of their chords: C - D7 - G - C counted four chords in G major and was reported as a
+    /// modulation to the dominant; after the V7/ii of rhythm changes the rest of the tune fit
+    /// C minor — whose composite scale owns nearly all of B flat major — and was reported as a
+    /// pivot-chord modulation there. So the question "is this run in the new key?" is put to
+    /// <see cref="DetectKeyFromProgression"/>, the one road this class has for what key a
+    /// passage is in: shown "G - C" alone it answers C, and shown the rest of rhythm changes it
+    /// answers B flat.
+    /// </remarks>
+    private static bool IsModulation(List<ParsedChord> run, KeySignature newKey) =>
+        run.Count >= 3 && KeysEqual(DetectKeyFromProgression(run).key, newKey);
 
-        // All chord tones should be in the scale
-        return (chordMask & ~scaleMask) == 0;
+    /// <summary>
+    /// Whether the chord at <paramref name="index"/> is an applied (secondary) dominant in
+    /// <paramref name="key"/>: a major or dominant-seventh chord resolving down a fifth into a
+    /// chord other than the tonic, and not one of the key's own chords doing so.
+    /// </summary>
+    /// <remarks>
+    /// A dominant seventh on the tonic or subdominant is the key's own in the blues, where the
+    /// tonic sonority is that seventh chord and I7 - IV7 is the progression, not V7/IV; but in
+    /// rhythm changes, whose tonic is a plain triad, the one I7 before IV is the textbook V7/IV.
+    /// The two are told apart by whether the tonic ever sounds as a chord that rests — a triad,
+    /// a major seventh, a sixth chord: if it does, a dominant seventh on it is a departure.
+    /// </remarks>
+    private static bool IsAppliedDominant(List<ParsedChord> chords, int index, KeySignature key)
+    {
+        if (index + 1 >= chords.Count)
+        {
+            return false;
+        }
+
+        var curr = chords[index].Info;
+        var next = chords[index + 1].Info;
+        if (curr.Quality is not (ChordQuality.Major or ChordQuality.Dominant7)
+            || next.RootPitchClass != PitchMath.Fold(curr.RootPitchClass + 5)
+            || next.RootPitchClass == key.Root)
+        {
+            return false;
+        }
+
+        // A dominant seventh on I or IV of a major key is the blues idiom or the textbook
+        // V7/IV, and only the tonic sonority tells which: applied where the tonic rests as a
+        // triad, the key's own where the tonic itself is the seventh chord.
+        if (key.IsMajor && curr.Quality == ChordQuality.Dominant7
+            && PitchMath.Fold(curr.RootPitchClass - key.Root) is 0 or 5)
+        {
+            return chords.Any(c =>
+                c.Info.RootPitchClass == key.Root
+                && c.Info.Quality is ChordQuality.Major or ChordQuality.Major7 or ChordQuality.Major6
+                    or ChordQuality.Minor or ChordQuality.Minor7 or ChordQuality.Minor6 or ChordQuality.MinorMajor7
+                    or ChordQuality.Add9 or ChordQuality.Add11);
+        }
+
+        // Otherwise a chord made only of the key's own tones — a plain major triad on some
+        // degree — is not applied; one with a tone from outside is.
+        var chordMask = ChordAnalyzer.GetMask(chords[index].Pitches);
+        return (chordMask & ~KeyMask(key)) != 0;
+    }
+
+    /// <summary>
+    /// Whether the <paramref name="length"/> chords from <paramref name="start"/> hold an applied
+    /// dominant of <paramref name="key"/> resolving into a chord the key owns — which is how a
+    /// key tonicizes one of its own degrees, not how it leaves.
+    /// </summary>
+    /// <remarks>
+    /// The three-chord window used to be judged by scale membership alone, so I - V7/V - V - I
+    /// scored two at home and three in the dominant key and was reported as a direct modulation
+    /// to G major at its first chord — and 48 of the 60 textbook secondary dominants across the
+    /// major keys were reported as modulations.
+    /// </remarks>
+    private static bool HoldsAnAppliedDominant(List<ParsedChord> chords, int start, int length, KeySignature key)
+    {
+        for (var k = start; k + 1 < start + length && k + 1 < chords.Count; k++)
+        {
+            if (IsAppliedDominant(chords, k, key) && FitsKey(chords[k + 1], key))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static KeySignature? FindBetterKey(
@@ -1227,7 +1384,7 @@ public static class ProgressionAdvisor
         // Score current key
         foreach (var chord in window)
         {
-            if (IsDiatonicChord(chord.Pitches, currentKey))
+            if (FitsKey(chord, currentKey))
             {
                 currentScore++;
             }
@@ -1252,7 +1409,7 @@ public static class ProgressionAdvisor
 
                 foreach (var chord in window)
                 {
-                    if (IsDiatonicChord(chord.Pitches, testKey))
+                    if (FitsKey(chord, testKey))
                     {
                         score++;
                     }
@@ -1300,23 +1457,24 @@ public static class ProgressionAdvisor
     private static bool KeysEqual(KeySignature a, KeySignature b)
         => a.Root == b.Root && a.IsMajor == b.IsMajor;
 
+    /// <summary>
+    /// Whether any chord is borrowed from the parallel key: not one of this key's own chords,
+    /// but one of the parallel key's — the same test <see cref="ChordAnalysisDetail.IsBorrowed"/>
+    /// makes, so the highlight and the per-chord flag cannot disagree.
+    /// </summary>
+    /// <remarks>
+    /// This used to count pitch classes against the natural-minor scale, so the major dominant
+    /// of every minor key was "modal mixture" in the same report whose other highlight called it
+    /// the harmonic-minor raised seventh.
+    /// </remarks>
     private static bool DetectModalMixture(
         List<ParsedChord> chords,
         KeySignature key)
     {
-        // Check for chords borrowed from parallel mode
-        var rotatedParallel = KeyAnalyzer.GetScaleMask(key.Root, !key.IsMajor);
-        var diatonicMask = KeyAnalyzer.GetScaleMask(key.Root, key.IsMajor);
-
-        foreach (var (_, pitches, _) in chords)
+        var parallel = new KeySignature(key.Root, !key.IsMajor);
+        foreach (var chord in chords)
         {
-            var chordMask = ChordAnalyzer.GetMask(pitches);
-            var parallelMatch = chordMask & rotatedParallel;
-            var diatonicMatch = chordMask & diatonicMask;
-
-            // If chord fits parallel better than diatonic, it's borrowed
-            if (BitOperations.PopCount((uint)parallelMatch) >
-                BitOperations.PopCount((uint)diatonicMatch))
+            if (!FitsKey(chord, key) && FitsKey(chord, parallel))
             {
                 return true;
             }
@@ -1418,6 +1576,11 @@ public static class ProgressionAdvisor
                 // Major chord on III, VI, VII of minor keys
                 keyScores[12 + ((root + 9) % 12)] += 0.3f;  // III of minor
                 keyScores[12 + ((root + 4) % 12)] += 0.3f;  // VI of minor
+
+                // ...and on V of a minor key: the harmonic-minor dominant is a major chord, and
+                // every minor-key cadence is made of it. The table knew a major chord only as a
+                // major key's V, so E7 in "Am - Dm - E7" was evidence for A MAJOR alone.
+                keyScores[12 + ((root + 5) % 12)] += 0.5f;
             }
 
             if (isMinor || hasNoThird)
@@ -1435,28 +1598,51 @@ public static class ProgressionAdvisor
         }
 
         // The tonic bonuses go to the qualities a piece actually rests on: a plain or coloured
-        // triad, major or minor. An unstable chord — diminished, augmented, altered, dominant —
-        // is not where music sits down, and stays out. A suspended, power or quartal chord opens
-        // and closes pieces all the time and used to get nothing here, which is why "Csus4 Am F G"
-        // was read in G rather than C; having no third, it is that root's tonic in both modes.
-        static bool RestsHere(ChordQuality quality) =>
-            quality is ChordQuality.Major or ChordQuality.Major7 or ChordQuality.Add9
+        // triad, major or minor, in full. A dominant seventh rests at half weight: it is the
+        // tonic of every blues and of most rock and funk, but a plain triad is likelier to be
+        // where music sits down. Kept out altogether, "C7 - F - G7 - C7" was read in F, the key
+        // its first, last and cadence chord all contradicted. The unstable qualities —
+        // diminished, augmented, altered — stay out. A suspended, power or quartal chord opens
+        // and closes pieces all the time and used to get nothing here, which is why
+        // "Csus4 Am F G" was read in G rather than C; having no third, it is that root's tonic
+        // in both modes.
+        static float RestsHere(ChordQuality quality) => quality switch
+        {
+            ChordQuality.Major or ChordQuality.Major7 or ChordQuality.Add9
                 or ChordQuality.Add11 or ChordQuality.Minor or ChordQuality.Minor7
                 or ChordQuality.MinorMajor7 or ChordQuality.Sus2 or ChordQuality.Sus4
                 or ChordQuality.Power or ChordQuality.Quartal
                 // A sixth chord is about as restful as tonal harmony gets, and is the commonest
                 // way to voice a final tonic in jazz and in popular song.
-                or ChordQuality.Major6 or ChordQuality.Minor6;
+                or ChordQuality.Major6 or ChordQuality.Minor6 => 1.0f,
+            ChordQuality.Dominant7 => 0.5f,
+            _ => 0f,
+        };
 
-        static void Tonic(float[] keyScores, ChordInfo chord, float bonus)
+        // A Picardy third: the piece is in minor and closes on the major tonic. The final chord
+        // and the cadence into it must not hand the mode to major — "Cm - Fm - G7 - C" was
+        // reported in C major, on the strength of the one chord that is the exception.
+        var last = chords[^1].Info;
+        var picardy = ChordLibrary.ThirdOf(last.Quality) == ChordThird.Major
+            && chords.Take(chords.Count - 1).Any(c =>
+                c.Info.RootPitchClass == last.RootPitchClass
+                && ChordLibrary.ThirdOf(c.Info.Quality) == ChordThird.Minor
+                && RestsHere(c.Info.Quality) > 0);
+
+        void Tonic(float[] keyScores, ChordInfo chord, float bonus, bool closing = false)
         {
-            if (!RestsHere(chord.Quality))
+            var weight = RestsHere(chord.Quality);
+            if (weight == 0)
             {
                 return;
             }
 
+            bonus *= weight;
             switch (ChordLibrary.ThirdOf(chord.Quality))
             {
+                case ChordThird.Major when closing && picardy:
+                    keyScores[12 + chord.RootPitchClass] += bonus;
+                    break;
                 case ChordThird.Major:
                     keyScores[chord.RootPitchClass] += bonus;
                     break;
@@ -1473,13 +1659,27 @@ public static class ProgressionAdvisor
         // Strong bonus for first chord (often tonic)
         var firstChord = chords[0].Info;
         var firstRoot = RootAndThird(chords[0].Pitches, firstChord).Root;
-        var firstIsMinor = RestsHere(firstChord.Quality)
+        var firstIsMinor = RestsHere(firstChord.Quality) > 0
             && ChordLibrary.ThirdOf(firstChord.Quality) == ChordThird.Minor;
 
         Tonic(keyScores, firstChord, 3.0f);
 
-        // Bonus for last chord (often tonic in cadences)
-        Tonic(keyScores, chords[^1].Info, 2.0f);
+        // Bonus for last chord (often tonic in cadences). A closing dominant seventh is a half
+        // cadence unless its own dominant brought it in: "Am7 ... Am7 - E7" ends on the V of A,
+        // and the bonus goes to the key it leaves hanging, in both modes — the dominant of C major
+        // and of C minor is the same G7. Brought in by its own dominant, as the C7 of
+        // "C7 - F - G7 - C7" is, it is the blues tonic and rests as itself.
+        if (last.Quality == ChordQuality.Dominant7
+            && !(chords.Count > 1 && chords[^2].Info.RootPitchClass == PitchMath.Fold(last.RootPitchClass + 7)))
+        {
+            var tonic = PitchMath.Fold(last.RootPitchClass + 5);
+            keyScores[tonic] += 2.0f;
+            keyScores[12 + tonic] += 2.0f;
+        }
+        else
+        {
+            Tonic(keyScores, last, 2.0f, closing: true);
+        }
 
         // Check for V-I patterns (strong key indicators)
         for (var i = 1; i < chords.Count; i++)
@@ -1501,7 +1701,15 @@ public static class ProgressionAdvisor
 
             if (interval == 5 && !supertonicToDominant)
             {
-                Tonic(keyScores, curr, 2.5f);
+                Tonic(keyScores, curr, 2.5f, closing: i == chords.Count - 1);
+            }
+
+            // A dominant seventh falling a semitone is the tritone substitution resolving:
+            // Db7 -> C is the same cadence as G7 -> C, and "Dm7 - Db7 - Cmaj7" was read in D
+            // minor for want of it.
+            if (interval == 11 && prev.Quality is ChordQuality.Dominant7 or ChordQuality.Dominant7Flat5 or ChordQuality.Augmented7)
+            {
+                Tonic(keyScores, curr, 2.5f, closing: i == chords.Count - 1);
             }
         }
 

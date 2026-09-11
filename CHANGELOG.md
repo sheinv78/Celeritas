@@ -178,6 +178,30 @@ follows.
   appoggiatura arm ran first and never asked whether the note was prepared, so
   the textbook 4-3 was labelled Appoggiatura and Suspension was reachable only
   when the repeat landed inside the new chord
+- The progression advisor reads real music the way a musician does. Its key,
+  modulation and secondary-dominant heuristics had been tuned on random symbol
+  corpora, which have no key; judged on twenty-six textbook and bandstand
+  progressions in all twelve keys it read a twelve-bar blues as modulating to
+  the supertonic minor at its first chord, I - V7/V - V - I as a direct
+  modulation to the dominant with no secondary dominant (48 of the 60 textbook
+  secondary dominants were reported as modulations), C7 - F - G7 - C7 in F,
+  Dm7 - Db7 - Cmaj7 in D minor, a minor blues in the key of its iv, the
+  Neapolitan as a modulation, Cm - Fm - G7 - C in C major, and the dominant of
+  every minor key as a chord borrowed from the parallel major -- in the same
+  report whose highlight called it the harmonic-minor raised seventh. Now: a
+  minor key owns its raised sixth and seventh, so V, V7 and vii° are its own; a
+  dominant seventh on I, IV or V of a major key is the blues colour, not a
+  departure, and I7 - IV7 is V7/IV only where the tonic elsewhere rests as a
+  triad; a run of chords is a modulation only when the key scorer, shown the run
+  alone, puts it in the new key -- so related keys' shared chords prove nothing;
+  a modulation through an applied dominant pivots on the chord before it (vi of
+  C = ii of G), not on the dominant itself, which belongs to neither key; a
+  direct modulation is placed on the first chord of the new key; a dominant
+  seventh rests at half weight, a closing one not brought in by its own dominant
+  is a half cadence, a dominant seventh falling a semitone is the tritone
+  substitution resolving, a major chord is evidence for the minor key it is V
+  of, and a Picardy third does not hand the mode to major. The twenty-six
+  progressions are a test, asked in every key
 - A modal pattern label writes the quality its degree has in the mode. Lydian's
   seventh-degree triad is minor and was labelled "vii°", the Dorian ii is minor and
   was described as major, the Locrian and Phrygian seventh-degree chords are minor

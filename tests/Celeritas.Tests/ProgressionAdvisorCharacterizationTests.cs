@@ -144,26 +144,27 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal("i - iv - V - i", r.Pattern);
         Assert.True(r.UsesHarmonicMinor);
         Assert.False(r.UsesMelodicMinor);
-        Assert.True(r.HasModalMixture);
-        Assert.Equal(0.55f, r.Complexity);
+
+        // The dominant of a minor key is the key's own chord: this test used to pin it as
+        // "borrowed from A Major" and the report as containing modal mixture — in the same
+        // report whose highlight called it the harmonic-minor raised seventh.
+        Assert.False(r.HasModalMixture);
+        Assert.Equal(0.4f, r.Complexity, 0.0001f);
 
         Assert.Equal(["i", "iv", "V", "i"], r.Chords.Select(c => c.RomanNumeral));
         Assert.Equal(ChordCharacter.Heroic, r.Chords[2].Character);
-        Assert.True(r.Chords[2].IsBorrowed);
+        Assert.False(r.Chords[2].IsBorrowed);
         Assert.True(r.Chords[2].UsesAlteredScale);
         Assert.Equal("G# instead of G", r.Chords[2].AlteredNotes);
 
         Assert.Equal(CadenceType.Authentic, r.Cadences[0].Type);
 
-        Assert.Single(r.BorrowedChords);
-        Assert.Equal("E", r.BorrowedChords[0].Chord);
-        Assert.Equal("A Major", r.BorrowedChords[0].SourceKey); // parallel key, was "A Minor major"
+        Assert.Empty(r.BorrowedChords);
 
         Assert.Equal(
             [
                 "Cadences: Authentic",
                 "Uses harmonic minor color (raised 7th)",
-                "Contains modal mixture / borrowed chords",
             ],
             r.Highlights);
 
@@ -186,11 +187,11 @@ public class ProgressionAdvisorCharacterizationTests
         Assert.Equal("A Minor", r.Key.ToString());
         Assert.Equal("III - V7 - i", r.Pattern);
         Assert.True(r.UsesHarmonicMinor);
-        Assert.True(r.HasModalMixture);
-        Assert.Equal(0.63750005f, r.Complexity);
+        Assert.False(r.HasModalMixture);
+        Assert.Equal(0.4875f, r.Complexity, 0.0001f);
 
         Assert.Equal(["III", "V7", "i"], r.Chords.Select(c => c.RomanNumeral));
-        Assert.True(r.Chords[1].IsBorrowed);
+        Assert.False(r.Chords[1].IsBorrowed);
         Assert.Equal("G# instead of G", r.Chords[1].AlteredNotes);
 
         Assert.Equal(CadenceType.Authentic, r.Cadences[0].Type);

@@ -133,8 +133,12 @@ public class ProgressionAdvisorCoverageTests
 
         var pivot = report.Modulations.First(m => m.Type == ModulationType.PivotChord && m.PivotAnalysis is not null);
 
-        Assert.Equal("G", pivot.PivotChord);
-        Assert.Equal("V in C Major = III in E Minor", pivot.PivotAnalysis);
+        // The second half is in G: vi of C is ii of G, and D → G takes the music there. This
+        // test used to pin "G = V in C Major = III in E Minor" — a modulation to E minor that
+        // the three-chord window found because Am, D and G all fit E minor's scale.
+        Assert.Equal("Am", pivot.PivotChord);
+        Assert.Equal("vi in C Major = ii in G Major", pivot.PivotAnalysis);
+        Assert.Equal(new KeySignature(7, true), pivot.ToKey);
     }
 
     [Fact]

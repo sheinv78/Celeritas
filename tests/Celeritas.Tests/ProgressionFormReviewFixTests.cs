@@ -107,9 +107,12 @@ public class ProgressionFormReviewFixTests
     [Fact]
     public void Analyze_BorrowedChordInMinor_SourceKeyIsParallelMajor()
     {
-        var r = ProgressionAdvisor.Analyze(["Am", "Dm", "E", "Am"]);
+        // The Picardy tonic is what a minor key borrows from its parallel major. (This test
+        // used "Am Dm E Am" and its V — which is the minor key's own dominant, not a borrowing.)
+        var r = ProgressionAdvisor.Analyze(["Am", "Dm", "E", "A"]);
 
         Assert.Single(r.BorrowedChords);
+        Assert.Equal("A", r.BorrowedChords[0].Chord);
         Assert.Equal("A Major", r.BorrowedChords[0].SourceKey); // was "A Minor major"
     }
 
