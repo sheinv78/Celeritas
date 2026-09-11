@@ -70,7 +70,8 @@ follows.
   ratio past 1 (a C → B major jump reported 1.13). It is also no longer stability
   alone: a window that chose its key by a hair could report 1.0, so the margin by
   which the evidence chose that key is now a factor. Like every margin in this
-  library it reads on a modest scale — a confident modulation lands near 0.2–0.4
+  library it reads on a modest scale — a confident modulation to a closely related
+  key lands between about 0.15 and 0.65, a jump to a distant key near 1.0
 - Modulation events are chronological. Boundary attribution could scan back
   behind an already-reported boundary, so the list could read "C → G at 4"
   followed by "G → C at 2"
@@ -269,11 +270,27 @@ follows.
   no catalogue -- the pentatonics, blues, whole tone, the diminished scales,
   altered, Locrian natural 2 -- rather than the major table, which could report a
   whole-tone progression as an "Authentic cadence"
-- `KeyTrajectory.DetectModulations` skips a window whose material cannot decide a
-  key, as it skips an ambiguous one: a window holding one arpeggiated triad
-  separates "its" key from the field as cleanly as a whole phrase does, and a
-  passage of arpeggios read at a one-bar window reported a modulation at every
-  chord
+- `KeyTrajectory.DetectModulations` and `ModulationDetector.Analyze` decide where a
+  piece changes key by one judge, over phrases of the music rather than one window at
+  a time. A new key must hold for a phrase (four whole notes, or the analysis window
+  when that is longer), be decidable and clearly named, sound a note the old key lacks
+  and leave fewer notes foreign, and still read from where it began through the
+  phrase -- or to the end of the piece, closing on a tonic it has already sounded; a
+  change that does not hold is a tonicization, which the detector reports as one and
+  the trajectory not at all; a modulation is placed at the start of the bar the new
+  key begins in, or at its pivot bar. Judged on forty passages a musician wrote --
+  nursery tunes and textbook modulations in block chords, arpeggios, melody alone and
+  melody over chords, each in all twelve keys -- the trajectory had been wrong on
+  thirty-four (four bars of I IV V I in C then four in D flat came back as four
+  modulations, C to G to F minor to D flat to A flat, because a two-bar window of two
+  chords reads as the key of the note they share) and the detector on sixteen (the
+  same passage came back with none, its window being half the piece and its last
+  window never judged; every arpeggiated I IV V I opened with a modulation to the
+  relative minor of its IV chord). Both agree with the musician on all forty.
+  Positions of both are now bar-aligned, the detector weighs a chord by how long it
+  sounds, and the trajectory's opening key is read from an opening extended until it
+  can decide, not from the whole piece, so a piece that modulates no longer opens with
+  a modulation from a key it was never in
 - `Phrase.StartIndex` and `EndIndex` address the buffer that was analysed, so
   `buffer.Get(StartIndex)` is the phrase's first note. They were positions in the
   analyzer's private copy -- rests dropped, then offset-sorted -- so with a rest

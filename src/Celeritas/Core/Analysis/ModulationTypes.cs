@@ -25,7 +25,7 @@ public enum ModulationType
     /// <remarks>
     /// <see cref="ModulationDetector"/> never assigns it. Telling a sequence from any other key
     /// change means recognising that the music has restated a pattern at a new pitch level,
-    /// which this detector does not look for — it reads each window's pitch content and the
+    /// which this detector does not look for — it reads each phrase's pitch content and the
     /// relationship between the two keys' roots, and reports such a change as
     /// <see cref="Direct"/> or, where a shared chord carries it, <see cref="PivotChord"/>. The
     /// value is here for callers who make the distinction themselves.

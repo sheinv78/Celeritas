@@ -24,14 +24,16 @@ public sealed class ModulationEvent
     public required ModulationType Type { get; init; }
 
     /// <summary>
-    /// Confidence in this modulation (0.0-1.0): how clearly the window's evidence chose
-    /// <see cref="ToKey"/> over <see cref="FromKey"/>, scaled by how well the new key then held.
+    /// Confidence in this modulation (0.0-1.0): how clearly the phrase's evidence chose
+    /// <see cref="ToKey"/> over <see cref="FromKey"/>, scaled by how much of the stretch that
+    /// established the new key it owns.
     /// </summary>
     /// <remarks>
     /// This is a margin, not a goodness-of-fit score, and it reads on the same modest scale as
-    /// <see cref="KeyDetectionResult.Confidence"/>: a confident modulation lands around 0.2-0.4,
-    /// and only a jump to a very distant key approaches 1.0. Do not read 0.5 as the dividing line
-    /// between unsure and sure.
+    /// <see cref="KeyDetectionResult.Confidence"/>: a confident modulation to a closely related
+    /// key lands between about 0.15 and 0.65 (to the dominant 0.40, the subdominant 0.33, the
+    /// relative minor 0.62, measured on four-bar block-chord passages), and only a jump to a
+    /// distant key approaches 1.0. Do not read 0.5 as the dividing line between unsure and sure.
     /// </remarks>
     public required float Confidence { get; init; }
 
@@ -73,19 +75,56 @@ public sealed class ModulationAnalysisResult
 }
 
 /// <summary>
-/// Detects key changes, tonicizations, and pivot chords in musical passages.
+/// Detects key changes, tonicizations, and pivot chords in musical passages, starting from a key
+/// the caller knows.
 /// </summary>
+/// <remarks>
+/// This is the harmonic road to a piece's keys; <see cref="KeyProfiler.AnalyzeModulations"/> is
+/// the statistical one. The detector reads chords, tells a tonicization from a modulation,
+/// names each change's type and finds its pivot chord; the trajectory reads fixed windows of
+/// the notes with no starting key and reports where the key changes. Both decide that by the
+/// same rules — a key holds for a phrase, a chord is not a key, a secondary dominant is not a
+/// modulation — so from the same opening key they place the same modulations, each at the
+/// positions it reads at: the detector at every chord, the trajectory at its window positions.
+/// </remarks>
 public static class ModulationDetector
 {
     /// <summary>
-    /// Analyze a note buffer for modulations starting from a known key.
+    /// Analyze a note buffer for modulations starting from a known key: each change of key area
+    /// the music makes, as a modulation where the new key holds for a phrase and as a
+    /// <see cref="ModulationType.Tonicization"/> where it does not, each placed at the start of
+    /// the whole note in which the new key begins.
     /// </summary>
     /// <remarks>
-    /// Harmonic evidence is normally taken from chords (2+ simultaneous onsets on an
-    /// eighth-note grid). When the buffer is (nearly) monophonic and fewer than two such
-    /// chords exist, the analysis falls back to treating each quantized onset as a
-    /// pseudo-chord — single notes included — so melodic key changes are still detected.
-    /// Pivot-chord identification is unavailable in that fallback.
+    /// <para>
+    /// Harmonic evidence is taken from chords (2+ simultaneous onsets on an eighth-note grid),
+    /// each sounding until the next. When the buffer is (nearly) monophonic and fewer than two
+    /// such chords exist, every quantized onset is a pseudo-chord — single notes included — so
+    /// melodic key changes are still detected; pivot-chord identification is unavailable in that
+    /// fallback. The chords are judged as <see cref="KeyTrajectory.DetectModulations"/> judges
+    /// its notes: a new key must be read over a phrase (four whole notes), be decidable and
+    /// clearly named, fit better than the key the music is in, sound a note it owns and the old
+    /// key lacks, and leave fewer notes foreign to it than to the old key; it is a modulation if
+    /// it still reads from where it began through a phrase — or to the end of the piece, closing
+    /// on a tonic it has already sounded — and a tonicization otherwise. Each modulation's
+    /// <see cref="ModulationEvent.Confidence"/> is how clearly the phrase chose the new key over
+    /// the old, scaled by how much of the stretch that established it the new key owns.
+    /// </para>
+    /// <para>
+    /// The analysis used to slide a window of half the piece's chords (two to eight) along the
+    /// chords, read each window's key and check the next few chords for stability. That window
+    /// was a share of the piece rather than a musical length, and the last window was never
+    /// judged, so four bars of C followed by four of D flat in block chords reported no
+    /// modulation at all, nor did thirteen bars that went to the subdominant and came home;
+    /// a window over one arpeggiated triad was not checked for being able to decide a key, so
+    /// every arpeggiated I IV V I opened with a modulation to the relative minor of its IV chord
+    /// and back; the relative minor itself was never reached, its scale being the major key's;
+    /// and a two-bar V7/V–V was a modulation because a key area of exactly two whole notes was
+    /// not shorter than the two the rule asked for. Judged on forty passages a musician wrote —
+    /// nursery tunes and textbook modulations in block chords, arpeggios, melody alone and
+    /// melody over chords — it was wrong on sixteen; judged by phrase it agrees with the
+    /// musician on all forty, in every key.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static ModulationAnalysisResult Analyze(NoteBuffer buffer, KeySignature startKey)
@@ -101,14 +140,14 @@ public static class ModulationDetector
     }
 
     /// <summary>
-    /// Analyze a sequence of note events for modulations.
+    /// Analyze a sequence of note events for modulations starting from a known key. See
+    /// <see cref="Analyze(NoteBuffer, KeySignature)"/> for what is reported and how it is judged.
     /// </summary>
     /// <remarks>
-    /// Harmonic evidence is normally taken from chords (2+ simultaneous onsets on an
-    /// eighth-note grid). When the input is (nearly) monophonic and fewer than two such
-    /// chords exist, the analysis falls back to treating each quantized onset as a
-    /// pseudo-chord — single notes included — so melodic key changes are still detected.
-    /// Pivot-chord identification is unavailable in that fallback.
+    /// Harmonic evidence is taken from chords (2+ simultaneous onsets on an eighth-note grid).
+    /// When the input is (nearly) monophonic and fewer than two such chords exist, every
+    /// quantized onset is a pseudo-chord — single notes included — so melodic key changes are
+    /// still detected. Pivot-chord identification is unavailable in that fallback.
     /// </remarks>
     public static ModulationAnalysisResult Analyze(ReadOnlySpan<NoteEvent> notes, KeySignature startKey)
     {
@@ -122,14 +161,8 @@ public static class ModulationDetector
             };
         }
 
-        var modulations = new List<ModulationEvent>();
-        var currentKey = startKey;
-        // Whole-note time units (quarter = 1/4), so 2/1 is two whole notes (~two 4/4 bars,
-        // 8 quarter-beats). A foreign-key area shorter than this counts as a tonicization.
-        var minModulationDuration = new Rational(2, 1);
-
-        // Convert to array for easier manipulation. Rests drop out here: they carry no harmony,
-        // and read as a B they invented two modulations in a passage that never leaves C major.
+        // Rests drop out here: they carry no harmony, and read as a B they invented two
+        // modulations in a passage that never leaves C major.
         var notesArray = Rests.ToArrayWithout(notes);
         if (notesArray.Length == 0)
         {
@@ -153,92 +186,47 @@ public static class ModulationDetector
             };
         }
 
-        // Number of chords to analyze at once; shrink for short inputs so pieces
-        // with few chords are still analyzed from the first possible window.
-        var windowSize = Math.Clamp(chords.Count / 2, 2, 8);
-
-        // Deduplication of tonicization events: while stability holds, the same
-        // target key would otherwise re-fire at every consecutive index.
-        KeySignature? lastEmittedTarget = null;
-        var lastEmittedIndex = int.MinValue;
-
-        // Floor for boundary attribution. FindModulationBoundary scans back to the start of the
-        // evidence window, which reaches behind an already-emitted boundary; a later event could
-        // therefore be stamped with an earlier offset than the one before it, so the list read
-        // as "C -> G at 4" followed by "G -> C at 2". Modulation events are chronological, and
-        // no boundary may be attributed at or before the previous one.
-        var lastBoundaryIndex = -1;
-
-        for (int i = windowSize; i < chords.Count; i++)
+        // Each chord sounds until the next one; the last until the music stops.
+        var end = Rational.Zero;
+        foreach (var note in notesArray)
         {
-            var windowStart = i - windowSize;
+            var noteEnd = note.Offset + note.Duration;
+            if (noteEnd > end)
+                end = noteEnd;
+        }
 
-            // Detect key at this position (evidence window is chords[windowStart..i-1])
-            var verdict = DetectKeyInWindow(chords, windowStart, i, currentKey);
+        var sonorities = new Sonority[chords.Count];
+        var candidates = new Rational[chords.Count];
+        for (var i = 0; i < chords.Count; i++)
+        {
+            var stop = i + 1 < chords.Count ? chords[i + 1].Offset : end;
+            if (stop <= chords[i].Offset)
+                stop = chords[i].Offset + Rational.Eighth;
+            sonorities[i] = new Sonority(chords[i].Offset, stop, chords[i].Mask);
+            candidates[i] = chords[i].Offset;
+        }
 
-            if (verdict == null)
+        var modulations = new List<ModulationEvent>();
+        var currentKey = startKey;
+
+        foreach (var change in KeyAreaJudge.Judge(sonorities, candidates, startKey, KeyAreaJudge.Phrase))
+        {
+            // The chord the new key begins with: the first at or after the judged position.
+            var boundaryIndex = chords.Count - 1;
+            for (var i = 0; i < chords.Count; i++)
             {
-                continue;
+                if (chords[i].Offset >= change.Position)
+                {
+                    boundaryIndex = i;
+                    break;
+                }
             }
 
-            var detectedKey = verdict.Value.Key;
+            var modulationType = change.Established
+                ? DetermineModulationType(change.From, change.To)
+                : ModulationType.Tonicization;
 
-            // Check if this is a real modulation or just a passing chromaticism
-            var futureEnd = Math.Min(i + (windowSize / 2), chords.Count);
-            var stability = MeasureKeyStability(chords, i, futureEnd, detectedKey);
-
-            if (stability < 0.5f)
-            {
-                continue; // Not stable enough, probably just passing
-            }
-
-            // Same target key still being detected within one analysis window of the last
-            // sighting: extend the run instead of emitting a duplicate. A tolerance of
-            // windowSize (rather than strict index adjacency) bridges the short gaps that
-            // occur when a single index dips below the stability threshold, while a genuine
-            // re-tonicization after a longer return home is still emitted as a new event.
-            if (lastEmittedTarget is { } prevTarget
-                && prevTarget.Root == detectedKey.Root
-                && prevTarget.IsMajor == detectedKey.IsMajor
-                && i - lastEmittedIndex <= windowSize)
-            {
-                lastEmittedIndex = i;
-                continue;
-            }
-
-            // The key change is confirmed at index i, but the evidence window is
-            // chords[windowStart..i-1]: attributing the boundary to chords[i] lagged the
-            // reported Offset by up to windowSize chords and truncated the measured new-key
-            // area, biasing real modulations toward Tonicization. Attribute the boundary to
-            // the earliest window chord that belongs to the new key and not the old one.
-            var searchStart = Math.Clamp(Math.Max(windowStart, lastBoundaryIndex + 1), 0, i - 1);
-            var boundaryIndex = FindModulationBoundary(chords, searchStart, i, currentKey, detectedKey);
-
-            // Determine modulation type
-            var modulationType = DetermineModulationType(currentKey, detectedKey);
-
-            // Stability alone answered "are the chords after this one in the new scale", which a
-            // window that picked its key by a 0.043 margin can still answer with 1.0 — so a
-            // coin-flip call shipped as certainty. A modulation is only as good as both halves:
-            // how clearly the evidence chose this key over the one we were in, and whether the
-            // new key then held. Either being weak makes the event weak. Like every margin in
-            // this library (see KeyDetectionResult.Confidence), the scale is modest: a confident
-            // modulation lands around 0.2-0.35, not near 1.0.
-            var confidence = verdict.Value.Separation * stability;
-
-            // Check duration to distinguish tonicization from true modulation,
-            // measured from the attributed boundary rather than the detection index.
-            var duration = CalculateKeyDuration(chords, boundaryIndex, detectedKey);
-            var isTonicization = duration < minModulationDuration;
-
-            modulationType = isTonicization switch
-            {
-                true => ModulationType.Tonicization,
-                _ => modulationType
-            };
-
-            // Look for pivot chord
-            var pivotChord = FindPivotChord(chords, i, currentKey, detectedKey);
+            var pivotChord = FindPivotChord(chords, boundaryIndex, change.From, change.To);
 
             // DetermineModulationType only sees the root interval, so it can never produce
             // PivotChord on its own. Direct is its generic fallback: when a pivot chord was
@@ -250,29 +238,27 @@ public static class ModulationDetector
                 modulationType = ModulationType.PivotChord;
             }
 
-            var modulation = new ModulationEvent
+            // Like every margin in this library (see KeyDetectionResult.Confidence), the scale
+            // is modest: a confident modulation to a related key lands around 0.15-0.65, and only
+            // a jump to a distant key approaches 1.0.
+            var confidence = Math.Clamp(change.Separation * change.Stability, 0f, 1f);
+
+            modulations.Add(new ModulationEvent
             {
-                Offset = chords[boundaryIndex].Offset,
-                FromKey = currentKey,
-                ToKey = detectedKey,
+                Offset = change.Position,
+                FromKey = change.From,
+                ToKey = change.To,
                 Type = modulationType,
                 Confidence = confidence,
                 PivotChord = pivotChord,
-                Duration = isTonicization ? duration : null,
-                Description = DescribeModulation(currentKey, detectedKey, modulationType, pivotChord)
-            };
+                Duration = change.Established ? null : change.HeldUntil - change.Position,
+                Description = DescribeModulation(change.From, change.To, modulationType, pivotChord)
+            });
 
-            modulations.Add(modulation);
-            lastEmittedTarget = detectedKey;
-            lastEmittedIndex = i;
-            lastBoundaryIndex = boundaryIndex;
-
-            currentKey = isTonicization switch
+            if (change.Established)
             {
-                // Update current key if this is a true modulation
-                false => detectedKey,
-                _ => currentKey
-            };
+                currentKey = change.To;
+            }
         }
 
         return new ModulationAnalysisResult
@@ -353,239 +339,6 @@ public static class ModulationDetector
         return grid * rounded;
     }
 
-    /// <summary>
-    /// What one evidence window says: the key it points to, and how far it points away from the
-    /// key the analysis is already in. The separation is the value gate 2 in
-    /// <see cref="DetectKeyInWindow"/> cleared, carried out so the emitted event can report it.
-    /// </summary>
-    private readonly record struct WindowVerdict(KeySignature Key, float Separation);
-
-    // Gate 1 - is the window decided at all? KeyProfiler.Confidence is a best-vs-runner-up
-    // margin, so a window in which two keys score all but identically lands near zero. Such a
-    // window is undecided, not evidence: a C->G melody produces one whose top two candidates sit
-    // 0.0100 apart, and taking its bare point estimate reported a spurious C -> A minor there.
-    // Genuine firing windows measured 0.0746 (triads) and 0.2326 (scale tones), so the bar sits
-    // 3x above that noise floor and 2.5x below the weakest genuine window.
-    //
-    // This bar is deliberately far below the 0.11 that KeyTrajectory.DetectModulations uses on
-    // the same quantity. That one is calibrated for its own fixed window (2 whole notes of scale
-    // eighths); here the window is a chord count that scales with the piece and may hold nothing
-    // but triads, where three or four pitch classes leave several keys fitting well and every
-    // margin is compressed. Best-vs-runner-up is therefore not comparable across window content,
-    // which is why the decision to leave the current key rests on gate 2 instead.
-    private const float MinWindowDecisiveness = 0.03f;
-
-    // Gate 2 - does the window point away from the key we are in? Best-vs-runner-up cannot answer
-    // that, because the runner-up is usually some third key rather than the current one. This is
-    // the same normalized margin applied to the pair that actually matters — the detected
-    // key against the current one — and that is what makes a straddling window inert.
-    // Measured on a C->G passage: windows mixing both keys separated by 0.0431-0.0503, windows
-    // genuinely in the new key by 0.1906-0.3201. The bar sits ~2.2x above the straddling noise
-    // and ~1.7x below the weakest genuine separation.
-    //
-    // It also supplies the hysteresis that keeps a flip-flop from emitting a backwards
-    // modulation: once the analysis has moved to G, returning to C requires C to beat G by this
-    // same margin, which a window that merely wobbles across the boundary cannot do.
-    private const float MinKeyChangeSeparation = 0.11f;
-
-    private static WindowVerdict? DetectKeyInWindow(List<ChordEvent> chords, int start, int end, KeySignature currentKey)
-    {
-        if (start >= end)
-        {
-            return null;
-        }
-
-        // Collect all pitch classes in the window and detect the key
-        var allPitches = new List<int>();
-        for (int i = start; i < end; i++)
-        {
-            allPitches.AddRange(chords[i].PitchClasses);
-        }
-
-        if (allPitches.Count == 0)
-        {
-            return null;
-        }
-
-        var pitches = allPitches.ToArray();
-        var detectedKey = KeyAnalyzer.IdentifyKey(pitches);
-
-        // Require significant difference from current key
-        if (detectedKey.Root == currentKey.Root && detectedKey.IsMajor == currentKey.IsMajor)
-        {
-            return null;
-        }
-
-        // IdentifyKey answers a genuinely undecided window as confidently as a decided one: it
-        // returns a bare KeySignature and cannot report how thin the win was. Sliding a window
-        // across a key change necessarily produces windows holding both keys in near-equal
-        // measure, and reading their point estimates as key changes emitted a burst of spurious
-        // events — including ones running backwards in time. Re-score the same pitches with
-        // KeyProfiler, which does report margins, and let an ambiguous window be inert.
-        var profile = KeyProfiler.DetectFromPitches(pitches);
-
-        if (profile.Confidence < MinWindowDecisiveness)
-        {
-            return null;
-        }
-
-        var separation = SeparationFrom(profile, detectedKey, currentKey);
-
-        if (separation < MinKeyChangeSeparation)
-        {
-            return null;
-        }
-
-        if (!TellsTheKeysApart(pitches, detectedKey, currentKey))
-        {
-            return null;
-        }
-
-        return new WindowVerdict(detectedKey, separation);
-    }
-
-    /// <summary>
-    /// Whether the window holds a note that tells <paramref name="detected"/> from
-    /// <paramref name="current"/> at all.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A key change nobody can hear is not a key change. C major and D minor differ by exactly
-    /// one note — B against B flat — and the middle strain of "Twinkle, Twinkle, Little Star",
-    /// G G F F E E D, contains neither, so the window had nothing in it that separates the two
-    /// and the detector chose on the weighting of the notes they share. Forty-two notes without
-    /// an accidental anywhere in them came back as five modulations, ending in D minor.
-    /// </para>
-    /// <para>
-    /// The test is only applied where it can decide something: relative keys have identical
-    /// scales, so nothing in the pitch content ever tells C major from A minor and the guard
-    /// stands aside for them, leaving that call to the profile margins above.
-    /// </para>
-    /// </remarks>
-    private static bool TellsTheKeysApart(ReadOnlySpan<int> pitches, KeySignature detected, KeySignature current)
-    {
-        var distinguishing = (ushort)(detected.GetScaleMask() ^ current.GetScaleMask());
-        if (distinguishing == 0)
-        {
-            return true;
-        }
-
-        foreach (var pitch in pitches)
-        {
-            if ((distinguishing & (1 << PitchMath.Fold(pitch))) != 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// How much better the window fits <paramref name="detected"/> than <paramref name="current"/>,
-    /// normalized and clamped the way <see cref="KeyDetectionResult.Confidence"/> treats its own
-    /// margin, so that the two read on one scale. Zero when the detected key's correlation is not
-    /// positive, where the ratio would be meaningless.
-    /// </summary>
-    private static float SeparationFrom(KeyDetectionResult profile, KeySignature detected, KeySignature current)
-    {
-        var detectedCorrelation = CorrelationOf(profile, detected);
-
-        if (detectedCorrelation <= 0f)
-        {
-            return 0f;
-        }
-
-        var currentCorrelation = CorrelationOf(profile, current);
-
-        // Clamped, exactly as KeyProfiler clamps its own margin. A distant key correlates
-        // *negatively* with the window, which drives this ratio past 1 and carried the reported
-        // Confidence with it: a C —> B major jump measured 1.133, outside its documented range.
-        var separation = (detectedCorrelation - currentCorrelation) / (detectedCorrelation + 0.001f);
-        return Math.Clamp(separation, 0f, 1f);
-    }
-
-    private static float CorrelationOf(KeyDetectionResult profile, KeySignature key)
-    {
-        foreach (var candidate in profile.AllCorrelations)
-        {
-            if (candidate.Key.Root == key.Root && candidate.Key.IsMajor == key.IsMajor)
-            {
-                return candidate.Correlation;
-            }
-        }
-
-        return 0f;
-    }
-
-    private static float MeasureKeyStability(List<ChordEvent> chords, int start, int end, KeySignature key)
-    {
-        if (start >= end)
-        {
-            return 0f;
-        }
-
-        var scale = key.GetScale();
-        var inKeyCount = 0;
-        var totalCount = 0;
-
-        for (int i = start; i < end; i++)
-        {
-            foreach (var pc in chords[i].PitchClasses)
-            {
-                totalCount++;
-                if (scale.Contains(pc))
-                {
-                    inKeyCount++;
-                }
-            }
-        }
-
-        return totalCount > 0 ? (float)inKeyCount / totalCount : 0f;
-    }
-
-    /// <summary>
-    /// Locate the chord where a confirmed key change actually begins. Scans
-    /// chords[searchStart..detectionIndex-1] for the earliest chord that is diatonic to the new
-    /// key and NOT diatonic to the old key — the first unambiguous new-key sonority. Falls back
-    /// to <paramref name="searchStart"/> when every candidate chord is ambiguous (diatonic to
-    /// both keys or to neither).
-    /// <para>
-    /// <paramref name="searchStart"/> is the earliest chord the boundary may be attributed to:
-    /// the evidence window's start, raised past any previously emitted boundary so that events
-    /// stay in chronological order.
-    /// </para>
-    /// </summary>
-    private static int FindModulationBoundary(
-        List<ChordEvent> chords,
-        int searchStart,
-        int detectionIndex,
-        KeySignature fromKey,
-        KeySignature toKey)
-    {
-        var fromScale = fromKey.GetScale();
-        var toScale = toKey.GetScale();
-
-        for (int i = searchStart; i < detectionIndex; i++)
-        {
-            var pcs = chords[i].PitchClasses;
-            if (pcs.Length == 0)
-            {
-                continue;
-            }
-
-            var diatonicToNew = pcs.All(pc => toScale.Contains(pc));
-            var diatonicToOld = pcs.All(pc => fromScale.Contains(pc));
-
-            if (diatonicToNew && !diatonicToOld)
-            {
-                return i;
-            }
-        }
-
-        return searchStart;
-    }
-
     private static ModulationType DetermineModulationType(KeySignature fromKey, KeySignature toKey)
     {
         var interval = (toKey.Root - fromKey.Root + 12) % 12;
@@ -606,30 +359,6 @@ public static class ModulationDetector
         };
 
         // Default to direct or pivot chord (requires analysis of actual chords)
-    }
-
-    private static Rational CalculateKeyDuration(List<ChordEvent> chords, int startIndex, KeySignature key)
-    {
-        var scale = key.GetScale();
-        var startOffset = chords[startIndex].Offset;
-        var endOffset = startOffset;
-
-        for (int i = startIndex; i < chords.Count; i++)
-        {
-            var chord = chords[i];
-            var inKeyCount = chord.PitchClasses.Count(pc => scale.Contains(pc));
-            var outOfKeyCount = chord.PitchClasses.Length - inKeyCount;
-
-            // If more notes are out of key, we've left this key area
-            if (outOfKeyCount > inKeyCount)
-            {
-                break;
-            }
-
-            endOffset = chord.Offset;
-        }
-
-        return endOffset - startOffset;
     }
 
     private static (RomanNumeralChord?, RomanNumeralChord?)? FindPivotChord(
