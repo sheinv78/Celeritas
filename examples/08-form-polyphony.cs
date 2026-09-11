@@ -118,7 +118,7 @@ class FormAndPolyphony
         // ===== Voice Separation =====
 
         var mixed = MusicNotation.Parse(@"
-            C4/4 E4/4 C3/4 G4/4 | E3/4 C5/4 G3/4 E4/4");
+            C4/4 E4/4 C3/4 G4/4 | E3/4 C5/4 G3/4 G4/4");
 
         using var mixedBuffer = new NoteBuffer(mixed.Length);
         mixedBuffer.AddRange(mixed);
@@ -145,7 +145,7 @@ class FormAndPolyphony
         // ===== SATB Voice Separation =====
 
         var satb = MusicNotation.Parse(@"
-            << C5/1 >> << G4/1 >> << E4/1 >> << C3/1 >>");
+            << C5/1 | G4/1 | E4/1 | C3/1 >>");
         var satbSeparated = VoiceSeparator.SeparateIntoSatb(satb);
 
         Console.WriteLine("\n=== SATB Separation ===");
@@ -255,27 +255,15 @@ Motion statistics:
 
 === Voice Separation ===
 Input notes: 8
-Voices: 4
+Voices: 2
 Separation quality: 100.0 %
 Voice crossings: 0
 
-  Soprano:
-    Notes: 1
-    Range: 72-72
-    Average pitch: 72.0
-    First notes: C5
-
   Alto:
-    Notes: 3
-    Range: 64-67
-    Average pitch: 65.0
-    First notes: E4 G4 E4
-
-  Tenor:
-    Notes: 1
-    Range: 60-60
-    Average pitch: 60.0
-    First notes: C4
+    Notes: 5
+    Range: 60-72
+    Average pitch: 66.0
+    First notes: C4 E4 G4 C5 G4
 
   Bass:
     Notes: 3
@@ -286,10 +274,10 @@ Voice crossings: 0
 === SATB Separation ===
 Soprano: 1 notes
   Range: 72-72
-Alto: 2 notes
-  Range: 64-67
-Tenor: 0 notes
-  Range: 0-0
+Alto: 1 notes
+  Range: 67-67
+Tenor: 1 notes
+  Range: 64-64
 Bass: 1 notes
   Range: 48-48
 

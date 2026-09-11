@@ -124,14 +124,26 @@ public class PolyphonyCounterpointTests
     }
 
     [Fact]
-    public void ALeapInTheLowerVoice_NamesThatVoice()
+    public void ALeapInTheVoiceThatEntersBelow_NamesThatVoice()
     {
-        var result = PolyphonyAnalyzer.CheckCounterpointRules(
-            new[] { new NoteEvent(60, Rational.Zero, Rational.Whole), Q(55, 0), Q(70, 1) },
-            maxVoices: 2);
+        // A held C4 with G3 beneath it leaping a tenth to Bb4. The finding has to name the voice
+        // that holds G3 and Bb4, not the held one. That voice enters below but averages higher,
+        // and the list is ordered by average pitch, so it is voice 1 now; it was voice 2 when the
+        // list followed the register each voice had entered in.
+        NoteEvent[] notes = [new NoteEvent(60, Rational.Zero, Rational.Whole), Q(55, 0), Q(70, 1)];
+        var result = PolyphonyAnalyzer.CheckCounterpointRules(notes, maxVoices: 2);
+        using var buffer = new NoteBuffer(notes.Length);
+        buffer.AddRange(notes);
+        var separated = VoiceSeparator.Separate(buffer, maxVoices: 2);
+
+        var leaping = separated.NoteToVoice[2];
+        Assert.Equal(leaping, separated.NoteToVoice[1]);
+        Assert.Equal([55, 70], separated.Voices[leaping].Notes.Select(n => n.Pitch));
 
         var violation = Assert.Single(result.Violations, v => v.Type == "Large Leap");
-        Assert.Equal("Voice 2 leaps more than an octave", violation.Description);
+        Assert.Equal(leaping, violation.Voice1);
+        Assert.Equal($"Voice {leaping + 1} leaps more than an octave", violation.Description);
+        Assert.Equal("Voice 1 leaps more than an octave", violation.Description);
     }
 
     [Fact]

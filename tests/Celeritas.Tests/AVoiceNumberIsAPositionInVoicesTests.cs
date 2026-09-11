@@ -219,9 +219,9 @@ public class AVoiceNumberIsAPositionInVoicesTests
     public void SatbVoicesAreIndexedByTheirLabel()
     {
         // A line that starts in the alto register and ends in the bass register averages in
-        // the tenor's: the separator places it in the alto slot, the SATB labelling calls it
-        // Tenor. Its index is the label's, not the slot's — otherwise Tenor and the empty Alto
-        // both said 1.
+        // the tenor's: the separator opened it in the alto slot, the SATB labelling calls it
+        // Tenor (and so does the general result now, by that average). Its index is the
+        // label's, not the slot's — otherwise Tenor and the empty Alto both said 1.
         using var buffer = BufferOf(
         [
             new(66, Rational.Zero, Rational.Quarter, 0.8f),

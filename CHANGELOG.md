@@ -176,6 +176,25 @@ follows.
   voices by label, Soprano 0 to Bass 3, filled or empty -- a filled voice used to keep
   the separator's slot, so a line placed in the alto slot but labelled Tenor shared
   index 1 with the empty Alto beside it
+- Voice separation lets a line enter above an active voice. Within an onset the notes
+  were assigned in register order whatever `AllowCrossings` said -- the higher note
+  always to the voice listed first -- so a line entering above an active voice took
+  that voice over and pushed its continuation into a new one; and opening a new voice
+  (a register seed's distance plus 4) was cheaper than continuing a line by a third or
+  a fourth, so a four-note statement over a fifth was cut in two in twelve of the
+  thirty registers from G3 to C6. `DetectImitation` trusts that separation: the
+  documented canon, C5 E5 D5 G5 answered an octave below, was no canon at all with the
+  default number of voices, and answered above it read as -12 or nothing depending on
+  the subject's register. With crossings allowed the assignment is now a free min-cost
+  assignment, a new voice costs more than any continuation within `MaxMelodicInterval`,
+  the voices come back highest first by average pitch and are named for that register
+  (`SeparateIntoSatb` shares the labelling), and crossings are counted between
+  neighbours in that order. Over 576 two-voice canons in four registers the octave
+  canons went from 37 and 58 of 96 detected correctly to 80 and 84, with no register
+  dependence left; over 300 random clean textures the voice count matched the lines
+  written in 300 where it had in 280. examples/08's SATB demo wrote its chord as four
+  voice blocks in a row -- four successive whole notes, separated as one alto line --
+  and is one chord of four voices now
 - A key change needs a note that tells the two keys apart. C major and D minor
   differ by one note, and the middle strain of *Twinkle, Twinkle, Little Star*
   contains neither of them, so the detector chose on the weighting of the notes

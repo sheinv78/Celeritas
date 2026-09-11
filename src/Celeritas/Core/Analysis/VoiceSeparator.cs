@@ -23,7 +23,7 @@ public sealed class Voice
     /// <see cref="VoiceSeparationResult.Voices"/> its place in the list, so
     /// <c>Voices[voice.Index]</c> is this voice; in a <see cref="SatbSeparationResult"/> its
     /// label, Soprano 0, Alto 1, Tenor 2, Bass 3. In <c>Voices</c>, <see cref="Name"/> records
-    /// the register the separator placed the voice in; in an SATB result it is the label.
+    /// the register the voice's average pitch falls in; in an SATB result it is the label.
     /// </summary>
     /// <remarks>
     /// This used to be the register slot the separator had used (soprano 0 … bass 3), which is
@@ -34,7 +34,16 @@ public sealed class Voice
     /// </remarks>
     public int Index { get; init; }
 
-    /// <summary>Name of the voice (Soprano, Alto, Tenor, Bass, or Voice N).</summary>
+    /// <summary>
+    /// Name of the voice: the register its average pitch is nearest, each name used once and in
+    /// order down the list — Soprano, Alto, Tenor, Bass with four voices to fill, Upper, Middle,
+    /// Lower with three, Upper and Lower with two; <c>Voice N</c> by position otherwise.
+    /// </summary>
+    /// <remarks>
+    /// This used to be the register slot the voice's first note had been placed in, which is not
+    /// where the voice lies: a line entering above an active soprano opened in the alto slot and
+    /// was named Alto while being the highest voice in the list.
+    /// </remarks>
     public string Name { get; init; } = "";
 
     /// <summary>Notes in this voice, ordered by time.</summary>
@@ -97,17 +106,25 @@ public readonly record struct VoiceNote
 public sealed record VoiceSeparationResult
 {
     /// <summary>
-    /// Separated voices, ordered highest to lowest; empty voices are omitted. Each voice's
-    /// <see cref="Voice.Index"/> is its position here, and so is every voice number in
-    /// <see cref="NoteToVoice"/> and in the polyphony analysis and counterpoint check built on
+    /// Separated voices, ordered highest to lowest by average pitch; empty voices are omitted.
+    /// Each voice's <see cref="Voice.Index"/> is its position here, and so is every voice number
+    /// in <see cref="NoteToVoice"/> and in the polyphony analysis and counterpoint check built on
     /// this result.
     /// </summary>
+    /// <remarks>
+    /// The order used to be that of the register slots the separator had assigned in, which is
+    /// the order of the voices' first notes, not of the voices: once a line may enter above an
+    /// active voice, the highest voice could come second.
+    /// </remarks>
     public required IReadOnlyList<Voice> Voices { get; init; }
 
     /// <summary>Total number of notes in the source buffer.</summary>
     public required int TotalNotes { get; init; }
 
-    /// <summary>Count of detected voice crossings.</summary>
+    /// <summary>
+    /// Count of detected voice crossings: notes placed above the latest pitch of the voice listed
+    /// before theirs, or below that of the voice listed after it.
+    /// </summary>
     public required int VoiceCrossings { get; init; }
 
     /// <summary>Heuristic separation quality, 0..1 (higher = cleaner).</summary>
@@ -135,10 +152,31 @@ public static class VoiceSeparator
     private static readonly VoiceSeparatorOptions DefaultOptions = new();
 
     /// <summary>
-    /// Extra assignment cost (semitones) for voices that have no real notes yet,
-    /// so continuing an active voice wins over a synthetic register seed on ties.
+    /// Cost of opening a voice that has no real notes yet: one more than twice what continuing an
+    /// active voice by <see cref="VoiceSeparatorOptions.MaxMelodicInterval"/> costs, so a note
+    /// within that interval of a voice's last note continues the voice — alone, or as one of two
+    /// voices moving together — rather than opening a fresh one at a register seed.
     /// </summary>
-    private const int SeedContinuityPenalty = 4;
+    /// <remarks>
+    /// This was a flat 4 semitones on top of the distance from the seed, against a continuing
+    /// cost of 13.25 at a fifth (7 plus a stepwise surcharge of 6.25), so a third or a fourth cost
+    /// more than starting a new voice at a nearby seed: a four-note statement spanning a fifth was
+    /// cut across two voices in twelve of the thirty registers from G3 to C6, and a canon whose
+    /// answer never landed whole in one voice was not a canon to
+    /// <see cref="PolyphonyAnalyzer.DetectImitation(NoteBuffer, int)"/>. The factor of two is
+    /// measured, not guessed: at one, two voices leaping a fifth together (26.5) still lost to one
+    /// of them taking the other's note and a new voice opening (7.25 + 14.25), which broke a canon
+    /// at the fifth on every restart of its subject.
+    /// </remarks>
+    private static double SeedContinuityPenalty(VoiceSeparatorOptions options)
+    {
+        var widest = Math.Max(0, options.MaxMelodicInterval);
+        double continuing = widest;
+        if (options.PreferStepwise && widest > 2)
+            continuing += (widest - 2) * (widest - 2) * StepwiseCostFactor;
+
+        return (2 * continuing) + 1;
+    }
 
     /// <summary>
     /// Assignment cost that makes a voice whose previous note still sounds at the new
@@ -161,6 +199,27 @@ public static class VoiceSeparator
     /// <see cref="VoiceSeparatorOptions.PreferStepwise"/> is set: cost += (distance-2)^2 * factor.
     /// </summary>
     private const double StepwiseCostFactor = 0.25;
+
+    /// <summary>
+    /// Weight of the distance from a register seed in the cost of opening the voice seeded there:
+    /// enough to open a new line in the free voice nearest its register — which is what slot
+    /// order means when crossings are forbidden — and never as much as a semitone of melodic
+    /// distance, so the choice of which note continues an active voice is made on melodic grounds.
+    /// </summary>
+    /// <remarks>
+    /// The seed distance used to count in full, plus the large-jump penalty beyond a fifth, as if
+    /// a seed were a note the voice had sung. A voice entering far from every free seed was then
+    /// cheaper to open for the active voice's own next note than for the entrant, so the entrant
+    /// took over the active voice and its continuation was pushed into the new one.
+    /// </remarks>
+    private const double SeedDistanceWeight = 0.01;
+
+    /// <summary>
+    /// Cost per whole note of silence between a voice's last note and the note it would take,
+    /// so that of two voices an equal melodic distance away the one that has just stopped sounding
+    /// continues, not the one that finished earlier.
+    /// </summary>
+    private const double RecencyWeight = 0.25;
 
     /// <summary>
     /// Separate notes into voices using pitch-proximity algorithm. Notes that overlap in time are
@@ -195,40 +254,25 @@ public static class VoiceSeparator
 
         var res = Separate(buffer, maxVoices: 4, options ?? DefaultOptions);
 
-        // Map detected voices to SATB labels by pitch register (not by list position:
-        // filtering empty voices shifts indices, and e.g. a tenor/bass duet must not
-        // become "Soprano/Alto"). Unused labels get empty stub voices.
-        var nonEmpty = res.Voices
-            .Where(v => v.Notes.Count > 0)
-            .OrderByDescending(v => v.AveragePitch)
-            .Take(4)
-            .ToList();
+        // The general result is ordered highest to lowest by average pitch; label its voices by
+        // the SATB register each average is nearest, each label once and in order — the labelling
+        // the general result itself carries when four voices were in play, applied here also when
+        // fewer notes capped the count and it named them Upper/Lower. Unused labels get empty
+        // stub voices.
+        var labels = NamesByRegister([.. res.Voices.Select(v => v.AveragePitch)], maxVoices: 4);
 
-        // Typical SATB register centers (same values as InitializeVoiceRanges).
-        int[] centers = [72, 64, 57, 48];
-        string[] names = ["Soprano", "Alto", "Tenor", "Bass"];
-
-        var slots = new Voice?[4];
-        if (nonEmpty.Count > 0)
-        {
-            var assignment = MinCostIncreasingAssignment(
-                nonEmpty.Count, 4,
-                (i, s) => Math.Abs(nonEmpty[i].AveragePitch - centers[s]));
-
-            for (var i = 0; i < nonEmpty.Count; i++)
-                slots[assignment[i]] = nonEmpty[i];
-        }
-
-        // Filled or empty, each voice is indexed by its label here. A filled voice used to keep
-        // the index it had in the general result, so a line the separator had placed in the
-        // alto slot but whose average pitch is a tenor's was returned as Tenor with index 1 —
-        // the same index as the empty Alto beside it.
+        // Filled or empty, each voice is indexed by its label. A filled voice used to keep the
+        // index it had in the general result, so a line the separator had placed in the alto slot
+        // but whose average pitch is a tenor's was returned as Tenor with index 1 — the same index
+        // as the empty Alto beside it.
         var labeled = new Voice[4];
         for (var s = 0; s < 4; s++)
         {
-            labeled[s] = slots[s] is { } voice
-                ? new Voice(s, names[s], [.. voice.Notes])
-                : new Voice { Index = s, Name = names[s] };
+            var name = GetVoiceName(s, 4);
+            var position = Array.IndexOf(labels, name);
+            labeled[s] = position >= 0
+                ? new Voice(s, name, [.. res.Voices[position].Notes])
+                : new Voice { Index = s, Name = name };
         }
 
         return new SatbSeparationResult
@@ -242,12 +286,28 @@ public static class VoiceSeparator
     }
 
     /// <summary>
-    /// Separate notes into voices with custom options. Assignment is driven by pitch proximity,
-    /// with notes that overlap in time forced into different voices;
+    /// Separate notes into voices with custom options. At each onset the notes go to distinct
+    /// voices at the least total cost, a note's cost being its distance from the voice's last
+    /// pitch: a line continues in the voice nearest its last note, a note further than
+    /// <see cref="VoiceSeparatorOptions.MaxMelodicInterval"/> from every voice opens a new one
+    /// while a voice is free, and notes that overlap in time are forced into different voices.
     /// <see cref="VoiceSeparatorOptions"/> adds a penalty for voice-order violations when
     /// <see cref="VoiceSeparatorOptions.AllowCrossings"/> is false and a superlinear penalty for
     /// motion beyond a whole step when <see cref="VoiceSeparatorOptions.PreferStepwise"/> is set.
+    /// The voices come back highest first by average pitch, named for their register.
     /// </summary>
+    /// <remarks>
+    /// The assignment within an onset used to keep the voices in register order whatever
+    /// <see cref="VoiceSeparatorOptions.AllowCrossings"/> said — the higher note always went to
+    /// the lower-numbered voice — so a line entering above an active voice took that voice over
+    /// and pushed its continuation into a new one: two lines cut and re-joined, and a canon
+    /// answered an octave above its subject came back from
+    /// <see cref="PolyphonyAnalyzer.DetectImitation(NoteBuffer, int)"/> as answered below, or not
+    /// at all, depending on the register the subject started in. Opening a new voice was also
+    /// cheap enough — the seed's distance plus 4 — that a line moving by a third or a fourth was
+    /// cut in two whenever a free voice was seeded nearby. The order constraint now applies only
+    /// when crossings are forbidden, and a new voice costs more than any melodic continuation.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
     public static VoiceSeparationResult Separate(NoteBuffer buffer, int maxVoices, VoiceSeparatorOptions options)
     {
@@ -326,18 +386,15 @@ public static class VoiceSeparator
             return offsetCmp != 0 ? offsetCmp : b.note.Pitch.CompareTo(a.note.Pitch);
         });
 
-        // Initialize voices
-        var voices = new List<Voice>();
+        // The assignment works in slots: maxVoices of them, each seeded at a register centre so
+        // that a line opens the voice nearest its register. Which slot a line lands in is not
+        // its place in the result — the voices are ordered and named by their average pitch once
+        // every note is placed.
+        var slotNotes = new List<VoiceNote>[maxVoices];
         for (int i = 0; i < maxVoices; i++)
-        {
-            voices.Add(new Voice
-            {
-                Index = i,
-                Name = GetVoiceName(i, maxVoices)
-            });
-        }
+            slotNotes[i] = [];
 
-        var noteToVoice = new Dictionary<int, int>();
+        var noteToSlot = new Dictionary<int, int>();
         var voiceLastPitch = new int[maxVoices];
         // Tracks whether a voice contains real notes yet; voiceLastPitch starts with
         // synthetic register seeds which must not count as crossing partners.
@@ -346,7 +403,7 @@ public static class VoiceSeparator
         // must not swallow that onset (overlapping notes are different voices).
         var voiceLastEnd = new Rational[maxVoices];
         Array.Fill(voiceLastEnd, Rational.Zero);
-        var voiceCrossings = 0;
+        var seedPenalty = SeedContinuityPenalty(options);
 
         // Initialize voice pitches based on typical ranges
         InitializeVoiceRanges(voiceLastPitch, maxVoices);
@@ -362,29 +419,32 @@ public static class VoiceSeparator
 
             if (sliceNotes.Count <= maxVoices)
             {
-                // Assign notes to voices preserving pitch order (higher note -> higher
-                // voice) while minimizing total distance to each voice's previous pitch,
-                // so a monophonic line stays in the voice nearest its register.
-                var assignment = MinCostIncreasingAssignment(
-                    sliceNotes.Count, maxVoices,
-                    (i, v) => AssignmentCost(
-                        sliceNotes[i].note.Pitch, sliceOnset, v,
-                        voiceLastPitch, voiceLastEnd, voiceHasNotes, maxVoices, options));
+                // Assign the notes of the slice to distinct voices at the least total cost, each
+                // note's cost being its distance from the voice's previous pitch (plus the
+                // penalties below), so every line continues in the voice nearest its last note.
+                //
+                // With crossings allowed, which is the default, the assignment is free. It used
+                // to be ordered as well — the higher note of a slice always went to the
+                // lower-numbered slot — so a line entering above an active voice was forced into
+                // that voice's slot and the active voice's own continuation pushed down a slot:
+                // two lines cut and re-joined, and a canon answered above its subject read as a
+                // canon answered below. The order is kept only when crossings are forbidden,
+                // which is what that option means.
+                double Cost(int i, int v) => AssignmentCost(
+                    sliceNotes[i].note.Pitch, sliceOnset, v,
+                    voiceLastPitch, voiceLastEnd, voiceHasNotes, maxVoices, seedPenalty, options);
+
+                var assignment = options.AllowCrossings
+                    ? MinCostAssignment(sliceNotes.Count, maxVoices, Cost)
+                    : MinCostIncreasingAssignment(sliceNotes.Count, maxVoices, Cost);
 
                 for (int i = 0; i < sliceNotes.Count; i++)
                 {
                     var (note, origIndex) = sliceNotes[i];
                     var voiceIdx = assignment[i];
 
-                    voices[voiceIdx].Notes.Add(note);
-                    noteToVoice[origIndex] = voiceIdx;
-
-                    // Check for voice crossing (only against voices that already
-                    // contain real notes, never against synthetic seed pitches)
-                    if (voiceIdx > 0 && voiceHasNotes[voiceIdx - 1] && note.Pitch > voiceLastPitch[voiceIdx - 1])
-                        voiceCrossings++;
-                    if (voiceIdx < maxVoices - 1 && voiceHasNotes[voiceIdx + 1] && note.Pitch < voiceLastPitch[voiceIdx + 1])
-                        voiceCrossings++;
+                    slotNotes[voiceIdx].Add(note);
+                    noteToSlot[origIndex] = voiceIdx;
 
                     voiceLastPitch[voiceIdx] = note.Pitch;
                     voiceHasNotes[voiceIdx] = true;
@@ -404,17 +464,11 @@ public static class VoiceSeparator
                     var voiceIdx = FindBestVoice(
                         note.Pitch, sliceOnset,
                         voiceLastPitch, voiceLastEnd, voiceHasNotes,
-                        usedVoices, maxVoices, options);
+                        usedVoices, maxVoices, seedPenalty, options);
 
-                    voices[voiceIdx].Notes.Add(note);
-                    noteToVoice[origIndex] = voiceIdx;
+                    slotNotes[voiceIdx].Add(note);
+                    noteToSlot[origIndex] = voiceIdx;
                     usedVoices[voiceIdx] = true;
-
-                    // Count crossings here too (previously only the <= maxVoices branch did)
-                    if (voiceIdx > 0 && voiceHasNotes[voiceIdx - 1] && note.Pitch > voiceLastPitch[voiceIdx - 1])
-                        voiceCrossings++;
-                    if (voiceIdx < maxVoices - 1 && voiceHasNotes[voiceIdx + 1] && note.Pitch < voiceLastPitch[voiceIdx + 1])
-                        voiceCrossings++;
 
                     voiceLastPitch[voiceIdx] = note.Pitch;
                     voiceHasNotes[voiceIdx] = true;
@@ -424,25 +478,44 @@ public static class VoiceSeparator
             }
         }
 
-        // Calculate separation quality
-        var quality = CalculateSeparationQuality(voices, voiceCrossings);
+        // The voices present, highest line first — by average pitch, the way the SATB labelling
+        // has always ordered them — and named by the register that average falls in. Their
+        // position in this list is the number every voice index in the result, and in the
+        // analyses built on it, refers to. The list used to follow slot order and the name the
+        // slot, which, once the assignment is free, could put the highest line second and call it
+        // Alto.
+        var orderedSlots = Enumerable.Range(0, maxVoices)
+            .Where(slot => slotNotes[slot].Count > 0)
+            .OrderByDescending(slot => slotNotes[slot].Average(n => n.Pitch))
+            .ThenBy(slot => slot)
+            .ToArray();
 
-        // Drop the empty slots and number the voices that remain by their place in the list.
-        // That is the number every voice index in the result, and in the analyses built on it,
-        // refers to; the slot a voice was placed in survives as its Name. The assignment above
-        // works in slots, so NoteToVoice is translated here.
-        var present = new List<Voice>(maxVoices);
+        var names = NamesByRegister(
+            [.. orderedSlots.Select(slot => (float)slotNotes[slot].Average(n => n.Pitch))],
+            maxVoices);
+
+        var present = new List<Voice>(orderedSlots.Length);
         var positionOfSlot = new int[maxVoices];
-        for (var slot = 0; slot < maxVoices; slot++)
+        Array.Fill(positionOfSlot, -1);
+        for (var position = 0; position < orderedSlots.Length; position++)
         {
-            positionOfSlot[slot] = voices[slot].Notes.Count > 0 ? present.Count : -1;
-            if (positionOfSlot[slot] >= 0)
-                present.Add(new Voice(present.Count, voices[slot].Name, voices[slot].Notes));
+            positionOfSlot[orderedSlots[position]] = position;
+            present.Add(new Voice(position, names[position], slotNotes[orderedSlots[position]]));
         }
 
-        var noteToPosition = new Dictionary<int, int>(noteToVoice.Count);
-        foreach (var (noteIndex, slot) in noteToVoice)
+        var noteToPosition = new Dictionary<int, int>(noteToSlot.Count);
+        foreach (var (noteIndex, slot) in noteToSlot)
             noteToPosition[noteIndex] = positionOfSlot[slot];
+
+        // A crossing is a note placed above the latest pitch of the voice listed above it, or
+        // below that of the voice listed below it — counted between neighbours in the final
+        // order, never against a seed. Counting it during the assignment, between neighbouring
+        // slots, would count a line that opened in a lower slot and stays above its neighbour as
+        // crossing on every note.
+        var voiceCrossings = CountCrossings(timeSlices, noteToSlot, positionOfSlot, present.Count);
+
+        // Calculate separation quality
+        var quality = CalculateSeparationQuality(present, voiceCrossings);
 
         return new VoiceSeparationResult
         {
@@ -452,6 +525,72 @@ public static class VoiceSeparator
             SeparationQuality = quality,
             NoteToVoice = noteToPosition
         };
+    }
+
+    /// <summary>
+    /// Counts the notes placed above the latest pitch of the voice before them in the final order
+    /// or below that of the voice after them, walking the notes in the order they were placed.
+    /// </summary>
+    private static int CountCrossings(
+        List<List<(VoiceNote note, int index)>> timeSlices,
+        Dictionary<int, int> noteToSlot,
+        int[] positionOfSlot,
+        int voiceCount)
+    {
+        var lastPitch = new int[voiceCount];
+        var hasNotes = new bool[voiceCount];
+        var crossings = 0;
+
+        foreach (var slice in timeSlices)
+        {
+            foreach (var (note, origIndex) in slice)
+            {
+                var position = positionOfSlot[noteToSlot[origIndex]];
+
+                if (position > 0 && hasNotes[position - 1] && note.Pitch > lastPitch[position - 1])
+                    crossings++;
+                if (position < voiceCount - 1 && hasNotes[position + 1] && note.Pitch < lastPitch[position + 1])
+                    crossings++;
+
+                lastPitch[position] = note.Pitch;
+                hasNotes[position] = true;
+            }
+        }
+
+        return crossings;
+    }
+
+    /// <summary>
+    /// Names for voices already ordered highest to lowest by average pitch: for up to four voices
+    /// the register each average is nearest, Soprano/Alto/Tenor/Bass or Upper/Middle/Lower or
+    /// Upper/Lower depending on how many were asked for, each label used once and in order;
+    /// beyond four, <c>Voice N</c> by position.
+    /// </summary>
+    private static string[] NamesByRegister(float[] averagePitches, int maxVoices)
+    {
+        var names = new string[averagePitches.Length];
+        if (averagePitches.Length == 0)
+            return names;
+
+        if (maxVoices > 4)
+        {
+            for (var i = 0; i < names.Length; i++)
+                names[i] = $"Voice {i + 1}";
+
+            return names;
+        }
+
+        var centers = new int[maxVoices];
+        InitializeVoiceRanges(centers, maxVoices);
+
+        var assignment = MinCostIncreasingAssignment(
+            averagePitches.Length, maxVoices,
+            (i, s) => Math.Abs(averagePitches[i] - centers[s]));
+
+        for (var i = 0; i < names.Length; i++)
+            names[i] = GetVoiceName(assignment[i], maxVoices);
+
+        return names;
     }
 
     private static List<List<(VoiceNote note, int index)>> GroupByOnset(
@@ -570,11 +709,105 @@ public static class VoiceSeparator
     }
 
     /// <summary>
-    /// Cost of assigning a note to a candidate voice: pitch distance from the voice's
-    /// last pitch, plus penalties for large jumps, synthetic seeds, non-stepwise motion
-    /// (<see cref="VoiceSeparatorOptions.PreferStepwise"/>), temporal overlap with the
-    /// voice's still-sounding note, and order violations against currently sounding
-    /// voices (<see cref="VoiceSeparatorOptions.AllowCrossings"/> = false).
+    /// Find the minimal-cost assignment of <paramref name="itemCount"/> items to distinct slots
+    /// among <paramref name="slotCount"/> (at least as many), with no constraint on their order:
+    /// item i goes to slot a[i], all a[i] different. The Hungarian method, in O(items² × slots).
+    /// </summary>
+    private static int[] MinCostAssignment(int itemCount, int slotCount, Func<int, int, double> cost)
+    {
+        // Rows are items and columns slots, both 1-based here with row 0 and column 0 as the
+        // scratch entries the method needs; u and v are the potentials, matched[j] the item in
+        // slot j (0 for none), way[j] the column the augmenting path came from.
+        var matrix = new double[itemCount + 1, slotCount + 1];
+        for (var i = 1; i <= itemCount; i++)
+        {
+            for (var j = 1; j <= slotCount; j++)
+                matrix[i, j] = cost(i - 1, j - 1);
+        }
+
+        var u = new double[itemCount + 1];
+        var v = new double[slotCount + 1];
+        var matched = new int[slotCount + 1];
+        var way = new int[slotCount + 1];
+        var minToSlot = new double[slotCount + 1];
+        var used = new bool[slotCount + 1];
+
+        for (var i = 1; i <= itemCount; i++)
+        {
+            matched[0] = i;
+            var j0 = 0;
+            Array.Fill(minToSlot, double.PositiveInfinity);
+            Array.Clear(used);
+
+            do
+            {
+                used[j0] = true;
+                var i0 = matched[j0];
+                var delta = double.PositiveInfinity;
+                var j1 = 0;
+
+                for (var j = 1; j <= slotCount; j++)
+                {
+                    if (used[j])
+                        continue;
+
+                    var current = matrix[i0, j] - u[i0] - v[j];
+                    if (current < minToSlot[j])
+                    {
+                        minToSlot[j] = current;
+                        way[j] = j0;
+                    }
+
+                    if (minToSlot[j] < delta)
+                    {
+                        delta = minToSlot[j];
+                        j1 = j;
+                    }
+                }
+
+                for (var j = 0; j <= slotCount; j++)
+                {
+                    if (used[j])
+                    {
+                        u[matched[j]] += delta;
+                        v[j] -= delta;
+                    }
+                    else
+                    {
+                        minToSlot[j] -= delta;
+                    }
+                }
+
+                j0 = j1;
+            }
+            while (matched[j0] != 0);
+
+            do
+            {
+                var j1 = way[j0];
+                matched[j0] = matched[j1];
+                j0 = j1;
+            }
+            while (j0 != 0);
+        }
+
+        var assignment = new int[itemCount];
+        for (var j = 1; j <= slotCount; j++)
+        {
+            if (matched[j] != 0)
+                assignment[matched[j] - 1] = j - 1;
+        }
+
+        return assignment;
+    }
+
+    /// <summary>
+    /// Cost of assigning a note to a candidate voice. For a voice with notes: the pitch distance
+    /// from its last note, plus penalties for large jumps, non-stepwise motion
+    /// (<see cref="VoiceSeparatorOptions.PreferStepwise"/>), silence since its last note ended and
+    /// temporal overlap with a note of it still sounding. For a voice with none: the seed penalty,
+    /// plus a hair of the distance from its register seed. Either way, order violations against
+    /// currently sounding voices when <see cref="VoiceSeparatorOptions.AllowCrossings"/> is false.
     /// </summary>
     private static double AssignmentCost(
         int pitch,
@@ -584,26 +817,30 @@ public static class VoiceSeparator
         Rational[] voiceLastEnd,
         bool[] voiceHasNotes,
         int maxVoices,
+        double seedPenalty,
         VoiceSeparatorOptions options)
     {
         var distance = Math.Abs(pitch - voiceLastPitch[voiceIdx]);
-        double cost = distance;
-
-        if (distance > options.MaxMelodicInterval)
-            cost += options.LargeJumpPenalty;
+        double cost;
 
         if (!voiceHasNotes[voiceIdx])
         {
-            // Prefer continuing a voice with real notes over starting a fresh voice
-            // whose "last pitch" is just a synthetic seed — otherwise a monophonic
-            // line drifts across voices on ties.
-            cost += SeedContinuityPenalty;
+            // A voice with no notes yet: its "last pitch" is a register seed, and the distance to
+            // a seed is not melodic motion. Opening the voice costs the same wherever the note
+            // is, which keeps a line whose next note lies within MaxMelodicInterval in its voice,
+            // and a sliver of the distance so a new line opens the free voice nearest its
+            // register.
+            cost = seedPenalty + (SeedDistanceWeight * distance);
         }
         else
         {
+            cost = distance;
+
+            if (distance > options.MaxMelodicInterval)
+                cost += options.LargeJumpPenalty;
+
             // PreferStepwise: superlinear cost for melodic motion beyond a whole step,
-            // so a leaping continuation loses to a nearer (or free) voice. Synthetic
-            // seed distances are not melodic motion and are exempt.
+            // so a leaping continuation loses to a nearer (or free) voice.
             if (options.PreferStepwise && distance > 2)
                 cost += (distance - 2) * (distance - 2) * StepwiseCostFactor;
 
@@ -611,8 +848,12 @@ public static class VoiceSeparator
             // note without collapsing simultaneous notes into one line; make it
             // effectively unavailable, but keep the cost finite so the min-cost
             // fallback still assigns (never drops) the note when ALL voices overlap.
+            // A voice that has stopped sounding pays for the silence since, so that of
+            // two voices an equal distance away the one still going on continues.
             if (voiceLastEnd[voiceIdx] > onset)
                 cost += OverlapPenalty;
+            else
+                cost += (onset - voiceLastEnd[voiceIdx]).ToDouble() * RecencyWeight;
         }
 
         if (!options.AllowCrossings)
@@ -643,6 +884,7 @@ public static class VoiceSeparator
         bool[] voiceHasNotes,
         bool[] usedVoices,
         int maxVoices,
+        double seedPenalty,
         VoiceSeparatorOptions options)
     {
         var bestVoice = -1;
@@ -652,7 +894,7 @@ public static class VoiceSeparator
         {
             if (usedVoices[v]) continue;
 
-            var cost = AssignmentCost(pitch, onset, v, voiceLastPitch, voiceLastEnd, voiceHasNotes, maxVoices, options);
+            var cost = AssignmentCost(pitch, onset, v, voiceLastPitch, voiceLastEnd, voiceHasNotes, maxVoices, seedPenalty, options);
             if (cost < minCost)
             {
                 minCost = cost;
@@ -793,7 +1035,11 @@ public sealed record SatbSeparationResult
 /// </summary>
 public sealed class VoiceSeparatorOptions
 {
-    /// <summary>Maximum melodic interval before penalty (semitones).</summary>
+    /// <summary>
+    /// Maximum melodic interval before penalty (semitones). A voice continues through any
+    /// interval up to this one rather than a new voice opening; beyond it the leap is penalised
+    /// and, while a voice is free, the note opens a new one.
+    /// </summary>
     public int MaxMelodicInterval { get; init; } = 7;
 
     /// <summary>Penalty for jumps larger than MaxMelodicInterval.</summary>
@@ -801,16 +1047,23 @@ public sealed class VoiceSeparatorOptions
 
     /// <summary>
     /// Prefer stepwise motion: melodic motion beyond a whole step (2 semitones) within a
-    /// voice incurs a superlinear extra cost, so a large leap favors a nearer voice (or
-    /// opening a free one) over continuing the same line.
+    /// voice incurs a superlinear extra cost, so of two readings of the same notes the one
+    /// with the smaller leaps wins — two voices leaping a sixth in parallel rather than one
+    /// stepping while the other leaps over it.
     /// </summary>
     public bool PreferStepwise { get; init; } = true;
 
     /// <summary>
-    /// Allow voice crossings. When <see langword="false"/>, an assignment that would put
-    /// a note above the currently sounding pitch of a higher voice (or below a lower
-    /// one's) pays a large soft penalty: crossings are avoided whenever an alternative
-    /// assignment exists, but notes are never dropped.
+    /// Allow voice crossings. When <see langword="true"/>, the default, the notes of an onset go
+    /// to whichever voices continue them most smoothly, so a line may enter or move above a
+    /// voice listed before it. When <see langword="false"/>, the notes of an onset are kept in
+    /// the voices' order, and an assignment that would put a note above the currently sounding
+    /// pitch of a higher voice (or below a lower one's) pays a large soft penalty: crossings are
+    /// avoided whenever an alternative assignment exists, but notes are never dropped.
     /// </summary>
+    /// <remarks>
+    /// The order of the notes within an onset used to be kept whatever this said, so with
+    /// crossings allowed a line entering above an active voice still displaced it.
+    /// </remarks>
     public bool AllowCrossings { get; init; } = true;
 }

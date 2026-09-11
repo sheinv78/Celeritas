@@ -136,8 +136,39 @@ public class PolyphonyRhythmReviewFixTests
     [Fact]
     public void Separate_PreferStepwise_ChangesAssignment()
     {
-        // C4 followed by a twelfth leap to G5. With PreferStepwise the superlinear
-        // leap cost opens a second voice; without it the line stays in one voice.
+        // Two voices a minor tenth apart, C4 and Bb4, and on the next beat Ab4 and Gb5. With
+        // PreferStepwise both voices leap a minor sixth in parallel — the superlinear cost of
+        // one voice leaping an octave and a sixth outweighs two sixths. Without it the plain
+        // distances win: Bb4 steps down to Ab4 and C4 leaps over it to Gb5, a crossing.
+        //
+        // This used to be C4 then G5, a twelfth, in which PreferStepwise opened a second voice
+        // and its absence kept one. The one voice was an accident of the register seeds: the
+        // free voice was seeded at E3, 27 semitones from G5, and opening it cost more than the
+        // leap. A voice does not leap a twelfth while another voice is free, stepwise or not,
+        // so that passage separates into two voices either way now.
+        using var buf = new NoteBuffer(4);
+        buf.AddNote(70, Rational.Zero, Rational.Quarter);
+        buf.AddNote(60, Rational.Zero, Rational.Quarter);
+        buf.AddNote(78, Rational.Quarter, Rational.Quarter);
+        buf.AddNote(68, Rational.Quarter, Rational.Quarter);
+
+        var stepwise = VoiceSeparator.Separate(buf, 2,
+            new VoiceSeparatorOptions { PreferStepwise = true, AllowCrossings = true });
+        var plain = VoiceSeparator.Separate(buf, 2,
+            new VoiceSeparatorOptions { PreferStepwise = false, AllowCrossings = true });
+
+        Assert.Equal(stepwise.NoteToVoice[0], stepwise.NoteToVoice[2]);   // Bb4 -> Gb5
+        Assert.Equal(stepwise.NoteToVoice[1], stepwise.NoteToVoice[3]);   // C4 -> Ab4
+        Assert.Equal(0, stepwise.VoiceCrossings);
+
+        Assert.Equal(plain.NoteToVoice[0], plain.NoteToVoice[3]);         // Bb4 -> Ab4
+        Assert.Equal(plain.NoteToVoice[1], plain.NoteToVoice[2]);         // C4 -> Gb5
+        Assert.True(plain.VoiceCrossings > 0);
+    }
+
+    [Fact]
+    public void Separate_ALeapOfATwelfth_OpensASecondVoiceWhetherOrNotStepsArePreferred()
+    {
         using var buf = new NoteBuffer(2);
         buf.AddNote(60, Rational.Zero, Rational.Quarter);
         buf.AddNote(79, Rational.Quarter, Rational.Quarter);
@@ -148,7 +179,7 @@ public class PolyphonyRhythmReviewFixTests
             new VoiceSeparatorOptions { PreferStepwise = false, AllowCrossings = true });
 
         Assert.Equal(2, stepwise.Voices.Count);
-        Assert.Single(plain.Voices);
+        Assert.Equal(2, plain.Voices.Count);
     }
 
     [Fact]
