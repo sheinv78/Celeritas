@@ -2,6 +2,9 @@
 
 using System.Reflection;
 using Celeritas.CLI;
+using Celeritas.Core;
+using Celeritas.Core.Midi;
+using MidiFile = Melanchall.DryWetMidi.Core.MidiFile;
 
 namespace Celeritas.Tests;
 
@@ -164,6 +167,101 @@ public class CliRemainingCommandTests : IDisposable
         var (analyzeExit, analyzeOutput) = Run("midi", "analyze", "--in", path);
         Assert.Equal(0, analyzeExit);
         Assert.False(string.IsNullOrWhiteSpace(analyzeOutput));
+    }
+
+    // ---------- a drum track under the music ----------
+
+    [Fact]
+    public void Midi_Analyze_HearsThePianoAndNotTheDrums()
+    {
+        // Sixteen piano notes in C major over forty-eight drum hits on channel 10. Read as
+        // pitches the hi-hats are F#s, and the analysis named the key F# minor.
+        var path = DrumsAreNotPitchesTests.WritePianoAndDrumsFile(_work);
+
+        var (exit, output) = Run("midi", "analyze", "--in", path, "--format", "summary");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Loaded 16 notes", output, StringComparison.Ordinal);
+        Assert.Contains("Key: C Major", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Midi_Import_LeavesTheDrumsOut_UnlessAskedForThem()
+    {
+        var path = DrumsAreNotPitchesTests.WritePianoAndDrumsFile(_work);
+
+        var (byDefault, defaultOutput) = Run("midi", "import", "--in", path);
+        var (channelTen, channelTenOutput) = Run("midi", "import", "--in", path, "--channel", "9");
+        var (both, bothOutput) = Run("midi", "import", "--in", path, "--include-percussion");
+
+        Assert.Equal(0, byDefault);
+        Assert.Equal(0, channelTen);
+        Assert.Equal(0, both);
+        Assert.Contains("Notes: 16", defaultOutput, StringComparison.Ordinal);
+        Assert.Contains("Notes: 48", channelTenOutput, StringComparison.Ordinal);
+        Assert.Contains("Notes: 64", bothOutput, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Midi_Info_CountsTheDrumsApart_AndRangesThePitches()
+    {
+        var path = DrumsAreNotPitchesTests.WritePianoAndDrumsFile(_work);
+
+        var (exit, output) = Run("midi", "info", "--in", path);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Notes: 16", output, StringComparison.Ordinal);
+        Assert.Contains("Percussion (channel 10): 48 hits", output, StringComparison.Ordinal);
+        Assert.Contains("(MIDI 60-72)", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Midi_Info_DurationIsTheEndOfTheNoteThatEndsLast()
+    {
+        // A whole note from the start and a quarter on the second beat: the last note in
+        // offset order ends at 0.50, the music at 1.00. The command printed 0.50.
+        var path = Path.Combine(_work, "overlap.mid");
+        using (var buffer = new NoteBuffer(2))
+        {
+            buffer.AddNote(60, Rational.Zero, Rational.Whole);
+            buffer.AddNote(64, Rational.Quarter, Rational.Quarter);
+            MidiIo.Export(buffer, path);
+        }
+
+        var (exit, output) = Run("midi", "info", "--in", path);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Duration (whole notes): 1.00", output, StringComparison.Ordinal);
+        Assert.Equal(Rational.Whole, MidiFile.Read(path).GetStatistics().TotalDuration);
+    }
+
+    [Fact]
+    public void Midi_Transpose_SaysItLeftTheDrumsOut()
+    {
+        // A drum hit cannot be transposed and the single-track output has no channel to keep
+        // it on; the command says so rather than dropping the track in silence.
+        var path = DrumsAreNotPitchesTests.WritePianoAndDrumsFile(_work);
+        var shifted = Path.Combine(_work, "shifted.mid");
+
+        var (exit, output) = Run("midi", "transpose", "--in", path, "--out", shifted, "--semitones", "2");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Loaded 16 notes", output, StringComparison.Ordinal);
+        Assert.Contains("Left out 48 percussion hits", output, StringComparison.Ordinal);
+        Assert.Contains("Notes: 16", Run("midi", "import", "--in", shifted, "--include-percussion").Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MusicXml_ConvertFromMidi_SaysItLeftTheDrumsOut()
+    {
+        var path = DrumsAreNotPitchesTests.WritePianoAndDrumsFile(_work);
+        var score = Path.Combine(_work, "with-drums.musicxml");
+
+        var (exit, output) = Run("musicxml", "convert", "--in", path, "--out", score);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("16 notes", output, StringComparison.Ordinal);
+        Assert.Contains("Left out 48 percussion hits", output, StringComparison.Ordinal);
     }
 
     [Fact]

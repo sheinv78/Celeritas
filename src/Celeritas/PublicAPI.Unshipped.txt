@@ -1134,9 +1134,11 @@ Celeritas.Core.Midi.MidiFileStatistics.TrackCount.init -> void
 Celeritas.Core.Midi.MidiImportOptions
 Celeritas.Core.Midi.MidiImportOptions.Channel.get -> int?
 Celeritas.Core.Midi.MidiImportOptions.Channel.init -> void
+Celeritas.Core.Midi.MidiImportOptions.IncludePercussion.get -> bool
+Celeritas.Core.Midi.MidiImportOptions.IncludePercussion.init -> void
 Celeritas.Core.Midi.MidiImportOptions.MaxNotes.get -> int?
 Celeritas.Core.Midi.MidiImportOptions.MaxNotes.init -> void
-Celeritas.Core.Midi.MidiImportOptions.MidiImportOptions(int? Channel = null, int? MaxNotes = null, bool SortByOffset = true) -> void
+Celeritas.Core.Midi.MidiImportOptions.MidiImportOptions(int? Channel = null, int? MaxNotes = null, bool SortByOffset = true, bool IncludePercussion = false) -> void
 Celeritas.Core.Midi.MidiImportOptions.SortByOffset.get -> bool
 Celeritas.Core.Midi.MidiImportOptions.SortByOffset.init -> void
 Celeritas.Core.Midi.MidiIo
@@ -1984,7 +1986,7 @@ Celeritas.Core.Midi.MidiExportOptions.Equals(Celeritas.Core.Midi.MidiExportOptio
 Celeritas.Core.Midi.MidiFileStatistics.<Clone>$() -> Celeritas.Core.Midi.MidiFileStatistics!
 Celeritas.Core.Midi.MidiFileStatistics.Equals(Celeritas.Core.Midi.MidiFileStatistics? other) -> bool
 Celeritas.Core.Midi.MidiImportOptions.<Clone>$() -> Celeritas.Core.Midi.MidiImportOptions!
-Celeritas.Core.Midi.MidiImportOptions.Deconstruct(out int? Channel, out int? MaxNotes, out bool SortByOffset) -> void
+Celeritas.Core.Midi.MidiImportOptions.Deconstruct(out int? Channel, out int? MaxNotes, out bool SortByOffset, out bool IncludePercussion) -> void
 Celeritas.Core.Midi.MidiImportOptions.Equals(Celeritas.Core.Midi.MidiImportOptions? other) -> bool
 Celeritas.Core.Midi.TempoChange.<Clone>$() -> Celeritas.Core.Midi.TempoChange!
 Celeritas.Core.Midi.TempoChange.Equals(Celeritas.Core.Midi.TempoChange? other) -> bool

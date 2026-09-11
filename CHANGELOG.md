@@ -153,6 +153,17 @@ follows.
   appeared nowhere in `Violations`, documented as the full list underlying the
   counts; over 400 random two-voice textures a counter disagreed with the list in
   195
+- Every voice number in a separation result is a position in `Voices`. `Voice.Index`,
+  `NoteToVoice` and the Voice Crossing and Spacing findings of `CheckCounterpointRules`
+  named the register slot the separator had used (soprano 0 to bass 3), while the
+  intervals, motions and every other finding named a position in `Voices`, which
+  drops empty slots -- so for a tenor/bass duet `Voices[NoteToVoice[i]]` threw and a
+  spacing finding named voices 2 and 3 of a two-voice list; over 200 random textures
+  242 voice numbers pointed at the wrong voice or past the end. The register a voice
+  was placed in survives as its `Name`, and an `SatbSeparationResult` indexes its four
+  voices by label, Soprano 0 to Bass 3, filled or empty -- a filled voice used to keep
+  the separator's slot, so a line placed in the alto slot but labelled Tenor shared
+  index 1 with the empty Alto beside it
 - A key change needs a note that tells the two keys apart. C major and D minor
   differ by one note, and the middle strain of *Twinkle, Twinkle, Little Star*
   contains neither of them, so the detector chose on the weighting of the notes
@@ -304,6 +315,12 @@ follows.
 - `FormatDuration` writes every dotted power of two as a dot. Its table stopped at
   "32." and wrote a dotted 64th as "3/128" -- text the reader refuses, so a passage
   holding one could not be saved and read back
+- `FormatWithDirectives` writes a directive at its own time. A directive that
+  fell inside a note or a rest was moved to the next note boundary -- 2345 of
+  3000 random placements read back later than written -- and a sequence with no
+  notes lost its directives altogether. The note is now written as tied pieces
+  and the rest as two rests, cut at the directive, and a directive-only sequence
+  writes its directives
 - `FormatWithDirectives` writes the music its sibling writes. It kept the old
   flattening implementation that `FormatNoteSequence` had been rewritten to
   replace, so four of eight test passages came back as different music -- with no
@@ -324,6 +341,21 @@ follows.
   `TrackCount` differed from its original's. `Export`, `Save` and `Clone` now
   write format 0 for one track and format 1 for more, and keep format 2 for a
   file that was read as format 2
+- A drum is not a pitch. `MidiIo.Import` read the General MIDI percussion channel
+  (channel 10, index 9) like any other, so a drum hit's note number came into the
+  buffer as a pitch -- a closed hi-hat is 42, an F# -- and the commonest file there
+  is, a piano track over a drum track, key-detected as F# minor when the piano was
+  in C major. The percussion channel is now left out unless
+  `MidiImportOptions.IncludePercussion` is set or `Channel` names it;
+  `MidiFileStatistics` still counts the hits in `NoteCount` but keeps them out of
+  `MinNoteNumber`/`MaxNoteNumber`, so a kick drum no longer puts a "C2" under
+  every piano piece; `midi info` reports the hits on their own line, `midi
+  transpose` and `musicxml convert` say how many they left out, and `midi
+  import` gains `--include-percussion`
+- `midi info` reports the duration `MidiFileStatistics.TotalDuration` reports:
+  the end of the note that ends last. It printed the end of the last note in
+  offset order, so a file whose long note began before a short one was shorter
+  by the CLI than by the library
 
 #### Parsing
 
@@ -397,17 +429,19 @@ follows.
   `polyphony --notes` and `midi export --notes` read, as it had always claimed
   its listing could be; the "C4@1/4:1/8" listing was a format no command reads
 - The CLI refuses a list item that is two integers joined by a comma ("0,25")
-  rather than splitting it: in the locales whose decimal mark is the comma --
-  where the CLI printed its own numbers with that comma -- `--durations 0,25
-  0,25 0,5` was analyzed as six durations and a rhythm nobody typed was reported
-  with exit code 0
+  rather than splitting it: in the locales whose decimal mark is the comma it is
+  a decimal to the person who typed it, while to the list syntax it is two items,
+  so `--durations 0,25 0,25 0,5` was analyzed as six durations and a rhythm
+  nobody typed was reported with exit code 0
 - The CLI writes its numbers as the library does on every machine -- a dot for
   the decimal mark, a comma for grouping, `16%` for a share -- and hands the
   console UTF-8. On a German or Russian host one report read `Analysis time:
   7402,4 µs` two lines above `G Major: 1.058`, the benchmark counted `1 000 000`
   notes in `1,46 ms`, and on a legacy code page the `µs`, `→` and box-drawing
   rules arrived as `?`. The culture and the console's code page are put back
-  when the tool exits
+  when the tool exits. A percentage is rounded the way the library rounds its
+  own, so `celeritas progression` and `ToFormattedReport` give one progression
+  the same confidence
 - `celeritas rhythm` says whether its meter was given or detected. `--meter`
   defaulted to 4/4 and the default was handed to the analyzer as a known meter,
   so every run printed "Confidence: 100 %" for a detection that never ran. A
@@ -481,6 +515,10 @@ Behavioral and API changes that can affect existing code:
 - `MidiImportOptions.SortByOffset = false` keeps the order the file lists its
   notes in, track by track; it used to change nothing, because the notes
   arrived already merged in time order
+- `MidiIo.Import` leaves the percussion channel out by default. A caller who
+  imported a drum track knowingly without naming the channel now needs
+  `IncludePercussion: true` or `Channel: 9`; `MidiImportOptions` gains that fourth
+  positional parameter, so its constructor and `Deconstruct` signatures change
 - `ModeLibrary.DetectModeWithRoot(IEnumerable<NoteEvent>)` treats a collection of
   nothing but rests as it treats an empty one, and throws rather than answering in
   the key of the silence

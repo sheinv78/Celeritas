@@ -47,10 +47,10 @@ public enum IntervalQuality
 /// </summary>
 public readonly struct VoiceInterval
 {
-    /// <summary>Index of the first (upper) voice.</summary>
+    /// <summary>Position in <see cref="VoiceSeparationResult.Voices"/> of the first (upper) voice.</summary>
     public int Voice1 { get; init; }
 
-    /// <summary>Index of the second (lower) voice.</summary>
+    /// <summary>Position in <see cref="VoiceSeparationResult.Voices"/> of the second (lower) voice.</summary>
     public int Voice2 { get; init; }
 
     /// <summary>Time offset of the interval, in whole-note units.</summary>
@@ -116,10 +116,10 @@ public readonly struct VoiceInterval
 /// </summary>
 public readonly struct VoiceMotion
 {
-    /// <summary>Index of the first voice.</summary>
+    /// <summary>Position in <see cref="VoiceSeparationResult.Voices"/> of the first (upper) voice.</summary>
     public int Voice1 { get; init; }
 
-    /// <summary>Index of the second voice.</summary>
+    /// <summary>Position in <see cref="VoiceSeparationResult.Voices"/> of the second (lower) voice.</summary>
     public int Voice2 { get; init; }
 
     /// <summary>Time offset of the starting interval, in whole-note units.</summary>
@@ -160,10 +160,21 @@ public sealed record CounterpointViolation
     /// <summary>Time offset where the violation occurs, in whole-note units.</summary>
     public required Rational Time { get; init; }
 
-    /// <summary>Index of the first voice involved.</summary>
+    /// <summary>
+    /// Position in <see cref="VoiceSeparationResult.Voices"/> of the first voice involved.
+    /// </summary>
+    /// <remarks>
+    /// The <c>Voice Crossing</c> and <c>Spacing</c> entries of
+    /// <see cref="PolyphonyAnalyzer.CheckCounterpointRules(NoteBuffer, int)"/> used to name the
+    /// register slot each voice had been placed in instead, so with an empty slot above them a
+    /// tenor/bass pair was reported as voices 2 and 3 of a two-voice list.
+    /// </remarks>
     public required int Voice1 { get; init; }
 
-    /// <summary>Index of the second voice involved.</summary>
+    /// <summary>
+    /// Position in <see cref="VoiceSeparationResult.Voices"/> of the second voice involved; the
+    /// same as <see cref="Voice1"/> for a finding about one voice, such as a large leap.
+    /// </summary>
     public required int Voice2 { get; init; }
 
     /// <summary>Severity label: <c>Error</c>, <c>Warning</c>, or <c>Style</c>.</summary>
@@ -1140,7 +1151,11 @@ static file class PolyphonyAnalyzerHelpers
 
         var crossings = 0;
         var spacing = 0;
-        var lowestVoiceIndex = voices.Voices.Max(v => v.Index);
+
+        // The bass rule below applies to the lowest voice present, whichever register the
+        // separator placed it in: the list holds only the voices that are present, and for a
+        // tenor/bass duet the bass is its last entry.
+        var lowest = voices.Voices.Count - 1;
 
         foreach (var t in times)
         {
@@ -1149,6 +1164,10 @@ static file class PolyphonyAnalyzerHelpers
                 .ToArray();
 
             // Voice crossing: higher voice pitch < lower voice pitch at same time.
+            //
+            // The voices are named by their position in the list, as every other finding names
+            // them. These entries used to carry the register slot each voice had been placed
+            // in, which for a tenor/bass duet was 2 and 3 in a list of two voices.
             for (var i = 0; i < sounding.Length - 1; i++)
             {
                 if (sounding[i].HasValue && sounding[i + 1].HasValue && sounding[i]!.Value < sounding[i + 1]!.Value)
@@ -1161,8 +1180,8 @@ static file class PolyphonyAnalyzerHelpers
                             $"{voices.Voices[i].Name} at {sounding[i]!.Value} is below "
                             + $"{voices.Voices[i + 1].Name} at {sounding[i + 1]!.Value}",
                         Time = t,
-                        Voice1 = voices.Voices[i].Index,
-                        Voice2 = voices.Voices[i + 1].Index,
+                        Voice1 = i,
+                        Voice2 = i + 1,
                         Severity = "Warning"
                     });
                 }
@@ -1179,12 +1198,12 @@ static file class PolyphonyAnalyzerHelpers
 
                 var dist = Math.Abs(sounding[i]!.Value - sounding[i + 1]!.Value);
 
-                // Which pair this is follows the voices' own SATB slots, not their position in
-                // this list, which holds only the voices that are present. With an empty slot
-                // above them, a tenor and a bass landed at positions 0 and 1 and were judged by
+                // The pair above the lowest voice present gets the bass rule. The limit was once
+                // picked as if the list always held four voices in SATB order: with an empty
+                // slot above them, a tenor and a bass sat at positions 0 and 1 and were judged by
                 // the soprano-alto octave rule, so an ordinary tenor/bass duet was reported as
                 // badly spaced.
-                var limit = voices.Voices[i + 1].Index == lowestVoiceIndex ? 24 : 12;
+                var limit = i + 1 == lowest ? 24 : 12;
                 if (dist > limit)
                 {
                     spacing++;
@@ -1195,8 +1214,8 @@ static file class PolyphonyAnalyzerHelpers
                             $"{dist} semitones between {voices.Voices[i].Name} and "
                             + $"{voices.Voices[i + 1].Name}, more than the {limit} allowed here",
                         Time = t,
-                        Voice1 = voices.Voices[i].Index,
-                        Voice2 = voices.Voices[i + 1].Index,
+                        Voice1 = i,
+                        Voice2 = i + 1,
                         Severity = "Style"
                     });
                 }

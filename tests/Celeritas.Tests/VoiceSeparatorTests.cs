@@ -25,7 +25,9 @@ public class VoiceSeparatorTests
         Assert.Single(result.Voices);
         Assert.Equal(4, result.Voices[0].Notes.Count);
         Assert.Equal("Bass", result.Voices[0].Name);
-        Assert.Equal(3, result.Voices[0].Index);
+
+        // The name says which register it was placed in; the index is its place in the list.
+        Assert.Equal(0, result.Voices[0].Index);
     }
 
     [Fact]

@@ -11,7 +11,27 @@ public sealed class Voice
     // Produced by voice separation; not constructible by consumers (#18 API freeze).
     internal Voice() { }
 
-    /// <summary>Voice index (0 = highest/soprano, increasing = lower voices).</summary>
+    internal Voice(int index, string name, List<VoiceNote> notes)
+    {
+        Index = index;
+        Name = name;
+        Notes = notes;
+    }
+
+    /// <summary>
+    /// Position of this voice among the voices returned with it, 0 = highest: in
+    /// <see cref="VoiceSeparationResult.Voices"/> its place in the list, so
+    /// <c>Voices[voice.Index]</c> is this voice; in a <see cref="SatbSeparationResult"/> its
+    /// label, Soprano 0, Alto 1, Tenor 2, Bass 3. In <c>Voices</c>, <see cref="Name"/> records
+    /// the register the separator placed the voice in; in an SATB result it is the label.
+    /// </summary>
+    /// <remarks>
+    /// This used to be the register slot the separator had used (soprano 0 … bass 3), which is
+    /// what <see cref="VoiceSeparationResult.NoteToVoice"/> and the crossing and spacing findings
+    /// reported too, while every other voice number in an analysis was a position in
+    /// <c>Voices</c>. Empty slots are dropped from that list, so for a tenor/bass duet the two
+    /// numberings disagreed and <c>Voices[NoteToVoice[i]]</c> threw. There is one numbering now.
+    /// </remarks>
     public int Index { get; init; }
 
     /// <summary>Name of the voice (Soprano, Alto, Tenor, Bass, or Voice N).</summary>
@@ -76,7 +96,12 @@ public readonly record struct VoiceNote
 /// </summary>
 public sealed record VoiceSeparationResult
 {
-    /// <summary>Separated voices, ordered highest to lowest; empty voices are omitted.</summary>
+    /// <summary>
+    /// Separated voices, ordered highest to lowest; empty voices are omitted. Each voice's
+    /// <see cref="Voice.Index"/> is its position here, and so is every voice number in
+    /// <see cref="NoteToVoice"/> and in the polyphony analysis and counterpoint check built on
+    /// this result.
+    /// </summary>
     public required IReadOnlyList<Voice> Voices { get; init; }
 
     /// <summary>Total number of notes in the source buffer.</summary>
@@ -88,7 +113,16 @@ public sealed record VoiceSeparationResult
     /// <summary>Heuristic separation quality, 0..1 (higher = cleaner).</summary>
     public required float SeparationQuality { get; init; }
 
-    /// <summary>Get the voice assignment for each original note index.</summary>
+    /// <summary>
+    /// The voice each note went to, keyed by the note's index in the source buffer: the value is
+    /// a position in <see cref="Voices"/>, so <c>Voices[NoteToVoice[i]]</c> is the voice holding
+    /// note <c>i</c>. Rests have no entry.
+    /// </summary>
+    /// <remarks>
+    /// The value used to be the register slot the note was assigned to (soprano 0 … bass 3),
+    /// which is not a position in <see cref="Voices"/> once an empty slot has been dropped: a
+    /// tenor/bass duet mapped every note to 2 or 3 in a list of two voices.
+    /// </remarks>
     public Dictionary<int, int> NoteToVoice { get; init; } = [];
 }
 
@@ -185,11 +219,15 @@ public static class VoiceSeparator
                 slots[assignment[i]] = nonEmpty[i];
         }
 
+        // Filled or empty, each voice is indexed by its label here. A filled voice used to keep
+        // the index it had in the general result, so a line the separator had placed in the
+        // alto slot but whose average pitch is a tenor's was returned as Tenor with index 1 —
+        // the same index as the empty Alto beside it.
         var labeled = new Voice[4];
         for (var s = 0; s < 4; s++)
         {
             labeled[s] = slots[s] is { } voice
-                ? RenameVoice(voice, names[s])
+                ? new Voice(s, names[s], [.. voice.Notes])
                 : new Voice { Index = s, Name = names[s] };
         }
 
@@ -201,13 +239,6 @@ public static class VoiceSeparator
             Tenor = labeled[2],
             Bass = labeled[3]
         };
-    }
-
-    private static Voice RenameVoice(Voice source, string name)
-    {
-        var v = new Voice { Index = source.Index, Name = name };
-        v.Notes.AddRange(source.Notes);
-        return v;
     }
 
     /// <summary>
@@ -396,13 +427,30 @@ public static class VoiceSeparator
         // Calculate separation quality
         var quality = CalculateSeparationQuality(voices, voiceCrossings);
 
+        // Drop the empty slots and number the voices that remain by their place in the list.
+        // That is the number every voice index in the result, and in the analyses built on it,
+        // refers to; the slot a voice was placed in survives as its Name. The assignment above
+        // works in slots, so NoteToVoice is translated here.
+        var present = new List<Voice>(maxVoices);
+        var positionOfSlot = new int[maxVoices];
+        for (var slot = 0; slot < maxVoices; slot++)
+        {
+            positionOfSlot[slot] = voices[slot].Notes.Count > 0 ? present.Count : -1;
+            if (positionOfSlot[slot] >= 0)
+                present.Add(new Voice(present.Count, voices[slot].Name, voices[slot].Notes));
+        }
+
+        var noteToPosition = new Dictionary<int, int>(noteToVoice.Count);
+        foreach (var (noteIndex, slot) in noteToVoice)
+            noteToPosition[noteIndex] = positionOfSlot[slot];
+
         return new VoiceSeparationResult
         {
-            Voices = [.. voices.Where(v => v.Notes.Count > 0)],
+            Voices = present,
             TotalNotes = buffer.Count,
             VoiceCrossings = voiceCrossings,
             SeparationQuality = quality,
-            NoteToVoice = noteToVoice
+            NoteToVoice = noteToPosition
         };
     }
 
@@ -714,8 +762,14 @@ public static class VoiceSeparator
 }
 
 /// <summary>
-/// SATB (Soprano/Alto/Tenor/Bass) separation convenience result.
+/// SATB (Soprano/Alto/Tenor/Bass) separation convenience result. The four voices are indexed by
+/// their label — Soprano 0, Alto 1, Tenor 2, Bass 3 — whether filled or an empty stub.
 /// </summary>
+/// <remarks>
+/// A filled voice used to keep the index it had in <see cref="Full"/>, which is the register
+/// slot the separator had used, not the label chosen here by average pitch; a line placed in the
+/// alto slot but labelled Tenor came back with index 1, the same as the empty Alto beside it.
+/// </remarks>
 public sealed record SatbSeparationResult
 {
     /// <summary>The underlying general separation result.</summary>

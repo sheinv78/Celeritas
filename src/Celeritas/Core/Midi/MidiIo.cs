@@ -13,12 +13,22 @@ namespace Celeritas.Core.Midi;
 /// Options controlling MIDI import into a <see cref="NoteBuffer"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// <see cref="SortByOffset"/> used to change nothing. The notes were fetched from the whole
 /// file already merged in time order, and the sort that <see langword="false"/> skipped was a
 /// stable sort of a sequence already in that order, so a caller who asked for the file's own
 /// order got the merged one and had no way to tell.
+/// </para>
+/// <para>
+/// The percussion channel used to be imported like any other. A drum track is note-ons and
+/// note-offs like a piano track, so its hits came into the buffer as pitches — a closed hi-hat
+/// is note number 42, an F# — and the commonest file there is, a piano track with a drum
+/// track under it, key-detected as F# minor when the piano was in C major.
+/// </para>
 /// </remarks>
-/// <param name="Channel">If set, keep only notes on this MIDI channel.</param>
+/// <param name="Channel">If set, keep only notes on this MIDI channel. Setting it to 9 asks
+/// for the percussion channel by name and gets it, whatever
+/// <paramref name="IncludePercussion"/> says.</param>
 /// <param name="MaxNotes">If set, stop after importing this many notes — the first so many in
 /// the order <paramref name="SortByOffset"/> chooses.</param>
 /// <param name="SortByOffset">
@@ -28,10 +38,16 @@ namespace Celeritas.Core.Midi;
 /// order they occur within it, so a melody track and a bass track come out one after the
 /// other rather than interleaved.
 /// </param>
+/// <param name="IncludePercussion">
+/// Notes on the General MIDI percussion channel (channel 10, index 9) are instrument numbers,
+/// not pitches, and are left out unless this is set. <see langword="true"/> imports them as
+/// the note numbers they carry, for a caller who wants every note-on the file holds.
+/// </param>
 public sealed record MidiImportOptions(
     int? Channel = null,
     int? MaxNotes = null,
-    bool SortByOffset = true);
+    bool SortByOffset = true,
+    bool IncludePercussion = false);
 
 /// <summary>
 /// Options controlling MIDI export from a <see cref="NoteBuffer"/>.
@@ -127,12 +143,37 @@ public static class MidiIo
         }
     }
 
+    /// <summary>
+    /// The General MIDI percussion channel — channel 10 as a musician counts, index 9 as the
+    /// file stores it. A note-on there names a drum, not a pitch.
+    /// </summary>
+    internal const int PercussionChannel = 9;
+
+    /// <summary>
+    /// Whether a note on <paramref name="channel"/> is imported under <paramref name="options"/>:
+    /// no, when it is on the percussion channel and the caller neither asked for that channel
+    /// nor set <see cref="MidiImportOptions.IncludePercussion"/>.
+    /// </summary>
+    private static bool IsPercussionLeftOut(int channel, MidiImportOptions options) =>
+        channel == PercussionChannel
+        && !options.IncludePercussion
+        && options.Channel != PercussionChannel;
+
     /// <summary>Imports notes from a MIDI <paramref name="stream"/> using hardened reading settings.</summary>
     /// <remarks>
+    /// <para>
     /// The notes come out in the order <see cref="MidiImportOptions.SortByOffset"/> chooses:
     /// every track merged into one time order by default, or track by track as the file lists
     /// them. Either way they are the same notes — a note-on is paired with a note-off in its own
     /// track, whichever way the tracks are read.
+    /// </para>
+    /// <para>
+    /// Notes on the General MIDI percussion channel are left out unless
+    /// <see cref="MidiImportOptions.IncludePercussion"/> is set or
+    /// <see cref="MidiImportOptions.Channel"/> names that channel: a drum hit's note number is
+    /// an instrument, not a pitch. They used to come in like any other note, and a drum track
+    /// under a piano track changed the key the piano was heard in.
+    /// </para>
     /// </remarks>
     /// <exception cref="InvalidDataException">The stream is malformed or corrupt.</exception>
     /// <exception cref="NotSupportedException">The file does not use ticks-per-quarter-note time division.</exception>
@@ -181,6 +222,13 @@ public static class MidiIo
                 }
 
                 if (options.Channel is { } ch && note.Channel != ch)
+                {
+                    continue;
+                }
+
+                // A drum is not a pitch. Skipped before `taken` moves, so MaxNotes counts the
+                // notes that come in, not the hits that do not.
+                if (IsPercussionLeftOut(note.Channel, options))
                 {
                     continue;
                 }

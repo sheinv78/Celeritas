@@ -160,8 +160,10 @@ public class PropertyRestAndExportTests : IDisposable
                 return File.ReadAllBytes(path).SequenceEqual(before);
             }
 
-            // Accepted: the file was rewritten, and it must still be readable.
-            using var reread = MidiIo.Import(path);
+            // Accepted: the file was rewritten, and it must still be readable. The notes were
+            // put on the channel asked for, so ask for it back — channel 9 is percussion, and
+            // an import that does not name it leaves it out.
+            using var reread = MidiIo.Import(path, new MidiImportOptions(Channel: t.channel));
             return reread.Count == 2;
         }, iter: 300);
     }

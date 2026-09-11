@@ -12,6 +12,7 @@ using Celeritas.Core.Midi;
 using Celeritas.Core.Notation;
 using Celeritas.Core.Simd;
 using Celeritas.Core.VoiceLeading;
+using static System.FormattableString;
 
 /// <summary>
 /// Turns the raw values of a list option into one item per entry. Both styles are accepted,
@@ -73,12 +74,19 @@ static string[] ExpandListArgs(string[] raw)
 using var hostIndependentOutput = HostIndependentOutput.Begin();
 
 /// <summary>
-/// A share as the library writes one — <c>16%</c>, no space — so a CLI line agrees with the
-/// library line beside it. <c>:P0</c> is culture-dependent, and under the invariant culture the
-/// CLI runs in it puts a space before the sign (<c>16 %</c>); the library avoids it for the same
-/// reason (see ProgressionAdvisor).
+/// Writes a 0–1 ratio as the whole percentage the library's own reports print, "82%", with the
+/// same rounding, so <c>celeritas progression</c> and <see cref="ProgressionReport.ToFormattedReport"/>
+/// give one progression the same confidence.
 /// </summary>
-static string Percent(double share) => $"{(int)Math.Round(share * 100)}%";
+/// <remarks>
+/// Before, these lines used <c>{x:P0}</c>, which reads the machine: an English locale writes
+/// "82%", a German one "82 %", and the invariant culture "82 %" as well — so no culture argument
+/// could make it match the "confidence: 82%" the library prints for the same number, and the two
+/// could also round a midpoint apart. The percentage is rounded in <see cref="float"/> because
+/// that is how the library rounds its own; rounding the widened <see cref="double"/> instead
+/// prints 17% for a confidence of 0.175 where the report says 18%.
+/// </remarks>
+static string Percent(float ratio) => Invariant($"{(int)Math.Round(ratio * 100)}%");
 
 Option<int> semitonesOption = new("--semitones", "-s")
 {
@@ -429,9 +437,9 @@ benchmarkCommand.SetAction(parseResult =>
     sw.Stop();
 
     var nsPerNote = sw.Elapsed.TotalNanoseconds / count;
-    Console.WriteLine($"Transposed {count:N0} notes: {sw.Elapsed.TotalMilliseconds:F2} ms");
-    Console.WriteLine($"Performance: {nsPerNote:F3} ns/note");
-    Console.WriteLine($"Throughput: {count / sw.Elapsed.TotalSeconds / 1_000_000_000:F2} billion notes/sec");
+    Console.WriteLine(Invariant($"Transposed {count:N0} notes: {sw.Elapsed.TotalMilliseconds:F2} ms"));
+    Console.WriteLine(Invariant($"Performance: {nsPerNote:F3} ns/note"));
+    Console.WriteLine(Invariant($"Throughput: {count / sw.Elapsed.TotalSeconds / 1_000_000_000:F2} billion notes/sec"));
 });
 
 rootCommand.Subcommands.Add(benchmarkCommand);
@@ -512,7 +520,7 @@ keyDetectCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
     Console.WriteLine();
     Console.WriteLine($"  Detected Key: {result}");
-    Console.WriteLine($"  Analysis time: {sw.Elapsed.TotalMicroseconds:F1} µs");
+    Console.WriteLine(Invariant($"  Analysis time: {sw.Elapsed.TotalMicroseconds:F1} µs"));
     Console.WriteLine();
     Console.WriteLine("  Top 5 Key Candidates:");
     Console.WriteLine("  ─────────────────────");
@@ -573,7 +581,7 @@ voiceLeadCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine();
     Console.WriteLine($"  Input: {string.Join(" → ", chords)}");
     Console.WriteLine($"  Mode: {(strict ? "Strict" : "Standard")}");
-    Console.WriteLine($"  Solve time: {sw.Elapsed.TotalMilliseconds:F2} ms");
+    Console.WriteLine(Invariant($"  Solve time: {sw.Elapsed.TotalMilliseconds:F2} ms"));
     Console.WriteLine();
 
     if (!solution.IsValid)
@@ -797,7 +805,7 @@ polyphonyCommand.SetAction(parseResult => RunGuarded(() =>
         Console.WriteLine($"  {voice.Name}:");
         Console.WriteLine($"    Notes: {voice.Notes.Count}");
         Console.WriteLine($"    Range: {ChordLibrary.NoteNames[min % 12]}{(min / 12) - 1} - {ChordLibrary.NoteNames[max % 12]}{(max / 12) - 1}");
-        Console.WriteLine($"    Avg Pitch: {voice.AveragePitch:F1} ({ChordLibrary.NoteNames[(int)voice.AveragePitch % 12]})");
+        Console.WriteLine(Invariant($"    Avg Pitch: {voice.AveragePitch:F1} ({ChordLibrary.NoteNames[(int)voice.AveragePitch % 12]})"));
 
         var melodicLine = string.Join(" → ", voice.Notes.Select(n =>
             $"{ChordLibrary.NoteNames[n.Pitch % 12]}{(n.Pitch / 12) - 1}"));
@@ -825,10 +833,10 @@ polyphonyCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine("----------------------------------------------------------------");
     Console.WriteLine();
     var stats = result.MotionStats;
-    Console.WriteLine($"  Contrary: {stats.Contrary} ({stats.ContraryPercent:F0}%) - voices move opposite");
-    Console.WriteLine($"  Parallel: {stats.Parallel} ({stats.ParallelPercent:F0}%) - same direction, same interval");
-    Console.WriteLine($"  Similar:  {stats.Similar} ({stats.SimilarPercent:F0}%) - same direction, diff interval");
-    Console.WriteLine($"  Oblique:  {stats.Oblique} ({stats.ObliquePercent:F0}%) - one voice holds");
+    Console.WriteLine(Invariant($"  Contrary: {stats.Contrary} ({stats.ContraryPercent:F0}%) - voices move opposite"));
+    Console.WriteLine(Invariant($"  Parallel: {stats.Parallel} ({stats.ParallelPercent:F0}%) - same direction, same interval"));
+    Console.WriteLine(Invariant($"  Similar:  {stats.Similar} ({stats.SimilarPercent:F0}%) - same direction, diff interval"));
+    Console.WriteLine(Invariant($"  Oblique:  {stats.Oblique} ({stats.ObliquePercent:F0}%) - one voice holds"));
     Console.WriteLine();
 
     // Interval analysis
@@ -837,10 +845,10 @@ polyphonyCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine("----------------------------------------------------------------");
     Console.WriteLine();
     var iStats = result.IntervalStats;
-    Console.WriteLine($"  Consonance: {iStats.ConsonanceRatio:F0}%");
+    Console.WriteLine(Invariant($"  Consonance: {iStats.ConsonanceRatio:F0}%"));
     Console.WriteLine($"    Perfect (P1, P5, P8): {iStats.PerfectConsonances}");
     Console.WriteLine($"    Imperfect (3rds, 6ths): {iStats.ImperfectConsonances}");
-    Console.WriteLine($"  Dissonance: {iStats.DissonanceRatio:F0}%");
+    Console.WriteLine(Invariant($"  Dissonance: {iStats.DissonanceRatio:F0}%"));
     Console.WriteLine($"    Mild (2nds, 7ths): {iStats.MildDissonances}");
     Console.WriteLine($"    Sharp (m2, TT, M7): {iStats.SharpDissonances}");
     Console.WriteLine();
@@ -1166,13 +1174,13 @@ melodyCommand.SetAction(parseResult => RunGuarded(() =>
 
     var stats = analysis.Statistics;
     Console.WriteLine($"  Total intervals: {stats.TotalIntervals}");
-    Console.WriteLine($"  Average interval: {stats.AverageInterval:F1} semitones");
+    Console.WriteLine(Invariant($"  Average interval: {stats.AverageInterval:F1} semitones"));
     Console.WriteLine($"  Largest leap: {stats.LargestLeap} semitones ({MelodyAnalyzer.GetIntervalName(stats.LargestLeap)})");
     Console.WriteLine();
     Console.WriteLine("  Motion breakdown:");
-    Console.WriteLine($"    Steps (1-2 st):    {stats.StepPercent:F0}%");
-    Console.WriteLine($"    Leaps (3+ st):     {stats.LeapPercent:F0}%");
-    Console.WriteLine($"    Repetitions:       {stats.RepetitionPercent:F0}%");
+    Console.WriteLine(Invariant($"    Steps (1-2 st):    {stats.StepPercent:F0}%"));
+    Console.WriteLine(Invariant($"    Leaps (3+ st):     {stats.LeapPercent:F0}%"));
+    Console.WriteLine(Invariant($"    Repetitions:       {stats.RepetitionPercent:F0}%"));
     Console.WriteLine();
 
     // Interval histogram (top 5)
@@ -1195,7 +1203,7 @@ melodyCommand.SetAction(parseResult => RunGuarded(() =>
         {
             Console.WriteLine($"  Pattern: {motif.PatternDescription}");
             Console.WriteLine($"    Length: {motif.Length} intervals, Occurrences: {motif.Occurrences.Count}");
-            Console.WriteLine($"    Significance: {Percent(motif.Significance)}");
+            Console.WriteLine($"    Significance: {Percent((float)motif.Significance)}");
         }
         Console.WriteLine();
     }
@@ -1205,8 +1213,8 @@ melodyCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine("  CHARACTER");
     Console.WriteLine("----------------------------------------------------------------");
     Console.WriteLine($"  {analysis.CharacterDescription}");
-    Console.WriteLine($"  Conjunctness: {Percent(analysis.Conjunctness)} (how stepwise)");
-    Console.WriteLine($"  Complexity: {Percent(analysis.Complexity)} (interval variety)");
+    Console.WriteLine($"  Conjunctness: {Percent((float)analysis.Conjunctness)} (how stepwise)");
+    Console.WriteLine($"  Complexity: {Percent((float)analysis.Complexity)} (interval variety)");
     Console.WriteLine();
 
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
@@ -1218,6 +1226,10 @@ rootCommand.Subcommands.Add(melodyCommand);
 // Command: midi - Import/export MIDI files
 // ═══════════════════════════════════════════════════════════════
 Command midiCommand = new("midi", "Import/export MIDI (.mid) files");
+
+// The General MIDI percussion channel: channel 10 as a musician counts, index 9 as the file
+// stores it and as --channel takes it. A note-on there names a drum, not a pitch.
+const int midiPercussionChannel = 9;
 
 Option<FileInfo> midiInOption = new("--in")
 {
@@ -1233,7 +1245,7 @@ Option<FileInfo> midiOutOption = new("--out")
 
 Option<int?> midiChannelOption = new("--channel")
 {
-    Description = "MIDI channel filter (0-15). Omit to import all channels",
+    Description = "MIDI channel filter (0-15). Omit to import all channels; 9 is the General MIDI percussion channel, which is otherwise left out",
     Required = false
 };
 
@@ -1244,6 +1256,12 @@ Option<int> midiExportChannelOption = new("--channel")
 {
     Description = "MIDI channel to write notes on (0-15)",
     DefaultValueFactory = _ => 0
+};
+
+Option<bool> midiIncludePercussionOption = new("--include-percussion")
+{
+    Description = "Import notes on the General MIDI percussion channel (channel 10, --channel 9) as the note numbers they carry, which name drums rather than pitches",
+    DefaultValueFactory = _ => false
 };
 
 Option<int> midiLimitOption = new("--limit")
@@ -1274,12 +1292,14 @@ Option<string[]> midiNotesOption = new("--notes", "-n")
 Command midiImportCommand = new("import", "Import a MIDI file and print its notes as Celeritas music notation");
 midiImportCommand.Options.Add(midiInOption);
 midiImportCommand.Options.Add(midiChannelOption);
+midiImportCommand.Options.Add(midiIncludePercussionOption);
 midiImportCommand.Options.Add(midiLimitOption);
 
 midiImportCommand.SetAction(parseResult => RunGuarded(() =>
 {
     var inFile = parseResult.GetValue(midiInOption);
     var channel = parseResult.GetValue(midiChannelOption);
+    var includePercussion = parseResult.GetValue(midiIncludePercussionOption);
     var limit = parseResult.GetValue(midiLimitOption);
 
     if (inFile == null || !inFile.Exists)
@@ -1287,7 +1307,7 @@ midiImportCommand.SetAction(parseResult => RunGuarded(() =>
         throw new CliUsageException($"Input file not found: {inFile?.FullName ?? "(none)"}");
     }
 
-    using var buffer = MidiIo.Import(inFile.FullName, new MidiImportOptions(Channel: channel));
+    using var buffer = MidiIo.Import(inFile.FullName, new MidiImportOptions(Channel: channel, IncludePercussion: includePercussion));
 
     Console.WriteLine();
     Console.WriteLine("═══════════════════════════════════════════════════════════════");
@@ -1445,6 +1465,14 @@ midiTransposeCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine($"Loading MIDI file: {inFile.Name}");
     using var buffer = MidiIo.Import(inFile.FullName);
     Console.WriteLine($"Loaded {buffer.Count} notes");
+
+    // A drum hit cannot be transposed — its note number names an instrument — and the
+    // single-track file written below has no channel to keep it on, so it is left out; say so.
+    using var drums = MidiIo.Import(inFile.FullName, new MidiImportOptions(Channel: midiPercussionChannel));
+    if (drums.Count > 0)
+    {
+        Console.WriteLine($"Left out {drums.Count} percussion hits (channel 10): drums are not pitches, and the output has no drum track");
+    }
 
     Console.WriteLine($"Transposing by {semitones} semitones...");
     MusicMath.Transpose(buffer, semitones);
@@ -1632,7 +1660,7 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
             foreach (var turn in color.ModalTurns.Take(10))
             {
                 var pcs = FormatOutOfKeyPitchClasses(turn.OutOfKeyPitchClassMask);
-                Console.WriteLine($"  Chords {turn.StartChordIndex + 1}-{turn.EndChordIndex + 1}: {turn.Mode} (confidence {turn.Confidence:F2}){pcs}");
+                Console.WriteLine(Invariant($"  Chords {turn.StartChordIndex + 1}-{turn.EndChordIndex + 1}: {turn.Mode} (confidence {turn.Confidence:F2}){pcs}"));
             }
         }
     }
@@ -1687,7 +1715,7 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
             foreach (var turn in color.ModalTurns.Take(10))
             {
                 var pcs = FormatOutOfKeyPitchClasses(turn.OutOfKeyPitchClassMask);
-                Console.WriteLine($"    Chords {turn.StartChordIndex + 1}-{turn.EndChordIndex + 1}: {turn.Mode} (confidence {turn.Confidence:F2}){pcs}");
+                Console.WriteLine(Invariant($"    Chords {turn.StartChordIndex + 1}-{turn.EndChordIndex + 1}: {turn.Mode} (confidence {turn.Confidence:F2}){pcs}"));
             }
         }
 
@@ -1731,7 +1759,7 @@ midiAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
                 var endOffset = chords[endChord].End;
                 var pcs = FormatOutOfKeyPitchClasses(turn.OutOfKeyPitchClassMask);
 
-                items.Add((startOffset, $"Modal turn start: {turn.Mode} (confidence {turn.Confidence:F2}){pcs}"));
+                items.Add((startOffset, Invariant($"Modal turn start: {turn.Mode} (confidence {turn.Confidence:F2}){pcs}")));
                 items.Add((endOffset, $"Modal turn end: {turn.Mode}"));
             }
         }
@@ -1821,18 +1849,48 @@ midiInfoCommand.SetAction(parseResult => RunGuarded(() =>
     Console.WriteLine($"MIDI File: {inFile.Name}");
     Console.WriteLine("═══════════════════════════════════════");
 
+    // The pitched notes and the drum hits are read apart. A hit on the percussion channel
+    // (channel 10, index 9) carries an instrument number, not a pitch: it is a note the file
+    // holds, and it ends the file like any other, but it has no place in a pitch range —
+    // read as one, a kick drum put a "C2" under every piano piece.
     using var buffer = MidiIo.Import(inFile.FullName);
+    using var drums = MidiIo.Import(inFile.FullName, new MidiImportOptions(Channel: midiPercussionChannel));
 
     Console.WriteLine($"Notes: {buffer.Count}");
+    if (drums.Count > 0)
+    {
+        Console.WriteLine($"Percussion (channel 10): {drums.Count} hits, not counted above and not pitches");
+    }
+
+    // The end of the note that ends last, which is what MidiFileStatistics.TotalDuration
+    // reports. The last note in offset order used to stand for it, and a long note that began
+    // before a short one made the file shorter by this command than by the library.
+    static Rational? EndOfMusic(NoteBuffer notes)
+    {
+        Rational? end = null;
+        for (var i = 0; i < notes.Count; i++)
+        {
+            var note = notes.Get(i);
+            var noteEnd = note.Offset + note.Duration;
+            if (end is not { } soFar || noteEnd > soFar) end = noteEnd;
+        }
+
+        return end;
+    }
+
+    var pitchedEnd = EndOfMusic(buffer);
+    var drumsEnd = EndOfMusic(drums);
+    var totalDuration = pitchedEnd is { } p && drumsEnd is { } d
+        ? (p > d ? p : d)
+        : pitchedEnd ?? drumsEnd;
+
+    if (totalDuration is { } duration)
+    {
+        Console.WriteLine(Invariant($"Duration (whole notes): {duration.ToDouble():F2}"));
+    }
 
     if (buffer.Count > 0)
     {
-        var first = buffer.Get(0);
-        var last = buffer.Get(buffer.Count - 1);
-        var totalDuration = last.Offset + last.Duration;
-
-        Console.WriteLine($"Duration (whole notes): {totalDuration.ToDouble():F2}");
-
         // Pitch range
         int minPitch = int.MaxValue, maxPitch = int.MinValue;
         for (int i = 0; i < buffer.Count; i++)
@@ -1976,6 +2034,13 @@ musicxmlConvertCommand.SetAction(parseResult => RunGuarded(() =>
         using var buffer = MidiIo.Import(inFile.FullName);
         MusicXmlIo.Export(buffer, outFile.FullName);
         Console.WriteLine($"MIDI -> MusicXML: {buffer.Count} notes -> {outFile.Name}");
+
+        // The score has no unpitched notes, so the drum track is left out; say so.
+        using var drums = MidiIo.Import(inFile.FullName, new MidiImportOptions(Channel: midiPercussionChannel));
+        if (drums.Count > 0)
+        {
+            Console.WriteLine($"Left out {drums.Count} percussion hits (channel 10): drums are not pitches");
+        }
     }
     else
     {
@@ -2009,7 +2074,7 @@ musicxmlAnalyzeCommand.SetAction(parseResult => RunGuarded(() =>
     }
 
     var last = buffer.Get(buffer.Count - 1);
-    Console.WriteLine($"  Length (whole notes): {(last.Offset + last.Duration).ToDouble():F2}");
+    Console.WriteLine(Invariant($"  Length (whole notes): {(last.Offset + last.Duration).ToDouble():F2}"));
 
     int minPitch = int.MaxValue, maxPitch = int.MinValue;
     for (var i = 0; i < buffer.Count; i++)

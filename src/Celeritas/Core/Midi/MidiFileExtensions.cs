@@ -39,6 +39,13 @@ public enum MidiMergeMode
 /// <summary>
 /// Summary statistics for a MIDI file.
 /// </summary>
+/// <remarks>
+/// A note on the General MIDI percussion channel (channel 10, index 9) is a note of the file
+/// and not a pitch, so it is counted in <see cref="NoteCount"/> and left out of
+/// <see cref="MinNoteNumber"/> and <see cref="MaxNoteNumber"/>. The range used to take drums
+/// in with everything else, so a piano piece with a kick drum under it reported a lowest note
+/// of 36 — a bass drum, not a C2.
+/// </remarks>
 public sealed record MidiFileStatistics
 {
     // Produced by MIDI analysis; not constructible by consumers (#18 API freeze).
@@ -63,7 +70,7 @@ public sealed record MidiFileStatistics
     /// <summary>Number of track chunks in the file.</summary>
     public int TrackCount { get; init; }
 
-    /// <summary>Total number of notes across all tracks.</summary>
+    /// <summary>Total number of notes across all tracks, drum hits on the percussion channel included.</summary>
     public int NoteCount { get; init; }
 
     /// <summary>End of the file in absolute MIDI ticks.</summary>
@@ -72,10 +79,16 @@ public sealed record MidiFileStatistics
     /// <summary>Total duration in whole-note units (one 4/4 measure = 1).</summary>
     public Rational TotalDuration { get; init; } // in whole-note units (one 4/4 measure = 1)
 
-    /// <summary>Lowest MIDI note number present, or <see langword="null"/> if there are no notes.</summary>
+    /// <summary>
+    /// Lowest MIDI note number among the pitched notes — every note off the percussion
+    /// channel — or <see langword="null"/> if there are none.
+    /// </summary>
     public int? MinNoteNumber { get; init; }
 
-    /// <summary>Highest MIDI note number present, or <see langword="null"/> if there are no notes.</summary>
+    /// <summary>
+    /// Highest MIDI note number among the pitched notes — every note off the percussion
+    /// channel — or <see langword="null"/> if there are none.
+    /// </summary>
     public int? MaxNoteNumber { get; init; }
 
     /// <summary>Distinct MIDI channels used, in ascending order.</summary>
@@ -390,6 +403,11 @@ public static class MidiFileExtensions
         }
 
         /// <summary>Computes summary statistics (track/note counts, pitch range, duration, channels) for the file.</summary>
+        /// <remarks>
+        /// The note count takes in every note the file holds, drum hits among them; the pitch
+        /// range is of the pitched notes only, since a note number on the percussion channel
+        /// names a drum — see <see cref="MidiFileStatistics"/>.
+        /// </remarks>
         /// <exception cref="NotSupportedException">The file does not use ticks-per-quarter-note time division.</exception>
         public MidiFileStatistics GetStatistics()
         {
@@ -414,9 +432,14 @@ public static class MidiFileExtensions
             long maxNoteEnd = 0;
             foreach (var note in noteCollection)
             {
-                var nn = (int)note.NoteNumber;
-                minNoteNumber = minNoteNumber.HasValue ? Math.Min(minNoteNumber.Value, nn) : nn;
-                maxNoteNumber = maxNoteNumber.HasValue ? Math.Max(maxNoteNumber.Value, nn) : nn;
+                // A drum hit is counted, and it ends the file like any note, but its note
+                // number names an instrument: it does not widen the pitch range.
+                if (note.Channel != MidiIo.PercussionChannel)
+                {
+                    var nn = (int)note.NoteNumber;
+                    minNoteNumber = minNoteNumber.HasValue ? Math.Min(minNoteNumber.Value, nn) : nn;
+                    maxNoteNumber = maxNoteNumber.HasValue ? Math.Max(maxNoteNumber.Value, nn) : nn;
+                }
 
                 channels.Add(note.Channel);
 

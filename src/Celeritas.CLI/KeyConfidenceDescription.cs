@@ -26,8 +26,15 @@ internal static class KeyConfidenceDescription
     /// Suffix for a detected-key line. A margin is a gap between candidates, not a measure of
     /// how much music supported either, so material too thin to decide a key is called out
     /// however wide its margin: two notes a fifth apart separate their winner about as cleanly
-    /// as a whole phrase does.
+    /// as a whole phrase does. The margin is written with a dot on every machine, "(margin 0.20
+    /// over the runner-up)".
     /// </summary>
+    /// <remarks>
+    /// Before, the margin was formatted with the current culture, so a machine whose decimal
+    /// mark is the comma printed "(margin 0,20 over the runner-up)" — the one number on the
+    /// line, and the only number in the CLI's key reports that the library had not already
+    /// written with a dot on every machine ("C Major: 0.812", "(confidence: 82%)").
+    /// </remarks>
     internal static string Describe(float margin, int distinctPitchClasses)
     {
         if (distinctPitchClasses < DecidablePitchClasses)
@@ -39,7 +46,7 @@ internal static class KeyConfidenceDescription
 
         return margin < WeakMargin
             ? "  (weak: this little material does not settle a key)"
-            : $"  (margin {margin:F2} over the runner-up)";
+            : FormattableString.Invariant($"  (margin {margin:F2} over the runner-up)");
     }
 
     /// <summary>
