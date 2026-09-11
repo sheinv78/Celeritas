@@ -159,7 +159,11 @@ internal static class ProgressionNarrator
         }
 
         var lastRoman = romans[^1];
-        var tonicSymbol = key.IsMajor ? ChordLibrary.NoteNames[key.Root] : ChordLibrary.NoteNames[key.Root] + "m";
+        // Every chord named here is spelled as the key spells it: "Add Eb" in E flat major, not
+        // "Add D#"; the sharp table used to put "Try G#m (borrowed iv)" in the same report whose
+        // SuggestNext offered "Abm".
+        var names = KeySpelling.Names(key);
+        var tonicSymbol = key.IsMajor ? names[key.Root] : names[key.Root] + "m";
 
         // Modulation suggestions
         foreach (var mod in modulations)
@@ -168,7 +172,8 @@ internal static class ProgressionNarrator
             {
                 // Suggest extending or confirming the tonicization
                 var secDomRoot = (mod.ToKey.Root + 7) % 12;
-                suggestions.Add($"The {mod.ToKey} tonicization at chord {mod.Position + 1} could be extended with {ChordLibrary.NoteNames[secDomRoot]}7 → {ChordLibrary.NoteNames[mod.ToKey.Root]}{(mod.ToKey.IsMajor ? "" : "m")} for stronger effect.");
+                var there = KeySpelling.Names(mod.ToKey);
+                suggestions.Add($"The {mod.ToKey} tonicization at chord {mod.Position + 1} could be extended with {there[secDomRoot]}7 → {there[mod.ToKey.Root]}{(mod.ToKey.IsMajor ? "" : "m")} for stronger effect.");
             }
             else if (!KeyRelationships.AreCloselyRelated(mod.FromKey, mod.ToKey))
             {
@@ -205,7 +210,7 @@ internal static class ProgressionNarrator
         if (lastCadence.Type == CadenceType.Plagal)
         {
             var dominantRoot = (key.Root + 7) % 12;
-            var dominantSymbol = ChordLibrary.NoteNames[dominantRoot] + "7";
+            var dominantSymbol = names[dominantRoot] + "7";
             suggestions.Add($"The plagal cadence (IV→I) is gentle. For more drama, try {dominantSymbol}→{tonicSymbol} (authentic cadence).");
         }
 
@@ -242,8 +247,8 @@ internal static class ProgressionNarrator
             {
                 var iiRoot = (key.Root + 2) % 12;
                 var vRoot = (key.Root + 7) % 12;
-                var iiSymbol = key.IsMajor ? ChordLibrary.NoteNames[iiRoot] + "m7" : ChordLibrary.NoteNames[iiRoot] + "m7b5";
-                var vSymbol = ChordLibrary.NoteNames[vRoot] + "7";
+                var iiSymbol = key.IsMajor ? names[iiRoot] + "m7" : names[iiRoot] + "m7b5";
+                var vSymbol = names[vRoot] + "7";
                 suggestions.Add($"For a jazzier resolution, try {iiSymbol}→{vSymbol}→{tonicSymbol} (ii-V-I turnaround).");
             }
         }
@@ -265,12 +270,12 @@ internal static class ProgressionNarrator
             if (key.IsMajor)
             {
                 var ivMinorRoot = (key.Root + 5) % 12;
-                suggestions.Add($"Try {ChordLibrary.NoteNames[ivMinorRoot]}m (borrowed iv) for emotional color.");
+                suggestions.Add($"Try {names[ivMinorRoot]}m (borrowed iv) for emotional color.");
             }
             else
             {
                 var ivMajorRoot = (key.Root + 5) % 12;
-                suggestions.Add($"Try {ChordLibrary.NoteNames[ivMajorRoot]} (borrowed IV) to brighten the mood.");
+                suggestions.Add($"Try {names[ivMajorRoot]} (borrowed IV) to brighten the mood.");
             }
         }
 

@@ -690,7 +690,14 @@ modeCommand.SetAction(parseResult => RunGuarded(() =>
     var (charNotes, _) = ModeLibrary.GetCharacteristicNotes(key.Mode);
     if (charNotes.Length > 0)
     {
-        var charNames = charNotes.Select(i => ChordLibrary.NoteNames[(key.Root + i) % 12]);
+        // The characteristic notes are degrees of the scale printed just above, so they are
+        // taken from that spelled scale rather than from the sharp table.
+        var intervals = ModeLibrary.GetIntervals(key.Mode).ToArray();
+        var charNames = charNotes.Select(i =>
+        {
+            var degree = Array.IndexOf(intervals, i);
+            return degree >= 0 ? scaleNotes[degree] : ChordLibrary.NoteNames[(key.Root + i) % 12];
+        });
         Console.WriteLine($"  Characteristic notes: {string.Join(", ", charNames)}");
     }
 

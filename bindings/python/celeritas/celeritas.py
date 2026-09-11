@@ -318,7 +318,10 @@ def detect_key(pitches: List[int]) -> Tuple[str, bool]:
         pitches: List of MIDI pitch values
 
     Returns:
-        Tuple of (key_name, is_major)
+        Tuple of (key_name, is_major). The name is the tonic as the key is written -
+        'Bb' for the major key on pitch class 10, 'Eb' for the minor key on 3, 'F#' for
+        6 - the same name the C# library's KeySignature.ToString gives. (It used to come
+        from a sharp table of the native export's own, so a B-flat scale answered 'A#'.)
 
     Raises:
         CeleritasError: If the native key detection fails.

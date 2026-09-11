@@ -350,7 +350,10 @@ public class HarmonicColorCoverageTests
         var chromatic = Assert.Single(HarmonicColorAnalyzer.Analyze(melody, chords, CMajor).ChromaticNotes);
 
         Assert.Equal(1, chromatic.PitchClass);
-        Assert.Contains("C", chromatic.NoteName, StringComparison.Ordinal);
+        // Pitch class 1 in C major is the lowered second, and is spelled the way the alteration
+        // label reads: "Db (b2)", not "C# (b2)".
+        Assert.Equal("Db", chromatic.NoteName);
+        Assert.Equal("b2", chromatic.Alteration);
         Assert.Equal(new Rational(1, 8), chromatic.Offset);
     }
 }

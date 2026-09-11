@@ -207,6 +207,15 @@ public readonly record struct KeySignature
     /// </summary>
     public KeySignature GetSubdominantKey() => new((byte)((Root + 5) % 12), IsMajor);
 
-    /// <summary>Returns the tonic name followed by the mode (e.g. "C Major").</summary>
-    public override string ToString() => $"{ChordLibrary.NoteNames[Root]} {(IsMajor ? "Major" : "Minor")}";
+    /// <summary>
+    /// Returns the tonic name followed by the mode (e.g. "C Major"), the tonic spelled as the key
+    /// is written: "Bb Major" and "Eb Minor" for pitch classes 10 and 3, "F# Major" for 6.
+    /// </summary>
+    /// <remarks>
+    /// The tonic was read off the sharp pitch-class table, so the major key on pitch class 10 was
+    /// "A# Major" — a key that would need ten sharps — and a caller who typed "Eb major" was
+    /// answered "In D# Major". The name is now the first note of the key's own spelled scale, so
+    /// a key and its scale cannot disagree; see <see cref="KeySpelling"/>.
+    /// </remarks>
+    public override string ToString() => $"{KeySpelling.TonicName(this)} {(IsMajor ? "Major" : "Minor")}";
 }

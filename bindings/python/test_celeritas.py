@@ -280,6 +280,16 @@ class TestDetectKey(unittest.TestCase):
         key_name, is_major = detect_key(melody)
         self.assertEqual(key_name, "C")
 
+    def test_a_flat_key_is_named_with_its_flat(self):
+        # The native export kept a sharp table of its own, so a B-flat scale answered "A#" -
+        # a key that would need ten sharps. It answers the name the key is written under.
+        scale = [70, 72, 74, 75, 77, 79, 81, 82]  # Bb major scale
+        key_name, is_major = detect_key(scale)
+        self.assertEqual(key_name, "Bb")
+        self.assertTrue(is_major)
+        scale = [63, 65, 67, 68, 70, 72, 74, 75]  # Eb major scale
+        self.assertEqual(detect_key(scale)[0], "Eb")
+
 
 class TestTrill(unittest.TestCase):
     """Tests for Trill ornament"""

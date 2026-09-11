@@ -219,9 +219,9 @@ public static class NativeExports
 
             var result = KeyProfiler.DetectFromPitches(pitches);
 
-            // Convert pitch class to note name
-            string[] noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-            var keyName = noteNames[result.Key.Root];
+            // The tonic as the key is written — "Bb", not "A#" — the same name the managed
+            // library's KeySignature.ToString gives; this export kept a sharp table of its own.
+            var keyName = KeySpelling.TonicName(result.Key);
 
             if (!TryWriteUtf8(keyName, bufferPtr, bufferSize))
             {

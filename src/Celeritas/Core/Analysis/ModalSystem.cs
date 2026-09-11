@@ -161,16 +161,32 @@ public readonly struct ModalKey(byte root, Mode mode) : IEquatable<ModalKey>
         _ => new(Root, Mode.Ionian)
     };
 
-    /// <summary>Returns the key as a note name and mode (e.g. <c>"C Major"</c>).</summary>
+    /// <summary>
+    /// Returns the key as a note name and mode (e.g. <c>"C Major"</c>), the tonic spelled as the
+    /// scale is written — "Ab Major", "F Locrian", "Bb Blues" — never "G# Major" — and the mode
+    /// by its musical name: "Phrygian Dominant", "Whole Tone", "Minor Pentatonic".
+    /// </summary>
+    /// <remarks>
+    /// The modes past the four named ones printed their enum member — "D# MinorPentatonic",
+    /// "E PhrygianDominant", "C DiminishedHalfWhole" — which is a C# identifier, not a name.
+    /// </remarks>
     public override string ToString()
     {
-        var noteName = ChordLibrary.NoteNames[Root];
+        var noteName = KeySpelling.TonicName(this);
         var modeName = Mode switch
         {
             Mode.Ionian => "Major",
             Mode.Aeolian => "Minor",
             Mode.HarmonicMinor => "Harmonic Minor",
             Mode.MelodicMinor => "Melodic Minor",
+            Mode.PhrygianDominant => "Phrygian Dominant",
+            Mode.LydianDominant => "Lydian Dominant",
+            Mode.LocrianNatural2 => "Locrian Natural 2",
+            Mode.WholeTone => "Whole Tone",
+            Mode.DiminishedHalfWhole => "Diminished (Half-Whole)",
+            Mode.DiminishedWholeHalf => "Diminished (Whole-Half)",
+            Mode.MajorPentatonic => "Major Pentatonic",
+            Mode.MinorPentatonic => "Minor Pentatonic",
             _ => Mode.ToString()
         };
         return $"{noteName} {modeName}";

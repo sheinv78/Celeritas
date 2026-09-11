@@ -12,9 +12,6 @@ namespace Celeritas.Core.Analysis;
 /// </summary>
 public static class ProgressionAdvisor
 {
-    private static readonly string[] NoteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    private static readonly string[] NoteNamesFlat = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-
 
     /// <summary>
     /// Parse a chord symbol into MIDI pitches (octave 4 = middle C).
@@ -363,9 +360,10 @@ public static class ProgressionAdvisor
                 // get a degree wrong.
                 AddSuggestion(suggestions, key, ScaleDegree.Vii, "Subtonic (natural minor)", 0.6f);
 
-                // The actual leading-tone diminished chord uses the RAISED 7th
-                // (harmonic minor), so it is always spelled with sharps.
-                var leadingToneSymbol = NoteNames[(key.Root + 11) % 12] + "dim";
+                // The actual leading-tone diminished chord uses the RAISED 7th (harmonic minor),
+                // and a raised degree is a natural or a sharp in every key — C# in D minor, B in
+                // C minor — so it is read from the sharp table even in a flat key.
+                var leadingToneSymbol = ChordLibrary.NoteNames[(key.Root + 11) % 12] + "dim";
                 if (!suggestions.Any(s => s.Chord == leadingToneSymbol))
                 {
                     suggestions.Add(new ChordSuggestion(leadingToneSymbol, "Leading tone diminished", 0.55f));
@@ -405,7 +403,7 @@ public static class ProgressionAdvisor
         // bug in this file, not bad user input — SuggestNext's chromatic sentinel
         // ((ScaleDegree)(-1)) is only ever a switch subject and never reaches here.
         var rootPc = key.GetScaleDegreePitchClass(degree);
-        var rootName = UseFlatsForKey(key) ? NoteNamesFlat[rootPc] : NoteNames[rootPc];
+        var rootName = KeySpelling.Names(key)[rootPc];
 
         // Triad qualities mirror FunctionalHarmony.MakeDiatonic (DiatonicChordType.Triad):
         //   major: I IV V major, ii iii vi minor, vii diminished;
@@ -430,16 +428,6 @@ public static class ProgressionAdvisor
                 _ => rootName
             }
         };
-    }
-
-    private static bool UseFlatsForKey(KeySignature key)
-    {
-        // Heuristic: prefer flats for traditional flat keys and their relative minors.
-        // Major: F, Bb, Eb, Ab, Db, Gb, Cb
-        // Minor: Dm, Gm, Cm, Fm, Bbm, Ebm, Abm
-        return key.IsMajor
-            ? key.Root is 5 or 10 or 3 or 8 or 1 or 6 or 11
-            : key.Root is 2 or 7 or 0 or 5 or 10 or 3 or 8;
     }
 
     /// <summary>
@@ -512,13 +500,15 @@ public static class ProgressionAdvisor
                     {
                         // Both raised 6th and 7th = melodic minor
                         usesMelodicMinor = true;
-                        alteredNotes.Add((i, $"Melodic minor: {NoteNames[raised6Th]} and {NoteNames[raised7Th]}"));
+                        // A raised degree is a natural or a sharp whatever the key; the degree it
+                        // replaces is spelled as the key spells it ("B instead of Bb" in C minor).
+                        alteredNotes.Add((i, $"Melodic minor: {ChordLibrary.NoteNames[raised6Th]} and {ChordLibrary.NoteNames[raised7Th]}"));
                     }
                     else
                     {
                         // Only raised 7th = harmonic minor
                         usesHarmonicMinor = true;
-                        alteredNotes.Add((i, $"{NoteNames[raised7Th]} instead of {NoteNames[natural7Th]}"));
+                        alteredNotes.Add((i, $"{ChordLibrary.NoteNames[raised7Th]} instead of {KeySpelling.Names(key)[natural7Th]}"));
                     }
                 }
             }
@@ -862,9 +852,10 @@ public static class ProgressionAdvisor
         var usesAltered = alteredForThis.Count > 0;
         var alteredStr = usesAltered ? string.Join("; ", alteredForThis.Select(a => a.note)) : null;
 
-        // Get note names. Fold rather than `p % 12`, which keeps the sign for a pitch below zero
-        // and indexes backwards out of NoteNames.
-        var noteNames = pitches.Select(p => NoteNames[PitchMath.Fold(p)]).Distinct().ToArray();
+        // Get note names, spelled as the key spells them. Fold rather than `p % 12`, which keeps
+        // the sign for a pitch below zero and indexes backwards out of the table.
+        var names = KeySpelling.Names(key);
+        var noteNames = pitches.Select(p => names[PitchMath.Fold(p)]).Distinct().ToArray();
 
         // Borrowed (modal mixture): a chromatic (invalid) analysis is outside the
         // key by definition; otherwise not diatonic to the key, but diatonic to the

@@ -760,8 +760,9 @@ public readonly record struct KeyDetectionResult(
     /// <summary>Returns the detected key and confidence percentage (e.g. "C Major (confidence: 82%)").</summary>
     public override string ToString()
     {
-        var keyName = ChordLibrary.NoteNames[Key.Root] + (Key.IsMajor ? " Major" : " Minor");
-        return $"{keyName} (confidence: {(int)Math.Round(Confidence * 100)}%)";
+        // The key's own name — "Bb Major", not "A# Major" — rather than a sharp table of this
+        // class's own, which this renderer and the one below both kept.
+        return $"{Key} (confidence: {(int)Math.Round(Confidence * 100)}%)";
     }
 }
 
@@ -775,11 +776,9 @@ public readonly record struct KeyCorrelation(KeySignature Key, float Correlation
     /// <summary>Returns the key name and correlation score (e.g. "C Major: 0.812").</summary>
     public override string ToString()
     {
-        var keyName = ChordLibrary.NoteNames[Key.Root] + (Key.IsMajor ? " Major" : " Minor");
-
         // Invariant, so the example in the summary is what a caller gets on every machine: under
         // a locale with a comma for a decimal separator this returned "C Major: 0,812".
-        return FormattableString.Invariant($"{keyName}: {Correlation:F3}");
+        return FormattableString.Invariant($"{Key}: {Correlation:F3}");
     }
 }
 

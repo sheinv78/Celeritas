@@ -356,6 +356,21 @@ follows.
 
 ### Changed
 
+- A key is named as it is written. `KeySignature.ToString`, `ModalKey.ToString`,
+  `KeyDetectionResult`, `KeyCorrelation`, the progression report and the native
+  `celeritas_detect_key` all read the tonic off the sharp pitch-class table, so a
+  progression in B flat was reported "in A# Major" -- a key that would need ten
+  sharps -- with the E flat chord's notes as "D#, G, A#" and the advice "Try D#m",
+  while the same report's scale read "Bb C D Eb F G A" and its `SuggestNext`
+  offered "Eb" and "Gm". The tonic is now the first note of the key's own spelled
+  scale (Bb Major, Eb Minor, F# Major, Db Lydian), the chords and notes inside a
+  report are spelled the way its key is, a lowered degree is written with a flat
+  and a raised one with a sharp ("Ab (b6)", "F# (#4)", "C#dim" in D minor), and
+  `SuggestNext` no longer spells B major in C flat ("Abm", "Bbdim") because a hand
+  list counted C flat major and A flat minor as flat keys. A modal key prints its
+  mode's name ("Phrygian Dominant", "Whole Tone", "Minor Pentatonic") rather than
+  the enum member ("PhrygianDominant"). Python `detect_key` answers "Bb" for a
+  B-flat scale
 Behavioral and API changes that can affect existing code:
 
 - `Section.Label` is a `string` (was `char`); analyses with more than 26 sections

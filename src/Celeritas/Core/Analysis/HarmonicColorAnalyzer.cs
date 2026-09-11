@@ -134,12 +134,24 @@ public static class HarmonicColorAnalyzer
             if ((baseScaleMask & (1 << pc)) != 0)
                 continue;
 
+            // A lowered degree is spelled with a flat and a raised one with a sharp, as the
+            // alteration label says — b6 in C major is A flat, not G sharp; anything else is
+            // spelled as the key spells its notes. Every chromatic note used to come from the
+            // sharp table, so a report read "G# (b6)".
+            var alteration = DescribeAlteration(key, pc);
+            var noteName = alteration[0] switch
+            {
+                'b' => KeySpelling.NoteNamesFlat[pc],
+                '#' => ChordLibrary.NoteNames[pc],
+                _ => KeySpelling.Names(key)[pc],
+            };
+
             result.Add(new ChromaticPitchEvent(
                 Offset: melody[i].Offset,
                 Pitch: pitch,
                 PitchClass: (byte)pc,
-                NoteName: ChordLibrary.NoteNames[pc],
-                Alteration: DescribeAlteration(key, pc)));
+                NoteName: noteName,
+                Alteration: alteration));
         }
 
         return result;
