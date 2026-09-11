@@ -324,4 +324,90 @@ public class FormAnalyzerTests
         Assert.Equal(2, result.Sections.Count);
         Assert.Equal("A B", result.FormLabel);
     }
+
+    // ---------- Phrase.StartIndex / EndIndex address the caller's buffer ----------
+
+    private static readonly FormAnalysisOptions TwoNotePhrases = new(
+        MinRestForPhraseBoundary: new Rational(1, 2),
+        MinNotesPerPhrase: 2);
+
+    [Fact]
+    public void Analyze_PhraseIndices_AddressTheBuffer_WhenRestsLieBetweenPhrases()
+    {
+        // C D E | rest (1/2) | F G A — the rest is a buffer entry the analyzer skips.
+        using var buffer = new NoteBuffer(7);
+        buffer.AddNote(60, new Rational(0, 1), new Rational(1, 4)); // 0: C4
+        buffer.AddNote(62, new Rational(1, 4), new Rational(1, 4)); // 1: D4
+        buffer.AddNote(64, new Rational(2, 4), new Rational(1, 4)); // 2: E4
+        buffer.AddNote(MusicNotation.RestPitch, new Rational(3, 4), new Rational(1, 2)); // 3: rest
+        buffer.AddNote(65, new Rational(5, 4), new Rational(1, 4)); // 4: F4
+        buffer.AddNote(67, new Rational(6, 4), new Rational(1, 4)); // 5: G4
+        buffer.AddNote(69, new Rational(7, 4), new Rational(1, 4)); // 6: A4
+
+        var result = FormAnalyzer.Analyze(buffer, TwoNotePhrases);
+
+        Assert.Equal(2, result.Phrases.Count);
+        var (first, second) = (result.Phrases[0], result.Phrases[1]);
+
+        Assert.Equal(60, buffer.Get(first.StartIndex).Pitch);
+        Assert.Equal(64, buffer.Get(first.EndIndex).Pitch);
+        Assert.Equal(65, buffer.Get(second.StartIndex).Pitch);
+        Assert.Equal(69, buffer.Get(second.EndIndex).Pitch);
+        Assert.Equal((0, 2), (first.StartIndex, first.EndIndex));
+        Assert.Equal((4, 6), (second.StartIndex, second.EndIndex));
+
+        // Times, counts and sections are what they were before the indices were repaired.
+        Assert.Equal((new Rational(0, 1), new Rational(3, 4), 3), (first.Start, first.End, first.NoteCount));
+        Assert.Equal((new Rational(5, 4), new Rational(2, 1), 3), (second.Start, second.End, second.NoteCount));
+        Assert.Equal(new Rational(2, 1), result.TotalLength);
+        Assert.Equal("A B", result.FormLabel);
+    }
+
+    [Fact]
+    public void Analyze_PhraseIndices_AddressTheBuffer_WhenItIsNotOffsetSorted()
+    {
+        // The same two phrases and rest, appended out of time order.
+        using var buffer = new NoteBuffer(7);
+        buffer.AddNote(67, new Rational(6, 4), new Rational(1, 4)); // 0: G4 (phrase 2, middle)
+        buffer.AddNote(MusicNotation.RestPitch, new Rational(3, 4), new Rational(1, 2)); // 1: rest
+        buffer.AddNote(69, new Rational(7, 4), new Rational(1, 4)); // 2: A4 (phrase 2, last)
+        buffer.AddNote(65, new Rational(5, 4), new Rational(1, 4)); // 3: F4 (phrase 2, first)
+        buffer.AddNote(64, new Rational(2, 4), new Rational(1, 4)); // 4: E4 (phrase 1, last)
+        buffer.AddNote(60, new Rational(0, 1), new Rational(1, 4)); // 5: C4 (phrase 1, first)
+        buffer.AddNote(62, new Rational(1, 4), new Rational(1, 4)); // 6: D4 (phrase 1, middle)
+
+        var result = FormAnalyzer.Analyze(buffer, TwoNotePhrases);
+
+        Assert.Equal(2, result.Phrases.Count);
+        var (first, second) = (result.Phrases[0], result.Phrases[1]);
+
+        Assert.Equal(60, buffer.Get(first.StartIndex).Pitch);
+        Assert.Equal(64, buffer.Get(first.EndIndex).Pitch);
+        Assert.Equal(65, buffer.Get(second.StartIndex).Pitch);
+        Assert.Equal(69, buffer.Get(second.EndIndex).Pitch);
+        Assert.Equal((5, 4), (first.StartIndex, first.EndIndex)); // first note sits after the last in the buffer
+        Assert.Equal((3, 2), (second.StartIndex, second.EndIndex));
+
+        Assert.Equal((new Rational(0, 1), new Rational(3, 4), 3), (first.Start, first.End, first.NoteCount));
+        Assert.Equal((new Rational(5, 4), new Rational(2, 1), 3), (second.Start, second.End, second.NoteCount));
+        Assert.Equal("A B", result.FormLabel);
+    }
+
+    [Fact]
+    public void Analyze_PhraseIndices_AreBufferPositions_WhenNothingWasSkippedOrSorted()
+    {
+        using var buffer = new NoteBuffer(6);
+        buffer.AddNote(60, new Rational(0, 1), new Rational(1, 4));
+        buffer.AddNote(62, new Rational(1, 4), new Rational(1, 4));
+        buffer.AddNote(64, new Rational(2, 4), new Rational(1, 4));
+        buffer.AddNote(65, new Rational(5, 4), new Rational(1, 4));
+        buffer.AddNote(67, new Rational(6, 4), new Rational(1, 4));
+        buffer.AddNote(69, new Rational(7, 4), new Rational(1, 4));
+
+        var result = FormAnalyzer.Analyze(buffer, TwoNotePhrases);
+
+        Assert.Equal(2, result.Phrases.Count);
+        Assert.Equal((0, 2), (result.Phrases[0].StartIndex, result.Phrases[0].EndIndex));
+        Assert.Equal((3, 5), (result.Phrases[1].StartIndex, result.Phrases[1].EndIndex));
+    }
 }

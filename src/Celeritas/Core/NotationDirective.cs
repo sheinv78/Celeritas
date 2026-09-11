@@ -17,7 +17,8 @@ public abstract record NotationDirective
 
 /// <summary>
 /// BPM (beats per minute) directive with optional ramp/transition.
-/// Examples: <c>@bpm 120</c>, <c>@bpm 120 -&gt; 140 /2</c> (ramp from 120 to 140 across a half note).
+/// Examples: <c>@bpm 120</c>, <c>@bpm 120 -&gt; 140 /2</c> (ramp from 120 to 140 across a half note),
+/// <c>@bpm 120 -&gt; 60 /1~/1</c> (ramp down across two whole notes).
 /// </summary>
 public sealed record TempoBpmDirective : NotationDirective
 {
@@ -35,16 +36,27 @@ public sealed record TempoBpmDirective : NotationDirective
     /// <summary>
     /// Duration of tempo ramp (in whole-note units).
     /// Only meaningful if <see cref="TargetBpm"/> is set.
+    /// In the notation it is written as one note value, <c>/2</c> or <c>/4.</c>, or as several
+    /// tied together the way a held note is, <c>/1~/1</c> for two whole notes and <c>/1~/4</c>
+    /// for five quarters; the reader sums the pieces.
     /// </summary>
+    /// <remarks>
+    /// The notation used to allow one note value only, so a ramp that is not one — two whole
+    /// notes, but also five quarters or seven eighths — could be held here but not written
+    /// down: the writer fell back to the rational, <c>/2/1</c>, and the parser refused to read it.
+    /// </remarks>
     public Rational? RampDuration { get; init; }
 
-    /// <summary>Returns a readable form such as "@bpm 120 at 0" or "@bpm 120 -&gt; 140 /2 at 0".</summary>
+    /// <summary>
+    /// Returns a readable form such as "@bpm 120 at 0", "@bpm 120 -&gt; 140 /2 at 0" or
+    /// "@bpm 120 -&gt; 60 /1~/1 at 0" — the ramp length spelled as the notation writes it.
+    /// </summary>
     public override string ToString()
     {
         // The ramp duration is optional in the notation, so a ramp may have a target and no
         // stated length. Requiring both dropped the target and read back as a steady tempo.
         if (TargetBpm.HasValue && RampDuration.HasValue)
-            return $"@bpm {Bpm} -> {TargetBpm} /{MusicNotation.FormatDuration(RampDuration.Value)} at {Time}";
+            return $"@bpm {Bpm} -> {TargetBpm} {MusicNotation.FormatRampDuration(RampDuration.Value)} at {Time}";
         if (TargetBpm.HasValue)
             return $"@bpm {Bpm} -> {TargetBpm} at {Time}";
         return $"@bpm {Bpm} at {Time}";

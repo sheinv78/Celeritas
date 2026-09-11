@@ -56,11 +56,13 @@ see [Boundaries](#boundaries).
 | `<pitch>` step + octave + `<alter>` | MIDI pitch (`NoteEvent.Pitch`); octave 4 = middle C (60) |
 | `<duration>` in `<divisions>` | whole-note [`Rational`](xref:Celeritas.Core.Rational); a quarter = `1/4`. Fractional values are accepted and converted exactly — `<duration>1.5</duration>` at `<divisions>3</divisions>` imports as exactly `1/8` |
 | `<rest>` | advances time, emits no note |
+| `<unpitched>` (a hit on a percussion staff) | advances time, emits no note — the engine holds pitches and a drum has none |
 | `<chord/>` | notes sharing an onset |
 | `<tie>` chain (or `<notations><tied>`) | merged into one sustained note; matched **per voice**, so two voices tying the same pitch stay independent |
 | multiple `<part>`s, `<backup>`/`<forward>` | merged onto one timeline |
 | voices (via `<backup>`) | overlapping notes; exported back as `<voice>` lines |
 | `<dynamics>` marks / `<sound dynamics>` | note velocity (`NoteEvent.Velocity`) |
+| `<attributes><transpose>` (`<chromatic>` + 12 × `<octave-change>`) | applied on import, per staff when it carries a `number` — pitches are **sounding**, so a B♭ clarinet's written D5 imports as C5 (72); export writes concert pitch and no `<transpose>` |
 
 On export, pitches are spelled with **sharps**, `<divisions>` is chosen so that
 every offset, every duration **and the measure length** land on an exact integer,
@@ -91,6 +93,10 @@ approximations, spelled out:
   notational grouping is dropped.
 - **Grace notes** are approximated: the pitch is kept as a short note (`1/32`) at
   the beat of its principal note, without shifting time.
+- **Unpitched notes** (`<unpitched>`, a hit on a percussion staff) are not
+  imported: the hit takes up its time and yields no note, so a score with a drum
+  part imports its pitched parts and leaves the drums out, and a drums-only
+  score imports as empty.
 - **`score-timewise`** is transposed to partwise on import and read normally.
 - **Dynamics on export** are written for single-voice music only; polyphonic
   velocity is left at the default.

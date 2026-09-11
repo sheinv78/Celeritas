@@ -16,7 +16,14 @@ public static class ProgressionAdvisor
     /// <summary>
     /// Parse a chord symbol into MIDI pitches (octave 4 = middle C).
     /// Supports: C, Am, G7, Dmaj7, F#m7, Bbdim, Csus4, C/E (slash chords), etc.
+    /// A bare number is lead-sheet shorthand: C2 is Cadd9, C4 is Csus4 and C5 the power chord;
+    /// 6, 7, 9, 11 and 13 are extensions, and any other number fails the parse.
     /// </summary>
+    /// <remarks>
+    /// The parser used to accept any number and act only on 6 and 7 upward, so C2, C3 and C4
+    /// all came back as a plain C major triad and C8 as a C7, with nothing to say the number
+    /// had been dropped.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="symbol"/> is <see langword="null"/>.</exception>
     public static int[] ParseChordSymbol(string symbol)
     {

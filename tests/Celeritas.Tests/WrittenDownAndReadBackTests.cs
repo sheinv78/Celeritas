@@ -569,6 +569,83 @@ public class WrittenDownAndReadBackTests
         Assert.Equal(Rational.Half, reread.RampDuration);
     }
 
+    public static TheoryData<int, int> RampLengthsTheNotationMustHold => new()
+    {
+        { 2, 1 }, // two whole notes
+        { 5, 4 }, // five quarters
+        { 3, 1 }, // three whole notes
+        { 7, 8 }, // seven eighths
+        { 1, 3 }, // a triplet whole
+        { 3, 2 }, // a dotted whole
+        { 3, 8 }, // a dotted quarter
+    };
+
+    [Theory]
+    [MemberData(nameof(RampLengthsTheNotationMustHold))]
+    public void ATempoRampLongerThanOneNoteValue_IsWrittenAsTiedNoteValuesAndReadsBack(int numerator, int denominator)
+    {
+        // A ramp lasting two whole notes was written as "@bpm 120 -> 60 /2/1" — the rational
+        // fallback in a position where the grammar wants a note value — and ParseFull refused
+        // it. The written length is now tied note values, "/1~/1", as a held note is written.
+        var length = new Rational(numerator, denominator);
+        NotationDirective[] directives =
+        [
+            new TempoBpmDirective { Time = Rational.Zero, Bpm = 120, TargetBpm = 60, RampDuration = length },
+        ];
+        NoteEvent[] notes = [new NoteEvent(60, Rational.Zero, Rational.Quarter)];
+
+        foreach (var useLetters in new[] { false, true })
+        {
+            var written = MusicNotation.FormatWithDirectives(notes, directives, useLetters: useLetters);
+            var reread = MusicNotation.ParseFull(written).Directives.OfType<TempoBpmDirective>().Single();
+
+            Assert.Equal(120, reread.Bpm);
+            Assert.Equal(60, reread.TargetBpm);
+            Assert.Equal(length, reread.RampDuration);
+        }
+    }
+
+    [Fact]
+    public void ATempoRampWrittenAsTiedNoteValues_IsReadAsTheirSum()
+    {
+        var reread = MusicNotation.ParseFull("@bpm 120 -> 60 /1~/1~/4 C4/4")
+            .Directives.OfType<TempoBpmDirective>().Single();
+
+        Assert.Equal(new Rational(9, 4), reread.RampDuration);
+
+        var withLetters = MusicNotation.ParseFull("@bpm 120 -> 60 :h.~:e C4/4")
+            .Directives.OfType<TempoBpmDirective>().Single();
+
+        Assert.Equal(new Rational(7, 8), withLetters.RampDuration);
+    }
+
+    [Fact]
+    public void ATempoRampWrittenAsTiedNoteValues_DoesNotTieTheNoteAfterIt()
+    {
+        // The tilde inside the ramp length belongs to the ramp; it must not reach forward and
+        // join the notes that follow into one.
+        var parsed = MusicNotation.ParseFull("@bpm 120 -> 60 /1~/1 C4/4 C4/4");
+
+        Assert.Equal(2, parsed.Notes.Length);
+        Assert.All(parsed.Notes, n => Assert.Equal(Rational.Quarter, n.Duration));
+    }
+
+    [Fact]
+    public void ATempoRampsToStringWritesTheLengthAsTheNotationDoes()
+    {
+        // ToString answered the same question with the rational fallback, "/2/1", which is not
+        // the notation's spelling of two whole notes.
+        var ramp = new TempoBpmDirective
+        {
+            Time = Rational.Zero,
+            Bpm = 120,
+            TargetBpm = 60,
+            RampDuration = new Rational(2, 1)
+        };
+
+        Assert.Equal("@bpm 120 -> 60 /1~/1 at 0", ramp.ToString());
+    }
+
     // ---------- statistics describe the music, not the silence before it ----------
 
     [Fact]

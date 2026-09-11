@@ -381,6 +381,100 @@ public class MusicXmlImportTests
         Assert.Equal(new Rational(1, 6), buffer.Get(2).Offset);   // 0, 1/12, 1/6
     }
 
+    // A drum hit as MuseScore writes it: no <pitch>, a <display-step>/<display-octave> that only
+    // says where on the staff the notehead sits, and an instrument id. Display F4 would be MIDI 65
+    // if a reader mistook it for a pitch.
+    private static string DrumHit(int duration, bool chord = false) =>
+        $"<note>{(chord ? "<chord/>" : "")}<unpitched><display-step>F</display-step><display-octave>4</display-octave></unpitched>"
+        + $"<duration>{duration}</duration><instrument id=\"P2-I42\"/><voice>1</voice><notehead>x</notehead></note>";
+
+    private static string PianoPart(string body) =>
+        $"<part id=\"P1\"><measure number=\"1\"><attributes><divisions>1</divisions></attributes>{body}</measure></part>";
+
+    // Eight hi-hat eighths, the first and fifth with a kick under them — one 4/4 bar of a drum
+    // kit at a finer <divisions> than the piano, so its cursor steps in a different unit.
+    private static string DrumPart() =>
+        "<part id=\"P2\"><measure number=\"1\"><attributes><divisions>2</divisions></attributes>"
+        + DrumHit(1) + DrumHit(1, chord: true) + DrumHit(1) + DrumHit(1) + DrumHit(1)
+        + DrumHit(1) + DrumHit(1, chord: true) + DrumHit(1) + DrumHit(1)
+        + "</measure></part>";
+
+    private static string ScoreOf(params string[] parts) =>
+        "<?xml version=\"1.0\"?><score-partwise version=\"4.0\"><part-list>"
+        + "<score-part id=\"P1\"><part-name>Piano</part-name></score-part>"
+        + "<score-part id=\"P2\"><part-name>Drum Kit</part-name></score-part>"
+        + "</part-list>" + string.Concat(parts) + "</score-partwise>";
+
+    [Fact]
+    public void Import_PianoAndDrumParts_ImportsThePianoAndLeavesTheDrumsOut()
+    {
+        var xml = ScoreOf(PianoPart(Note("C", 4, 1) + Note("E", 4, 1) + Note("G", 4, 1) + Note("C", 5, 1)), DrumPart());
+
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        // The four piano notes and nothing else: no drum hit imported, and the drums'
+        // display position F4 (65) was not mistaken for a pitch.
+        Assert.Equal(4, buffer.Count);
+        Assert.Equal([60, 64, 67, 72], Enumerable.Range(0, 4).Select(i => buffer.Get(i).Pitch));
+    }
+
+    [Fact]
+    public void Import_OnlyDrums_ImportsAsEmpty()
+    {
+        using var buffer = MusicXmlIo.Parse(ScoreOf(DrumPart()));
+
+        Assert.Equal(0, buffer.Count);
+    }
+
+    [Fact]
+    public void Import_DrumPart_DoesNotMoveThePianoPartsNotes()
+    {
+        // Two bars of piano — a rest, a tie across the barline, a chord — with and without the
+        // drum part alongside. Leaving the drums out must leave the piano exactly as it was.
+        var piano = "<part id=\"P1\">"
+            + "<measure number=\"1\"><attributes><divisions>1</divisions></attributes>"
+            + Note("C", 4, 1) + Note("", 0, 1, rest: true) + Note("E", 4, 1) + Note("G", 4, 1, tieStart: true)
+            + "</measure><measure number=\"2\">"
+            + Note("G", 4, 1, tieStop: true) + Note("C", 4, 2) + Note("E", 4, 2, chord: true) + Note("D", 4, 1)
+            + "</measure></part>";
+        var drums = "<part id=\"P2\"><measure number=\"1\"><attributes><divisions>2</divisions></attributes>"
+            + string.Concat(Enumerable.Repeat(DrumHit(1), 8))
+            + "</measure><measure number=\"2\">" + DrumHit(4) + DrumHit(4) + "</measure></part>";
+
+        using var alone = MusicXmlIo.Parse(ScoreOf(piano));
+        using var withDrums = MusicXmlIo.Parse(ScoreOf(piano, drums));
+
+        Assert.Equal(alone.Count, withDrums.Count);
+        for (var i = 0; i < alone.Count; i++)
+        {
+            var (expected, actual) = (alone.Get(i), withDrums.Get(i));
+            Assert.Equal(expected.Pitch, actual.Pitch);
+            Assert.Equal(expected.Offset, actual.Offset);
+            Assert.Equal(expected.Duration, actual.Duration);
+            Assert.Equal(expected.Velocity, actual.Velocity);
+        }
+
+        // And the piano itself is what the score says: the tied G spans the barline, the D
+        // closes the second bar.
+        Assert.Equal(new Rational(1, 2), withDrums.Get(2).Duration);   // G4, two quarters tied
+        Assert.Equal(new Rational(7, 4), withDrums.Get(5).Offset);     // D4 on the last beat
+    }
+
+    [Fact]
+    public void Import_UnpitchedNoteAmongPitchedOnes_OccupiesItsTimeLikeARest()
+    {
+        // A percussion part can hold a pitched staff and an unpitched one; a hit in the same
+        // part as a pitched note still takes up its beat, so the E after it lands at 2/4.
+        var xml = PartwiseWith(Note("C", 4, 1) + DrumHit(1) + Note("E", 4, 1));
+
+        using var buffer = MusicXmlIo.Parse(xml);
+
+        Assert.Equal(2, buffer.Count);
+        Assert.Equal(60, buffer.Get(0).Pitch);
+        Assert.Equal(64, buffer.Get(1).Pitch);
+        Assert.Equal(new Rational(2, 4), buffer.Get(1).Offset);
+    }
+
     [Fact]
     public void Parse_Null_Throws() =>
         Assert.Throws<ArgumentNullException>(() => MusicXmlIo.Parse(null!));

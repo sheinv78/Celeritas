@@ -130,8 +130,9 @@ follows.
   lead sheet closing on C6 in C major was reported as closing on vi7, `Dm7 G7 C6`
   was reported in D minor, and a C6 was indistinguishable from an Am7 through the
   chord-character API
-- Mode detection can name every mode it defines. Nineteen were defined and nine
-  were candidates, so the exact notes of C Phrygian Dominant came back as "C
+- Mode detection can name every mode it defines but the two pentatonics, which
+  are contained in modes it already names. Nineteen were defined and nine were
+  candidates, so the exact notes of C Phrygian Dominant came back as "C
   Phrygian" -- a mode without the major third that defines the scale -- at a
   confidence this detector treats as certain
 - Voice movement is a property of the music. `AverageMovement` counted absolute
@@ -225,6 +226,12 @@ follows.
   separates "its" key from the field as cleanly as a whole phrase does, and a
   passage of arpeggios read at a one-bar window reported a modulation at every
   chord
+- `Phrase.StartIndex` and `EndIndex` address the buffer that was analysed, so
+  `buffer.Get(StartIndex)` is the phrase's first note. They were positions in the
+  analyzer's private copy -- rests dropped, then offset-sorted -- so with a rest
+  between two phrases the second phrase's `StartIndex` pointed at the rest, and in
+  an unsorted buffer at whatever note sat there. First and last are by time, so in
+  an unsorted buffer `StartIndex` may exceed `EndIndex`
 - `FormAnalyzer` hears a cadence whichever order the final chord's notes were
   added in. It gathered the last chord by walking back from the last note in
   the list and stopping at the first that ended earlier, so with a held bass
@@ -255,6 +262,17 @@ follows.
   `<sound dynamics="0"/>` for velocity 0 and the reader took only positive values
   as a dynamic, so the note inherited its neighbour's loudness; the niente
   dynamic `<n/>` is read as silence too
+- MusicXML import reads `<transpose>`, so a transposing instrument's part comes
+  back at sounding pitch. A Bb clarinet part written D5 E5 F#5 G5 imported as
+  written, a whole tone sharp, and every analysis downstream -- key, chords,
+  intervals against the other parts -- read the wrong notes. `<chromatic>` plus
+  twelve per `<octave-change>` is now added to every note of the part from the
+  point the element appears (per staff when it carries a `number`); export still
+  writes concert pitch and no `<transpose>`
+- MusicXML import skips an `<unpitched>` note -- a hit on a percussion staff --
+  as it skips a rest: the hit takes up its time and yields no note. It used to be
+  refused as having neither `<pitch>` nor `<rest>`, so a score with a drum part
+  could not be imported at all
 - `MidiFile.SetTempo` replaces the initial tempo instead of being overridden by
   an existing tempo event at tick 0 — it was a no-op on files this library wrote
 - `GetTempoChanges` and `GetTimeSignatureChanges` return events ordered by offset
@@ -271,6 +289,12 @@ follows.
   wrote "1/64" where the numeric arm beside it already answered "64"
 - `ParseDuration` reads what `FormatDuration` writes. It stopped at a 32nd and
   refused "64", and every tuplet value the grammar reads happily inside a note
+- A tempo ramp of any length is written and read back: `@bpm 120 -> 60 /1~/1`
+  spells a two-whole-note ritardando the way a held note is spelled. The grammar
+  took one note value, so a ramp that is not one -- two whole notes, five
+  quarters, seven eighths -- was written as the rational `/2/1`, which the parser
+  refused. `FormatDuration(3/1)`, a dotted two-whole-note value, no longer prints
+  "0."
 - `FormatDuration` writes every dotted power of two as a dot. Its table stopped at
   "32." and wrote a dotted 64th as "3/128" -- text the reader refuses, so a passage
   holding one could not be saved and read back
@@ -306,6 +330,13 @@ follows.
 - Oversized numbers and unsupported alterations or added degrees fail the parse
   instead of throwing `OverflowException` from a `Try` method or being silently
   dropped
+- A bare number after the root means what a lead sheet means: `C2` is Cadd9, `C4`
+  is Csus4 (`C5` was already the power chord), and a number that names no chord --
+  `C3`, `C8`, `C10` -- fails the parse with a message naming it. Every number used
+  to be accepted and only 6 and 7 upward acted on, so `C2`, `C3` and `C4` came back
+  as a plain C major triad and `C8` as a C7, with nothing to say the number had
+  been dropped. The same rule now reads a suspension written inside parentheses:
+  `C(sus2)` is C sus2, where it had been C sus4
 - Ties bind only adjacent same-pitch notes; a dangling tie no longer reaches past
   an intervening note and swallows it
 - Augmented and diminished-seventh chords are rooted on the bass note rather than
@@ -336,6 +367,11 @@ follows.
   of throwing from a formatting call
 - Harmonization emits root-position voicings instead of chords whose root landed
   on top
+- `HarmonizationResult.GetSymbols` gives chord symbols. It gave `ChordInfo.ToString`
+  display names -- "B Diminished", "A# Major" -- so every diminished chord was refused
+  by `ProgressionAdvisor.TryParseChordSymbol` and a flat key came back in sharps; it
+  now renders "Bdim", "Bb", spelled the way the key is written, and every symbol of a
+  harmonization in all 24 keys reads back as the chord it names
 - `Articulation` duration scaling rounds instead of truncating, and rejects
   non-positive multipliers
 - Ornaments with an undefined type throw instead of silently replacing the note
@@ -351,6 +387,9 @@ follows.
   them by what carries the chord and had a remark explaining the rule; the other
   kept whichever came first, so a V7 at three tones was G-B-D one way and G-B-F the
   other
+- `celeritas midi import` prints the imported notes as Celeritas notation that
+  `polyphony --notes` and `midi export --notes` read, as it had always claimed
+  its listing could be; the "C4@1/4:1/8" listing was a format no command reads
 - The CLI refuses a list item that is two integers joined by a comma ("0,25")
   rather than splitting it: in the locales whose decimal mark is the comma --
   where the CLI printed its own numbers with that comma -- `--durations 0,25

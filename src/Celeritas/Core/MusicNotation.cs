@@ -207,7 +207,9 @@ public static class MusicNotation
             // Dotted note: numerator = 3, denominator = 2^(n+1)
             // Examples: 3/8 -> 4., 3/16 -> 8., 3/4 -> 2.
             // Formula: dotted note value = denominator / 2
-            if (duration.Numerator == 3 && IsPowerOfTwo(duration.Denominator))
+            // The denominator has to be at least 2: 3/1 is three whole notes, not a dotted
+            // anything, and halving its denominator wrote it as "0." — a dotted nothing.
+            if (duration.Numerator == 3 && IsPowerOfTwo(duration.Denominator) && duration.Denominator >= 2)
             {
                 var baseNote = duration.Denominator / 2;
                 return useLetters switch
@@ -613,7 +615,7 @@ public static class MusicNotation
             // no stated length. Requiring both parts dropped the target and wrote back
             // "@bpm 120" — a passage that ramped to 180 came out holding its opening tempo.
             TempoBpmDirective { TargetBpm: not null, RampDuration: not null } ramp =>
-                $"@bpm {ramp.Bpm} -> {ramp.TargetBpm} {(useLetters ? ':' : '/')}{FormatDuration(ramp.RampDuration.Value, useDot: true, useLetters)}",
+                $"@bpm {ramp.Bpm} -> {ramp.TargetBpm} {FormatRampDuration(ramp.RampDuration.Value, useLetters)}",
             TempoBpmDirective { TargetBpm: not null } target => $"@bpm {target.Bpm} -> {target.TargetBpm}",
             TempoBpmDirective bpm => $"@bpm {bpm.Bpm}",
 
@@ -666,6 +668,38 @@ public static class MusicNotation
 
             return ReservedLowercaseWords.Contains(value);
         }
+    }
+
+    /// <summary>
+    /// The written length of a tempo ramp: one note value, or several tied together with
+    /// <c>~</c> as a held note is written — a ramp lasting two whole notes is <c>/1~/1</c>, and
+    /// five quarters <c>/1~/4</c>. The reader sums the pieces.
+    /// </summary>
+    /// <remarks>
+    /// This used to write the length as a single <see cref="FormatDuration"/>, which for
+    /// anything the notation cannot write in one go fell back to the rational: a ramp of two
+    /// whole notes came out as <c>/2/1</c>, and <see cref="ParseFull"/> refused it. A length
+    /// that has no pieces at all — zero or negative, which no notation can spell — is still
+    /// written as that rational, so nothing is silently dropped.
+    /// </remarks>
+    internal static string FormatRampDuration(Rational duration, bool useLetters = false)
+    {
+        var separator = useLetters ? ':' : '/';
+        var pieces = SplitIntoWritablePieces(duration, useDot: true);
+        if (pieces.Count == 0)
+        {
+            return $"{separator}{FormatDuration(duration, useDot: true, useLetters)}";
+        }
+
+        var sb = new StringBuilder();
+        for (var i = 0; i < pieces.Count; i++)
+        {
+            if (i > 0) sb.Append('~');
+            sb.Append(separator);
+            sb.Append(FormatDuration(pieces[i], useDot: true, useLetters));
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>

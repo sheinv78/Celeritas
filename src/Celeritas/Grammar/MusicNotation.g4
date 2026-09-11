@@ -41,7 +41,15 @@ directive
     ;
 
 bpmDirective
-    : AT BPM (EQUALS)? INT (ARROW INT duration?)?
+    : AT BPM (EQUALS)? INT (ARROW INT rampDuration?)?
+    ;
+
+rampDuration
+    // A ramp's length is one note value or several tied together, "/1~/1", the way a held
+    // note is written. It used to be a single note value, so a ramp that is not one — two
+    // whole notes, five quarters, seven eighths — had no spelling this grammar accepted, and
+    // the writer's rational fallback "/2/1" was refused on the way back in.
+    : duration (TILDE duration)*
     ;
 
 tempoDirective

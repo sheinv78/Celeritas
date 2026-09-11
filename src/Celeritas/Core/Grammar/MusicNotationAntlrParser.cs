@@ -623,9 +623,17 @@ internal class MusicNotationVisitorImpl(bool validateMeasures) : MusicNotationBa
         if (context.ARROW() != null)
         {
             targetBpm = Number(context.INT(1).GetText(), "target bpm");
-            if (context.duration() != null)
+            if (context.rampDuration() != null)
             {
-                rampDuration = ParseDuration(context.duration());
+                // The length may be several note values tied together, "/1~/1", and is their
+                // sum; the tildes belong to the ramp and tie none of the notes that follow.
+                var total = Rational.Zero;
+                foreach (var piece in context.rampDuration().duration())
+                {
+                    total += ParseDuration(piece);
+                }
+
+                rampDuration = total;
             }
         }
 

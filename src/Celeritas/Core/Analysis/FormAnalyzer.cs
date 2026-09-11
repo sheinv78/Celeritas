@@ -37,12 +37,23 @@ public sealed record FormAnalysisOptions(
 }
 
 /// <summary>A run of notes delimited by rests, with its span and ending cadence.</summary>
-/// <param name="StartIndex">Index of the phrase's first note in the offset-sorted buffer.</param>
-/// <param name="EndIndex">Index of the phrase's last note.</param>
+/// <param name="StartIndex">Position of the phrase's first note in the buffer given to <see cref="FormAnalyzer.Analyze(NoteBuffer, FormAnalysisOptions?)"/>, so that <c>buffer.Get(StartIndex)</c> is that note.</param>
+/// <param name="EndIndex">Position of the phrase's last note in the same buffer.</param>
 /// <param name="Start">Onset of the phrase (whole-note units).</param>
 /// <param name="End">End time of the phrase (whole-note units).</param>
 /// <param name="NoteCount">Number of notes in the phrase.</param>
 /// <param name="EndingCadence">Cadence classified at the phrase end, or <c>None</c>.</param>
+/// <remarks>
+/// Both indices address the caller's buffer as it was passed, whether or not it held rests or was
+/// offset-sorted. They used to be positions in the analyzer's private copy — rests dropped, then
+/// sorted — so with a rest between two phrases <c>buffer.Get(StartIndex)</c> of the second phrase
+/// returned the rest, and in an unsorted buffer it returned whatever note happened to sit at that
+/// slot. First and last are by time: in a buffer that was not offset-sorted <see cref="StartIndex"/>
+/// may exceed <see cref="EndIndex"/>, and the positions between them need not be the phrase's notes.
+/// Nor is the span a note count even in a sorted buffer: a rest too short to end the phrase still
+/// occupies a position between them, so <see cref="NoteCount"/> counts the notes, not
+/// <c>EndIndex - StartIndex + 1</c>.
+/// </remarks>
 public readonly record struct Phrase(
     int StartIndex,
     int EndIndex,
@@ -146,17 +157,23 @@ public static class FormAnalyzer
         // copy the events out and sort the copy (stable, by offset). Rests are left behind —
         // a phrase boundary is a gap in the sound, and a rest event filled that gap with a
         // "note", so a melody in three phrases separated by half-bar rests read as one.
+        // Each kept note remembers its position in the caller's buffer: a Phrase reports
+        // those positions, not positions in this copy, so buffer.Get(StartIndex) is the note.
         var kept = new List<NoteEvent>(count);
+        var keptAt = new List<int>(count);
         for (var i = 0; i < count; i++)
         {
             var note = buffer.Get(i);
-            if (!Rests.IsRest(note.Pitch)) kept.Add(note);
+            if (Rests.IsRest(note.Pitch)) continue;
+            kept.Add(note);
+            keptAt.Add(i);
         }
 
         if (kept.Count == 0)
             return new FormAnalysisResult([], [], Rational.Zero, []);
 
         var notes = kept.ToArray();
+        var bufferIndex = keptAt.ToArray();
         count = notes.Length;
 
         var isOrdered = true;
@@ -170,8 +187,23 @@ public static class FormAnalyzer
         }
 
         if (!isOrdered)
-            notes = [.. notes.OrderBy(n => n.Offset)];
+        {
+            // Sort the two arrays together so they stay parallel (OrderBy is stable).
+            var unsorted = notes;
+            var order = Enumerable.Range(0, count).OrderBy(i => unsorted[i].Offset).ToArray();
+            var sortedNotes = new NoteEvent[count];
+            var sortedIndex = new int[count];
+            for (var k = 0; k < count; k++)
+            {
+                sortedNotes[k] = unsorted[order[k]];
+                sortedIndex[k] = bufferIndex[order[k]];
+            }
+            notes = sortedNotes;
+            bufferIndex = sortedIndex;
+        }
 
+        // Working indices below address `notes`; they are mapped through `bufferIndex`
+        // only where a Phrase is built.
         var rawPhrases = new List<(int startIdx, int endIdx, Rational start, Rational end, int noteCount)>();
 
         var phraseStartIndex = 0;
@@ -231,7 +263,7 @@ public static class FormAnalyzer
                 _ => CadenceType.None
             };
 
-            phrases.Add(new Phrase(startIdx, endIdx, start, end, noteCount, cadenceType));
+            phrases.Add(new Phrase(bufferIndex[startIdx], bufferIndex[endIdx], start, end, noteCount, cadenceType));
         }
 
         var totalEnd = phrases.Count > 0 ? phrases[^1].End : phraseEndTime;
@@ -243,7 +275,7 @@ public static class FormAnalyzer
 
         // Detect sections (A/B/A' patterns) based on phrase similarity
         var (sections, formLabel) = options.DetectSections
-            ? DetectSections(notes, phrases, options.SectionSimilarityThreshold)
+            ? DetectSections(notes, rawPhrases, phrases, options.SectionSimilarityThreshold)
             : ([], "");
 
         return new FormAnalysisResult(phrases, periods, totalLength, cadences, sections, formLabel);
@@ -393,9 +425,12 @@ public static class FormAnalyzer
     /// <summary>
     /// Detect formal sections (A, B, A', etc.) based on pitch-class profile similarity.
     /// Uses Jaccard similarity of pitch-class sets to group similar phrases.
+    /// <paramref name="rawPhrases"/> carries each phrase's range in <paramref name="notes"/>;
+    /// the indices on <paramref name="phrases"/> address the caller's buffer, not this array.
     /// </summary>
     private static (IReadOnlyList<Section> Sections, string FormLabel) DetectSections(
         NoteEvent[] notes,
+        IReadOnlyList<(int startIdx, int endIdx, Rational start, Rational end, int noteCount)> rawPhrases,
         IReadOnlyList<Phrase> phrases,
         float similarityThreshold)
     {
@@ -412,9 +447,9 @@ public static class FormAnalyzer
         var phrasePcSets = new ushort[phrases.Count];
         for (var i = 0; i < phrases.Count; i++)
         {
-            var phrase = phrases[i];
+            var (startIdx, endIdx, _, _, _) = rawPhrases[i];
             ushort mask = 0;
-            for (var j = phrase.StartIndex; j <= phrase.EndIndex; j++)
+            for (var j = startIdx; j <= endIdx; j++)
             {
                 // Fold rather than `%`: C# keeps the sign, and a negative pitch — which
                 // MusicMath.Transpose documents it can produce — shifted by a negative amount.

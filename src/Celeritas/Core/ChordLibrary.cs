@@ -112,6 +112,50 @@ public readonly record struct ChordInfo(byte RootPitchClass, ChordQuality Qualit
     /// notes it was — see <see cref="ChordQuality.Unknown"/>.
     /// </remarks>
     public override string ToString() => $"{Root} {Quality}";
+
+    /// <summary>
+    /// The chord symbol a musician writes for this chord (e.g. "C", "Dm", "Bdim", "G7"), the form
+    /// <see cref="Analysis.ProgressionAdvisor.TryParseChordSymbol(string, out int[])"/> reads back.
+    /// </summary>
+    /// <param name="preferSharps">Whether to spell an accidental root as a sharp (F#) or a flat (Gb).</param>
+    /// <remarks>
+    /// One table for every quality, shared by <see cref="FunctionalChord.Symbol"/> and the
+    /// harmonizer's symbols. A quality with no conventional symbol (<see cref="ChordQuality.Unknown"/>,
+    /// <see cref="ChordQuality.Quartal"/>) falls back to the readable name <see cref="ToString"/> gives.
+    /// </remarks>
+    internal string ToSymbol(bool preferSharps)
+    {
+        var root = new PitchClass(RootPitchClass).ToName(preferSharps);
+
+        return Quality switch
+        {
+            ChordQuality.Major => root,
+            ChordQuality.Minor => root + "m",
+            ChordQuality.Diminished => root + "dim",
+            ChordQuality.Augmented => root + "aug",
+            ChordQuality.Sus2 => root + "sus2",
+            ChordQuality.Sus4 => root + "sus4",
+            ChordQuality.Power => root + "5",
+
+            ChordQuality.Major7 => root + "maj7",
+            ChordQuality.Minor7 => root + "m7",
+            ChordQuality.Dominant7 => root + "7",
+            ChordQuality.Dominant7Flat5 => root + "7b5",
+            ChordQuality.HalfDim7 => root + "m7b5",
+            ChordQuality.Diminished7 => root + "dim7",
+            ChordQuality.Augmented7 => root + "aug7",
+            ChordQuality.MinorMajor7 => root + "m(maj7)",
+
+            ChordQuality.Add9 => root + "add9",
+            ChordQuality.Add11 => root + "add11",
+
+            ChordQuality.Major6 => root + "6",
+            ChordQuality.Minor6 => root + "m6",
+
+            // No conventional symbol (Unknown, Quartal): fall back to a readable name.
+            _ => root + " " + Quality
+        };
+    }
 }
 
 /// <summary>

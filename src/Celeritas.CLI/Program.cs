@@ -1232,7 +1232,7 @@ Option<string[]> midiNotesOption = new("--notes", "-n")
     AllowMultipleArgumentsPerToken = true
 };
 
-Command midiImportCommand = new("import", "Import a MIDI file and print notes in Celeritas NoteBuffer format");
+Command midiImportCommand = new("import", "Import a MIDI file and print its notes as Celeritas music notation");
 midiImportCommand.Options.Add(midiInOption);
 midiImportCommand.Options.Add(midiChannelOption);
 midiImportCommand.Options.Add(midiLimitOption);
@@ -1271,15 +1271,43 @@ midiImportCommand.SetAction(parseResult => RunGuarded(() =>
         Console.WriteLine($"  Range: {MusicMath.MidiToNoteName(minPitch)} - {MusicMath.MidiToNoteName(maxPitch)}");
     }
 
-    Console.WriteLine();
-    Console.WriteLine("  Notes (copy/paste into other commands like polyphony):");
-    Console.WriteLine("  Format: Pitch@Offset:Duration  (Offset/Duration in whole notes)");
-    Console.WriteLine();
-
-    var countToPrint = Math.Min(limit, buffer.Count);
+    // Both sections below describe the same notes: the first `limit` of them in time order.
+    var countToPrint = Math.Min(Math.Max(limit, 0), buffer.Count);
+    var notes = new NoteEvent[countToPrint];
     for (var i = 0; i < countToPrint; i++)
     {
-        var e = buffer.Get(i);
+        notes[i] = buffer.Get(i);
+    }
+
+    // The notes are written as Celeritas music notation, the form the --notes of polyphony and
+    // midi export read (the other --notes options take pitch tokens through ParsePitch, which
+    // refuses this form too). The listing used to be the only output, and it said its
+    // "C4@1/4:1/8" lines could be pasted into other commands like polyphony — but no command
+    // reads that form, so the
+    // paste ended in a parse error. FormatNoteSequence lays overlapping notes and gaps out in
+    // as many voices as they need, so a multi-track file reads back as the notes it holds.
+    Console.WriteLine();
+    Console.WriteLine(countToPrint < buffer.Count
+        ? $"  Notation (first {countToPrint} of {buffer.Count} notes; raise --limit for more):"
+        : "  Notation:");
+    if (countToPrint > 0)
+    {
+        Console.WriteLine("  Paste the line below, quoted, into --notes of polyphony or midi export.");
+        Console.WriteLine();
+        Console.WriteLine($"  {MusicNotation.FormatNoteSequence(notes)}");
+    }
+    else
+    {
+        Console.WriteLine();
+        Console.WriteLine("  (no notes)");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("  Note list (Pitch@Offset:Duration, in whole notes):");
+    Console.WriteLine();
+
+    foreach (var e in notes)
+    {
         Console.WriteLine($"  {MusicMath.MidiToNoteName(e.Pitch)}@{e.Offset}:{e.Duration}");
     }
 

@@ -287,16 +287,9 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
                 return;
             }
 
-            var n = ParseDegree(extText, extText);
-
-            // Special-case: "sus2" / "sus4" is often written as SUS + 2/4.
-            if (builder.SusPending && n is 2 or 4)
-            {
-                builder.ApplySus(n);
-                return;
-            }
-
-            builder.ApplyExtension(n);
+            // A number after a bare sus ("sus2"/"sus4") is resolved inside ApplyExtension, so
+            // the parenthesized path below reads it the same way.
+            builder.ApplyExtension(ParseDegree(extText, extText));
             return;
         }
 
@@ -382,6 +375,10 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
                         continue;
                     }
                     builder.ApplyExtension(ParseDegree(extText, extText));
+                    continue;
+                case ChordSymbolParser.ModifierContext m:
+                    // "(5)": the same POWER token the unparenthesized path hands to ApplyModifier.
+                    builder.ApplyModifier(m.GetText());
                     continue;
                 case ChordSymbolParser.QualityContext q:
                     // Allows things like m(maj7) or (Δ9)
@@ -597,12 +594,47 @@ internal sealed class ChordBuildState
         }
     }
 
+    /// <summary>
+    /// A bare number after the root and its quality. 6, 7, 9, 11 and 13 are the extensions;
+    /// 2, 4 and 5 are lead-sheet shorthand — "C2" is Cadd9, "C4" is Csus4, "C5" the power
+    /// chord — and after a bare "sus" a 2 or 4 names the suspension. Any other number names no
+    /// chord and fails the parse, the way an unsupported add or altered degree does.
+    /// </summary>
+    /// <remarks>
+    /// Every positive number used to be accepted, and only 6 and 7 upward acted on, so "C2",
+    /// "C3" and "C4" all parsed silently to a plain C major triad and "C8" to a C7. The sus
+    /// check lived in the unparenthesized caller alone, so "C(sus2)" read as C sus4.
+    /// </remarks>
     public void ApplyExtension(int n)
     {
-        if (n == 0)
-            throw new ChordSymbolParseException("Extension 0 is not a valid chord extension.");
+        // "sus2" / "sus4" is often written as SUS + 2/4: the number is the suspension, not an
+        // extension, whichever path delivered it.
+        if (SusPending && n is 2 or 4)
+        {
+            ApplySus(n);
+            return;
+        }
 
-        _extension = Math.Max(_extension ?? 0, n);
+        switch (n)
+        {
+            case 2:
+                _adds.Add(MapAddDegreeToSemitones(9));
+                break;
+            case 4:
+                ApplySus(4);
+                _triadNamed = true;
+                break;
+            case 5:
+                // The lexer hands a lone "5" to ApplyModifier as the POWER token; this arm keeps
+                // the meaning with the number rather than with token precedence.
+                ApplyModifier("5");
+                break;
+            case 6 or 7 or 9 or 11 or 13:
+                _extension = Math.Max(_extension ?? 0, n);
+                break;
+            default:
+                throw new ChordSymbolParseException($"Unsupported extension: {n} (expected 2, 4, 5, 6, 7, 9, 11 or 13).");
+        }
     }
 
     public void ApplyAdd(int n)

@@ -135,7 +135,7 @@ public class MelodyHarmonizerTests
     }
 
     [Fact]
-    public void HarmonizationResult_GetSymbols_ReturnsChordNames()
+    public void HarmonizationResult_GetSymbols_ReturnsChordSymbols()
     {
         var harmonizer = new MelodyHarmonizer();
         var melody = new[]
@@ -148,6 +148,6 @@ public class MelodyHarmonizerTests
         var symbols = result.GetSymbols().ToList();
 
         Assert.True(symbols.Count >= 1);
-        Assert.All(symbols, s => Assert.False(string.IsNullOrEmpty(s)));
+        Assert.All(symbols, s => Assert.True(Celeritas.Core.Analysis.ProgressionAdvisor.TryParseChordSymbol(s, out _), s));
     }
 }

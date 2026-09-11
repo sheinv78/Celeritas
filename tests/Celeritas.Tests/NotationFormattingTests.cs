@@ -63,6 +63,16 @@ public class NotationFormattingTests
         Assert.Equal("3/8", MusicNotation.FormatDuration(new Rational(3, 8), useDot: false));
     }
 
+    [Fact]
+    public void ThreeWholeNotes_IsNotADottedValue()
+    {
+        // 3/1 has a numerator of 3 and a power-of-two denominator, so the dotted branch took it
+        // and halved the denominator to nothing: it was written as "0.", a dotted nothing of no
+        // value. A dotted note needs a denominator of at least 2; three whole notes is a ratio.
+        Assert.Equal("3/1", MusicNotation.FormatDuration(new Rational(3, 1), useDot: true, useLetters: false));
+        Assert.Equal("3/1", MusicNotation.FormatDuration(new Rational(3, 1), useDot: true, useLetters: true));
+    }
+
     // ---------- plain durations ----------
 
     [Theory]

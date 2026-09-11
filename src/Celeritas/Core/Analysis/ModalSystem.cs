@@ -62,9 +62,24 @@ public enum Mode
     Blues = 16,
 
     /// <summary>Major pentatonic (W-W-m3-W-m3). Folk, pop.</summary>
+    /// <remarks>
+    /// Never the answer of <see cref="ModeLibrary.DetectMode"/> or
+    /// <see cref="ModeLibrary.DetectModeWithRoot(float[], int)"/>. Its five notes are contained
+    /// in the major scale, so the scale is reported as a heptatonic mode that contains it, at
+    /// confidence 0: Ionian on its own root when the root is hinted or is the most prominent
+    /// note; which mode and root otherwise is documented on each method.
+    /// </remarks>
     MajorPentatonic = 17,
 
     /// <summary>Minor pentatonic (m3-W-W-m3-W). Rock, blues.</summary>
+    /// <remarks>
+    /// Never the answer of <see cref="ModeLibrary.DetectMode"/> or
+    /// <see cref="ModeLibrary.DetectModeWithRoot(float[], int)"/>. Its five notes are contained
+    /// in Dorian, Phrygian and Aeolian on the same root and in three major keys, so the scale is
+    /// reported as a heptatonic mode that contains it, at confidence 0: Dorian on its own root
+    /// when the root is hinted, Aeolian on it when the root is the most prominent note; which
+    /// mode and root otherwise is documented on each method.
+    /// </remarks>
     MinorPentatonic = 18
 }
 
@@ -531,6 +546,23 @@ public static class ModeLibrary
     /// <summary>
     /// Detect the most likely mode from a pitch class distribution.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The answer is never <see cref="Mode.MajorPentatonic"/> or <see cref="Mode.MinorPentatonic"/>.
+    /// Each is contained in seven-note modes that are candidates, and the score rewards
+    /// containing the notes played, so a contained scale can only tie with its container: a
+    /// pentatonic is reported as a heptatonic mode that contains it, at confidence 0 — the
+    /// margin that says several modes fit equally. Which mode depends on whether a note stands
+    /// out. When the pentatonic's own root is the most prominent note, a major pentatonic comes
+    /// back as Ionian on that root and a minor pentatonic as Aeolian on it. When no note stands
+    /// out — each of the five played equally — both come back as Ionian, on the lowest-numbered
+    /// pitch class (C being 0) of the three major keys that contain the five notes. For a major
+    /// pentatonic those are the keys of its tonic, subdominant and dominant, so C major
+    /// pentatonic is C major but so is G major pentatonic; for a minor pentatonic they are its
+    /// relative major and that key's subdominant and dominant, so A minor pentatonic is C major
+    /// and C minor pentatonic is E flat major.
+    /// </para>
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="distribution"/> is <see langword="null"/>.</exception>
     public static (ModalKey key, float confidence) DetectMode(float[] distribution)
     {
@@ -629,6 +661,15 @@ public static class ModeLibrary
     /// Detect mode with a hint about which note is the root.
     /// More accurate when the first note of a melody/scale is provided.
     /// </summary>
+    /// <remarks>
+    /// The answer is never <see cref="Mode.MajorPentatonic"/> or <see cref="Mode.MinorPentatonic"/>.
+    /// Each is contained in seven-note modes on the same root that are candidates, and the score
+    /// rewards containing the notes played, so a contained scale can only tie with its container.
+    /// A major pentatonic on the hinted root comes back as Ionian on that root, and a minor
+    /// pentatonic as Dorian on it — the first on the candidate list of Dorian, Phrygian and
+    /// Aeolian, which the five notes do not tell apart — both at confidence 0, the margin that
+    /// says so.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="distribution"/> is <see langword="null"/>.</exception>
     public static (ModalKey key, float confidence) DetectModeWithRoot(float[] distribution, int rootHint)
     {
@@ -669,6 +710,10 @@ public static class ModeLibrary
     /// <summary>
     /// Detect mode from pitch classes with root hint.
     /// </summary>
+    /// <remarks>
+    /// A pentatonic is answered as <see cref="DetectModeWithRoot(float[], int)"/> documents: as
+    /// a heptatonic mode on the hinted root that contains it, at confidence 0.
+    /// </remarks>
     /// <param name="pitchClasses">Collection of pitch classes; values outside 0-11 are folded to
     /// their pitch class rather than rejected.</param>
     /// <param name="rootHint">Hint for the root note (pitch class).</param>
@@ -690,6 +735,10 @@ public static class ModeLibrary
     /// <summary>
     /// Detect mode from notes with root hint (automatically extracts pitch classes).
     /// </summary>
+    /// <remarks>
+    /// A pentatonic is answered as <see cref="DetectModeWithRoot(float[], int)"/> documents: as
+    /// a heptatonic mode on the root that contains it, at confidence 0.
+    /// </remarks>
     /// <param name="notes">Collection of note events. Rests are silence and do not count towards
     /// the mode, nor can one be the root.</param>
     /// <param name="rootHint">Hint for the root note (pitch class). If null, uses the first

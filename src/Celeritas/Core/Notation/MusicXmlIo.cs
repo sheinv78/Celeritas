@@ -22,12 +22,27 @@ namespace Celeritas.Core.Notation;
 /// set note velocity (and single-voice export writes velocity back as <c>&lt;sound dynamics&gt;</c>).
 /// Compressed <c>.mxl</c> archives are unwrapped and the <c>score-timewise</c> layout is transposed
 /// to partwise on import; grace notes are approximated as short notes at the following beat.
-/// Remaining boundary: tuplet grouping metadata (<c>&lt;time-modification&gt;</c>) is ignored, though
-/// tuplet <em>durations</em> import exactly. Export bars the timeline into measures of the
+/// Remaining boundaries: tuplet grouping metadata (<c>&lt;time-modification&gt;</c>) is ignored, though
+/// tuplet <em>durations</em> import exactly; and an <c>&lt;unpitched&gt;</c> note (a hit on a
+/// percussion staff) is not imported — it takes up its time and yields no note, since the engine
+/// holds pitches and a drum has none. Export bars the timeline into measures of the
 /// requested meter (4/4 unless one is given) and splits notes crossing a barline into tied
 /// segments.
 /// </para>
+/// <para>
+/// Pitches are <em>sounding</em> pitches. A transposing instrument's part is written at written
+/// pitch and declares the difference in <c>&lt;attributes&gt;&lt;transpose&gt;</c>
+/// (<c>&lt;chromatic&gt;</c> semitones plus <c>&lt;octave-change&gt;</c> octaves); import adds that
+/// offset to every note of the part from the point the element appears — per staff, when the
+/// element carries a <c>number</c> — so a B♭ clarinet's written D5 imports as the C5 it sounds.
+/// Export writes concert pitch and no <c>&lt;transpose&gt;</c>, since the buffer holds nothing else.
+/// </para>
 /// </summary>
+/// <remarks>
+/// Import used to ignore <c>&lt;transpose&gt;</c> and hand back the written pitch, so a clarinet
+/// part arrived a whole tone sharp and a horn part a fifth sharp, and every analysis downstream —
+/// key, chords, intervals against the other parts — read the wrong notes.
+/// </remarks>
 public static class MusicXmlIo
 {
     private const float DefaultVelocity = 0.8f;
@@ -38,7 +53,19 @@ public static class MusicXmlIo
     // Default meter used when export is not given one: notes are barred into 4/4 measures.
     private static readonly TimeSignature CommonTime = new(4, 4);
 
-    /// <summary>Reads and imports a MusicXML file from <paramref name="path"/>.</summary>
+    /// <summary>
+    /// Reads and imports a MusicXML file from <paramref name="path"/>. Notes come back at sounding
+    /// pitch: a part's <c>&lt;transpose&gt;</c> is applied on the way in. Unpitched (percussion)
+    /// notes are not imported.
+    /// </summary>
+    /// <remarks>
+    /// An <c>&lt;unpitched&gt;</c> note — a hit on a percussion staff — is not imported: the engine
+    /// holds pitches and a drum has none. It still takes up its time, so a pitched note after it
+    /// in the same part stays on its beat, and the pitched parts of a score with a drum staff
+    /// import as they would with that staff absent. Such a note used to be refused as
+    /// having neither <c>&lt;pitch&gt;</c> nor <c>&lt;rest&gt;</c>, and a score with a drum part
+    /// could not be imported at all.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidDataException">The document is not valid, importable MusicXML.</exception>
     public static NoteBuffer Import(string path)
@@ -51,7 +78,17 @@ public static class MusicXmlIo
     /// <summary>
     /// Reads and imports MusicXML from a stream. Plain XML and compressed <c>.mxl</c> (a ZIP whose
     /// score is named by <c>META-INF/container.xml</c>) are both accepted, detected by content.
+    /// Notes come back at sounding pitch: a part's <c>&lt;transpose&gt;</c> is applied on the way in.
+    /// Unpitched (percussion) notes are not imported.
     /// </summary>
+    /// <remarks>
+    /// An <c>&lt;unpitched&gt;</c> note — a hit on a percussion staff — is not imported: the engine
+    /// holds pitches and a drum has none. It still takes up its time, so a pitched note after it
+    /// in the same part stays on its beat, and the pitched parts of a score with a drum staff
+    /// import as they would with that staff absent. Such a note used to be refused as
+    /// having neither <c>&lt;pitch&gt;</c> nor <c>&lt;rest&gt;</c>, and a score with a drum part
+    /// could not be imported at all.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidDataException">The document is not valid, importable MusicXML.</exception>
     public static NoteBuffer Import(Stream stream)
@@ -72,7 +109,19 @@ public static class MusicXmlIo
             : LoadSafely(reader => XDocument.Load(reader), (Stream)buffered));
     }
 
-    /// <summary>Imports MusicXML held in a string.</summary>
+    /// <summary>
+    /// Imports MusicXML held in a string. Notes come back at sounding pitch: a part's
+    /// <c>&lt;transpose&gt;</c> is applied on the way in. Unpitched (percussion) notes are not
+    /// imported.
+    /// </summary>
+    /// <remarks>
+    /// An <c>&lt;unpitched&gt;</c> note — a hit on a percussion staff — is not imported: the engine
+    /// holds pitches and a drum has none. It still takes up its time, so a pitched note after it
+    /// in the same part stays on its beat, and the pitched parts of a score with a drum staff
+    /// import as they would with that staff absent. Such a note used to be refused as
+    /// having neither <c>&lt;pitch&gt;</c> nor <c>&lt;rest&gt;</c>, and a score with a drum part
+    /// could not be imported at all.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="xml"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidDataException">The document is not valid, importable MusicXML.</exception>
     public static NoteBuffer Parse(string xml)
@@ -388,6 +437,7 @@ public static class MusicXmlIo
         var lastNoteOnset = Rational.Zero; // onset of the most recent non-chord note (for <chord/>)
         var divisions = 0;               // divisions per quarter note; set by <attributes>
         var velocity = DefaultVelocity;  // current dynamic, updated by <direction>/<sound>
+        var transposition = new PartTransposition();   // written -> sounding, set by <attributes><transpose>
 
         // Ties in progress, keyed by (voice, MIDI pitch): a tie-start holds a note open until the
         // matching tie-stop, so the chain is emitted once with the summed duration (and its start
@@ -405,6 +455,9 @@ public static class MusicXmlIo
                         var div = Child(el, "divisions");
                         if (div is not null && int.TryParse(div.Value, out var d) && d > 0)
                             divisions = d;
+                        // One <transpose> per staff is allowed, so read them all.
+                        foreach (var transpose in Children(el, "transpose"))
+                            transposition.Read(transpose);
                         break;
 
                     case "backup":
@@ -424,7 +477,7 @@ public static class MusicXmlIo
                         break;
 
                     case "note":
-                        ReadNote(el, divisions, velocity, ref cursor, ref lastNoteOnset, pending, notes);
+                        ReadNote(el, divisions, velocity, transposition, ref cursor, ref lastNoteOnset, pending, notes);
                         break;
                 }
             }
@@ -435,8 +488,50 @@ public static class MusicXmlIo
             notes.Add(new NoteEvent(key.midi, held.onset, held.duration, held.velocity));
     }
 
+    // Written-to-sounding offset in semitones for one part, read from <attributes><transpose>:
+    // <chromatic> semitones plus twelve per <octave-change>. An un-numbered <transpose> covers
+    // every staff of the part; one carrying number="N" covers staff N alone, until the next
+    // un-numbered one resets the whole part. A note names its staff in <staff>; absent that,
+    // MusicXML places it on staff 1.
+    private sealed class PartTransposition
+    {
+        private int _all;
+        private Dictionary<int, int>? _byStaff;
+
+        public void Read(XElement transpose)
+        {
+            var semitones = 0;
+            // <chromatic> is typed as a decimal (microtonal writers use it); round like <alter>.
+            var chromatic = Child(transpose, "chromatic");
+            if (chromatic is not null && !string.IsNullOrWhiteSpace(chromatic.Value))
+                semitones += (int)Math.Round(ParseDouble(chromatic.Value, "chromatic"));
+            var octaveChange = Child(transpose, "octave-change");
+            if (octaveChange is not null && !string.IsNullOrWhiteSpace(octaveChange.Value))
+                semitones += 12 * ParseInt(octaveChange.Value, "octave-change");
+
+            if (transpose.Attribute("number")?.Value is { } number && int.TryParse(number.Trim(), out var staff))
+            {
+                (_byStaff ??= new Dictionary<int, int>())[staff] = semitones;
+            }
+            else
+            {
+                _all = semitones;
+                _byStaff = null;
+            }
+        }
+
+        public int For(XElement note)
+        {
+            if (_byStaff is null)
+                return _all;
+            var staff = Child(note, "staff") is { } el && int.TryParse(el.Value.Trim(), out var n) ? n : 1;
+            return _byStaff.TryGetValue(staff, out var semitones) ? semitones : _all;
+        }
+    }
+
     private static void ReadNote(
-        XElement note, int divisions, float velocity, ref Rational cursor, ref Rational lastNoteOnset,
+        XElement note, int divisions, float velocity, PartTransposition transposition,
+        ref Rational cursor, ref Rational lastNoteOnset,
         Dictionary<(string voice, int midi), (Rational onset, Rational duration, float velocity)> pending, List<NoteEvent> notes)
     {
         var durationEl = Child(note, "duration");
@@ -446,17 +541,20 @@ public static class MusicXmlIo
             // short nominal length, without advancing time — an approximation (the engine has no
             // dedicated grace-note concept). A non-grace note without a duration is skipped.
             if (Child(note, "grace") is not null && Child(note, "pitch") is { } gracePitch)
-                notes.Add(new NoteEvent(PitchToMidi(gracePitch), cursor, GraceDuration, velocity));
+                notes.Add(new NoteEvent(PitchToMidi(gracePitch) + transposition.For(note), cursor, GraceDuration, velocity));
             return;
         }
 
         var duration = DurationToWholeNotes(ParseDecimal(durationEl.Value, "duration"), divisions);
         var isChord = Child(note, "chord") is not null;
-        var isRest = Child(note, "rest") is not null;
 
-        if (isRest)
+        // A rest occupies time but produces no note. So does an <unpitched> note — a hit on a
+        // percussion staff: the engine holds pitches and a drum has none to hold (its
+        // <display-step>/<display-octave> only place the notehead on the staff), so the hit is
+        // left out and only its time is kept, which is what puts a pitched note later in the
+        // same part on its beat. A chord-rest is unusual; treat as time only.
+        if (Child(note, "rest") is not null || Child(note, "unpitched") is not null)
         {
-            // A rest occupies time but produces no note. A chord-rest is unusual; treat as time only.
             if (!isChord)
             {
                 lastNoteOnset = cursor;
@@ -466,8 +564,9 @@ public static class MusicXmlIo
         }
 
         var pitch = Child(note, "pitch")
-            ?? throw new InvalidDataException("A sounding note has neither <pitch> nor <rest>.");
-        var midi = PitchToMidi(pitch);
+            ?? throw new InvalidDataException("A sounding note has none of <pitch>, <unpitched> or <rest>.");
+        // <pitch> is the written pitch; the buffer holds what sounds.
+        var midi = PitchToMidi(pitch) + transposition.For(note);
         var onset = isChord ? lastNoteOnset : cursor;
         var (tieStart, tieStop) = ReadTie(note);
 

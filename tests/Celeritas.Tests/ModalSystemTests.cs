@@ -159,6 +159,49 @@ public class ModalSystemTests
     }
 
     /// <summary>
+    /// The exact answer the documentation of <see cref="Mode.MajorPentatonic"/>,
+    /// <see cref="Mode.MinorPentatonic"/>, <see cref="ModeLibrary.DetectMode"/> and
+    /// <see cref="ModeLibrary.DetectModeWithRoot(float[], int)"/> promises for a pentatonic, on
+    /// every root. Told the root, the detector answers Ionian for a major pentatonic and Dorian
+    /// for a minor one, on that root. Left to find the root, it answers Ionian on the
+    /// pentatonic's own root when that root is the most prominent note — Aeolian there for a
+    /// minor pentatonic — and, when no note stands out, Ionian on the lowest-numbered pitch
+    /// class of the three major keys that contain the five notes. All at confidence 0.
+    /// </summary>
+    [Theory]
+    [InlineData(Mode.MajorPentatonic, Mode.Ionian, Mode.Ionian, 0)]
+    [InlineData(Mode.MinorPentatonic, Mode.Dorian, Mode.Aeolian, 3)]
+    public void APentatonicIsAnsweredAsItsDocumentationSays(
+        Mode pentatonic, Mode withRootHint, Mode withProminentRoot, int semitonesToRelativeMajor)
+    {
+        for (var root = 0; root < 12; root++)
+        {
+            var scale = ModeLibrary.GetScaleNotes(new ModalKey((byte)root, pentatonic));
+            var even = new float[12];
+            foreach (var pitchClass in scale)
+            {
+                even[pitchClass] = 1f;
+            }
+
+            // Told the root, through either overload.
+            var expectedHinted = new ModalKey((byte)root, withRootHint);
+            Assert.Equal((expectedHinted, 0f), ModeLibrary.DetectModeWithRoot(even, root));
+            Assert.Equal((expectedHinted, 0f), ModeLibrary.DetectModeWithRoot(scale, root));
+
+            // The root is the most prominent note.
+            var rootHeavy = (float[])even.Clone();
+            rootHeavy[root] = 3f;
+            Assert.Equal((new ModalKey((byte)root, withProminentRoot), 0f), ModeLibrary.DetectMode(rootHeavy));
+
+            // No note stands out: the lowest-numbered of the three major keys holding the five
+            // notes — the pentatonic's relative major and that key's subdominant and dominant.
+            var relativeMajor = (root + semitonesToRelativeMajor) % 12;
+            var lowestMajorKey = Math.Min(relativeMajor, Math.Min((relativeMajor + 5) % 12, (relativeMajor + 7) % 12));
+            Assert.Equal((new ModalKey((byte)lowestMajorKey, Mode.Ionian), 0f), ModeLibrary.DetectMode(even));
+        }
+    }
+
+    /// <summary>
     /// Every diatonic mode is a rotation of a major scale, so its relative major must be built on
     /// the same notes. Lydian and Mixolydian were missing from the table and fell through to a
     /// default that returns the mode's own root, so C Lydian claimed C major — which differs by
