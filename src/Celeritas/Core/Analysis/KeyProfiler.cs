@@ -817,9 +817,12 @@ public sealed class KeyTrajectory
     /// <remarks>
     /// Windows whose detection confidence (a best-vs-runner-up margin) does not clear an
     /// internal bar are treated as ambiguous — typically windows straddling the key change
-    /// itself — and are skipped rather than counted as evidence against a modulation. A
-    /// modulation is reported at the first confident window whose key differs from the
-    /// previous confident window's key.
+    /// itself — and are skipped rather than counted as evidence against a modulation, and so
+    /// are windows whose material is not <see cref="KeyDetectionResult.IsDecidable"/>: a window
+    /// holding one arpeggiated triad separates "its" key from the field as cleanly as a whole
+    /// phrase does, and a passage of arpeggios read at a one-bar window reported a modulation at
+    /// every chord. A modulation is reported at the first confident, decidable window whose key
+    /// differs from the previous such window's key.
     /// </remarks>
     public IEnumerable<(Rational Position, KeySignature FromKey, KeySignature ToKey)> DetectModulations()
     {
@@ -829,8 +832,9 @@ public sealed class KeyTrajectory
         {
             // Margin semantics, see MinModulationConfidence above: a low-margin window is
             // ambiguous (it straddles the change, or the content is chromatic), so it
-            // neither confirms nor vetoes a modulation.
-            if (Points[i].Result.Confidence <= MinModulationConfidence)
+            // neither confirms nor vetoes a modulation. Nor does a window without enough
+            // distinct pitch classes to decide a key at all, whatever its margin.
+            if (Points[i].Result.Confidence <= MinModulationConfidence || !Points[i].Result.IsDecidable)
             {
                 continue;
             }

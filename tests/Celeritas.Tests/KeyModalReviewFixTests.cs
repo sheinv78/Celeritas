@@ -77,6 +77,40 @@ public class KeyModalReviewFixTests
     }
 
     [Fact]
+    public void DetectModulations_AWindowThatCannotDecideAKeyIsNotAModulation()
+    {
+        // Eight arpeggiated triads, C major then Db major, read at a one-bar window: each window
+        // holds a single triad, whose three pitch classes separate "their" key from the field as
+        // cleanly as a whole phrase does. The trajectory reported a modulation at every chord —
+        // C to G to Db to Ab to F minor. A window that is not decidable is skipped, like an
+        // ambiguous one; widen the window to hear the key.
+        using var arpeggios = new NoteBuffer(32);
+        var t = Rational.Zero;
+        foreach (var chord in new[] { new[] { 60, 64, 67 }, new[] { 65, 69, 72 }, new[] { 67, 71, 74 }, new[] { 60, 64, 67 }, new[] { 61, 65, 68 }, new[] { 66, 70, 73 }, new[] { 68, 72, 75 }, new[] { 61, 65, 68 } })
+        {
+            foreach (var pitch in chord)
+            {
+                arpeggios.AddNote(pitch, t, Rational.Quarter);
+                t += Rational.Quarter;
+            }
+        }
+
+        var narrow = KeyProfiler.AnalyzeModulations(arpeggios, Rational.Whole, Rational.Half);
+        Assert.All(narrow.Points, p => Assert.False(p.Result.IsDecidable));
+        Assert.Empty(narrow.DetectModulations());
+
+        // Three bars of arpeggios hold a key's worth of pitch classes, and the move is heard
+        // where it happens. (A window of IV - V - I can still read as the dominant's key later
+        // on — that is the Krumhansl profile on nine notes, and why the harmonic
+        // ModulationDetector exists beside this statistical reading.)
+        var wide = KeyProfiler.AnalyzeModulations(arpeggios, new Rational(3, 1), Rational.Half);
+        var modulation = wide.DetectModulations().First();
+        Assert.Equal(new KeySignature(0, true), modulation.FromKey);
+        Assert.Equal(new KeySignature(1, true), modulation.ToKey);
+        Assert.DoesNotContain(wide.DetectModulations(), m => m.ToKey == new KeySignature(0, true));
+    }
+
+    [Fact]
     public void KeyTrajectory_Points_ArePublicAndChronological()
     {
         using var buffer = new NoteBuffer(8);

@@ -220,6 +220,11 @@ follows.
   no catalogue -- the pentatonics, blues, whole tone, the diminished scales,
   altered, Locrian natural 2 -- rather than the major table, which could report a
   whole-tone progression as an "Authentic cadence"
+- `KeyTrajectory.DetectModulations` skips a window whose material cannot decide a
+  key, as it skips an ambiguous one: a window holding one arpeggiated triad
+  separates "its" key from the field as cleanly as a whole phrase does, and a
+  passage of arpeggios read at a one-bar window reported a modulation at every
+  chord
 - `FormAnalyzer` hears a cadence whichever order the final chord's notes were
   added in. It gathered the last chord by walking back from the last note in
   the list and stopping at the first that ended earlier, so with a held bass
