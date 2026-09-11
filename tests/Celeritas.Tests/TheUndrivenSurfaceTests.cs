@@ -327,6 +327,52 @@ public class TheUndrivenSurfaceTests
     }
 
     [Fact]
+    public void AnalyzeAlsoReportsTheWholeProgressionNotAFragment()
+    {
+        // The rule above reached DetectModalProgression first and Analyze only later: the same
+        // strict "better than" kept catalogue order on a tie, so "I - iii - vi - ii - V - I"
+        // handed to Analyze came back as "ii - V - I".
+        var whole = ModalProgressions.Analyze(["C", "Em", "Am", "Dm", "G", "C"]);
+        Assert.Equal("I - iii - vi - ii - V - I", whole.MatchedProgression?.Name);
+
+        var lydian = ModalProgressions.Analyze(["C", "D", "Bm", "C"]);
+        Assert.Equal("I - II - vii - I", lydian.MatchedProgression?.Name);
+    }
+
+    [Fact]
+    public void EveryRhythmPatternPlayedExactlyIsNamedAsItself()
+    {
+        // At equal match quality the pattern accounting for more onsets wins. Habanera,
+        // Charleston and Clave 3-2 begin with a shorter catalogue entry, and a quality tie went
+        // to catalogue order, so played exactly they were named as their own first half — and
+        // named correctly only when played slightly off. Waltz and Backbeat carry metric and
+        // velocity requirements a bare duration list cannot meet, so they are not asked here.
+        foreach (var pattern in RhythmAnalyzer.CommonPatterns)
+        {
+            if (pattern.Name is "Waltz" or "Backbeat")
+            {
+                continue;
+            }
+
+            var notes = new List<NoteEvent>();
+            var time = Rational.Zero;
+            for (var repeat = 0; repeat < 2; repeat++)
+            {
+                foreach (var duration in pattern.Durations)
+                {
+                    notes.Add(new NoteEvent(60, time, duration, 0.8f));
+                    time += duration;
+                }
+            }
+
+            var match = RhythmAnalyzer.IdentifyPattern(notes);
+
+            Assert.NotNull(match);
+            Assert.Equal(pattern.Name, match.Pattern.Name);
+        }
+    }
+
+    [Fact]
     public void ChordKeyFitMovesWithTheMusic()
     {
         // The doc calls it a dot product with the key profile, higher being a better fit — so it

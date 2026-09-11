@@ -204,35 +204,59 @@ public static class ModalProgressions
         Mode bestMode = Mode.Ionian;
         ModalProgression? bestMatch = null;
         float bestConfidence = 0;
-        var bestLength = 0;
 
         foreach (var mode in allModes)
         {
-            var progressions = GetProgressionsForMode(mode);
-
-            foreach (var prog in progressions)
+            var (match, confidence) = PickBest(romanNumerals, GetProgressionsForMode(mode));
+            if (match is { } found && Beats(found, confidence, bestMatch, bestConfidence))
             {
-                var confidence = MatchProgression(romanNumerals, prog.Degrees);
-
-                // Confidence is the fraction of the PATTERN found, so a short pattern is easier
-                // to match whole: "ii - V - I" scores 1.0 on any progression that ends that way,
-                // including "I - iii - vi - ii - V - I", which also scores 1.0 against itself.
-                // At equal confidence the longer pattern accounts for more of the music, so it
-                // wins; keeping the first one found instead meant a progression handed in
-                // complete was reported as a fragment of itself.
-                if (confidence > bestConfidence
-                    || (confidence == bestConfidence && confidence > 0 && prog.Degrees.Count > bestLength))
-                {
-                    bestConfidence = confidence;
-                    bestMode = mode;
-                    bestMatch = prog;
-                    bestLength = prog.Degrees.Count;
-                }
+                bestConfidence = confidence;
+                bestMode = mode;
+                bestMatch = found;
             }
         }
 
         return (bestMode, bestMatch, bestConfidence);
     }
+
+    /// <summary>
+    /// The entry of <paramref name="catalogue"/> that accounts for the most of
+    /// <paramref name="degrees"/>, with its confidence; <see langword="null"/> when nothing
+    /// matches at all. Both <see cref="DetectModalProgression"/> and <see cref="Analyze"/> choose
+    /// through here, so the two roads cannot drift.
+    /// </summary>
+    /// <remarks>
+    /// Confidence is the fraction of the PATTERN found, so a short pattern is easier to match
+    /// whole: "ii - V - I" scores 1.0 on any progression that ends that way, including
+    /// "I - iii - vi - ii - V - I", which also scores 1.0 against itself. At equal confidence the
+    /// longer pattern accounts for more of the music, so it wins; keeping the first one found
+    /// meant a progression handed in complete was reported as a fragment of itself — a rule that
+    /// reached <see cref="DetectModalProgression"/> first and <see cref="Analyze"/> only later.
+    /// </remarks>
+    private static (ModalProgression? Match, float Confidence) PickBest(
+        ReadOnlySpan<int> degrees, IReadOnlyList<ModalProgression> catalogue)
+    {
+        ModalProgression? best = null;
+        float bestConfidence = 0;
+
+        foreach (var prog in catalogue)
+        {
+            var confidence = MatchProgression(degrees, prog.Degrees);
+            if (Beats(prog, confidence, best, bestConfidence))
+            {
+                bestConfidence = confidence;
+                best = prog;
+            }
+        }
+
+        return (best, bestConfidence);
+    }
+
+    /// <summary>Whether a candidate replaces the incumbent: more confidence, or as much of it over more chords.</summary>
+    private static bool Beats(ModalProgression candidate, float confidence, ModalProgression? incumbent, float incumbentConfidence) =>
+        confidence > incumbentConfidence
+        || (confidence == incumbentConfidence && confidence > 0
+            && incumbent is { } current && candidate.Degrees.Count > current.Degrees.Count);
 
     private static float MatchProgression(ReadOnlySpan<int> input, IReadOnlyList<int> pattern)
     {
@@ -398,18 +422,8 @@ public static class ModalProgressions
         }
 
         // Match progressions for the detected mode only.
-        ModalProgression? bestMatch = null;
-        float bestProgressionConfidence = 0;
-        var modeProgressions = GetProgressionsForMode(detectedKey.Mode);
-        foreach (var prog in modeProgressions)
-        {
-            var confidence = MatchProgression(CollectionsMarshal.AsSpan(degrees), prog.Degrees);
-            if (confidence > bestProgressionConfidence)
-            {
-                bestProgressionConfidence = confidence;
-                bestMatch = prog;
-            }
-        }
+        var (bestMatch, bestProgressionConfidence) =
+            PickBest(CollectionsMarshal.AsSpan(degrees), GetProgressionsForMode(detectedKey.Mode));
 
         // Modal mixture: any chord containing pitch classes outside the detected mode scale.
         var scaleMask = ModeLibrary.GetScaleMask(detectedKey);

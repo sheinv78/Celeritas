@@ -845,14 +845,20 @@ public static class RhythmAnalyzer
             }
         }
 
-        // Remove overlapping matches: keep the best quality and, on equal quality,
-        // the most specific pattern (Waltz/Backbeat carry extra metric/velocity
-        // requirements that duration-identical Straight Quarters lacks).
+        // Remove overlapping matches: keep the best quality; on equal quality the most
+        // specific pattern (Waltz/Backbeat carry extra metric/velocity requirements that
+        // duration-identical Straight Quarters lacks); then the pattern accounting for more
+        // onsets, so that an exact Habanera is not reported as the Dotted Quarter-Eighth it
+        // begins with, nor an exact Clave 3-2 as its Tresillo — a quality tie used to go to
+        // catalogue order, and the three longest patterns could be named only when played
+        // slightly off, since a small error averaged over more notes beats the same error
+        // over fewer.
         matches = [.. matches
             .GroupBy(m => m.StartIndex / 4) // Group by approximate position
             .Select(g => g
                 .OrderByDescending(m => m.MatchQuality)
                 .ThenByDescending(m => PatternSpecificity(m.Pattern))
+                .ThenByDescending(m => m.Pattern.Durations.Length)
                 .First())];
 
         return matches;

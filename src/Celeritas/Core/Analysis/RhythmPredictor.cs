@@ -79,8 +79,15 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
     }
 
     /// <summary>
-    /// Train from a NoteBuffer.
+    /// Train from a NoteBuffer: the durations of its notes in the order they sound, rests left
+    /// out. The buffer itself is not reordered.
     /// </summary>
+    /// <remarks>
+    /// The transitions learned are between notes adjacent in time. They used to be between
+    /// notes adjacent in the buffer — the order a caller happened to append them — so a buffer
+    /// built voice by voice, or a chord entered top-down, taught the model rhythms nobody played,
+    /// while every other buffer-reading analyzer sorted first.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public void Train(NoteBuffer buffer)
     {
@@ -88,12 +95,28 @@ public sealed class RhythmPredictor(int order = 2, int? seed = null)
 
         // Train on what was played. A rest's duration is silence, and learning it as a duration
         // taught the model contexts that no performer ever strikes.
-        var durations = new List<Rational>();
+        var sounding = new List<(Rational Offset, int Pitch, int Index)>(buffer.Count);
         for (int i = 0; i < buffer.Count; i++)
         {
             if (Rests.IsRest(buffer.PitchAt(i))) continue;
-            durations.Add(buffer.GetDuration(i));
+            sounding.Add((buffer.GetOffset(i), buffer.PitchAt(i), i));
         }
+
+        // The same order RhythmAnalyzer reads onsets in: time, then pitch, then buffer index.
+        sounding.Sort((a, b) =>
+        {
+            var cmp = a.Offset.CompareTo(b.Offset);
+            if (cmp != 0) return cmp;
+            cmp = a.Pitch.CompareTo(b.Pitch);
+            return cmp != 0 ? cmp : a.Index.CompareTo(b.Index);
+        });
+
+        var durations = new List<Rational>(sounding.Count);
+        foreach (var (_, _, index) in sounding)
+        {
+            durations.Add(buffer.GetDuration(index));
+        }
+
         Train(durations);
     }
 

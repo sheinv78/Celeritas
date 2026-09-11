@@ -22,9 +22,7 @@ public class HarmonicColorCoverageTests
     public void AToneRepeatedIntoANewChord_ResolvingDownByStep_IsASuspension()
     {
         // C4 is a chord tone under C, sounds again under G where it is not, and falls to B3.
-        // The repeat lands inside the G rather than on its downbeat: a note that starts
-        // exactly at the chord change is read as an appoggiatura instead, and that arm is
-        // tested separately.
+        // Here the repeat lands inside the G; the test below puts it on the chord change.
         NoteEvent[] melody = [Eighth(60, 0), Eighth(60, 2), Eighth(59, 3)];
         (string Chord, Rational Start)[] chords = [("C", Rational.Zero), ("G", new Rational(1, 8))];
 
@@ -47,9 +45,26 @@ public class HarmonicColorCoverageTests
     }
 
     [Fact]
-    public void ANoteStartingOnTheChordChange_IsAnAppoggiatura_NotASuspension()
+    public void APreparedToneRestruckOnTheChordChange_IsASuspension()
     {
+        // The textbook 4-3: C4 over C, C4 again on the downbeat of G, falling to B3. This test
+        // used to assert Appoggiatura, cementing the defect — the appoggiatura arm ran first
+        // and never asked whether the note was prepared, so a suspension was reachable only
+        // when its repeat landed off the chord change.
         NoteEvent[] melody = [Eighth(60, 0), Eighth(60, 1), Eighth(59, 2)];
+        (string Chord, Rational Start)[] chords = [("C", Rational.Zero), ("G", new Rational(1, 8))];
+
+        var events = HarmonicColorAnalyzer.Analyze(melody, chords, CMajor).MelodicHarmony;
+
+        Assert.Equal(MelodicHarmonyEventType.Suspension, events[1].Type);
+    }
+
+    [Fact]
+    public void AnUnpreparedToneOnTheChordChange_IsAnAppoggiatura()
+    {
+        // G4 over C, then a leap to C5 on the downbeat of G — not a chord tone there — resolving
+        // down to B4. Nothing prepared the C5, so it is an appoggiatura.
+        NoteEvent[] melody = [Eighth(67, 0), Eighth(72, 1), Eighth(71, 2)];
         (string Chord, Rational Start)[] chords = [("C", Rational.Zero), ("G", new Rational(1, 8))];
 
         var events = HarmonicColorAnalyzer.Analyze(melody, chords, CMajor).MelodicHarmony;

@@ -162,9 +162,22 @@ follows.
   second half of it was empty for all nineteen modes
 - `RhythmPredictor` discounts a whole short-context prediction, not only its
   headline: "most likely 1/4 at 0.40" came back beside "alternative 1/8 at 0.50"
-- `ModalProgressions.DetectModalProgression` prefers the pattern accounting for
-  more of the music, so a progression handed in complete is no longer reported as
-  a fragment of itself
+- `ModalProgressions.DetectModalProgression` and `Analyze` prefer the pattern
+  accounting for more of the music, so a progression handed in complete is no
+  longer reported as a fragment of itself. The rule reached the first of the two
+  and not the second; both choose through one helper now
+- `RhythmAnalyzer` names a rhythm played exactly. At equal match quality the
+  pattern accounting for more onsets wins, so an exact Habanera is no longer
+  reported as the Dotted Quarter-Eighth it begins with, nor a Clave 3-2 as its
+  Tresillo -- the three longest patterns could be named only when played
+  slightly off
+- `RhythmPredictor.Train(NoteBuffer)` learns the transitions between notes adjacent
+  in time, not adjacent in the buffer, so a buffer built voice by voice teaches
+  the rhythm that was played
+- A prepared non-chord tone re-struck on the chord change is a suspension. The
+  appoggiatura arm ran first and never asked whether the note was prepared, so
+  the textbook 4-3 was labelled Appoggiatura and Suspension was reachable only
+  when the repeat landed inside the new chord
 - A modal pattern label writes the quality its degree has in the mode. Lydian's
   seventh-degree triad is minor and was labelled "vii°", the Dorian ii is minor and
   was described as major, the Locrian and Phrygian seventh-degree chords are minor

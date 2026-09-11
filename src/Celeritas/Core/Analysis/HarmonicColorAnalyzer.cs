@@ -222,7 +222,30 @@ public static class HarmonicColorAnalyzer
             var inSameChordAsNext = next.HasValue && next.Value.ChordStart == events[i].ChordStart;
             var inSameChordAsPrev = prev.HasValue && prev.Value.ChordStart == events[i].ChordStart;
 
-            // Appoggiatura heuristic: starts exactly on chord change and resolves by step.
+            // Suspension: a chord tone of the previous chord sounded again over the new one,
+            // where it is not a chord tone, then resolving down by step. Preparation is what
+            // tells it from an appoggiatura, so it is asked first: the appoggiatura arm below
+            // used to run first and consume every prepared suspension re-struck on the chord
+            // change — the textbook 4-3 — leaving Suspension reachable only when the repeat
+            // landed inside the new chord rather than on it.
+            if (prev.HasValue && next.HasValue)
+            {
+                var chordChanged = prev.Value.ChordStart != events[i].ChordStart;
+                if (chordChanged && prev.Value.Pitch == events[i].Pitch &&
+                    prev.Value.IsChordTone && !events[i].IsChordTone &&
+                    next.Value.IsChordTone && IsStep(events[i].Pitch, next.Value.Pitch) && next.Value.Pitch < events[i].Pitch)
+                {
+                    events[i] = events[i] with
+                    {
+                        Type = MelodicHarmonyEventType.Suspension,
+                        Description = "Suspension-like: held tone resolves down"
+                    };
+                    continue;
+                }
+            }
+
+            // Appoggiatura heuristic: starts exactly on chord change and resolves by step,
+            // and was not prepared (a prepared one is the suspension above).
             if (events[i].Offset == events[i].ChordStart && next.HasValue && inSameChordAsNext)
             {
                 if (next.Value.IsChordTone && IsStep(events[i].Pitch, next.Value.Pitch))
@@ -265,22 +288,6 @@ public static class HarmonicColorAnalyzer
                         Description = "Neighbor tone"
                     };
                     continue;
-                }
-            }
-
-            // Suspension heuristic: note is held into a new chord, then resolves down by step.
-            if (prev.HasValue && next.HasValue)
-            {
-                var chordChanged = prev.Value.ChordStart != events[i].ChordStart;
-                if (chordChanged && prev.Value.Pitch == events[i].Pitch &&
-                    prev.Value.IsChordTone && !events[i].IsChordTone &&
-                    next.Value.IsChordTone && IsStep(events[i].Pitch, next.Value.Pitch) && next.Value.Pitch < events[i].Pitch)
-                {
-                    events[i] = events[i] with
-                    {
-                        Type = MelodicHarmonyEventType.Suspension,
-                        Description = "Suspension-like: held tone resolves down"
-                    };
                 }
             }
         }
@@ -644,10 +651,18 @@ public enum MelodicHarmonyEventType
     /// <summary>Steps away from a chord tone and returns to it.</summary>
     NeighborTone = 2,
 
-    /// <summary>Accented non-chord tone on a chord change that resolves by step.</summary>
+    /// <summary>
+    /// Accented non-chord tone on a chord change that resolves by step and was not prepared —
+    /// typically approached by leap. A prepared one is a <see cref="Suspension"/>.
+    /// </summary>
     Appoggiatura = 3,
 
-    /// <summary>Tone held into a new chord that then resolves down by step.</summary>
+    /// <summary>
+    /// Tone that was a chord tone of the previous chord, sounded again over the new one where
+    /// it is not, and then resolves down by step — whether the repeat lands on the chord change
+    /// or inside the new chord. A note held across the change as one event is not examined
+    /// against the new chord: each note is classified against the chord sounding at its onset.
+    /// </summary>
     Suspension = 4,
 
     /// <summary>Non-chord tone not matching a more specific category.</summary>

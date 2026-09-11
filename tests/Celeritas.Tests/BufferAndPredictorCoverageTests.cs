@@ -140,6 +140,38 @@ public class BufferAndPredictorCoverageTests
     }
 
     [Fact]
+    public void Train_FromANoteBuffer_LearnsTheOrderTheNotesSoundIn()
+    {
+        // The transitions learned are between notes adjacent in time. They used to be between
+        // notes adjacent in the buffer, so a buffer built voice by voice, or entered back to
+        // front, taught the model rhythms nobody played.
+        Rational[] inTime = [Rational.Quarter, Rational.Eighth, Rational.Eighth, Rational.Half, Rational.Quarter, Rational.Quarter];
+
+        var forwards = new RhythmPredictor(order: 2, seed: 1);
+        forwards.Train(inTime);
+
+        using var reversed = new NoteBuffer(inTime.Length);
+        var time = inTime.Aggregate(Rational.Zero, (t, d) => t + d);
+        for (var i = inTime.Length - 1; i >= 0; i--)
+        {
+            time -= inTime[i];
+            reversed.AddNote(60, time, inTime[i]);
+        }
+
+        var fromReversed = new RhythmPredictor(order: 2, seed: 1);
+        fromReversed.Train(reversed);
+
+        Assert.Equal(forwards.GetStats().UniqueContexts, fromReversed.GetStats().UniqueContexts);
+        Assert.Equal(forwards.GetStats().TotalTransitions, fromReversed.GetStats().TotalTransitions);
+        Assert.Equal(
+            forwards.Predict([Rational.Quarter, Rational.Eighth]).MostLikely,
+            fromReversed.Predict([Rational.Quarter, Rational.Eighth]).MostLikely);
+
+        // And the caller's buffer is left in the order it was built.
+        Assert.Equal(time, reversed.GetOffset(reversed.Count - 1));
+    }
+
+    [Fact]
     public void Train_FromANullBuffer_IsRejected()
     {
         Assert.Throws<ArgumentNullException>(() => new RhythmPredictor().Train((NoteBuffer)null!));
