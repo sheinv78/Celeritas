@@ -449,6 +449,7 @@ MidiIo.Export(buffer, "transposed.mid");
 
 ### Import a MusicXML score
 
+<!-- snippet: given string xmlText -->
 ```csharp
 using Celeritas.Core.Notation;
 
@@ -464,6 +465,7 @@ multiple parts, and tie merging. Reading is DTD-safe (no external fetch).
 
 ### Export notes to MusicXML
 
+<!-- snippet: given NoteBuffer buffer -->
 ```csharp
 using Celeritas.Core.Notation;
 
@@ -491,6 +493,7 @@ celeritas musicxml analyze --in score.musicxml
 
 ### Use NoteBuffer for large operations
 
+<!-- snippet: given IEnumerable<NoteEvent> largeSequence -->
 ```csharp
 using Celeritas.Core;
 
@@ -511,6 +514,7 @@ arbitrary order - as the batch recipe below does with `Clear` + `AddRange` - cal
 
 ### Batch chord analysis
 
+<!-- snippet: given IEnumerable<NoteEvent[]> measures -->
 ```csharp
 using var buffer = new NoteBuffer(capacity: 16);
 var chords = new List<string>();
@@ -526,6 +530,7 @@ foreach (var measureNotes in measures)
 
 ### Parallel processing with PLINQ
 
+<!-- snippet: given IEnumerable<int[]> chordSequences -->
 ```csharp
 using System.Linq;
 
@@ -548,6 +553,7 @@ var music = MusicNotation.Parse("4/4: C4/4 E4/4 G4/4 C5/4",
 
 ### 2. Use round-trip formatting for debugging
 
+<!-- snippet: given NoteEvent[] notes -->
 ```csharp
 var formatted = MusicNotation.FormatNoteSequence(notes);
 Console.WriteLine(formatted);  // Human-readable output
@@ -555,6 +561,7 @@ Console.WriteLine(formatted);  // Human-readable output
 
 ### 3. Leverage SIMD for large arrays
 
+<!-- snippet: given NoteBuffer buffer -->
 ```csharp
 // Automatically uses AVX-512 / AVX2 / SSE2 / NEON
 if (buffer.Count > 1000)

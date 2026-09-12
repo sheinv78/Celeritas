@@ -87,6 +87,8 @@ modes available on that root — not how well the winning mode fits. A single no
 "fits" nearly every mode, so a fit-based score would report false certainty there:
 
 ```csharp
+using System.Globalization;
+
 NoteEvent[] notes = MusicNotation.Parse("D4/4 E4/4 F4/4 G4/4 A4/4 B4/4 C5/4 D5/4");
 
 var (mode, confidence) = ModeLibrary.DetectModeWithRoot(notes, rootHint: 2);

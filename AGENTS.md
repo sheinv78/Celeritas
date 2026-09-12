@@ -69,6 +69,10 @@ dotnet test
 # Run a single test project
 dotnet test tests/Celeritas.Tests
 
+# The examples print what they document; the C# in README.md and docs/ compiles (CI runs both)
+bash scripts/check-examples.sh
+bash scripts/check-docs-snippets.sh
+
 # Benchmarks (Release mode required)
 dotnet run --project src/Celeritas.Benchmarks -c Release
 

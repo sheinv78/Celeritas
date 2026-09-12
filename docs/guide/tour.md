@@ -1,7 +1,8 @@
 # A 10-minute tour
 
-A guided pass through the main capabilities. Each section stands alone — skim to
-what you need. All snippets use the public API as shipped.
+A guided pass through the main capabilities. Sections 7 and 8 reuse the `buffer`
+built in section 1; every other section stands alone — skim to what you need. All
+snippets use the public API as shipped.
 
 ```csharp
 using Celeritas.Core;
@@ -24,6 +25,7 @@ For bulk work, load events into a [`NoteBuffer`](xref:Celeritas.Core.NoteBuffer)
 a structure-of-arrays container that backs the SIMD hot paths. It owns an
 unmanaged buffer, so dispose it (a `using` is simplest):
 
+<!-- snippet: given NoteEvent[] notes -->
 ```csharp
 using var buffer = new NoteBuffer(notes.Length);
 foreach (var n in notes)
@@ -113,6 +115,7 @@ else
 
 Export a `NoteBuffer` to a standard MIDI file, and read one back:
 
+<!-- snippet: given NoteBuffer buffer -->
 ```csharp
 using Celeritas.Core.Midi;
 
@@ -129,6 +132,7 @@ Bulk operations run over the whole buffer on the SIMD path. Transpose is the
 canonical example (note: it does not clamp — validate the 0–127 range if that
 matters to you):
 
+<!-- snippet: given NoteBuffer buffer -->
 ```csharp
 MusicMath.Transpose(buffer, semitones: 2);       // up a whole step
 Console.WriteLine(MusicMath.MidiToNoteName(buffer.Get(0).Pitch));

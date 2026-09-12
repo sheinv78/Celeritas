@@ -622,6 +622,15 @@ notes, so an upgrade failed to compile with nothing here to explain it.
 
 ### Infrastructure
 
+- CI holds the documentation to the library: `scripts/check-examples.sh` builds and
+  runs every example and diffs its output against the block it documents, and
+  `scripts/check-docs-snippets.sh` compiles every C# block in README.md and docs/
+  (80 blocks) against the library, with an obsolete member an error, so a page
+  cannot describe a version of the library that no longer exists. On first run 14
+  blocks failed to compile; every one was a name the surrounding prose supplies
+  (`notes`, `buffer`, `xmlText`), now declared to the gate by a
+  `<!-- snippet: given ... -->` comment, and one block was missing the
+  `using System.Globalization;` it relied on
 - SIMD out-of-bounds fixes in pitch transformer tail handling; SIMD dispatch centralized
   in `PitchTransformerFactory` (per-call `IsSupported` guards eliminated)
 - `KeyAnalyzer` profile rotation fix in Krumhansl-Schmuckler key detection

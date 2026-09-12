@@ -59,6 +59,13 @@ jobs:
       # version of the library that no longer existed - and several had.
       run: bash scripts/check-examples.sh
 
+    - name: Check the C# in the docs compiles
+      if: matrix.os == 'ubuntu-latest'
+      # The same drift, for the code blocks in README.md and docs/: nothing else compiles them.
+      # They are compiled, not run - a block's printed output is a claim about behaviour, and
+      # examples/ is where those claims are checked by running.
+      run: bash scripts/check-docs-snippets.sh
+
     - name: Test (with coverage)
       run: dotnet test --no-build -c Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory TestResults
 

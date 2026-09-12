@@ -11,6 +11,7 @@ using Celeritas.Core.Notation;
 
 ## Importing
 
+<!-- snippet: given Stream stream, string xmlText -->
 ```csharp
 using var buffer = MusicXmlIo.Import("score.musicxml");   // from a file
 using var b2     = MusicXmlIo.Import(stream);             // from a stream
@@ -25,6 +26,7 @@ is never fetched (no XXE, no network).
 
 ## Exporting
 
+<!-- snippet: given NoteBuffer buffer, Stream stream -->
 ```csharp
 string xml = MusicXmlIo.ToXml(buffer);          // as a string (4/4)
 MusicXmlIo.Export(buffer, "out.musicxml");      // ...or straight to a file

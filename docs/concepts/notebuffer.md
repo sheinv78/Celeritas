@@ -31,6 +31,7 @@ The constructor takes a **capacity** and allocates once. `Add`/`AddNote`/`AddRan
 append and advance `Count`; they never grow the buffer, and going past `Capacity`
 throws <xref:System.InvalidOperationException>. Size it when you create it:
 
+<!-- snippet: given NoteEvent[] notes -->
 ```csharp
 using var buffer = new NoteBuffer(notes.Length);
 buffer.AddRange(notes);
