@@ -68,7 +68,16 @@ namespace Celeritas.Tests;
 /// chorus in the subdominant with a borrowed iv, chromatic appoggiaturas, a chromatic walking
 /// bass, applied chords resolving deceptively, the Neapolitan before a modulation, the German
 /// sixth in a return, chromatic runs and neighbours, a quoted bar of another key, and the minor
-/// key's leading tone struck over its tonic.
+/// key's leading tone struck over its tonic — and, folded in after the reviewer's second look,
+/// the twelve both roads still got wrong: an appoggiatura struck with the chord on every
+/// downbeat, a passing tone inside an arch, a half-note passing tone, the German sixth in the
+/// return's second bar, a bar of B flat quoted inside a G phrase, the V/V of a new key that the
+/// old key owns, a phrase closing on its tonic seventh, a suspension and a chord tone struck
+/// over V/ii, and V/ii and the borrowed iv arpeggiated. Judged on the library as it stood after
+/// the third table, an appoggiatura was heard only when struck after its chord, a passing tone
+/// only in a run that never turned and never longer than a quarter, a chord the key in force
+/// owned was that key's whatever it resolved into, and an arpeggiated chord was so many single
+/// notes; the melodies named no key, and the chord passages placed the new key a phrase late.
 /// </para>
 /// </remarks>
 public class RealModulationsAreHeardWhereAMusicianHearsThemTests
@@ -82,6 +91,8 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
     public static TheoryData<string> ReviewerHeldOutPassages => [.. RealModulationPassages.ReviewerHeldOut.Select(p => p.Name)];
 
     public static TheoryData<string> ThirdReviewerHeldOutPassages => [.. RealModulationPassages.ThirdReviewerHeldOut.Select(p => p.Name)];
+
+    public static TheoryData<string> FourthReviewerHeldOutPassages => [.. RealModulationPassages.FourthReviewerHeldOut.Select(p => p.Name)];
 
     [Theory]
     [MemberData(nameof(Passages))]
@@ -122,6 +133,16 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
     [MemberData(nameof(ThirdReviewerHeldOutPassages))]
     public void TheModulationDetectorHearsTheThirdReviewersModulationsAMusicianHearsInEveryKey(string name) =>
         AssertTheDetectorHears(RealModulationPassages.ThirdReviewerHeldOutNamed(name));
+
+    [Theory]
+    [MemberData(nameof(FourthReviewerHeldOutPassages))]
+    public void TheKeyTrajectoryHearsTheFourthReviewersModulationsAMusicianHearsInEveryKey(string name) =>
+        AssertTheTrajectoryHears(RealModulationPassages.FourthReviewerHeldOutNamed(name));
+
+    [Theory]
+    [MemberData(nameof(FourthReviewerHeldOutPassages))]
+    public void TheModulationDetectorHearsTheFourthReviewersModulationsAMusicianHearsInEveryKey(string name) =>
+        AssertTheDetectorHears(RealModulationPassages.FourthReviewerHeldOutNamed(name));
 
     private static void AssertTheTrajectoryHears(RealModulationPassages.Passage passage) =>
         AssertHeardInEveryKey(
@@ -217,6 +238,22 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
         Assert.True(RealModulationPassages.ThirdReviewerHeldOut.Count >= 18);
         Assert.Equal(names.Count, names.Distinct().Count());
         var earlier = RealModulationPassages.All.Concat(RealModulationPassages.HeldOut).Concat(RealModulationPassages.ReviewerHeldOut).Select(p => p.Name);
+        Assert.Empty(names.Intersect(earlier));
+    }
+
+    [Fact]
+    public void EveryPassageOfTheFourthReviewerIsBuiltAsItIsDescribed()
+    {
+        foreach (var passage in RealModulationPassages.FourthReviewerHeldOut)
+        {
+            AssertBuilds(passage);
+        }
+
+        var names = RealModulationPassages.FourthReviewerHeldOut.Select(p => p.Name).ToList();
+        Assert.True(RealModulationPassages.FourthReviewerHeldOut.Count >= 20);
+        Assert.Equal(names.Count, names.Distinct().Count());
+        var earlier = RealModulationPassages.All.Concat(RealModulationPassages.HeldOut)
+            .Concat(RealModulationPassages.ReviewerHeldOut).Concat(RealModulationPassages.ThirdReviewerHeldOut).Select(p => p.Name);
         Assert.Empty(names.Intersect(earlier));
     }
 
@@ -478,6 +515,8 @@ internal static class RealModulationPassages
     internal static Passage ReviewerHeldOutNamed(string name) => ReviewerHeldOut.Single(p => p.Name == name);
 
     internal static Passage ThirdReviewerHeldOutNamed(string name) => ThirdReviewerHeldOut.Single(p => p.Name == name);
+
+    internal static Passage FourthReviewerHeldOutNamed(string name) => FourthReviewerHeldOut.Single(p => p.Name == name);
 
     // ---------- the tunes ----------
 
@@ -1140,6 +1179,27 @@ internal static class RealModulationPassages
         OpeningInC + " | C5/4 Eb5/4 G5/2 | Ab5/4 F5/4 C5/2 | B4/4 D5/4 F5/2 | C5/4 G4/4 Eb5/2 | "
         + "G5/4 Eb5/4 C5/2 | Ab4/4 C5/4 F5/2 | D5/4 B4/4 G4/2 | C5/2 C5/2";
 
+    /// <summary>Four bars in C, then four in G with a chromatic appoggiatura struck on every downbeat, resolving by a semitone into the chord.</summary>
+    private const string DownbeatAppoggiaturaMelody =
+        OpeningInC + " | A#4/4 B4/4 D5/2 | D#5/4 E5/4 C5/2 | C#5/4 D5/4 F#5/2 | Eb5/4 D5/4 G4/2";
+
+    /// <summary>C F G C | G E Am D7 | G C D7 G with a melody: over the E chord, A is struck on the downbeat and resolves to G sharp, a 4-3 suspension.</summary>
+    private const string AppliedTriadChords = "0 5 7 0 | 7 4 9:m 2:7 | 7 0 2:7 7";
+    private const string SuspensionOverAppliedTriadMelody =
+        OpeningInC + " | B4/4 D5/4 G5/2 | A4/4 G#4/4 B4/2 | C5/4 E5/4 A4/2 | F#5/4 D5/4 C5/2 | "
+        + "B4/4 D5/4 G4/2 | E5/4 G5/4 C5/2 | F#5/4 A5/4 D5/2 | G5/1";
+    private const string ChordToneOverAppliedTriadMelody =
+        OpeningInC + " | B4/4 D5/4 G5/2 | B4/4 G#4/4 E5/2 | C5/4 E5/4 A4/2 | F#5/4 D5/4 C5/2 | "
+        + "B4/4 D5/4 G4/2 | E5/4 G5/4 C5/2 | F#5/4 A5/4 D5/2 | G5/1";
+
+    /// <summary>Four bars in C, then four in G with a chromatic passing tone inside an arch in bars 5 and 6 (G A A flat G, D E E flat D) and a rising one in bar 7 (B C C sharp D).</summary>
+    private const string ArchPassingToneMelody =
+        OpeningInC + " | G4/4 A4/4 Ab4/4 G4/4 | D5/4 E5/4 Eb5/4 D5/4 | B4/4 C5/4 C#5/4 D5/4 | A4/4 F#4/4 G4/2";
+
+    /// <summary>Four bars in C, then four in G whose third bar has a half-note C sharp between C and D over the D7.</summary>
+    private const string HalfNotePassingToneMelody =
+        OpeningInC + " | B4/4 D5/4 G5/2 | E5/4 G5/4 C5/2 | C5/4 C#5/2 D5/4 | B4/4 D5/4 G4/2";
+
     /// <summary>
     /// The third reviewer's passages, held out from the work on <see cref="ReviewerHeldOut"/>
     /// and folded in afterwards. Positions in the plans are the musician's, in whole notes; an
@@ -1173,5 +1233,133 @@ internal static class RealModulationPassages
         new("to the parallel minor, the leading tone only over the dominant (melody over chords)", Texture.MelodyOverChords, true, CThenCMinorChords, Notated(LeadingToneOverDominantMelody), At(5, 0, false)),
         new("minor closing on a Picardy third, then a minor plagal Amen: Fm C (block chords)", Texture.BlockChords, false, "0:m 5:m 7:7 0:m | 8 5:m 7:7 0 | 5:m 0", [], Nowhere),
         new("minor closing on a Picardy third struck twice (block chords)", Texture.BlockChords, false, "0:m 5:m 7:7 0:m | 8 5:m 7:7 0 | 0", [], Nowhere),
+
+        // ---------- the reviewer's second look: what iteration three still got wrong ----------
+        new("to the dominant, a chromatic appoggiatura struck on every downbeat of the new key (melody over chords)", Texture.MelodyOverChords, true, CThenGChords, Notated(DownbeatAppoggiaturaMelody), At(5, 7, true)),
+        new("minor, its relative major, minor again through a German sixth in the return's second bar (block chords)", Texture.BlockChords, false, "0:m 5:m 7:7 0:m | 3 8 10 3 | 0:m 8:7 7:7 0:m | 0:m 5:m 7:7 0:m", [], [new(5, 3, true), new(9, 0, false)]),
+        new("to the dominant, a chromatic passing tone inside an arch in each of the new key's first two bars (melody alone)", Texture.MelodyAlone, true, "", Notated(ArchPassingToneMelody), At(5, 7, true)),
+        new("to the dominant, a half-note chromatic passing tone C sharp in the new key's third bar (melody over chords)", Texture.MelodyOverChords, true, CThenGChords, Notated(HalfNotePassingToneMelody), At(5, 7, true)),
+        Block("to the dominant, a bar of B flat major quoted in the new key's second bar (block chords)", "0 5 7 0 | 7 10q 3q 5q 10q 2:7 7 | 7 0 2:7 7", At(5, 7, true)),
+        Block("to the subdominant with V/V in the new key's first phrase: C F G C | F Bb G C7 | F Bb C7 F (block chords)", "0 5 7 0 | 5 10 7 0:7 | 5 10 0:7 5", At(5, 5, true)),
+        Block("to the flat seventh with V/V in the new key's first phrase: C F G C | Bb Eb C F | Bb Eb F7 Bb (block chords)", "0 5 7 0 | 10 3 0 5 | 10 3 5:7 10", At(5, 10, true)),
+        Block("to the flat seventh, the new key's first phrase closing on its tonic seventh: C F G C | Bb Eb F Bb7 | Bb Eb F7 Bb (block chords)", "0 5 7 0 | 10 3 5 10:7 | 10 3 5:7 10", At(5, 10, true)),
+        new("to the dominant with V/ii as a triad, a 4-3 suspension struck over it (melody over chords)", Texture.MelodyOverChords, true, AppliedTriadChords, Notated(SuspensionOverAppliedTriadMelody), At(5, 7, true)),
+        new("to the dominant with V/ii as a triad, a chord tone struck over it (melody over chords)", Texture.MelodyOverChords, true, AppliedTriadChords, Notated(ChordToneOverAppliedTriadMelody), At(5, 7, true)),
+        new("to the dominant with V/ii as a plain triad in its second bar (arpeggios)", Texture.Arpeggios, true, AppliedTriadChords, [], At(5, 7, true)),
+        new("to the dominant with a borrowed iv in its second bar (arpeggios)", Texture.Arpeggios, true, "0 5 7 0 | 7 0:m 2:7 7 | 7 0 2:7 7", [], At(5, 7, true)),
+    ];
+
+    // ---------- the fourth reviewer's passages ----------
+
+    // ---------- 3. a Mozart-like transition over a rising chromatic bass ----------
+    // C F G C | C A7 Dm D#dim | Em F D7 G | G C D7 G, the bass C C# D D# E F F# G under bars 5-6.
+    private const string TransitionChords = "0 5 7 0 | 0q 9:7q 2:mq 3:dimq | 4:mq 5q 2:7q 7q | 7 0 2:7 7";
+    private const string TransitionBass = "C2/1 F2/1 G2/1 C2/1 | C2/4 C#2/4 D2/4 D#2/4 | E2/4 F2/4 F#2/4 G2/4 | G2/1 C2/1 D2/1 G2/1";
+
+    // ---------- 6. a folk tune in C Mixolydian: B flat throughout, no modulation ----------
+    private const string MixolydianTune =
+        "C4/4 D4/4 E4/4 G4/4 | Bb4/4 A4/4 G4/2 | E4/4 G4/4 Bb4/4 A4/4 | G4/4 F4/4 E4/2 | "
+        + "C4/4 E4/4 G4/4 Bb4/4 | A4/4 G4/4 E4/4 D4/4 | Bb3/4 C4/4 D4/4 E4/4 | D4/4 D4/4 C4/2";
+    private const string MixolydianVamp = "0 10 5 0 | 0 10 5 0";
+
+    // ---------- 7. escape tones (step in, leap out) and anticipations, C then G ----------
+    // Chromatic escape tones: B flat in bar 2, C sharp in bar 5, B flat in bar 7; anticipations
+    // of the next chord's tone on the last eighth of bars 3, 6 and 7.
+    private const string EscapeToneChords = "0 5 7:7 0 | 7 0 2:7 7";
+    private const string EscapeToneMelody =
+        "E4/4 F4/8 C4/8 G4/4 A4/8 E4/8 | A4/4 Bb4/8 F4/8 C5/4 D5/8 A4/8 | D5/4 E5/8 B4/8 G4/4 F4/8 E4/8 | E4/4 D4/8 C4/8 C4/2 | "
+        + "B4/4 C#5/8 G4/8 D5/4 E5/8 B4/8 | E5/4 F#5/8 C5/8 G4/4 A4/8 F#4/8 | F#4/4 G4/8 D4/8 A4/4 Bb4/8 G4/8 | G4/4 F#4/8 G4/8 G4/2";
+
+    // ---------- 10. a piece in 5/4: each bar a whole note and a quarter ----------
+    private const string FiveFourChords = "0t 0h 5t 5h 7t 7h 0t 0h | 7t 7h 0t 0h 2:7t 2:7h 7t 7h";
+    private const string FiveFourMelody =
+        "E4/4 G4/4 C5/4 D5/4 C5/4 | A4/4 F4/4 C5/4 A4/4 F4/4 | D5/4 B4/4 G4/4 A4/4 B4/4 | C5/4 E5/4 D5/4 C5/2 | "
+        + "B4/4 D5/4 G5/4 F#5/4 G5/4 | E5/4 C5/4 G4/4 A4/4 C5/4 | F#5/4 A5/4 D5/4 C5/4 A4/4 | B4/4 A4/4 G4/4 G4/2";
+
+    // ---------- 11. a long trill on a chromatic note ----------
+    private const string OpeningTune = "E4/4 G4/4 C5/2 | A4/4 F4/4 C5/2 | D5/4 B4/4 G4/2 | E5/4 D5/4 C5/2 | ";
+    private const string TrillCSharp = "C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16";
+    private const string TrillFSharp = "F#5/16 G5/16 F#5/16 G5/16 F#5/16 G5/16 F#5/16 G5/16 F#5/16 G5/16 F#5/16 G5/16 F#5/16 G5/16 F#5/16 G5/16";
+
+    /// <summary>C F G C | A7 Dm G7 C with a whole-bar trill on C sharp over the A7: V7/ii, no modulation.</summary>
+    private const string TrillOverAppliedChords = "0 5 7 0 | 9:7 2:m 7:7 0";
+    private const string TrillOverAppliedMelody = OpeningTune + TrillCSharp + " | D5/4 F5/4 A4/2 | B4/4 D5/4 G4/2 | C5/1";
+
+    /// <summary>C F G7 C | G C D7 G with a whole-bar trill on F sharp over the D7 of the new key.</summary>
+    private const string TrillInNewKeyChords = "0 5 7:7 0 | 7 0 2:7 7";
+    private const string TrillInNewKeyMelody = OpeningTune + "B4/4 D5/4 G5/2 | E5/4 G5/4 C5/2 | " + TrillFSharp + " | G5/1";
+
+    // ---------- 12. a ground bass: C B A G under changing harmonies, one modulation ----------
+    // Cycles 1-2: C G7 Am G (I V7 vi V in C); cycles 3-4: C Bm D7 G (IV iii V7 I in G), the bass
+    // unchanged — the G7 is in first inversion, the D7 in second, the Bm over its own root.
+    private const string GroundBassChords = "0 7:7 9:m 7 | 0 7:7 9:m 7 | 0 11:m 2:7 7 | 0 11:m 2:7 7";
+    private const string GroundBassLine = "C2/1 B1/1 A1/1 G1/1 | C2/1 B1/1 A1/1 G1/1 | C2/1 B1/1 A1/1 G1/1 | C2/1 B1/1 A1/1 G1/1";
+
+    // ---------- 13. an accented chromatic appoggiatura on every downbeat, never leaving C ----------
+    private const string AppoggiaturasInCChords = "0 2:m 7:7 0 | 0 5 7:7 0";
+    private const string AppoggiaturasInCMelody =
+        "D#5/4 E5/4 G5/2 | C#5/4 D5/4 F5/2 | Ab4/4 G4/4 B4/2 | F#4/4 G4/4 E4/2 | "
+        + "D#5/4 E5/4 C5/2 | G#4/4 A4/4 F4/2 | C#5/4 D5/4 B4/2 | B4/4 C5/4 C5/2";
+
+    // ---------- 18. a chain of applied chords to a half cadence on V7, never leaving C ----------
+    private const string AppliedChainChords = "0 5 7 0 | 4 9:m 2:7 7:7 | 0 5 7 0";
+    private const string AppliedChainMelody =
+        "E4/4 G4/4 C5/2 | A4/4 F4/4 C5/2 | D5/4 B4/4 G4/2 | E5/4 D5/4 C5/2 | "
+        + "G#4/4 B4/4 E5/2 | C5/4 E5/4 A4/2 | F#5/4 D5/4 A4/2 | F4/4 B4/4 D5/2 | "
+        + "E5/4 G4/4 C5/2 | A4/4 F4/4 C5/2 | D5/4 B4/4 G4/2 | C5/1";
+
+    // ---------- 19. passing tones inside arches in every bar, never leaving C ----------
+    private const string ArchesInCMelody =
+        "C4/4 D4/4 Db4/4 C4/4 | E4/4 F4/4 E4/4 Eb4/4 | G4/4 A4/4 Ab4/4 G4/4 | F4/4 E4/4 D4/4 C4/2 | "
+        + "E4/4 F#4/4 G4/4 F4/4 | D4/4 E4/4 Eb4/4 D4/4 | B3/4 C4/4 C#4/4 D4/4 | E4/4 D4/4 C4/2";
+
+    /// <summary>
+    /// The fourth reviewer's passages, held out from the work on the twelve rows that closed the
+    /// fourth table and folded in afterwards: repertoire shapes, and each of that iteration's rules
+    /// pushed the other way. Positions in the plans are the musician's, in whole notes; an empty
+    /// plan means neither road may report a modulation.
+    /// </summary>
+    internal static IReadOnlyList<Passage> FourthReviewerHeldOut { get; } =
+    [
+        // ---------- repertoire shapes ----------
+        new("Mozart: a transition to the dominant over a rising chromatic bass (melody over chords)", Texture.MelodyOverChords, true,
+            TransitionChords, Notated(TransitionBass), At(7, 7, true)),
+        new("a hymn in 3/4 in minor, closing on a Picardy third with a minor plagal Amen (block chords)", Texture.BlockChords, false,
+            "0:mt 5:mt 7t 0:mt | 3t 8t 7:7t 0:mt | 5:mt 0:mt 7:7t 0:mt | 8t 5:mt 7:7t 0t | 5:mt 0t", [], Nowhere),
+        Block("a jazz turnaround with tritone substitutes, Cmaj7 Eb7 Dm7 Db7, never leaving the key (half-bar chords)",
+            "0:maj7h 3:7h 2:m7h 1:7h | 0:maj7h 9:7h 2:m7h 7:7h | 0:maj7h 3:7h 2:m7h 1:7h | 0:maj7h 9:7h 2:m7h 7:7h | "
+            + "0:maj7h 3:7h 2:m7h 1:7h | 0:maj7h 9:7h 2:m7h 7:7h | 0:maj7h 3:7h 2:m7h 1:7h | 0:maj7", Nowhere),
+        new("a folk tune in Mixolydian, the flat seventh throughout (melody alone)", Texture.MelodyAlone, true, "", Notated(MixolydianTune), Nowhere),
+        new("a folk tune in Mixolydian over a I bVII IV I vamp (melody over chords)", Texture.MelodyOverChords, true, MixolydianVamp, Notated(MixolydianTune), Nowhere),
+        new("to the dominant with escape tones and anticipations, three of the escape tones chromatic (melody over chords)", Texture.MelodyOverChords, true,
+            EscapeToneChords, Notated(EscapeToneMelody), At(5, 7, true)),
+        Block("A minor the pivot between three keys: C, G (ii), E minor (iv), C (vi) (block chords)",
+            "0 5 7 0 | 9:m 2:7 7 2:7h 7h | 9:m 11:7 4:m 11:7h 4:mh | 9:m 2:m 7:7 0", [new(5, 7, true), new(9, 4, false), new(13, 0, true)]),
+        Block("descending fifths, a phrase each, settling two fifths down: C, F, B flat (block chords)",
+            "0 5 7 0 | 0:7 5 10 5 | 5:7 10 3 10 | 10 3 5:7 10", [new(5, 5, true), new(9, 10, true)]),
+        Block("descending fifths through F in half a bar, settling in B flat (block chords)",
+            "0 5 7 0 | 0:7h 5h 5:7h 10h | 10 3 5:7 10 | 10 3 5:7 10", At(7, 10, true)),
+        new("to the dominant in 5/4 (melody over chords)", Texture.MelodyOverChords, true, FiveFourChords, Notated(FiveFourMelody), [new(new Rational(5, 1), 7, true)]),
+        new("a whole-bar trill on C sharp over V7/ii, never leaving C (melody over chords)", Texture.MelodyOverChords, true,
+            TrillOverAppliedChords, Notated(TrillOverAppliedMelody), Nowhere),
+        new("to the dominant, a whole-bar trill on F sharp over the new key's V7 (melody over chords)", Texture.MelodyOverChords, true,
+            TrillInNewKeyChords, Notated(TrillInNewKeyMelody), At(5, 7, true)),
+        new("a ground bass C B A G, harmonies changing above it, to the dominant in the third cycle (melody over chords)", Texture.MelodyOverChords, true,
+            GroundBassChords, Notated(GroundBassLine), At(9, 7, true)),
+
+        // ---------- each new rule pushed the other way ----------
+        new("an accented chromatic appoggiatura on every downbeat, never leaving C (melody over chords)", Texture.MelodyOverChords, true,
+            AppoggiaturasInCChords, Notated(AppoggiaturasInCMelody), Nowhere),
+        new("V/vi arpeggiated in eighths, resolving to vi: a tonicization at most (arpeggios)", Texture.Arpeggios, true, "0 5 7 0 | 4 9:m 2:m 7:7 | 0 5 7 0", [], Nowhere),
+        new("V/vi arpeggiated in eighths, resolving deceptively to IV (arpeggios)", Texture.Arpeggios, true, "0 5 7 0 | 4 5 7:7 0 | 0 5 7 0", [], Nowhere),
+        Block("a seventh on the tonic that does resolve down a fifth: C F G C7 | F Bb C7 F | F Bb C7 F (block chords)",
+            "0 5 7 0:7 | 5 10 0:7 5 | 5 10 0:7 5", At(5, 5, true)),
+        Block("a borrowed flat seventh opening the second phrase: C F G C | Bb F G C | F G7 C C (block chords)",
+            "0 5 7 0 | 10 5 7 0 | 5 7:7 0 0", Nowhere),
+        Block("three bars of B flat, E flat and A flat between a lone G and the cadence in G: no parenthesis (block chords)",
+            "0 5 7 0 | 7 10q 3q 5q 10q 3q 8q 10q 3q 8q 1q 3q 8q 2:7 7 | 7 0 2:7 7", At(10, 7, true)),
+        new("a chain of applied chords to a half cadence on V7, never leaving C (melody over chords)", Texture.MelodyOverChords, true,
+            AppliedChainChords, Notated(AppliedChainMelody), Nowhere),
+        new("a chromatic passing tone inside an arch in every bar, never leaving C (melody alone)", Texture.MelodyAlone, true, "", Notated(ArchesInCMelody), Nowhere),
     ];
 }

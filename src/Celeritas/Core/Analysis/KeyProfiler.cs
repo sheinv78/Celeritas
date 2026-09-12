@@ -679,8 +679,9 @@ public static class KeyProfiler
     /// between them rather than windows, and tells a tonicization from a modulation, names the
     /// type and finds the pivot chord. Both decide where the key changes by the same rules — a
     /// key holds for a phrase, a chord is not a key, a key owns its phrase, its chromatic chords
-    /// and passing tones are its own, a secondary dominant is not a modulation, a key is entered
-    /// when its own notes return — so from the same opening key they place the same
+    /// and non-harmonic tones are its own, an arpeggiated chord is that chord, a secondary
+    /// dominant is not a modulation, a key is entered when its own notes return and heard from
+    /// where its own chords began — so from the same opening key they place the same
     /// modulations, each at the positions it reads at (this one at its window positions, the
     /// detector at every chord); use this one to see how the key reading moves, and the
     /// detector to have the changes classified.
@@ -999,6 +1000,25 @@ public sealed class KeyTrajectory
     /// note, a key's chromatic chords are its own, the Picardy third is the minor key's cadence,
     /// and the detector now hears the line its chords carry; both roads agree with the musician
     /// on all thirty-eight, and with each other on every passage of the three tables.
+    /// </para>
+    /// <para>
+    /// On thirty-one passages a third reviewer wrote it was wrong on twelve: a chromatic
+    /// appoggiatura struck with the chord on every downbeat of the new key, a passing tone
+    /// inside an arch (G A A♭ G) and a half-note passing tone each named no key; the German
+    /// sixth in the return's second bar put C minor two bars late; a bar of B flat quoted inside
+    /// a G phrase put G two bars late; the V/V of a new key that the old key owns (the G of F B♭
+    /// G C7, the C of B♭ E♭ C F) and a tonic seventh closing a phrase (B♭ E♭ F B♭7) put the new
+    /// key a phrase late or named E flat; a 4-3 suspension or a chord tone struck over G's V/ii
+    /// made it no plain triad; and the V/ii and the borrowed iv arpeggiated in eighths were three
+    /// foreign eighths a bar. An appoggiatura is defined by its resolution, whether the chord
+    /// was struck before it or with it; a note where the line turns is structural; a note that
+    /// leans on a sounding harmony may be long; the augmented sixth and the tonic seventh are a
+    /// key's chromatic chords; a chord the key in force owns is that key's only while the key
+    /// stands and the chord's resolution is its own; a key is heard from where its own chords
+    /// began, a bar of a foreign key inside it a parenthesis; a line note that is a tone of the
+    /// chord under it is that chord's, and a chord struck as several notes weighs as one; and an
+    /// arpeggiated chord is that chord. Both roads agree with the musician on all thirty-one, and
+    /// with each other on every passage of the four tables.
     /// </para>
     /// <para>
     /// The window no longer limits what is heard: a one-bar window over arpeggiated triads has

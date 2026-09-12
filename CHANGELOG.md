@@ -352,10 +352,50 @@ follows.
   chord, so a G-major phrase with an E flat in it is no longer E minor's, and a
   guessed opening is not confirmed by a note that is a passing tone of the key
   the music is in
+- An appoggiatura is defined by its resolution. A note struck with a chord that
+  leans on it -- one note outside a triad the chord holds, resolving by step into
+  that triad at the next note of the line -- is the line's, not the chord's, and
+  the chord is the plain triad it is; a note of the line leaning on the harmony
+  under it resolves into it whatever its length and however approached; a note
+  where a line turns is structural, so the A flat of `G A Ab G` passes. A melody
+  with a chromatic appoggiatura on every downbeat of its new key, one with a
+  passing tone inside an arch, and one with a half-note passing tone had named no
+  key; a 4-3 suspension over G's V/ii had made it no triad and put G two bars late
+- The augmented sixth resolving into the dominant and a dominant seventh on the
+  key's own tonic (I7) are a key's chromatic chords. `Cm Fm G7 Cm | Eb Ab Bb Eb |
+  Cm Ab7 G7 Cm | Cm Fm G7 Cm` comes home at bar 9 (it had come home at bar 11);
+  `C F G C | Bb Eb F Bb7 | Bb Eb F7 Bb` goes to B flat at bar 5 (it had gone to E
+  flat at 8 and B flat at 9)
+- The resolution chain decides whose chord a chord is: a chord the key in force
+  owns is that key's only while the key stands and the chord resolves into a chord
+  of its own. The G of `F Bb G C7` is V/V of F and the C of `Bb Eb C F` is V/V of B
+  flat; both roads had placed F at bar 8 and B flat at bar 9 where a musician
+  hears bar 5. `C F G C A D G` stays in C, and a key in force hears its own
+  chromatic chords wherever it stands, frame or no frame -- C minor's V/iv in a
+  plagal Amen after a Picardy third is no V of F minor
+- The key whose tonic chord opens the piece opens it when it owns the opening
+  phrase, a stray note a bar allowed: `C F G7 C` with a chromatic escape eighth in
+  its second bar opens in C, not in an F major that owns the eighth and hears the
+  cadence's G7 as its V7/V
+- An arpeggiated chord is that chord, on both roads: eighths that outline a triad
+  or a dominant seventh are one chord, and a phrase does not begin inside it. V/ii
+  and the borrowed iv arpeggiated had put G two bars late; a window from the last
+  eighth of the borrowed C minor had named E minor. Arpeggiated `C D7 G C` now
+  reads as its block chords do -- I V7/V V I, no tonicization
+- A key is heard from where its own chords began: a bar of a foreign key inside an
+  entered, framed key is a parenthesis. `C F G C | G Bb Eb F Bb D7 G | G C D7 G` is
+  G from bar 5, not 7
+- Both roads are as fast as before the judge read chords: 8000 random block chords
+  57/33 ms -> 28/28 ms (trajectory/detector, warm medians), a 20000-eighth melody
+  20/88 -> 6/22 ms, 4000 chords over a 2000-bar pedal 151/13 -> 142/7 ms
 - On the thirty-eight passages a second reviewer wrote, both roads now agree with
   the musician on all thirty-eight (they had been wrong on seven), and with each
-  other on every passage of the three tables; on a third reviewer's thirty-one,
-  nineteen are right on both roads and join the fixture
+  other on every passage of the tables; on a third reviewer's thirty-one, both
+  roads agree with the musician on all thirty-one (they had been wrong on twelve);
+  on a fourth reviewer's twenty-three -- a Mozart-like transition over a chromatic
+  bass, a jazz turnaround with tritone substitutes, a Mixolydian folk tune, a ground
+  bass, 5/4, a whole-bar trill on a chromatic note, a chord that is pivot between
+  three keys -- twenty-one, which join the fixture
 - `Phrase.StartIndex` and `EndIndex` address the buffer that was analysed, so
   `buffer.Get(StartIndex)` is the phrase's first note. They were positions in the
   analyzer's private copy -- rests dropped, then offset-sorted -- so with a rest

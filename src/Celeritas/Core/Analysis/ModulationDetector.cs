@@ -93,9 +93,10 @@ public sealed class ModulationAnalysisResult
 /// tonicization from a modulation, names each change's type and finds its pivot chord; the
 /// trajectory reads fixed windows of the notes with no starting key and reports where the key
 /// changes. Both decide that by the same rules — a key holds for a phrase, a chord is not a
-/// key, a key owns its phrase, its chromatic chords and passing tones are its own, a secondary
-/// dominant is not a modulation, a key is entered when its own notes return — so from the
-/// same opening key they place the same modulations, each at the positions it reads at: the
+/// key, a key owns its phrase, its chromatic chords and non-harmonic tones are its own, an
+/// arpeggiated chord is that chord, a secondary dominant is not a modulation, a key is entered
+/// when its own notes return and heard from where its own chords began — so from the same
+/// opening key they place the same modulations, each at the positions it reads at: the
 /// detector at every chord, the trajectory at its window positions.
 /// </remarks>
 public static class ModulationDetector
@@ -121,16 +122,21 @@ public static class ModulationDetector
     /// in any bar, its own chromatic chords counted as the key's (an applied chord, a major
     /// triad or a dominant seventh resolving down a fifth into a chord of the key; a borrowed
     /// chord, a major key's minor subdominant, flat sixth or flat seventh resolving into a chord
-    /// of the key, both inside a phrase the key's tonic frames; a minor key's Picardy third
-    /// closing the piece) and its passing tones, neighbour tones and appoggiaturas weighing
-    /// nothing; it is a modulation if it still reads from where it began through a phrase — or
-    /// to the end of the piece, closing on a tonic it has already sounded, from a key the music
-    /// was still in — and its own notes return in a second bar before the old key's are heard
-    /// again, or the phrase is framed by its tonic chord; a tonicization otherwise, lasting
-    /// until the music is home again. The new key begins after the last note it does not own,
-    /// on a chord of its own — not on one of its applied or borrowed chords — at its pivot chord
-    /// when the bar before is its, or at the start of the phrase in which its own note first
-    /// sounds when it owns every bar from there. Each modulation's
+    /// of the key; an augmented sixth resolving into the dominant; a dominant seventh on the
+    /// key's own tonic — all inside a phrase the key's tonic frames; a minor key's Picardy third
+    /// closing the piece — but not a chord the key in force owns, while that key stands and the
+    /// chord resolves into a chord of its own) and its non-harmonic tones weighing nothing:
+    /// passing and neighbour tones, notes leaning on a sounding harmony and resolving into it,
+    /// and a note struck with a chord that leans on it; an arpeggiated chord being that chord.
+    /// It is a modulation if it still reads from where it began through a phrase — or to the end
+    /// of the piece, closing on a tonic it has already sounded, from a key the music was still
+    /// in — and its own notes return in a second bar before the old key's are heard again as
+    /// harmony (a dominant leaving the old key is not the old key back), or the phrase is framed
+    /// by its tonic chord; a tonicization otherwise, lasting until the music is home again. The
+    /// new key begins after the last note it does not own, on a chord of its own — not on one of
+    /// its applied or borrowed chords — at its pivot chord when the bar before is its, or at the
+    /// start of the phrase in which its own note first sounds when it owns every bar from there,
+    /// one bar of a foreign key allowed as a parenthesis. Each modulation's
     /// <see cref="ModulationEvent.Confidence"/> is how clearly the phrase chose the new key over
     /// the old, scaled by how much of the stretch that established it the new key owns.
     /// </para>
@@ -177,6 +183,17 @@ public static class ModulationDetector
     /// chromatic chords are its own, the Picardy third is the minor key's cadence, a passing
     /// tone is not a foreign note, and the detector hears the line between its chords; both
     /// roads agree with the musician on all thirty-eight.
+    /// </para>
+    /// <para>
+    /// On thirty-one passages a third reviewer wrote it was wrong on twelve — among them a
+    /// chromatic appoggiatura struck with the chord on every downbeat, which was a chord tone; a
+    /// passing tone inside an arch and a half-note passing tone, which were foreign notes; the
+    /// German sixth, the tonic seventh and the V/V of a new key that the old key owns, none of
+    /// them the new key's chord; a suspension struck over an applied triad, which made it no
+    /// triad; and arpeggiated chords heard note by note. With the rules the judge states
+    /// (<see cref="KeyAreaJudge"/>), both roads agree with the musician on all thirty-one; and
+    /// the detector, whose candidates are every onset, no longer begins a phrase in the middle of
+    /// an arpeggiated chord, where it read a bar of borrowed C minor's last E flat as E minor.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>

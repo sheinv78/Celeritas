@@ -96,25 +96,59 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// — an A7 that resolves to D minor, which G does not own, is no chord of G.</description></item>
 /// <item><description><b>A key's chromatic chords are its own.</b> An applied chord — a major
 /// triad as much as a dominant seventh, resolving down a fifth into a chord of the key that is
-/// not the current key's tonic — and a borrowed chord — a major key's minor subdominant, flat
-/// sixth or flat seventh, resolving into a chord of the key — leave nothing foreign, inside a
-/// phrase the key frames with its tonic; and a minor key's tonic major triad closing the piece
-/// is its Picardy third, a cadence of the minor key and no other key's note. A chord the key in
-/// force owns is that key's, whatever another key might borrow it as, and a key cannot begin
-/// on one of its own chromatic chords. With only dominant sevenths applied, C F G C | G E Am
-/// D7 | G C D7 G and C F G C | G Cm D7 G | G C D7 G reached G two bars late, at the Am and the
-/// D7, and Cm Fm G7 Cm | E♭ A♭ B♭ E♭ | Cm A♭ G7 C never came home to C minor, ending in E flat
-/// with the Picardy chord a tonicization of C major.</description></item>
-/// <item><description><b>A passing tone is not a foreign note.</b> A note on its way — short,
-/// approached and left by step — in a run that moves one way from a structural note the key
-/// owns to another within a whole note, a semitone from the notes either side of it, is a
-/// passing tone; a note that leaves an owned note by a semitone and returns is a neighbour;
-/// a note approached by leap and resolved by step into the chord sounding under it is an
-/// appoggiatura. None of them weighs anything toward what the key lacks, on either road: the
+/// not the current key's tonic — a borrowed chord — a major key's minor subdominant, flat
+/// sixth or flat seventh, resolving into a chord of the key — an augmented sixth on the flat
+/// sixth degree resolving into the dominant or the tonic in six-four, and a dominant seventh on
+/// the key's own tonic, the blues and pop's I7, leave nothing foreign, inside a phrase the key
+/// frames with its tonic; and a minor key's tonic major triad closing the piece is its Picardy
+/// third, a cadence of the minor key and no other key's note. A key cannot begin on one of its
+/// own chromatic chords. With only dominant sevenths applied, C F G C | G E Am D7 | G C D7 G and
+/// C F G C | G Cm D7 G | G C D7 G reached G two bars late, at the Am and the D7; Cm Fm G7 Cm | E♭
+/// A♭ B♭ E♭ | Cm A♭ G7 C never came home to C minor, ending in E flat with the Picardy chord a
+/// tonicization of C major; the German sixth of Cm A♭7 G7 Cm put the return two bars late, on
+/// the G7; and the B♭7 closing B♭ E♭ F B♭7 was E flat's V7/IV, and B flat began a phrase
+/// late.</description></item>
+/// <item><description><b>A chord the key in force owns is that key's — while the key stands.</b>
+/// Whatever another key might borrow it as or apply it to, a chord the key in force owns is
+/// heard in the key in force: C F G C A D G, round and round, is C with a chain of secondary
+/// dominants, not G with F as its flat seventh. But the resolution chain decides: an applied
+/// chord that resolves into a chord the key in force does not own outright, or that sounds
+/// after the key in force has been left — a chord it does not own since its tonic last sounded
+/// — belongs to the key it resolves into. The G of F B♭ G C7 resolves into C7, no plain chord
+/// of C's, and is V/V of F; the C of B♭ E♭ C F comes after the E flat that left C major, and is
+/// V/V of B flat. Guarded on ownership alone, F began at bar 8 and B flat at bar 9, a phrase
+/// after a musician hears them. A borrowed chord the key in force owns stays its own whatever
+/// follows: the E major chord of C D E F♯, two bars each, is no flat seventh of F sharp
+/// major's.</description></item>
+/// <item><description><b>An arpeggiated chord is that chord.</b> A bar, a half bar or a quarter
+/// of single notes, none longer than an eighth, whose pitch classes are exactly a major or a
+/// minor triad or a dominant seventh, is one chord: its notes are the chord's tones, and a
+/// phrase cannot begin in the middle of it. Heard note by note, the V/ii and the borrowed iv of
+/// G's first phrase were three foreign eighths a bar, and G began two bars late in the
+/// arpeggio texture where the same chords struck placed it at the bar; and on the detector
+/// road, whose candidates are every onset, a window beginning on the last eighth of the
+/// borrowed C minor read as E minor.</description></item>
+/// <item><description><b>A non-harmonic tone is not a foreign note.</b> A note on its way —
+/// short, approached and left by step — in a run that moves one way from a structural note the
+/// key owns to another within a whole note, a semitone from the notes either side of it, is a
+/// passing tone, and a note where the line turns is structural whatever came before it: the A
+/// flat of G A A♭ G passes; a note that leaves an owned note by a semitone and returns is a
+/// neighbour; a note of the line that leans on the harmony sounding under it — no tone of that
+/// chord, resolving by a semitone into one of its tones while the chord still sounds, sounding
+/// once in its bar, whatever its length and however approached — is an appoggiatura, an
+/// accented passing tone or a suspension; and a note struck with a chord that leans on it — one
+/// note outside a triad the chord holds, resolving by step into a tone of that triad at the
+/// next note of the line — is an accented appoggiatura, no tone of the chord, so that the
+/// chord is the plain triad it is. A note of the line that is a tone of the chord under it is
+/// that chord's. None of them weighs anything toward what the key lacks, on either road: the
 /// detector hands the judge the line between its chords for the purpose. Weighed as strays,
 /// two chromatic passing eighths in a bar were a quarter of it, and a melody with two in every
 /// bar of its new key named no key; a quarter-note neighbour under a D7 put G four bars late on
-/// the trajectory road and at the bar on the detector's, which never saw it.</description></item>
+/// the trajectory road and at the bar on the detector's, which never saw it; a melody with a
+/// chromatic appoggiatura struck on every downbeat of its new key, or a passing tone inside an
+/// arch in each of its first two bars, or a half-note passing tone in its third, named no key;
+/// and A struck over E G♯ B — a 4-3 suspension — made the chord no plain triad and no V/ii, so
+/// G began two bars late.</description></item>
 /// <item><description><b>A minor key owns its leading tone in its dominant.</b> The raised
 /// seventh belongs to V, V7 and the leading-tone seventh, sounds alone in the line, or leans on
 /// the tonic chord as an appoggiatura; in any other chord it is a note the key lacks. Owned as
@@ -161,7 +195,15 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// phrase from there establishes it and it does not open on the old key's tonic chord, which is
 /// still the old key. C F G C | G C D7 G | C F G C is heard as G from its fifth bar; measured
 /// from the D7 in its seventh, the phrase ran into the return to C and the G area was a
-/// tonicization. C F G C | D7 G C C | C F G C, whose D7 opens the phrase, stays in C.</description></item>
+/// tonicization. C F G C | D7 G C C | C F G C, whose D7 opens the phrase, stays in C. And a key
+/// is heard from where its own chords began: when the key is established from where its own
+/// note falls, opens its phrase on its tonic chord and owns every bar from there to that note —
+/// but for one chromatic parenthesis, a bar of a foreign key between bars it owns — the key
+/// began with the phrase, and needs no second reading of bars that are its own. C F G C | G B♭
+/// E♭ F B♭ D7 G | G C D7 G is G from its fifth bar with a bar of B flat quoted in its sixth;
+/// measured from the D7, G began at bar 7. And G E Am D7 under a melody, on the detector road,
+/// separated G from C by a hair less than the margin, so the second reading failed and G was
+/// written at the Am.</description></item>
 /// <item><description><b>A change at the first note is the opening key misjudged.</b> Whether the
 /// opening key was read from the opening phrase or given by the caller, a change placed at the
 /// first sonority means the music was never in the key it would leave; the key heard there is
@@ -245,6 +287,9 @@ internal static class KeyAreaJudge
     /// <summary>The index of <paramref name="key"/> among the twenty-four: its root, the minor keys after the major.</summary>
     private static int KeyIndex(KeySignature key) => key.Root + (key.IsMajor ? 0 : 12);
 
+    /// <summary>The key at <paramref name="index"/> among the twenty-four (<see cref="KeyIndex"/>).</summary>
+    private static KeySignature KeyAt(int index) => new((byte)(index % 12), index < 12);
+
     private static readonly ushort[] OwnedByKey = BuildOwned();
 
     /// <summary>For each pitch class, the keys — one bit each, by <see cref="KeyIndex"/> — that do not own it.</summary>
@@ -314,8 +359,22 @@ internal static class KeyAreaJudge
             if (to <= b || to <= floor)
                 continue;
 
+            // A phrase does not begin in the middle of a chord: an arpeggiated chord is one
+            // chord, and read from its last eighth — an E flat, with D7 G G C after it — a bar of
+            // C minor borrowed in G named E minor on the detector road, whose candidates are
+            // every onset, where the trajectory's whole-note points never fell inside the chord.
+            if (evidence.BeginsInsideAChord(b))
+                continue;
+
             var reading = evidence.Profile(b, to);
             if (!reading.Result.IsDecidable)
+                continue;
+
+            // The key in force owns every note of the phrase outright and reads best on the
+            // profile: no key owns the phrase better, and the phrase is its own — which is what
+            // naming it would say, at the price of weighing twenty-four keys over every note.
+            // Most phrases of a piece that stays in its key are this one.
+            if (reading.Result.Key == current && Evidence.OwnsEveryNoteOutright(current, reading.Mask))
                 continue;
 
             var named = evidence.Name(reading, b, to, current);
@@ -490,7 +549,7 @@ internal static class KeyAreaJudge
                     var startFragment = startTo == end && startTo - phraseStart < phrase;
                     var barBefore = phraseStart - Rational.Whole;
                     var startFromOldKey = evidence.BarIsOwned(barBefore, current, null)
-                        || evidence.BarIsOwned(barBefore, next, current);
+                        || evidence.BarIsOwned(barBefore, next, current, Exempt.Sevenths);
                     if (startHolds
                         && (!startFragment || (startFromOldKey && evidence.ClosesOn(next) && evidence.SoundsTonicBeforeClose(next, phraseStart)))
                         && (evidence.Returns(newNotes, homeNotes, phraseStart, phraseStart + phrase + phrase, next, current)
@@ -500,6 +559,25 @@ internal static class KeyAreaJudge
                         position = phraseStart;
                         held = earlier.Distribution;
                     }
+                }
+
+                // A key is heard from where its own chords began. When the key is established
+                // from where its own note falls, opens its phrase on its tonic chord and owns
+                // every bar from there to its own note, the key began with the phrase — the bars
+                // are its own already, and need no second reading: on the detector road G E Am
+                // D7 under a melody separated G from C by a hair less than the margin, and G,
+                // established from the D7, was written at the Am. A bar of a foreign key inside
+                // a key that is entered and framed is a chromatic parenthesis, and does not move
+                // the key's beginning either: C F G C | G B♭ E♭ F B♭ D7 G | G C D7 G is G from
+                // its fifth bar, with a bar of B flat quoted in its sixth; measured from the D7,
+                // G began at bar 7.
+                if (established
+                    && phraseStart >= floor
+                    && phraseStart < position
+                    && evidence.OpensOn(next, phraseStart)
+                    && evidence.BarsAreOwnedButForAParenthesis(phraseStart, boundary, next, current))
+                {
+                    position = phraseStart;
                 }
             }
 
@@ -662,28 +740,62 @@ internal static class KeyAreaJudge
     private sealed class Evidence
     {
         private readonly Sonority[] _sonorities;
-        private readonly Rational _longest;
         private readonly int[] _long;
 
-        // Sonorities that begin together are one chord. For each sonority, the chord's pitch
-        // classes; the pitch classes of the next chord of three or more notes — a melody's
-        // single notes between are not chords — which is what the chord resolves into; and,
-        // when the chord is a major triad or a dominant seventh whose resolution is a triad on
-        // the root a fifth below, that root, so that an applied chord can be told to belong to
-        // the key that owns its resolution.
+        // Each sonority's onset and end as doubles (exact, the positions being dyadic), the
+        // longest ordinary sonority's length likewise, and whether any chord of two or more
+        // pitch classes sounds anywhere in the music.
+        private readonly double _longestD;
+        private readonly double[] _onset;
+        private readonly double[] _end;
+        private readonly bool _anyChord;
+
+        // Sonorities that begin together are one chord, and so are the single notes of an
+        // arpeggiated chord (MarkArpeggios): for each sonority, the first index of its chord
+        // and one past the last. For each sonority, the chord's pitch classes — less a note
+        // struck with the chord that leans on it (_leaning, an accented appoggiatura), which is
+        // no tone of the chord; the pitch classes of the next chord of three or more notes — a
+        // melody's single notes between are not chords — which is what the chord resolves
+        // into; and, when the chord is a major triad or a dominant seventh whose resolution is
+        // a triad on the root a fifth below, that root, so that an applied chord can be told to
+        // belong to the key that owns its resolution.
+        private readonly int[] _groupStart;
+        private readonly int[] _groupEnd;
+        private readonly int[] _group;
+        private readonly int _groupCount;
         private readonly ushort[] _chordPitchClasses;
+        private readonly ushort[] _leaning;
         private readonly ushort[] _following;
         private readonly int[] _appliedRoot;
 
         // Whether each sonority is a single note of the line — a pitch, alone at its onset —
         // and whether the chord it belongs to could be one of some key's chromatic chords: an
         // applied chord, a borrowed chord (it holds a triad) or the last chord (a Picardy
-        // third). Most sonorities in a melody are neither, and are weighed without asking.
+        // third) — or, for a note of the line, whether it is a tone of such a chord sounding
+        // under it (_under: a sonority of that chord, or -1). Most sonorities in a melody are
+        // neither, and are weighed without asking.
         private readonly bool[] _lineNote;
         private readonly bool[] _maybeChromatic;
+        private readonly int[] _under;
 
-        // Whether each sonority lasts no longer than a quarter note.
+        // Whether each sonority doubles a tone another sonority struck with it already sounds:
+        // it adds no weight of its own when the chord is weighed, so that a chord weighs the
+        // same struck as three notes or as one sonority of three pitch classes. And the pitch
+        // classes each sonority weighs when a span is weighed (Owners): its own, less a leaning
+        // note; nothing for a doubling; and for a chord struck as several notes that end
+        // together, the whole chord on its first note and nothing on the rest, so that the
+        // chord is weighed once on either road.
+        private readonly bool[] _doubling;
+        private readonly ushort[] _weighs;
+
+        // Whether a key in force still stands at each sonority — it has owned every chord
+        // since its tonic chord last sounded — found once per key (StandsAt), for the keys the
+        // music is ever in.
+        private bool[]?[]? _stands;
+
+        // Whether each sonority lasts no longer than a quarter note, and no longer than an eighth.
         private readonly bool[] _short;
+        private readonly bool[] _eighthOrLess;
 
         // The keys — one bit each, by KeyIndex — a single note is a non-harmonic tone of:
         // passing, neighbour or appoggiatura. Decided once per note for all twenty-four keys,
@@ -695,6 +807,11 @@ internal static class KeyAreaJudge
         // Whether a single note is a note on its way — short, approached and left by step by
         // notes no shorter than itself — decided once per note; it does not depend on the key.
         private byte[]? _onItsWay;
+
+        // Whether a single note of the line leans on the harmony sounding under it — an
+        // appoggiatura, an accented passing tone, a suspension — decided once per note; it does
+        // not depend on the key.
+        private byte[]? _leans;
 
         // What sounds either side of each note, and the run of notes on their way it is on,
         // found once per note: none of it depends on the key, and every key asks.
@@ -709,10 +826,24 @@ internal static class KeyAreaJudge
 
         public Evidence(IReadOnlyList<Sonority> sonorities)
         {
+            // Positions as doubles, for the clipping and the comparisons every scan makes: a
+            // position in this music is a dyadic rational, which a double holds exactly, so the
+            // arithmetic is the same and a hundred times cheaper than the rational's.
             _sonorities = new Sonority[sonorities.Count];
+            _onset = new double[_sonorities.Length];
+            _end = new double[_sonorities.Length];
+            _short = new bool[_sonorities.Length];
+            _eighthOrLess = new bool[_sonorities.Length];
+            var sorted = true;
             for (var i = 0; i < _sonorities.Length; i++)
+            {
                 _sonorities[i] = sonorities[i];
-            Array.Sort(_sonorities, static (a, b) => a.Onset.CompareTo(b.Onset));
+                _onset[i] = _sonorities[i].Onset.ToDouble();
+                sorted &= i == 0 || _onset[i - 1] <= _onset[i];
+            }
+
+            if (!sorted)
+                Array.Sort(_sonorities, static (a, b) => a.Onset.CompareTo(b.Onset));
 
             // The few sonorities far longer than the rest — a pedal held for the piece — are
             // kept aside, so that a scan for what sounds at a position reaches back over the
@@ -725,9 +856,14 @@ internal static class KeyAreaJudge
             for (var i = 0; i < _sonorities.Length; i++)
             {
                 var s = _sonorities[i];
+                if (!sorted)
+                    _onset[i] = s.Onset.ToDouble();
+                _end[i] = s.End.ToDouble();
                 if (s.End > end)
                     end = s.End;
                 var length = s.End - s.Onset;
+                _short[i] = length <= Rational.Quarter;
+                _eighthOrLess[i] = length <= Rational.Eighth;
                 if (length > Phrase * 4)
                     longOnes.Add(i);
                 else if (length > longest)
@@ -747,63 +883,326 @@ internal static class KeyAreaJudge
             }
 
             End = end;
-            _longest = longest;
+            _longestD = longest.ToDouble();
             _long = [.. longOnes];
 
             _chordPitchClasses = new ushort[_sonorities.Length];
+            _leaning = new ushort[_sonorities.Length];
             _following = new ushort[_sonorities.Length];
             _appliedRoot = new int[_sonorities.Length];
             _lineNote = new bool[_sonorities.Length];
             _maybeChromatic = new bool[_sonorities.Length];
-            _short = new bool[_sonorities.Length];
-            for (var i = 0; i < _sonorities.Length; i++)
-                _short[i] = _sonorities[i].End - _sonorities[i].Onset <= Rational.Quarter;
+            _under = new int[_sonorities.Length];
+            _doubling = new bool[_sonorities.Length];
+            _weighs = new ushort[_sonorities.Length];
+            _groupStart = new int[_sonorities.Length];
+            _groupEnd = new int[_sonorities.Length];
+            _group = new int[_sonorities.Length];
+
+            // Sonorities that begin together are one chord; a sonority alone at its onset,
+            // with a pitch, is a note of the line.
+            var anyChord = false;
             for (var i = 0; i < _sonorities.Length;)
             {
                 var next = NextChord(i);
-                ushort together = 0;
-                for (var k = i; k < next; k++)
-                    together |= _sonorities[k].PitchClasses;
+                ushort seen = 0;
                 for (var k = i; k < next; k++)
                 {
-                    _chordPitchClasses[k] = together;
-                    _appliedRoot[k] = -1;
-                    _lineNote[k] = next - i == 1 && _sonorities[k].Pitch >= 0 && BitOperations.PopCount(together) == 1;
-                    _maybeChromatic[k] = next == _sonorities.Length || HoldsATriad(together);
+                    _groupStart[k] = i;
+                    _groupEnd[k] = next;
+                    _lineNote[k] = next - i == 1 && _sonorities[k].Pitch >= 0 && BitOperations.PopCount(_sonorities[k].PitchClasses) == 1;
+                    seen |= _sonorities[k].PitchClasses;
+
+                    // A doubling is the shorter sonority of a pitch class struck twice — the
+                    // melody's quarter over the chord's whole note — whatever order they came in.
+                    var doubling = false;
+                    for (var other = i; other < next && !doubling; other++)
+                    {
+                        doubling = other != k
+                            && (_sonorities[k].PitchClasses & ~_sonorities[other].PitchClasses) == 0
+                            && (_end[other] > _end[k] || (_end[other] == _end[k] && other < k));
+                    }
+
+                    _doubling[k] = doubling;
                 }
 
+                anyChord |= BitOperations.PopCount(seen) > 1;
                 i = next;
             }
 
-            // A chord resolves into the next chord — a melody's single notes between are not
-            // chords; an applied chord is a major triad or a dominant seventh resolving into a
-            // triad on the root a fifth below.
-            for (var i = 0; i < _sonorities.Length; i = NextChord(i))
+            _anyChord = anyChord;
+
+            MarkArpeggios();
+
+            // Each chord's ordinal, for the tables kept per chord.
+            var groupCount = 0;
+            for (var i = 0; i < _sonorities.Length; i = _groupEnd[i])
             {
-                // Only a chord of three notes or more can be applied or borrowed; a melody's
-                // notes have no resolution to look for, and looking took a melody of twenty
-                // thousand notes twenty thousand scans to its end.
-                if (BitOperations.PopCount(_chordPitchClasses[i]) < 3)
-                    continue;
+                var groupEnd = _groupEnd[i];
+                for (var k = i; k < groupEnd; k++)
+                    _group[k] = groupCount;
+                groupCount++;
+            }
 
-                var resolvesAt = NextChord(i);
-                while (resolvesAt < _sonorities.Length && BitOperations.PopCount(_chordPitchClasses[resolvesAt]) < 3)
-                    resolvesAt = NextChord(resolvesAt);
-                if (resolvesAt >= _sonorities.Length)
-                    continue;
+            _groupCount = groupCount;
 
-                var following = _chordPitchClasses[resolvesAt];
-                var root = AppliedRootOf(_chordPitchClasses[i]);
-                if (root >= 0 && !ResolvesTo(root, following))
-                    root = -1;
+            for (var i = 0; i < _sonorities.Length; i = _groupEnd[i])
+            {
+                var groupEnd = _groupEnd[i];
+                ushort together = 0;
+                for (var k = i; k < groupEnd; k++)
+                    together |= _sonorities[k].PitchClasses;
 
-                for (var k = i; k < NextChord(i); k++)
+                var struck = _sonorities[groupEnd - 1].Onset == _sonorities[i].Onset;
+                var leaning = struck ? LeaningNoteIn(i, groupEnd, together) : (ushort)0;
+                var core = (ushort)(together & ~leaning);
+                var endTogether = struck && leaning == 0;
+                for (var k = i; k < groupEnd; k++)
                 {
-                    _following[k] = following;
-                    _appliedRoot[k] = root;
-                    _maybeChromatic[k] |= root >= 0;
+                    _chordPitchClasses[k] = core;
+                    _leaning[k] = leaning;
+                    _appliedRoot[k] = -1;
+                    _maybeChromatic[k] = groupEnd == _sonorities.Length || HoldsATriad(core);
+                    endTogether &= _end[k] == _end[i];
+                }
+
+                for (var k = i; k < groupEnd; k++)
+                    _weighs[k] = endTogether ? (k == i ? core : (ushort)0) : _doubling[k] ? (ushort)0 : (ushort)(_sonorities[k].PitchClasses & ~leaning);
+            }
+
+            // A chord resolves into the next chord of three notes or more — a melody's single
+            // notes between are not chords; an applied chord is a major triad or a dominant
+            // seventh resolving into a triad on the root a fifth below. The next chord is found
+            // in one pass from the end: found forward, chord by chord, a melody of twenty
+            // thousand notes took twenty thousand scans to its end.
+            var resolvesAt = _sonorities.Length;
+            for (var i = _sonorities.Length - 1; i >= 0; i = _groupStart[i] - 1)
+            {
+                var start = _groupStart[i];
+                var groupEnd = _groupEnd[i];
+                if (BitOperations.PopCount(_chordPitchClasses[start]) >= 3)
+                {
+                    if (resolvesAt < _sonorities.Length)
+                    {
+                        var following = _chordPitchClasses[resolvesAt];
+                        var root = AppliedRootOf(_chordPitchClasses[start]);
+                        if (root >= 0 && !ResolvesTo(root, following))
+                            root = -1;
+
+                        for (var k = start; k < groupEnd; k++)
+                        {
+                            _following[k] = following;
+                            _appliedRoot[k] = root;
+                            _maybeChromatic[k] |= root >= 0;
+                        }
+                    }
+
+                    resolvesAt = start;
+                }
+
+                if (start == 0)
+                    break;
+            }
+
+            // A note of the line that is a tone of the chord sounding under it is that chord's.
+            // A melody alone has no chord to sound under anything.
+            for (var i = 0; i < _sonorities.Length; i++)
+            {
+                _under[i] = -1;
+                if (!_lineNote[i] || !_anyChord)
+                    continue;
+
+                var under = ChordUnder(i);
+                if (under >= 0 && (_chordPitchClasses[under] & _sonorities[i].PitchClasses) != 0)
+                {
+                    _under[i] = under;
+                    _maybeChromatic[i] |= _maybeChromatic[under];
                 }
             }
+        }
+
+        /// <summary>
+        /// A sonority of the chord sounding under sonority <paramref name="index"/> — the
+        /// latest-beginning chord of two or more notes that began before it and is still
+        /// sounding when it begins — or -1.
+        /// </summary>
+        private int ChordUnder(int index)
+        {
+            var onset = _sonorities[index].Onset;
+            var under = -1;
+            foreach (var k in Reaching(onset))
+            {
+                if (_sonorities[k].Onset >= onset)
+                    break;
+                if (_sonorities[k].End > onset && BitOperations.PopCount(_chordPitchClasses[k]) > 1 && (under < 0 || _sonorities[k].Onset >= _sonorities[under].Onset))
+                    under = k;
+            }
+
+            return under;
+        }
+
+        /// <summary>
+        /// An arpeggiated chord is that chord: a bar, a half bar or a quarter of single notes of
+        /// the line, none longer than an eighth, whose pitch classes together are exactly a
+        /// major or a minor triad or a dominant seventh is one chord, and its notes are that
+        /// chord's tones.
+        /// </summary>
+        /// <remarks>
+        /// Heard note by note, the E major chord of C F G C | G E Am D7 | G C D7 G arpeggiated
+        /// in eighths was three G sharps a bar — foreign notes to G major, three eighths of them
+        /// — where the same chord struck was G's V/ii, and G began two bars late; and the
+        /// borrowed C minor of G Cm D7 G, arpeggiated, was three E flats. The chord is looked
+        /// for in a bar first, then in each half, then in each quarter, so that a half bar of G7
+        /// and a half bar of C are two chords, not a cluster. Arpeggiation is a texture of quick,
+        /// even notes; a tune in quarters that happens to outline a triad is a tune: read as
+        /// chords, the bars of a D Dorian folk tune that outline G and C made the piece open in
+        /// C major.
+        /// </remarks>
+        private void MarkArpeggios()
+        {
+            if (_sonorities.Length < 3)
+                return;
+
+            // One sweep: each whole note's sonorities are found by walking on from the last.
+            var first = 0;
+            while (first < _sonorities.Length)
+            {
+                var bar = Math.Floor(_onset[first]);
+                var last = first;
+                while (last < _sonorities.Length && _onset[last] < bar + 1)
+                    last++;
+                MarkArpeggiosIn(first, last, bar, bar + 1);
+                first = last;
+            }
+        }
+
+        private void MarkArpeggiosIn(int first, int last, double from, double to)
+        {
+            if (last - first < 3)
+                return;
+
+            ushort together = 0;
+            var quickLineNotes = true;
+            for (var k = first; k < last; k++)
+            {
+                quickLineNotes &= _lineNote[k] && _eighthOrLess[k];
+                together |= _sonorities[k].PitchClasses;
+            }
+
+            if (quickLineNotes && IsTriadOrDominantSeventh(together))
+            {
+                for (var k = first; k < last; k++)
+                {
+                    _groupStart[k] = first;
+                    _groupEnd[k] = last;
+                }
+
+                return;
+            }
+
+            if (to - from > 0.25)
+            {
+                var middle = (from + to) / 2;
+                var split = first;
+                while (split < last && _onset[split] < middle)
+                    split++;
+                MarkArpeggiosIn(first, split, from, middle);
+                MarkArpeggiosIn(split, last, middle, to);
+            }
+        }
+
+        /// <summary>Whether <paramref name="chord"/> is exactly a major or a minor triad, or exactly a dominant seventh.</summary>
+        private static bool IsTriadOrDominantSeventh(ushort chord)
+        {
+            var count = BitOperations.PopCount(chord);
+            if (count == 3)
+                return HoldsATriad(chord);
+            if (count != 4)
+                return false;
+
+            for (var root = 0; root < 12; root++)
+            {
+                if (chord == DominantSeventh(root))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The pitch class of a note struck with the chord [<paramref name="start"/>,
+        /// <paramref name="end"/>) that leans on it — an accented appoggiatura or a suspension:
+        /// one pitch class outside a triad the chord holds, resolving by step into a tone of
+        /// that triad at the first note of the line after the chord, the triad still sounding
+        /// there, and not sounding again in its bar — or 0.
+        /// </summary>
+        /// <remarks>
+        /// An appoggiatura is defined by its resolution, by step into a tone of the harmony it
+        /// sounds against, not by whether that harmony was struck before it or with it. Heard
+        /// only when struck after the chord, the commonest kind — struck with the chord on the
+        /// downbeat — was a chord tone: an A sharp struck with G B D and resolving to B made the
+        /// bar a G chord with an A sharp in it, no bar of G major's, and a melody with one on
+        /// every downbeat of its new key named no key; and A struck over E G sharp B — a 4-3
+        /// suspension — made the chord no plain triad, so it was no longer G's V/ii and G began
+        /// two bars late. On the detector road the chord is one sonority with the melody's
+        /// downbeat folded in; on the trajectory road the note is its own sonority, and its
+        /// step is read in pitch.
+        /// </remarks>
+        private ushort LeaningNoteIn(int start, int end, ushort together)
+        {
+            if (BitOperations.PopCount(together) < 4 || end >= _sonorities.Length || !_lineNote[end])
+                return 0;
+
+            var resolution = _sonorities[end];
+            var to = PitchMath.Fold(resolution.Pitch);
+            ushort sounding = 0;
+            foreach (var k in Reaching(resolution.Onset))
+            {
+                if (_sonorities[k].Onset > resolution.Onset)
+                    break;
+                if (_sonorities[k].End > resolution.Onset)
+                    sounding |= _sonorities[k].PitchClasses;
+            }
+
+            // Of the notes that could be leaning, the one that leaves a plain chord behind — a
+            // triad or a dominant seventh — before one that leaves a chord with a stranger in
+            // it, and the one resolving by a semitone before one resolving by a tone: over D7
+            // with a C sharp struck on it, the C sharp leans and the C is the seventh, not the
+            // other way about; chosen by bit order, the reading changed with the key.
+            ushort leaning = 0;
+            var best = int.MaxValue;
+            var remaining = together;
+            while (remaining != 0)
+            {
+                var pc = BitOperations.TrailingZeroCount(remaining);
+                remaining &= (ushort)(remaining - 1);
+                var note = (ushort)(1 << pc);
+                var core = (ushort)(together & ~note);
+                if (!HoldsATriad(core) || (core & (1 << to)) == 0 || (sounding & core) != core)
+                    continue;
+
+                // The step is read in pitch where the road has the note, in pitch class where
+                // it has only the chord.
+                var struck = -1;
+                for (var k = start; k < end; k++)
+                {
+                    if (_sonorities[k].PitchClasses == note && _sonorities[k].Pitch >= 0)
+                        struck = _sonorities[k].Pitch;
+                }
+
+                var interval = struck >= 0 ? Math.Abs(resolution.Pitch - struck) : Math.Min(PitchMath.Fold(to - pc), PitchMath.Fold(pc - to));
+                if (interval is 0 or > 2 || SoundsAgainInBar(start, end, note))
+                    continue;
+
+                var rank = (IsTriadOrDominantSeventh(core) ? 0 : 2) + (interval == 1 ? 0 : 1);
+                if (rank < best)
+                {
+                    best = rank;
+                    leaning = note;
+                }
+            }
+
+            return leaning;
         }
 
         /// <summary>Whether <paramref name="chord"/> holds a major or a minor triad on some root.</summary>
@@ -824,8 +1223,8 @@ internal static class KeyAreaJudge
         /// <summary>The index of the first sonority of the chord after the one <paramref name="index"/> belongs to.</summary>
         private int NextChord(int index)
         {
-            var at = _sonorities[index].Onset;
-            while (index < _sonorities.Length && _sonorities[index].Onset == at)
+            var at = _onset[index];
+            while (index < _sonorities.Length && _onset[index] == at)
                 index++;
             return index;
         }
@@ -919,7 +1318,7 @@ internal static class KeyAreaJudge
         /// </summary>
         private ushort PicardyThird(int index, KeySignature key)
         {
-            if (key.IsMajor || NextChord(index) < _sonorities.Length)
+            if (key.IsMajor || _groupEnd[index] < _sonorities.Length)
                 return 0;
 
             var chord = _chordPitchClasses[index];
@@ -932,23 +1331,30 @@ internal static class KeyAreaJudge
         /// The pitch classes sonority <paramref name="index"/> sounds that <paramref name="key"/>
         /// lacks — none for the notes of the key's own material that lies outside its scale: a
         /// chromatic chord of the key (<see cref="ChromaticChordOf"/>), as far as
-        /// <paramref name="exempt"/> counts those as the key's, or a non-harmonic tone of the
-        /// line (<see cref="IsNonHarmonic(int, KeySignature)"/>).
+        /// <paramref name="exempt"/> counts those as the key's — a note of the line that is a
+        /// tone of such a chord sounding under it is that chord's — or a non-harmonic tone of
+        /// the line (<see cref="IsNonHarmonic(int, KeySignature)"/>).
         /// </summary>
+        /// <remarks>
+        /// A line note that is a tone of the chord under it is that chord's: the melody's G
+        /// sharp quarter over the E major triad of C F G C | G E Am D7 was a note neither the
+        /// chord's exemption nor the non-harmonic rule reached — struck after the chord, it was
+        /// no appoggiatura, and it is no passing tone — so it weighed a quarter of the bar
+        /// against G major, and G began two bars late, at bar 7, with A minor touched on the way.
+        /// </remarks>
         private ushort Lacking(int index, KeySignature key, KeySignature? current, Exempt exempt = Exempt.Chords)
         {
-            var lacking = Outright(index, key);
-            if (lacking == 0)
-                return 0;
+            var lacking = LackingOf((ushort)(_sonorities[index].PitchClasses & ~_leaning[index]), index, key, current, exempt);
+            return lacking != 0 && IsNonHarmonic(index, key) ? (ushort)0 : lacking;
+        }
 
-            if (exempt != Exempt.Nothing && _maybeChromatic[index])
-            {
-                lacking &= (ushort)~ChromaticChordOf(index, key, current, exempt);
-                if (lacking == 0)
-                    return 0;
-            }
-
-            return IsNonHarmonic(index, key) ? (ushort)0 : lacking;
+        /// <summary>As <see cref="Lacking"/>, for the pitch classes <paramref name="pitchClasses"/> of the chord sonority <paramref name="index"/> belongs to — a chord's notes, which no non-harmonic rule reaches.</summary>
+        private ushort LackingOf(ushort pitchClasses, int index, KeySignature key, KeySignature? current, Exempt exempt)
+        {
+            var lacking = OutrightOf(pitchClasses, index, key);
+            if (lacking != 0 && exempt != Exempt.Nothing && _maybeChromatic[index])
+                lacking &= (ushort)~ChromaticChordOf(_under[index] >= 0 ? _under[index] : index, key, current, exempt);
+            return lacking;
         }
 
         /// <summary>
@@ -970,16 +1376,42 @@ internal static class KeyAreaJudge
         /// foreign bar G began two bars late.
         /// </para>
         /// <para>
-        /// A dominant seventh names its own resolution; a plain triad or a borrowed chord is
-        /// heard as applied or borrowed only against a key in force — <paramref name="current"/>
-        /// given — never at the opening, where no key is yet: G | C F G C, a pickup on the
-        /// dominant, opens in C, not in a G major that owns the F chord as its flat seventh. And
-        /// a chord the key in force owns is that key's, whatever another key might borrow it as
-        /// or apply it to: over a tonic pedal, C F G C A D G was owned by G major — the F its
-        /// flat seventh, the A its V/V — where C major had to call the A chord foreign, and the
-        /// piece went to the dominant. A key's applied triads and borrowed chords are heard,
-        /// besides, only inside a phrase the key frames; that is <see cref="Owns"/>'s rule, which
-        /// asks for them with <paramref name="exempt"/> at <see cref="Exempt.Chords"/> only then.
+        /// A dominant seventh names its own resolution; a plain triad, a borrowed chord, an
+        /// augmented sixth or a tonic seventh is heard as the key's only against a key in force
+        /// — <paramref name="current"/> given — never at the opening, where no key is yet: G | C
+        /// F G C, a pickup on the dominant, opens in C, not in a G major that owns the F chord as
+        /// its flat seventh. A key's applied triads and borrowed chords are heard, besides, only
+        /// inside a phrase the key frames; that is <see cref="Owns"/>'s rule, which asks for them
+        /// with <paramref name="exempt"/> at <see cref="Exempt.Chords"/> only then.
+        /// </para>
+        /// <para>
+        /// A chord the key in force owns is that key's, whatever another key might borrow it as
+        /// or apply it to — while the key in force stands (<see cref="Guarded"/>): C F G C A D G,
+        /// round and round, is C with a chain of secondary dominants, and G major, which owned
+        /// every chord of it — the F its flat seventh, the A its V/V — took the piece to the
+        /// dominant. But the resolution chain decides, not the key in force alone: the G of C F
+        /// G C | F B♭ G C7 | F B♭ C7 F is V/V of F because it resolves into C7, which is no plain
+        /// chord of C's; and the C of C F G C | B♭ E♭ C F | B♭ E♭ F7 B♭ is V/V of B flat because
+        /// C major had been left, at the E flat, before its tonic chord came round. Guarded on
+        /// ownership alone, F began at bar 8 and B flat at bar 9, each a phrase after a musician
+        /// hears it.
+        /// </para>
+        /// <para>
+        /// An augmented sixth — the German sixth on the flat sixth degree, ♭6 1 ♭3 ♯4, the
+        /// Italian without the ♭3, the French with 2 for ♭3 — resolving into the dominant or the
+        /// tonic in six-four is the key's own chromatic chord, in minor as in major. Enharmonically
+        /// a dominant seventh on the flat sixth, it resolves nowhere near a fifth below, so it was
+        /// no applied chord and no borrowed one, and Cm Fm G7 Cm | E♭ A♭ B♭ E♭ | Cm A♭7 G7 Cm | Cm
+        /// Fm G7 Cm came home at bar 10, on the G7, two bars after the C minor chord that begins
+        /// the return.
+        /// </para>
+        /// <para>
+        /// A dominant seventh chord on the key's own tonic, inside a phrase the key frames, is
+        /// that tonic coloured — the blues and pop close phrases on I7 — not V7 of the key a
+        /// fifth below: the B♭7 closing B♭ E♭ F B♭7 was V7/IV, an applied triad of E flat's, and
+        /// C F G C | B♭ E♭ F B♭7 | B♭ E♭ F7 B♭ went to E flat at bar 8 and B flat at bar 9. A
+        /// seventh chord that does resolve down a fifth is the dominant it sounds like: A♭7
+        /// falling to D♭ minor is V7 of D flat, not A flat's tonic.
         /// </para>
         /// <para>
         /// The Picardy third: a minor key's tonic major triad closing the piece is that key's
@@ -995,31 +1427,169 @@ internal static class KeyAreaJudge
             if (outside == 0)
                 return 0;
 
-            // A chord the key in force owns is that key's, whatever another key might borrow
-            // it as or apply it to.
-            if (current is { } inForce && OwnsChord(inForce, index))
+            if (Guarded(index, current))
                 return 0;
 
-            var owned = Owned(key);
-            var following = _following[index];
-            var resolvesIntoTheKey = following != 0 && (following & ~owned) == 0;
+            // What the chord is to the key depends on the chord, the key and how far its
+            // chromatic chords count — found once — and on the key in force in two ways asked
+            // here: the guard above, and a dominant resolving into the tonic of the key in
+            // force, which is that key's dominant and no applied chord.
             var triads = exempt == Exempt.Chords && current is not null;
-            ushort chromatic = 0;
+            var (applied, other) = ChromaticChordParts(index, key, triads);
+            if (applied != 0 && current is { } home && IsTonicChord(home, _following[index]))
+                applied = 0;
 
-            var root = _appliedRoot[index];
-            if (root >= 0
-                && resolvesIntoTheKey
-                && (triads || (_chordPitchClasses[index] & DominantSeventh(root)) == DominantSeventh(root))
-                && !(current is { } home && IsTonicChord(home, following)))
+            return (ushort)((applied | other) & outside);
+        }
+
+        // For each chord sonority, per key and exemption level, the pitch classes it sounds as
+        // the key's applied chord and as its other chromatic chords, found once: over eight
+        // thousand random chords each chord was asked in every window that held it, twenty-four
+        // keys at a time.
+        private ushort[]? _chromaticParts;
+        private const ushort Found = 0x8000;
+
+        private (ushort Applied, ushort Other) ChromaticChordParts(int index, KeySignature key, bool triads)
+        {
+            var start = _groupStart[index];
+            var parts = _chromaticParts ??= new ushort[_groupCount * 96];
+            var slot = (_group[index] * 96) + ((KeyIndex(key) * 2 + (triads ? 1 : 0)) * 2);
+            if ((parts[slot] & Found) == 0)
             {
-                chromatic |= DominantSeventh(root);
+                var owned = Owned(key);
+                var chord = _chordPitchClasses[start];
+                var following = _following[start];
+                var resolvesIntoTheKey = following != 0 && (following & ~owned) == 0;
+                var root = _appliedRoot[start];
+                ushort applied = 0;
+                ushort other = 0;
+
+                if (root >= 0 && resolvesIntoTheKey && (triads || (chord & DominantSeventh(root)) == DominantSeventh(root)))
+                    applied = DominantSeventh(root);
+
+                if (triads)
+                {
+                    if (resolvesIntoTheKey)
+                        other |= BorrowedFrom(key, chord);
+                    other |= AugmentedSixthOf(key, chord, following);
+                    if (root < 0)
+                        other |= TonicSeventhOf(key, chord);
+                }
+
+                other |= PicardyThird(start, key);
+                parts[slot] = (ushort)(applied | Found);
+                parts[slot + 1] = other;
             }
 
-            if (resolvesIntoTheKey && triads)
-                chromatic |= BorrowedFrom(key, _chordPitchClasses[index]);
+            return ((ushort)(parts[slot] & ~Found), parts[slot + 1]);
+        }
 
-            chromatic |= PicardyThird(index, key);
-            return (ushort)(chromatic & outside);
+        /// <summary>
+        /// Whether the chord sonority <paramref name="index"/> belongs to is the key in force's
+        /// own and no other key's chromatic chord: <paramref name="current"/> owns it — and, when
+        /// the chord is an applied one, a major triad or a dominant seventh resolving down a
+        /// fifth, it resolves into a chord <paramref name="current"/> owns outright and the key
+        /// still stands at it (<see cref="StandsAt"/>). A borrowed chord the key in force owns is
+        /// the key in force's whatever happens: the E major chord of C D E F♯, two bars each, is
+        /// no flat seventh of F sharp's while the key it opened in owns it, and the passage, which
+        /// has no key, names none.
+        /// </summary>
+        private bool Guarded(int index, KeySignature? current) =>
+            current is { } inForce
+            && OwnsChord(inForce, index)
+            && (_appliedRoot[index] < 0 || ((_following[index] & ~Owned(inForce)) == 0 && StandsAt(inForce, index)));
+
+        /// <summary>
+        /// Whether <paramref name="key"/>, the key in force, still stands at sonority
+        /// <paramref name="index"/>: since its tonic chord last sounded before the sonority, it
+        /// has owned every sonority — its own chromatic chords counted, as a key in force needs
+        /// no frame to own them. Found once per key in force, for every sonority.
+        /// </summary>
+        private bool StandsAt(KeySignature key, int index)
+        {
+            _stands ??= new bool[24][];
+            var stands = _stands[KeyIndex(key)];
+            if (stands is null)
+            {
+                stands = new bool[_sonorities.Length];
+                _stands[KeyIndex(key)] = stands;
+                var standing = true;
+                for (var i = 0; i < _sonorities.Length;)
+                {
+                    var end = _groupEnd[i];
+                    for (var k = i; k < end; k++)
+                        stands[k] = standing;
+
+                    // A chord struck as several notes is asked once, by its pitch classes — what
+                    // one of its notes lacks, the chord lacks — and its weights against every key
+                    // (Weights) already say whether this key lacks it with its chromatic chords
+                    // counted, the guard aside: a chord the key owns it does not lack. Only a
+                    // chord whose notes end together is weighed whole on its first note
+                    // (_weighs); struck with a shorter melody note, its notes weigh one by one,
+                    // and are asked one by one — asked by onset alone, the chord was asked by its
+                    // lowest note only.
+                    var lacks = false;
+                    if (_weighs[i] == _chordPitchClasses[i])
+                    {
+                        var weights = Weights(i);
+                        var keyIndex = KeyIndex(key);
+                        lacks = weights[keyIndex * 5] != 0
+                            && (!_maybeChromatic[i] || weights[(keyIndex * 5) + 2 + (IsTonicChord(key, _following[i]) ? 2 : 0)] != 0);
+                    }
+                    else
+                    {
+                        for (var k = i; k < end && !lacks; k++)
+                            lacks = Lacking(k, key, key) != 0;
+                    }
+
+                    if (lacks)
+                        standing = false;
+                    else if (IsTonicChordOf(key, i))
+                        standing = true;
+                    i = end;
+                }
+            }
+
+            return stands[index];
+        }
+
+        /// <summary>
+        /// The pitch classes of the augmented sixth chord of <paramref name="key"/> that
+        /// <paramref name="chord"/> is — on the flat sixth degree, with the tonic and the raised
+        /// fourth, and the flat third or the second besides — resolving into the dominant, plain
+        /// or with its seventh, or into the tonic triad; or 0.
+        /// </summary>
+        private static ushort AugmentedSixthOf(KeySignature key, ushort chord, ushort following)
+        {
+            var root = key.Root;
+            var flatSixth = (ushort)(1 << PitchMath.Fold(root + 8));
+            var tonic = (ushort)(1 << root);
+            var raisedFourth = (ushort)(1 << PitchMath.Fold(root + 6));
+            var italian = (ushort)(flatSixth | tonic | raisedFourth);
+            var german = (ushort)(italian | (1 << PitchMath.Fold(root + 3)));
+            var french = (ushort)(italian | (1 << PitchMath.Fold(root + 2)));
+            if ((chord & italian) != italian || (chord & ~german & ~french) != 0)
+                return 0;
+
+            var dominant = (ushort)(1 << PitchMath.Fold(root + 7));
+            var dominantSeventh = DominantSeventh(PitchMath.Fold(root + 7));
+            var resolves = following != 0
+                && (following & dominant) != 0
+                && ((following & ~dominantSeventh) == 0 || (following & ~TonicTriad(key)) == 0);
+            return resolves ? (ushort)(chord & (german | french)) : (ushort)0;
+        }
+
+        /// <summary>
+        /// The minor seventh of a dominant seventh chord on <paramref name="key"/>'s tonic —
+        /// the tonic triad coloured, I7 — when <paramref name="chord"/> is that chord; or 0.
+        /// </summary>
+        private static ushort TonicSeventhOf(KeySignature key, ushort chord)
+        {
+            if (!key.IsMajor)
+                return 0;
+
+            var seventh = DominantSeventh(key.Root);
+            return (chord & seventh) == seventh ? (ushort)(1 << PitchMath.Fold(key.Root + 10)) : (ushort)0;
         }
 
         /// <summary>
@@ -1050,11 +1620,15 @@ internal static class KeyAreaJudge
         /// was named for it. But the leading tone struck over the tonic chord — B natural on the
         /// downbeat over C minor, resolving to C — is the tonic chord with an appoggiatura, not a
         /// chord the key lacks: read as one, four bars of C minor with that cadence in them were
-        /// no key at all.
+        /// no key at all. A note struck with the chord that leans on it (<see cref="LeaningNoteIn"/>)
+        /// is no note of the chord's and weighs nothing here, whatever the key.
         /// </summary>
-        private ushort Outright(int index, KeySignature key)
+        private ushort Outright(int index, KeySignature key) =>
+            OutrightOf((ushort)(_sonorities[index].PitchClasses & ~_leaning[index]), index, key);
+
+        /// <summary>As <see cref="Outright"/>, for the pitch classes <paramref name="pitchClasses"/> of the chord sonority <paramref name="index"/> belongs to.</summary>
+        private ushort OutrightOf(ushort pitchClasses, int index, KeySignature key)
         {
-            var pitchClasses = _sonorities[index].PitchClasses;
             var lacking = (ushort)(pitchClasses & ~Owned(key));
             if (key.IsMajor)
                 return lacking;
@@ -1105,14 +1679,30 @@ internal static class KeyAreaJudge
         /// bar, where a note is a note of the line. A run of notes on their way — a scale, a
         /// chromatic run — is passing motion when it moves one way, from a structural note the
         /// key owns to another, within a whole note; the chromatic notes in it are the passing
-        /// tones: B flat between B and A, F between E and F sharp. A chromatic scale has no
-        /// structural note to set out from or land on within a bar — every note in it is on its
-        /// way — so nothing in it passes, and the scale is what it always was to the judge: no
-        /// key's. An appoggiatura is a structural note approached by leap from a note the key
-        /// owns and resolved by a semitone into a tone of the chord sounding under it, sounding
-        /// once in its bar: a leaning note needs a chord to lean on, so in a melody alone a
-        /// chromatic note approached by leap is a note of the line, and a note that sounds again
-        /// in its bar is a tone of the bar's harmony.
+        /// tones: B flat between B and A, F between E and F sharp. A note where the line turns
+        /// — the top or the bottom of an arch — is a structural note, whatever came before it:
+        /// the A flat of G A A♭ G passes from the A down to the G, and the A, though approached
+        /// by step, is where it sets out. A chromatic scale has no structural note to set out
+        /// from or land on within a bar — every note in it is on its way, and none of them turns
+        /// — so nothing in it passes, and the scale is what it always was to the judge: no
+        /// key's. A note that leans on a harmony — a note of the line sounding against a chord
+        /// that began before it, no tone of that chord, resolving by a semitone into one of its
+        /// tones while the chord still sounds, and sounding once in its bar — is an
+        /// appoggiatura, an accented passing tone or a suspension, whatever its length and
+        /// however approached: it is defined by its resolution. A leaning note needs a chord to
+        /// lean on, so in a melody alone a chromatic note approached by leap is a note of the
+        /// line, and a note that sounds again in its bar is a tone of the bar's harmony. (A note
+        /// struck with the chord and leaning on it is the chord's business, not the line's:
+        /// <see cref="LeaningNoteIn"/>.)
+        /// </para>
+        /// <para>
+        /// The run once had to move one way through every note on its way, so the A flat of G A
+        /// A♭ G — a passing tone between two owned notes a step apart — was a foreign note
+        /// because the A had been approached from below, and a melody with one such arch in
+        /// each of its new key's first two bars named no key. And a passing tone once had to be
+        /// no longer than a quarter: a half-note C sharp between C and D over a D7 was half its
+        /// bar against G major, and killed the modulation it should at most have delayed. Its
+        /// length is bounded by the chord it leans on, which must still sound when it resolves.
         /// </para>
         /// <para>
         /// Steps are read in pitch where the road has the note — a seventh is a leap — and in
@@ -1143,7 +1733,7 @@ internal static class KeyAreaJudge
         /// <summary>The keys, one bit each by their index, that single note <paramref name="index"/> is a non-harmonic tone of; 0 for a chord or a note longer than a quarter.</summary>
         private uint NonHarmonicKeys(int index)
         {
-            if (!IsLineNote(index) || !IsShort(index))
+            if (!IsLineNote(index))
                 return 0;
 
             _nonHarmonic ??= new uint[_sonorities.Length];
@@ -1151,10 +1741,18 @@ internal static class KeyAreaJudge
             if ((keys & Asked) == 0)
             {
                 keys = Asked;
-                for (var k = 0; k < 24; k++)
+                var lacking = KeysLacking[BitOperations.TrailingZeroCount(_sonorities[index].PitchClasses)];
+                if (LeansOnHarmony(index))
                 {
-                    if ((OwnedByKey[k] & _sonorities[index].PitchClasses) == 0 && IsNonHarmonic(index, OwnedByKey[k]))
-                        keys |= 1u << k;
+                    keys |= lacking;
+                }
+                else if (IsShort(index) && IsOnItsWay(index))
+                {
+                    for (var k = 0; k < 24; k++)
+                    {
+                        if ((lacking & (1u << k)) != 0 && IsPassingOrNeighbour(index, OwnedByKey[k]))
+                            keys |= 1u << k;
+                    }
                 }
 
                 _nonHarmonic[index] = keys;
@@ -1163,54 +1761,76 @@ internal static class KeyAreaJudge
             return keys & ~Asked;
         }
 
-        private bool IsNonHarmonic(int index, ushort owned)
+        /// <summary>
+        /// Whether the note on its way <paramref name="index"/> is a passing or a neighbour tone
+        /// between notes <paramref name="owned"/> holds.
+        /// </summary>
+        private bool IsPassingOrNeighbour(int index, ushort owned)
         {
             var before = Before(index);
             var after = After(index);
             if (!before.Found || !after.Found)
                 return false;
 
-            if (IsOnItsWay(index))
-            {
-                // A passing or neighbour tone is unaccented: on the downbeat of a bar, a note is
-                // a note of the line.
-                if (_sonorities[index].Onset.Denominator == 1)
-                    return false;
-
-                // Between two notes the key owns: back to the note it left — a neighbour — or
-                // on in the same direction. G F sharp A flat is neither.
-                var steps = before.StepsFrom(_sonorities[index], owned, forward: false, semitone: true);
-                var resolutions = after.StepsFrom(_sonorities[index], owned, forward: true, semitone: true);
-                if (!steps.Any || !resolutions.Any)
-                    return false;
-                if (steps.Returns(resolutions))
-                    return true;
-
-                // A passing tone is on a scale: the run it is on moves one way, from a
-                // structural note the key owns to another, within a whole note. B B flat D flat
-                // C B flat is a figure, not a scale, and its C passes nothing.
-                var run = RunOf(index);
-                var up = run.Rises && steps.Up && resolutions.Up;
-                var down = run.Falls && steps.Down && resolutions.Down;
-                if ((!up && !down) || !run.WithinAWholeNote)
-                    return false;
-
-                var setsOut = Before(run.First).StepsFrom(_sonorities[run.First], owned, forward: false);
-                var lands = After(run.Last).StepsFrom(_sonorities[run.Last], owned, forward: true);
-                return (up && setsOut.Up && lands.Up) || (down && setsOut.Down && lands.Down);
-            }
-
-            // An appoggiatura: approached by leap from a note the key owns, resolved by step into
-            // a tone of the chord sounding under it, and sounding once in its bar.
-            if (before.Pitch >= 0 ? !Contains(owned, before.Pitch) || IsStep(before.Pitch, _sonorities[index].Pitch) : (before.PitchClasses & owned) == 0)
+            // A passing or neighbour tone is unaccented: on the downbeat of a bar, a note is a
+            // note of the line.
+            if (_sonorities[index].Onset.Denominator == 1)
                 return false;
 
-            var under = SoundingUnder(index);
-            var resolution = after.StepsFrom(_sonorities[index], owned, forward: true, semitone: true);
-            return BitOperations.PopCount(under) >= 2
-                && (under & _sonorities[index].PitchClasses) == 0
-                && (resolution.PitchClasses & under) != 0
-                && !SoundsAgainInBar(index);
+            // Between two notes the key owns: back to the note it left — a neighbour — or on in
+            // the same direction. G F sharp A flat is neither.
+            var steps = before.StepsFrom(_sonorities[index], owned, forward: false, semitone: true);
+            var resolutions = after.StepsFrom(_sonorities[index], owned, forward: true, semitone: true);
+            if (!steps.Any || !resolutions.Any)
+                return false;
+            if (steps.Returns(resolutions))
+                return true;
+
+            // A passing tone is on a scale: the run it is on moves one way, from a structural
+            // note the key owns to another, within a whole note. B B flat D flat C B flat is a
+            // figure, not a scale, and its C passes nothing.
+            var run = RunOf(index);
+            var up = run.Rises && steps.Up && resolutions.Up;
+            var down = run.Falls && steps.Down && resolutions.Down;
+            if ((!up && !down) || !run.WithinAWholeNote)
+                return false;
+
+            var setsOut = Before(run.First).StepsFrom(_sonorities[run.First], owned, forward: false);
+            var lands = After(run.Last).StepsFrom(_sonorities[run.Last], owned, forward: true);
+            return (up && setsOut.Up && lands.Up) || (down && setsOut.Down && lands.Down);
+        }
+
+        /// <summary>
+        /// Whether the note of the line <paramref name="index"/> leans on the harmony sounding
+        /// under it — a chord of two notes or more that began before it: it is no tone of that
+        /// chord, resolves by a semitone into one of its tones while the chord still sounds, and
+        /// sounds once in its bar. An appoggiatura, an accented passing tone or a suspension,
+        /// whatever its length and however approached. Decided once per note; it does not depend
+        /// on the key.
+        /// </summary>
+        private bool LeansOnHarmony(int index)
+        {
+            if (!_anyChord)
+                return false;
+
+            _leans ??= new byte[_sonorities.Length];
+            if (_leans[index] == 0)
+            {
+                var note = _sonorities[index];
+                var under = SoundingUnder(index);
+                var leans = BitOperations.PopCount(under) >= 2 && (under & note.PitchClasses) == 0;
+                if (leans)
+                {
+                    var resolution = After(index).StepsFrom(note, 0x0FFF, forward: true, semitone: true);
+                    leans = (resolution.PitchClasses & under) != 0
+                        && (SoundingAt(note.End) & under) == under
+                        && !SoundsAgainInBar(index, index + 1, note.PitchClasses);
+                }
+
+                _leans[index] = (byte)(leans ? 1 : 2);
+            }
+
+            return _leans[index] == 1;
         }
 
         /// <summary>
@@ -1333,33 +1953,60 @@ internal static class KeyAreaJudge
         /// </summary>
         private readonly record struct Run(int First, int Last, bool Rises, bool Falls, bool WithinAWholeNote);
 
-        /// <summary>The run note <paramref name="index"/> is on, found once.</summary>
+        /// <summary>
+        /// The run note <paramref name="index"/> is on, found once: the notes on their way
+        /// either side of it that keep moving the way it moves. A note where the line turns is
+        /// not on the run but where it sets out or lands — the A of G A A♭ G is the top of an
+        /// arch, and the A flat passes from it. A note that itself turns, or whose neighbours
+        /// are harmonies without a pitch to read a direction from, is a run of one, and its own
+        /// two steps decide.
+        /// </summary>
         private Run RunOf(int index)
         {
             _run ??= new Run[_sonorities.Length];
             if (_run[index].First == 0 && _run[index].Last == 0 && !_run[index].Rises)
             {
-                var rises = true;
-                var falls = true;
+                var note = _sonorities[index];
+                var before = Before(index);
+                var after = After(index);
+                var direction = before.Pitch >= 0 ? Math.Sign(note.Pitch - before.Pitch) : 0;
+                var lone = false;
+                if (after.Pitch >= 0)
+                {
+                    var onward = Math.Sign(after.Pitch - note.Pitch);
+                    if (direction == 0)
+                        direction = onward;
+                    else if (onward != direction)
+                        lone = true;
+                }
+
+                lone |= direction == 0;
                 var first = index;
-                while (Before(first) is { Pitch: >= 0 } previous && IsOnItsWay(previous.Index))
-                {
-                    var rising = _sonorities[first].Pitch > previous.Pitch;
-                    rises &= rising;
-                    falls &= !rising;
-                    first = previous.Index;
-                }
-
                 var last = index;
-                while (After(last) is { Pitch: >= 0 } following && IsOnItsWay(following.Index))
+                if (!lone)
                 {
-                    var rising = following.Pitch > _sonorities[last].Pitch;
-                    rises &= rising;
-                    falls &= !rising;
-                    last = following.Index;
+                    while (Before(first) is { Pitch: >= 0 } previous
+                        && IsOnItsWay(previous.Index)
+                        && Math.Sign(_sonorities[first].Pitch - previous.Pitch) == direction)
+                    {
+                        var beforePrevious = Before(previous.Index);
+                        if (beforePrevious.Pitch >= 0 && Math.Sign(previous.Pitch - beforePrevious.Pitch) != direction)
+                            break;
+                        first = previous.Index;
+                    }
+
+                    while (After(last) is { Pitch: >= 0 } following
+                        && IsOnItsWay(following.Index)
+                        && Math.Sign(following.Pitch - _sonorities[last].Pitch) == direction)
+                    {
+                        var afterFollowing = After(following.Index);
+                        if (afterFollowing.Pitch >= 0 && Math.Sign(afterFollowing.Pitch - following.Pitch) != direction)
+                            break;
+                        last = following.Index;
+                    }
                 }
 
-                _run[index] = new Run(first, last, rises, falls, _sonorities[last].End - _sonorities[first].Onset <= Rational.Whole);
+                _run[index] = new Run(first, last, lone || direction > 0, lone || direction < 0, _sonorities[last].End - _sonorities[first].Onset <= Rational.Whole);
             }
 
             return _run[index];
@@ -1483,15 +2130,18 @@ internal static class KeyAreaJudge
         /// <summary>Whether sonority <paramref name="index"/> lasts no longer than a quarter note.</summary>
         private bool IsShort(int index) => _short[index];
 
-        /// <summary>Whether another sonority beginning in the whole note of sonority <paramref name="index"/> sounds its pitch class.</summary>
-        private bool SoundsAgainInBar(int index)
+        /// <summary>
+        /// Whether a sonority beginning in the whole note of sonority <paramref name="start"/>,
+        /// outside the sonorities [<paramref name="start"/>, <paramref name="end"/>), sounds a
+        /// pitch class in <paramref name="pitchClasses"/>.
+        /// </summary>
+        private bool SoundsAgainInBar(int start, int end, ushort pitchClasses)
         {
-            var bar = new Rational((long)Math.Floor(_sonorities[index].Onset.ToDouble()), 1);
+            var bar = new Rational((long)Math.Floor(_sonorities[start].Onset.ToDouble()), 1);
             var to = bar + Rational.Whole;
-            var pitchClasses = _sonorities[index].PitchClasses;
             for (var k = FirstIndexAt(bar); k < _sonorities.Length && _sonorities[k].Onset < to; k++)
             {
-                if (k != index && (_sonorities[k].PitchClasses & pitchClasses) != 0)
+                if ((k < start || k >= end) && (_sonorities[k].PitchClasses & pitchClasses) != 0)
                     return true;
             }
 
@@ -1584,11 +2234,12 @@ internal static class KeyAreaJudge
 
         /// <summary>
         /// The key whose tonic chord the piece opens on — the profile's favourite among them
-        /// when several qualify — provided it leaves as little of [0, <paramref name="to"/>)
-        /// foreign as any key does, an applied dominant seventh counted as the key's. Failing
-        /// that, when the piece opens on a triad and exactly one major key owns the phrase
-        /// outright, that key: G C F G opens in C, on its dominant. <see langword="null"/> when
-        /// the piece opens on a single note, or when nothing above decides.
+        /// when several qualify — provided it owns [0, <paramref name="to"/>) or leaves as
+        /// little of it foreign as any key does, an applied dominant seventh counted as the
+        /// key's. Failing that, when the piece opens on a triad and exactly one major key owns
+        /// the phrase outright, that key: G C F G opens in C, on its dominant.
+        /// <see langword="null"/> when the piece opens on a single note, or when nothing above
+        /// decides.
         /// </summary>
         /// <remarks>
         /// The owner fallback is a major key or nothing: pitch classes cannot tell A flat from G
@@ -1603,8 +2254,10 @@ internal static class KeyAreaJudge
         /// </remarks>
         private KeySignature? OpensIn(KeyDetectionResult reading, Rational to)
         {
+            // A chord struck, not a melody's bar that happens to outline a triad: a tune in C
+            // may begin on A C E.
             var chord = _chordPitchClasses[0];
-            if (BitOperations.PopCount(chord) < 2)
+            if (BitOperations.PopCount(chord) < 2 || _sonorities[_groupEnd[0] - 1].Onset != _sonorities[0].Onset)
                 return null;
 
             const float tolerance = 1e-4f;
@@ -1617,10 +2270,17 @@ internal static class KeyAreaJudge
                     least = foreign[i];
             }
 
+            // The key whose tonic chord opens the piece, when it owns the phrase (Owns: a stray
+            // note a bar is allowed) or leaves as little of it foreign as any key does. Owning it
+            // is enough: a chromatic escape eighth in the second bar of C F G7 C is no reason to
+            // hear the phrase in F major, which owns the eighth but must take the cadence's G7
+            // for its V7/V — and did, once a melody note over the G7 counted as that chord's, so
+            // that F left nothing foreign and C an eighth. Opened in F, the piece reached G as
+            // a tonicization and the trajectory road heard no modulation at all.
             for (var i = 0; i < reading.AllCorrelations.Length && i < 24; i++)
             {
                 var candidate = reading.AllCorrelations[i].Key;
-                if (IsTonicChord(candidate, chord) && foreign[i] <= least + tolerance)
+                if (IsTonicChord(candidate, chord) && (foreign[i] <= least + tolerance || Owns(Rational.Zero, to, candidate, current: null)))
                     return candidate;
             }
 
@@ -1658,49 +2318,75 @@ internal static class KeyAreaJudge
             // keys that own the same notes must tie exactly however the durations were summed.
             const float tolerance = 1e-4f;
 
+            // The weights are kept by key index, not by the candidate's place in the reading.
             var candidates = reading.AllCorrelations;
             var count = Math.Min(candidates.Length, 24);
             Span<float> foreign = stackalloc float[24];
             Span<float> chromatic = stackalloc float[24];
-            Span<Exempt> exempt = stackalloc Exempt[24];
-            var opening = FirstIndexAt(from);
-            var closing = FirstIndexAt(to) - 1;
-            var spans = opening < _sonorities.Length && _sonorities[opening].Onset < to;
-            Span<int> slotOf = stackalloc int[24];
-            slotOf.Fill(-1);
+            var fromD = from.ToDouble();
+            var toD = to.ToDouble();
+            var opening = FirstIndexAt(fromD);
+            var closing = FirstIndexAt(toD) - 1;
+            var spans = opening < _sonorities.Length && _onset[opening] < toD;
+            var present = 0u;
             for (var k = 0; k < count; k++)
-            {
-                var framed = spans && (IsTonicChordOf(candidates[k].Key, opening) || IsTonicChordOf(candidates[k].Key, closing));
-                exempt[k] = framed ? Exempt.Chords : Exempt.Sevenths;
-                slotOf[KeyIndex(candidates[k].Key)] = k;
-            }
+                present |= 1u << KeyIndex(candidates[k].Key);
 
-            foreach (var i in Reaching(from))
+            // The keys — one bit each, by KeyIndex — whose tonic chord frames the span, and so
+            // hear their applied triads and borrowed chords in it (Exemption); a key in force
+            // must be given for those to be heard at all. The key in force itself needs no
+            // frame: it hears its own chromatic chords wherever it stands, as StandsAt and
+            // HomeAgain already say. Framed like a rival, C minor could not own Fm G7 C Fm —
+            // the C major triad is its V/iv, an applied triad — while F minor owned the same
+            // four chords as i V7/V V i once the guard let the G7 go, and the detector wrote a
+            // three-bar tonicization of F minor over the Picardy third and the plagal Amen that
+            // close Cm Fm G7 Cm | A♭ Fm G7 C | Fm C.
+            var framed = spans && current is not null ? (TonicKeysOf(opening) | TonicKeysOf(closing)) & ~Asked : 0u;
+            if (spans && current is { } inForceKey)
+                framed |= 1u << KeyIndex(inForceKey);
+
+            foreach (var i in Reaching(fromD))
             {
-                var s = _sonorities[i];
-                if (s.Onset >= to)
+                if (_onset[i] >= toD)
                     break;
 
-                var start = s.Onset > from ? s.Onset : from;
-                var stop = s.End < to ? s.End : to;
+                var start = Math.Max(_onset[i], fromD);
+                var stop = Math.Min(_end[i], toD);
                 if (stop <= start)
                     continue;
 
-                var weight = (float)(stop - start).ToDouble();
+                // A note doubling a tone of the chord it was struck with weighs nothing of its
+                // own, and a chord struck as several notes that end together is weighed once,
+                // by its pitch classes, on the first of them: the chord weighs the same on
+                // either road.
+                var pitchClasses = _weighs[i];
+                if (pitchClasses == 0)
+                    continue;
+
+                var weight = (float)(stop - start);
                 if (_lineNote[i])
                 {
                     // A single note is foreign to the keys that do not own its pitch class, less
-                    // the keys it is a non-harmonic tone of — one bit each, in one word.
-                    var keys = KeysLacking[BitOperations.TrailingZeroCount(s.PitchClasses)] & ~NonHarmonicKeys(i);
+                    // the keys it is a non-harmonic tone of — one bit each, in one word. A note
+                    // of an arpeggiated chord, or a tone of the chord sounding under it, is that
+                    // chord's: the keys the chord is a chromatic chord of own it too, and a tone
+                    // of the chord under it is no more chromatic harmony than the chord already
+                    // is — the melody's G sharp over G's V/ii weighed a quarter more against G
+                    // than A minor's D7 weighed against A minor, and the detector, which folds the
+                    // melody's downbeat into its chords, named A minor for the phrase.
+                    var keys = KeysLacking[BitOperations.TrailingZeroCount(pitchClasses)] & ~NonHarmonicKeys(i) & present;
+                    var chord = _under[i] >= 0 ? _under[i] : i;
+                    var chordOfSome = _maybeChromatic[i] && !Guarded(chord, current);
                     while (keys != 0)
                     {
-                        var k = slotOf[BitOperations.TrailingZeroCount(keys)];
+                        var keyIndex = BitOperations.TrailingZeroCount(keys);
                         keys &= keys - 1;
-                        if (k >= 0)
-                        {
-                            foreign[k] += weight;
-                            chromatic[k] += weight;
-                        }
+
+                        if (_under[i] < 0)
+                            chromatic[keyIndex] += weight;
+                        var triads = (framed >> keyIndex & 1) != 0;
+                        if (!chordOfSome || (pitchClasses & ~ChromaticChordOf(chord, KeyAt(keyIndex), current, triads ? Exempt.Chords : Exempt.Sevenths)) != 0)
+                            foreign[keyIndex] += weight;
                     }
 
                     continue;
@@ -1708,37 +2394,125 @@ internal static class KeyAreaJudge
 
                 // A chord the key in force owns is its own to every other key; only a chord
                 // it does not is asked whether it is another key's chromatic chord.
-                var chromaticToSome = _maybeChromatic[i] && !(current is { } inForce && OwnsChord(inForce, i));
-                for (var k = 0; k < count; k++)
+                // What a chord weighs against each key is found once per chord (Weights) and
+                // read here: how many of its pitch classes the key lacks outright, and how many
+                // it still lacks with its chromatic chords counted — which depends on the key in
+                // force in two ways asked once per chord, not once per key: the guard, and a
+                // dominant resolving into the tonic in force, which is no applied chord.
+                var weights = Weights(i);
+                var chromaticToSome = _maybeChromatic[i] && !Guarded(i, current);
+                var resolvesIntoHome = current is { } home && IsTonicChord(home, _following[i]) ? 2 : 0;
+                for (var keyIndex = 0; keyIndex < 24; keyIndex++)
                 {
-                    var key = candidates[k].Key;
-                    var outright = Outright(i, key);
+                    var outright = weights[keyIndex * 5];
                     if (outright == 0)
                         continue;
 
-                    chromatic[k] += BitOperations.PopCount(outright) * weight;
-                    var lacking = chromaticToSome ? (ushort)(outright & ~ChromaticChordOf(i, key, current, exempt[k])) : outright;
+                    chromatic[keyIndex] += outright * weight;
+                    var lacking = chromaticToSome
+                        ? weights[(keyIndex * 5) + 1 + resolvesIntoHome + (int)(framed >> keyIndex & 1)]
+                        : outright;
                     if (lacking != 0)
-                        foreign[k] += BitOperations.PopCount(lacking) * weight;
+                        foreign[keyIndex] += lacking * weight;
                 }
             }
 
             var least = float.MaxValue;
-            for (var k = 0; k < count; k++)
+            for (var keyIndex = 0; keyIndex < 24; keyIndex++)
             {
-                if (foreign[k] < least)
-                    least = foreign[k];
+                if ((present >> keyIndex & 1) != 0 && foreign[keyIndex] < least)
+                    least = foreign[keyIndex];
             }
 
             var leastChromatic = float.MaxValue;
-            for (var k = 0; k < count; k++)
+            for (var keyIndex = 0; keyIndex < 24; keyIndex++)
             {
-                if (foreign[k] <= least + tolerance && chromatic[k] < leastChromatic)
-                    leastChromatic = chromatic[k];
+                if ((present >> keyIndex & 1) != 0 && foreign[keyIndex] <= least + tolerance && chromatic[keyIndex] < leastChromatic)
+                    leastChromatic = chromatic[keyIndex];
+            }
+
+            // Among keys that own the span equally, one whose tonic chord — a chord, not a lone
+            // note of the line — opens or closes it owns it better than one that does not: a
+            // phrase is heard in the key of the chord it opens or closes on. G E Am D7 with a
+            // melody over it needs one chromatic chord of G's (the V/ii) and one of A minor's
+            // (the D7), and the detector's profile preferred A minor; the phrase opens on G.
+            var framedByAChord = !spans ? 0u
+                : (BitOperations.PopCount(_chordPitchClasses[opening]) >= 2 ? TonicKeysOf(opening) : 0u)
+                | (BitOperations.PopCount(_chordPitchClasses[closing]) >= 2 ? TonicKeysOf(closing) : 0u);
+            var anyFramed = false;
+            for (var keyIndex = 0; keyIndex < 24 && framedByAChord != 0; keyIndex++)
+            {
+                anyFramed |= (present >> keyIndex & 1) != 0
+                    && foreign[keyIndex] <= least + tolerance
+                    && chromatic[keyIndex] <= leastChromatic + tolerance
+                    && (framedByAChord >> keyIndex & 1) != 0;
             }
 
             for (var k = 0; k < count; k++)
-                owns[k] = foreign[k] <= least + tolerance && chromatic[k] <= leastChromatic + tolerance;
+            {
+                var keyIndex = KeyIndex(candidates[k].Key);
+                owns[k] = foreign[keyIndex] <= least + tolerance
+                    && chromatic[keyIndex] <= leastChromatic + tolerance
+                    && (!anyFramed || (framedByAChord >> keyIndex & 1) != 0);
+            }
+
+        }
+
+        // What each chord weighs against each key, found once per chord: for each key, by
+        // KeyIndex, five bytes — how many of the chord's pitch classes the key lacks outright,
+        // then how many it lacks with its chromatic chords counted, in four variants: with only
+        // its dominant sevenths counted or its triads too (the low bit), and with the chord
+        // resolving into the tonic of the key in force or not (the high bit), which strips the
+        // applied reading. Weighed afresh at every candidate, eight thousand random chords each
+        // cost twenty-four keys' worth of chord reading in every window that held them.
+        private byte[]? _weights;
+        private bool[]? _weighed;
+        private byte[]? _noteWeights;
+        private bool[]? _noteWeighed;
+
+        private ReadOnlySpan<byte> Weights(int index)
+        {
+            // Kept per chord for a chord struck as one, and per note for the few notes struck
+            // with a chord but not ending with it, which weigh their own pitch classes.
+            var whole = _weighs[index] == _chordPitchClasses[index];
+            var slot = whole ? _group[index] : index;
+            var table = whole
+                ? (_weights ??= new byte[_groupCount * 120])
+                : (_noteWeights ??= new byte[_sonorities.Length * 120]);
+            var done = whole
+                ? (_weighed ??= new bool[_groupCount])
+                : (_noteWeighed ??= new bool[_sonorities.Length]);
+            var weights = table.AsSpan(slot * 120, 120);
+            if (!done[slot])
+            {
+                WeighAgainstEveryKey(index, weights);
+                done[slot] = true;
+            }
+
+            return weights;
+        }
+
+        private void WeighAgainstEveryKey(int index, Span<byte> weights)
+        {
+            var pitchClasses = _weighs[index];
+            var chord = _chordPitchClasses[index];
+            for (var k = 0; k < 24; k++)
+            {
+                var key = new KeySignature((byte)(k % 12), k < 12);
+                var outright = OutrightOf(pitchClasses, index, key);
+                weights[k * 5] = (byte)BitOperations.PopCount(outright);
+                if (outright == 0)
+                    continue;
+
+                var outside = (ushort)(chord & ~Owned(key));
+                for (var variant = 0; variant < 4; variant++)
+                {
+                    var (applied, other) = ChromaticChordParts(index, key, triads: (variant & 1) != 0);
+                    if ((variant & 2) != 0)
+                        applied = 0;
+                    weights[(k * 5) + 1 + variant] = (byte)BitOperations.PopCount((ushort)(outright & ~((applied | other) & outside)));
+                }
+            }
         }
 
         /// <summary>
@@ -1798,6 +2572,15 @@ internal static class KeyAreaJudge
         }
 
         /// <summary>
+        /// Whether <paramref name="key"/> owns outright every pitch class in <paramref name="mask"/>,
+        /// the pitch classes sounding in a span: for a major key, its scale holds them all; for a
+        /// minor key, its raised seventh must not be among them, since it owns that only in
+        /// certain chords (<see cref="Outright"/>).
+        /// </summary>
+        public static bool OwnsEveryNoteOutright(KeySignature key, ushort mask) =>
+            (mask & ~Owned(key)) == 0 && (key.IsMajor || (mask & (1 << PitchMath.Fold(key.Root + 11))) == 0);
+
+        /// <summary>
         /// The key profile of [<paramref name="from"/>, <paramref name="to"/>), each sonority
         /// weighed by how long it sounds inside the span — the reading
         /// <see cref="KeyProfiler.DetectFromBuffer"/> gives — with the pitch classes that sound
@@ -1807,26 +2590,29 @@ internal static class KeyAreaJudge
         {
             var distribution = new float[12];
             ushort mask = 0;
+            var fromD = from.ToDouble();
+            var toD = to.ToDouble();
 
-            foreach (var i in Reaching(from))
+            foreach (var i in Reaching(fromD))
             {
-                var s = _sonorities[i];
-                if (s.Onset >= to)
+                if (_onset[i] >= toD)
                     break;
 
-                var start = s.Onset > from ? s.Onset : from;
-                var stop = s.End < to ? s.End : to;
+                var start = Math.Max(_onset[i], fromD);
+                var stop = Math.Min(_end[i], toD);
                 if (stop <= start)
                     continue;
 
-                var weight = (float)(stop - start).ToDouble();
-                for (var pc = 0; pc < 12; pc++)
+                var weight = (float)(stop - start);
+                var pitchClasses = _sonorities[i].PitchClasses;
+                var remaining = pitchClasses;
+                while (remaining != 0)
                 {
-                    if ((s.PitchClasses & (1 << pc)) != 0)
-                        distribution[pc] += weight;
+                    distribution[BitOperations.TrailingZeroCount(remaining)] += weight;
+                    remaining &= (ushort)(remaining - 1);
                 }
 
-                mask |= s.PitchClasses;
+                mask |= pitchClasses;
             }
 
             return new Reading(KeyProfiler.Detect(distribution), mask, distribution);
@@ -1873,18 +2659,41 @@ internal static class KeyAreaJudge
             if (i >= _sonorities.Length || _sonorities[i].Onset >= to)
                 return false;
 
-            var last = FirstIndexAt(to) - 1;
-            return IsTonicChordOf(key, i) || IsTonicChordOf(key, last);
+            return IsTonicChordOf(key, i) || IsTonicChordOf(key, FirstIndexAt(to) - 1);
         }
 
         /// <summary>Whether the chord sonority <paramref name="index"/> belongs to is <paramref name="key"/>'s tonic chord, with or without a note above it, or its Picardy third.</summary>
-        private bool IsTonicChordOf(KeySignature key, int index)
+        private bool IsTonicChordOf(KeySignature key, int index) => (TonicKeysOf(index) >> KeyIndex(key) & 1) != 0;
+
+        // The keys — one bit each, by KeyIndex — whose tonic chord each chord is, found once per
+        // chord: every span that opens or closes on the chord asks, for every key.
+        private uint[]? _tonicKeys;
+
+        private uint TonicKeysOf(int index)
         {
-            var chord = _chordPitchClasses[index];
-            var tonic = TonicTriad(key);
-            return IsTonicChord(key, chord)
-                || (chord & tonic) == tonic
-                || (chord & ~tonic & ~PicardyThird(index, key)) == 0 && (chord & (1 << key.Root)) != 0 && PicardyThird(index, key) != 0;
+            _tonicKeys ??= new uint[_sonorities.Length];
+            var keys = _tonicKeys[index];
+            if ((keys & Asked) == 0)
+            {
+                keys = Asked;
+                var chord = _chordPitchClasses[index];
+                for (var k = 0; k < 24; k++)
+                {
+                    var key = new KeySignature((byte)(k % 12), k < 12);
+                    var tonic = TonicTriad(key);
+                    var picardy = PicardyThird(index, key);
+                    if (IsTonicChord(key, chord)
+                        || (chord & tonic) == tonic
+                        || (chord & ~tonic & ~picardy) == 0 && (chord & (1 << key.Root)) != 0 && picardy != 0)
+                    {
+                        keys |= 1u << k;
+                    }
+                }
+
+                _tonicKeys[index] = keys;
+            }
+
+            return keys;
         }
 
         /// <summary>
@@ -1903,38 +2712,39 @@ internal static class KeyAreaJudge
         /// </remarks>
         public bool Owns(Rational from, Rational to, KeySignature key, KeySignature? current, Exempt exempt = Exempt.Chords)
         {
-            if (exempt == Exempt.Chords && !Frames(key, from, to))
-                exempt = Exempt.Sevenths;
+            exempt = Exemption(key, from, to, exempt);
 
-            var firstBar = (long)Math.Floor(from.ToDouble());
-            var barCount = (int)Math.Max(0, (long)Math.Ceiling(to.ToDouble()) - firstBar);
-            var foreign = new float[barCount];
+            var fromD = from.ToDouble();
+            var toD = to.ToDouble();
+            var firstBar = (long)Math.Floor(fromD);
+            var barCount = (int)Math.Max(0, (long)Math.Ceiling(toD) - firstBar);
+            Span<float> foreign = barCount <= 16 ? stackalloc float[16] : new float[barCount];
+            foreign = foreign[..barCount];
+            foreign.Clear();
 
-            foreach (var i in Reaching(from))
+            foreach (var i in Reaching(fromD))
             {
-                var s = _sonorities[i];
-                if (s.Onset >= to)
+                if (_onset[i] >= toD)
                     break;
+
+                var start = Math.Max(_onset[i], fromD);
+                var stop = Math.Min(_end[i], toD);
+                if (stop <= start)
+                    continue;
 
                 var lacking = Lacking(i, key, current, exempt);
                 if (lacking == 0)
                     continue;
 
-                var start = s.Onset > from ? s.Onset : from;
-                var stop = s.End < to ? s.End : to;
-                if (stop <= start)
-                    continue;
-
                 var count = BitOperations.PopCount(lacking);
-                var bar = (long)Math.Floor(start.ToDouble());
+                var bar = (long)Math.Floor(start);
                 for (var at = start; at < stop; bar++)
                 {
-                    var barEnd = new Rational(bar + 1, 1);
-                    var until = barEnd < stop ? barEnd : stop;
+                    var until = Math.Min(bar + 1, stop);
                     var index = (int)(bar - firstBar);
                     if (index >= 0 && index < barCount)
                     {
-                        foreign[index] += count * (float)(until - at).ToDouble();
+                        foreign[index] += count * (float)(until - at);
                         if (foreign[index] >= StrayNote)
                             return false;
                     }
@@ -1956,24 +2766,24 @@ internal static class KeyAreaJudge
         /// </summary>
         private float Foreign(Rational from, Rational to, KeySignature key, KeySignature? current, Exempt exempt)
         {
-            if (exempt == Exempt.Chords && !Frames(key, from, to))
-                exempt = Exempt.Sevenths;
+            exempt = Exemption(key, from, to, exempt);
 
             var sum = 0f;
-            foreach (var i in Reaching(from))
+            var fromD = from.ToDouble();
+            var toD = to.ToDouble();
+            foreach (var i in Reaching(fromD))
             {
-                var s = _sonorities[i];
-                if (s.Onset >= to)
+                if (_onset[i] >= toD)
                     break;
 
-                var lacking = Lacking(i, key, current, exempt);
-                if (lacking == 0)
+                var start = Math.Max(_onset[i], fromD);
+                var stop = Math.Min(_end[i], toD);
+                if (stop <= start)
                     continue;
 
-                var start = s.Onset > from ? s.Onset : from;
-                var stop = s.End < to ? s.End : to;
-                if (stop > start)
-                    sum += BitOperations.PopCount(lacking) * (float)(stop - start).ToDouble();
+                var lacking = Lacking(i, key, current, exempt);
+                if (lacking != 0)
+                    sum += BitOperations.PopCount(lacking) * (float)(stop - start);
             }
 
             return sum;
@@ -2134,7 +2944,12 @@ internal static class KeyAreaJudge
         /// the old key's own notes, <paramref name="homeNotes"/>, are heard again as harmony: a
         /// second applied dominant after the old key has come home confirms nothing, and a chord
         /// of the old key is the old key back, whatever the new key might borrow it as; but a
-        /// passing F natural in E F F♯ G is not C major coming home.
+        /// passing F natural in E F F♯ G is not C major coming home, and nor is a chord of the
+        /// old key that resolves into a chord the old key does not own — a dominant leaving the
+        /// key: the G of F B♭ G C7 resolves into C7, and is V/V of F, not C major back. Heard as
+        /// C back, F was never entered and began a phrase late. The E major chord of C D E F♯,
+        /// two bars each, is no chord of C's, and its E natural is C's note heard again: F sharp
+        /// major, which would borrow the chord as its flat seventh, is not entered.
         /// </summary>
         public bool Returns(ushort ownNotes, ushort homeNotes, Rational from, Rational within, KeySignature key, KeySignature current)
         {
@@ -2147,7 +2962,7 @@ internal static class KeyAreaJudge
                     var s = _sonorities[i];
                     if (s.Onset >= within)
                         break;
-                    if (s.Onset > from && (s.PitchClasses & homeNotes) != 0 && Lacking(i, key, current, Exempt.Nothing) != 0)
+                    if (s.Onset > from && (s.PitchClasses & homeNotes) != 0 && Lacking(i, key, current, Exempt.Nothing) != 0 && !LeavesTheKey(i, current))
                     {
                         within = s.Onset;
                         break;
@@ -2157,6 +2972,14 @@ internal static class KeyAreaJudge
 
             return BarsSounding(ownNotes, from, within) >= 2;
         }
+
+        /// <summary>
+        /// Whether the chord sonority <paramref name="index"/> belongs to is a chord of
+        /// <paramref name="key"/> — owned outright — that resolves into a chord the key does not
+        /// own: a dominant leaving the key, which is not the key heard again.
+        /// </summary>
+        private bool LeavesTheKey(int index, KeySignature key) =>
+            OwnsChord(key, index) && _following[index] != 0 && (_following[index] & ~Owned(key)) != 0;
 
         /// <summary>
         /// Whether [<paramref name="from"/>, <paramref name="to"/>) is framed by <paramref name="key"/>'s
@@ -2193,7 +3016,7 @@ internal static class KeyAreaJudge
             return i < _sonorities.Length && IsTonicChord(key, SoundingAt(_sonorities[i].Onset));
         }
 
-        /// <summary>The pitch classes of every sonority sounding at <paramref name="position"/>.</summary>
+        /// <summary>The pitch classes of every sonority sounding at <paramref name="position"/> — less a note leaning on the chord it was struck with, which is no note of the harmony.</summary>
         private ushort SoundingAt(Rational position)
         {
             ushort together = 0;
@@ -2202,7 +3025,7 @@ internal static class KeyAreaJudge
                 if (_sonorities[i].Onset > position)
                     break;
                 if (_sonorities[i].End > position)
-                    together |= _sonorities[i].PitchClasses;
+                    together |= (ushort)(_sonorities[i].PitchClasses & ~_leaning[i]);
             }
 
             return together;
@@ -2254,7 +3077,7 @@ internal static class KeyAreaJudge
                 {
                     if (Lacking(i, key, current) != 0)
                         return _sonorities[i].Onset;
-                    together |= _sonorities[i].PitchClasses;
+                    together |= (ushort)(_sonorities[i].PitchClasses & ~_leaning[i]);
                     if (BitOperations.PopCount(_chordPitchClasses[i]) >= 2 && IsTonicChord(key, _chordPitchClasses[i]))
                         tonicHeard = true;
                 }
@@ -2293,16 +3116,70 @@ internal static class KeyAreaJudge
             return any;
         }
 
-        /// <summary>Whether every whole note from <paramref name="from"/> to <paramref name="to"/> is <see cref="BarIsOwned"/> by <paramref name="key"/>.</summary>
+        /// <summary>
+        /// Whether every whole note from <paramref name="from"/> to <paramref name="to"/> is
+        /// <see cref="BarIsOwned"/> by <paramref name="key"/>, its applied triads and borrowed
+        /// chords counted only when it frames the span (<see cref="Exemption"/>).
+        /// </summary>
         public bool BarsAreOwned(Rational from, Rational to, KeySignature key, KeySignature current)
         {
+            var exempt = Exemption(key, from, to, Exempt.Chords);
             for (var bar = from; bar < to; bar += Rational.Whole)
             {
-                if (!BarIsOwned(bar, key, current))
+                if (!BarIsOwned(bar, key, current, exempt))
                     return false;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Whether every whole note from <paramref name="from"/> to <paramref name="to"/> is
+        /// <see cref="BarIsOwned"/> by <paramref name="key"/>, allowing one chromatic
+        /// parenthesis: a bar the key does not own between a bar it owns and the bar at
+        /// <paramref name="to"/>, which the caller vouches for.
+        /// </summary>
+        public bool BarsAreOwnedButForAParenthesis(Rational from, Rational to, KeySignature key, KeySignature current)
+        {
+            var exempt = Exemption(key, from, to, Exempt.Chords);
+            var parenthesis = false;
+            var previousOwned = false;
+            for (var bar = from; bar < to; bar += Rational.Whole)
+            {
+                if (BarIsOwned(bar, key, current, exempt))
+                {
+                    previousOwned = true;
+                    continue;
+                }
+
+                if (parenthesis || !previousOwned || bar + Rational.Whole != to && !BarIsOwned(bar + Rational.Whole, key, current, exempt))
+                    return false;
+                parenthesis = true;
+                previousOwned = false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// The exemption <paramref name="key"/> gets over [<paramref name="from"/>,
+        /// <paramref name="to"/>): what the caller asked for, save that the key's applied triads
+        /// and borrowed chords (<see cref="Exempt.Chords"/>) are heard only inside a span the
+        /// key frames (<see cref="Frames"/>) — elsewhere its dominant sevenths alone. The one
+        /// place the frame rule is stated: <see cref="Owns"/>, <see cref="Foreign"/>,
+        /// <see cref="BarsAreOwned"/> and <see cref="Owners"/> all ask here. A single bar is no
+        /// phrase and cannot be framed, so <see cref="BarIsOwned"/> takes the exemption its
+        /// caller decided; and a key in force needs no frame to own its chromatic chords
+        /// (<see cref="FirstOnsetLacking"/>, <see cref="HomeAgain"/>, <see cref="StandsAt"/>).
+        /// </summary>
+        private Exempt Exemption(KeySignature key, Rational from, Rational to, Exempt exempt) =>
+            exempt == Exempt.Chords && !Frames(key, from, to) ? Exempt.Sevenths : exempt;
+
+        /// <summary>Whether the first sonority at or after <paramref name="position"/> belongs to a chord — an arpeggiated one — that began before it.</summary>
+        public bool BeginsInsideAChord(Rational position)
+        {
+            var i = FirstIndexAt(position);
+            return i < _sonorities.Length && _sonorities[_groupStart[i]].Onset < _sonorities[i].Onset;
         }
 
         /// <summary>The first onset strictly after <paramref name="position"/>, or the end.</summary>
@@ -2384,14 +3261,16 @@ internal static class KeyAreaJudge
         }
 
         /// <summary>The index of the first sonority whose onset is at or after <paramref name="position"/>.</summary>
-        private int FirstIndexAt(Rational position)
+        private int FirstIndexAt(Rational position) => FirstIndexAt(position.ToDouble());
+
+        private int FirstIndexAt(double position)
         {
             var lo = 0;
             var hi = _sonorities.Length;
             while (lo < hi)
             {
                 var mid = (lo + hi) >> 1;
-                if (_sonorities[mid].Onset < position)
+                if (_onset[mid] < position)
                     lo = mid + 1;
                 else
                     hi = mid;
@@ -2406,11 +3285,13 @@ internal static class KeyAreaJudge
         /// first whose ordinary length could, in onset order. A loop over them stops itself where
         /// its onsets pass what it is looking for.
         /// </summary>
-        private ReachingIndices Reaching(Rational position) => new(this, position);
+        private ReachingIndices Reaching(Rational position) => new(this, position.ToDouble());
 
-        private struct ReachingIndices(Evidence evidence, Rational position)
+        private ReachingIndices Reaching(double position) => new(this, position);
+
+        private struct ReachingIndices(Evidence evidence, double position)
         {
-            private readonly int _mainStart = evidence.FirstIndexAt(position - evidence._longest);
+            private readonly int _mainStart = evidence.FirstIndexAt(position - evidence._longestD);
             private int _long = 0;
             private int _main = -1;
 
@@ -2423,7 +3304,7 @@ internal static class KeyAreaJudge
                 while (_long < evidence._long.Length)
                 {
                     var i = evidence._long[_long++];
-                    if (i < _mainStart && evidence._sonorities[i].End > position)
+                    if (i < _mainStart && evidence._end[i] > position)
                     {
                         Current = i;
                         return true;
