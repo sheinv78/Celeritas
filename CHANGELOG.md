@@ -519,8 +519,10 @@ follows.
   console UTF-8. On a German or Russian host one report read `Analysis time:
   7402,4 µs` two lines above `G Major: 1.058`, the benchmark counted `1 000 000`
   notes in `1,46 ms`, and on a legacy code page the `µs`, `→` and box-drawing
-  rules arrived as `?`. The culture and the console's code page are put back
-  when the tool exits. A percentage is rounded the way the library rounds its
+  rules arrived as `?`. The culture is pinned on the thread the tool runs on --
+  nothing process-wide, so a host that drives the entry point in-process is not
+  changed out from under its other threads -- and put back, with the console's
+  code page, when the tool exits. A percentage is rounded the way the library rounds its
   own, so `celeritas progression` and `ToFormattedReport` give one progression
   the same confidence
 - `celeritas rhythm` says whether its meter was given or detected. `--meter`

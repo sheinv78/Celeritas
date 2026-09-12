@@ -12,7 +12,15 @@ namespace Celeritas.Tests;
 /// establishing facts, and a few notes often decide nothing at all, so the line must carry
 /// the margin behind it. These pin both halves: the phrasing, and the library invariant the
 /// phrasing depends on.
+/// <para>
+/// One of them drives the real entry point in-process, and that swaps the process's console
+/// for the duration, so this class runs in the CLI collection, apart from everything else,
+/// like every other class that does. It used to run in parallel with the rest of the suite,
+/// and while the CLI still pinned the process-wide default culture that made it the one window
+/// in which another test could see its numbers change their decimal mark mid-loop.
+/// </para>
 /// </summary>
+[Collection(nameof(CliCommandTests))]
 public class CliKeyReportingTests
 {
     [Theory]

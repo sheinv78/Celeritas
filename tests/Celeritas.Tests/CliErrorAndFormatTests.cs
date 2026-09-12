@@ -23,14 +23,19 @@ public class CliErrorAndFormatTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static (int ExitCode, string Output) Run(params string[] args)
+    private static (int ExitCode, string Output) Run(params string[] args) => Run(new StringWriter(), args);
+
+    /// <summary>
+    /// Runs the CLI through its real entry point with <paramref name="captured"/> standing in
+    /// for the console, so a test can watch what the command does while it is still running.
+    /// </summary>
+    private static (int ExitCode, string Output) Run(StringWriter captured, params string[] args)
     {
         var entryPoint = typeof(KeyConfidenceDescription).Assembly.EntryPoint
             ?? throw new InvalidOperationException("the CLI assembly has no entry point");
 
         var originalOut = Console.Out;
         var originalError = Console.Error;
-        var captured = new StringWriter();
         try
         {
             Console.SetOut(captured);
@@ -934,7 +939,9 @@ public class CliErrorAndFormatTests : IDisposable
     {
         // The entry point pins the culture for its own run and must hand it back when it
         // returns: this suite drives it in-process, and without the hand-back every test after
-        // the first CLI one would run invariant, on every thread, and never see its own machine.
+        // the first CLI one on this thread would run invariant and never see its own machine.
+        // The process default is checked too: the entry point has no business with it, and it
+        // once set it out from under every other thread (see the test after this one).
         var culture = CultureInfo.GetCultureInfo("de-DE");
         var previous = CultureInfo.CurrentCulture;
         var previousDefault = CultureInfo.DefaultThreadCurrentCulture;
@@ -952,6 +959,120 @@ public class CliErrorAndFormatTests : IDisposable
             CultureInfo.CurrentCulture = previous;
             CultureInfo.DefaultThreadCurrentCulture = previousDefault;
         }
+    }
+
+    [Fact]
+    public void RunningTheCli_PinsTheCultureOfItsOwnThreadAndNoOther()
+    {
+        // The entry point pins the invariant culture for its run. It used to pin it on the
+        // process as well — CultureInfo.DefaultThreadCurrentCulture — so while a command ran,
+        // every other thread of a host that drives the CLI in-process read invariant instead of
+        // the machine: in this suite, a test on another thread that formatted {x:F4} twelve times
+        // and expected one string saw "4,6667" for some keys and "4.6667" for the rest on a
+        // German or Russian machine, once in several runs. The process default set here stands
+        // in for that machine; a thread started while the command is running must still read it.
+        var culture = CultureInfo.GetCultureInfo("de-DE");
+        var previous = CultureInfo.CurrentCulture;
+        var previousDefault = CultureInfo.DefaultThreadCurrentCulture;
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        try
+        {
+            var probe = new ProbeAFreshThreadOnFirstWrite();
+            var (exit, _) = Run(probe, "info");
+
+            Assert.Equal(0, exit);
+            Assert.Equal(culture, probe.CultureOfAFreshThread);
+            Assert.Equal(culture, CultureInfo.DefaultThreadCurrentCulture);
+        }
+        finally
+        {
+            CultureInfo.DefaultThreadCurrentCulture = previousDefault;
+            CultureInfo.CurrentCulture = previous;
+        }
+    }
+
+    [Fact]
+    public void HostIndependentOutput_PinsTheThreadItRunsOn_AndLeavesTheProcessDefaultAlone()
+    {
+        // The same contract at the class: inside the scope this thread is invariant, a thread
+        // that has no culture of its own still reads the process default, and after the scope
+        // this thread is back to what it had.
+        var culture = CultureInfo.GetCultureInfo("de-DE");
+        var previous = CultureInfo.CurrentCulture;
+        var previousDefault = CultureInfo.DefaultThreadCurrentCulture;
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        CultureInfo.CurrentCulture = culture;
+        try
+        {
+            using (HostIndependentOutput.Begin())
+            {
+                Assert.Equal(CultureInfo.InvariantCulture, CultureInfo.CurrentCulture);
+                Assert.Equal(CultureInfo.InvariantCulture, CultureInfo.CurrentUICulture);
+                Assert.Equal(culture, CultureOfAFreshThread());
+                Assert.Equal(culture, CultureInfo.DefaultThreadCurrentCulture);
+            }
+
+            Assert.Equal(culture, CultureInfo.CurrentCulture);
+            Assert.Equal(culture, CultureInfo.DefaultThreadCurrentCulture);
+        }
+        finally
+        {
+            CultureInfo.DefaultThreadCurrentCulture = previousDefault;
+            CultureInfo.CurrentCulture = previous;
+        }
+    }
+
+    /// <summary>
+    /// What a thread that has never been given a culture of its own reads. The thread is
+    /// started without the caller's execution context: a culture set on a thread travels in
+    /// that context to every thread and task it starts, so a probe started the ordinary way
+    /// from inside the CLI's scope would inherit the CLI's invariant culture and say nothing
+    /// about the process. The threads the race was about — other tests on other workers — owe
+    /// the CLI thread nothing, and this one is made the same way.
+    /// </summary>
+    private static CultureInfo CultureOfAFreshThread()
+    {
+        CultureInfo? seen = null;
+        var thread = new Thread(() => seen = CultureInfo.CurrentCulture);
+        thread.UnsafeStart();
+        thread.Join();
+        return seen ?? throw new InvalidOperationException("the probe thread did not run");
+    }
+
+    /// <summary>
+    /// A console capture that, on the first thing the CLI writes — so while the command is
+    /// running, inside its culture scope — asks a fresh thread what culture it is given, and
+    /// keeps the answer.
+    /// </summary>
+    private sealed class ProbeAFreshThreadOnFirstWrite : StringWriter
+    {
+        public CultureInfo? CultureOfAFreshThread { get; private set; }
+
+        public override void Write(char value)
+        {
+            Probe();
+            base.Write(value);
+        }
+
+        public override void Write(string? value)
+        {
+            Probe();
+            base.Write(value);
+        }
+
+        public override void Write(char[] buffer, int index, int count)
+        {
+            Probe();
+            base.Write(buffer, index, count);
+        }
+
+        public override void Write(ReadOnlySpan<char> buffer)
+        {
+            Probe();
+            base.Write(buffer);
+        }
+
+        private void Probe() => CultureOfAFreshThread ??= CliErrorAndFormatTests.CultureOfAFreshThread();
     }
 
     [Fact]
