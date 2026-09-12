@@ -675,13 +675,14 @@ public static class KeyProfiler
     /// window is profiled from its notes alone, weighed by duration as
     /// <see cref="DetectFromBuffer"/> weighs them, so the points can be plotted and the opening
     /// key is read from the music. <see cref="ModulationDetector.Analyze(NoteBuffer, KeySignature)"/>
-    /// is the harmonic road: it starts from a key the caller knows, reads chords rather than
-    /// windows, and tells a tonicization from a modulation, names the type and finds the pivot
-    /// chord. Both decide where the key changes by the same rules — a key holds for a phrase, a
-    /// chord is not a key, a key owns its phrase, a secondary dominant is not a modulation, a
-    /// key is entered when its own notes return — so from the same opening key they place the
-    /// same modulations, each at the positions it reads at (this one at its window positions,
-    /// the detector at every chord); use this one to see how the key reading moves, and the
+    /// is the harmonic road: it starts from a key the caller knows, reads chords and the line
+    /// between them rather than windows, and tells a tonicization from a modulation, names the
+    /// type and finds the pivot chord. Both decide where the key changes by the same rules — a
+    /// key holds for a phrase, a chord is not a key, a key owns its phrase, its chromatic chords
+    /// and passing tones are its own, a secondary dominant is not a modulation, a key is entered
+    /// when its own notes return — so from the same opening key they place the same
+    /// modulations, each at the positions it reads at (this one at its window positions, the
+    /// detector at every chord); use this one to see how the key reading moves, and the
     /// detector to have the changes classified.
     /// </para>
     /// <para>
@@ -777,13 +778,15 @@ public static class KeyProfiler
         }
 
         // The notes go with the points: DetectModulations judges phrases of the music, not the
-        // windows' point estimates, and a rest carries no pitch class.
+        // windows' point estimates, and a rest carries no pitch class. Each note keeps its
+        // pitch, so that the judge can tell a passing tone — approached and left by step —
+        // from a note of the harmony.
         var sonorities = new List<Sonority>(sorted.Length);
         foreach (var note in sorted)
         {
             if (Rests.IsRest(note.Pitch))
                 continue;
-            sonorities.Add(new Sonority(note.Offset, note.Offset + note.Duration, (ushort)(1 << PitchMath.Fold(note.Pitch))));
+            sonorities.Add(new Sonority(note.Offset, note.Offset + note.Duration, (ushort)(1 << PitchMath.Fold(note.Pitch)), note.Pitch));
         }
 
         return new KeyTrajectory(results, sonorities, windowSize);
@@ -931,16 +934,22 @@ public sealed class KeyTrajectory
     /// that is longer — read from where the new key begins is decidable, names the new key
     /// clearly, fits it better than the key the music was in, sounds a note the new key owns and
     /// the old does not, and is owned by the new key — the notes it lacks amounting to less than
-    /// a quarter note in any bar, an applied dominant that resolves into a chord of the key
-    /// counted as the key's; when the new key still reads from there through the phrase, or to
-    /// the end of the piece closing on its tonic from a key the music was still in; and when the
-    /// new key's own notes return in a second bar before the old key's are heard again, or the
-    /// phrase is framed by the new tonic chord. A key change that does not hold that long is a
-    /// tonicization — an applied dominant, a borrowed chord — and is not reported here;
-    /// <see cref="ModulationDetector"/> reports those, as <see cref="ModulationType.Tonicization"/>.
-    /// The new key begins after the last note it does not own: at its pivot chord when the bar
-    /// before is its, or at the start of the phrase — phrases counted from the first note — in
-    /// which its own note first sounds, when it owns every bar from there. The opening key is
+    /// a quarter note in any bar, its own chromatic chords counted as the key's (an applied
+    /// chord, a major triad or a dominant seventh resolving down a fifth into a chord of the key;
+    /// a borrowed chord, a major key's minor subdominant, flat sixth or flat seventh resolving
+    /// into a chord of the key, both inside a phrase the key's tonic frames; a minor key's
+    /// Picardy third closing the piece) and its passing tones, neighbour tones and
+    /// appoggiaturas weighing nothing; when the new key still reads from there through the
+    /// phrase, or to the end of the piece closing on its tonic from a key the music was still
+    /// in; and when the new key's own notes return in a second bar before the old key's are
+    /// heard again, or the phrase is framed by the new tonic chord — in a melody, by a note of
+    /// the tonic triad at its start and the tonic at its close. A key change that does not hold
+    /// that long is a tonicization — an applied dominant, a borrowed chord — and is not reported
+    /// here; <see cref="ModulationDetector"/> reports those, as <see cref="ModulationType.Tonicization"/>.
+    /// The new key begins after the last note it does not own, on a chord of its own — not on
+    /// one of its applied or borrowed chords: at its pivot chord when the bar before is its, or
+    /// at the start of the phrase — phrases counted from the first note — in which its own note
+    /// first sounds, when it owns every bar from there. The opening key is
     /// the key of the chord the piece opens on when that key owns the opening phrase as well as
     /// any key does, else the key the opening phrase sounds like, extended a phrase at a time
     /// while it cannot decide, or the whole piece as a last resort; a change placed at the first
@@ -976,6 +985,20 @@ public sealed class KeyTrajectory
     /// readily as in C, reported thirty-six modulations to C; they report none, and two
     /// hundred more from another seed, which reported forty-five, report two (melodies whose
     /// second half never sounds F, so that G major owns it outright).
+    /// </para>
+    /// <para>
+    /// With only dominant sevenths counted as a key's applied chords and every note weighed
+    /// alike, on thirty-eight passages a second reviewer wrote it was wrong on seven, four of
+    /// them melodies: two chromatic passing eighths in each bar of a G-major melody weighed a
+    /// quarter of the bar, so a melody alone or over chords with that in every bar named no key;
+    /// a chromatic quarter-note neighbour under a D7 put G at bar 8 where a musician hears 4,
+    /// the detector — which never saw the melody's eighths — at 4; a passing F natural in E F F
+    /// sharp G placed G three eighths into its bar; C F G C | G E Am D7 | G C D7 G and C F G C |
+    /// G Cm D7 G | G C D7 G reached G two bars late; and Cm Fm G7 Cm | E♭ A♭ B♭ E♭ | Cm A♭ G7 C,
+    /// closing on a Picardy third, never came home to C minor. A passing tone is not a foreign
+    /// note, a key's chromatic chords are its own, the Picardy third is the minor key's cadence,
+    /// and the detector now hears the line its chords carry; both roads agree with the musician
+    /// on all thirty-eight, and with each other on every passage of the three tables.
     /// </para>
     /// <para>
     /// The window no longer limits what is heard: a one-bar window over arpeggiated triads has

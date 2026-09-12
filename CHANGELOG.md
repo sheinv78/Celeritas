@@ -324,6 +324,38 @@ follows.
   its own before another key is read is dropped: on two hundred random diatonic
   melodies in C the trajectory reported thirty-six modulations, now none; on two
   hundred more from another seed, forty-five, now two
+- A key's chromatic chords are its own. `KeyTrajectory.DetectModulations` and
+  `ModulationDetector.Analyze` count an applied chord -- a major triad as well as
+  a dominant seventh, resolving down a fifth into a chord of the key that is not
+  the current key's tonic -- and a borrowed chord -- a major key's minor
+  subdominant, flat sixth or flat seventh resolving into a chord of the key -- as
+  the key's own, inside a phrase the key's tonic frames; a chord the key in force
+  owns is that key's, whatever another key might borrow it as, and a key cannot
+  begin on one of its own chromatic chords. `C F G C | G E Am D7 | G C D7 G` and
+  `C F G C | G Cm D7 G | G C D7 G` are in G from their fifth bar; both roads had
+  reached G two bars late
+- The Picardy third is the minor key's cadence: a minor key's tonic major triad
+  closing the piece is owned by the key as its raised seventh already is, and
+  announces no other key. `Cm Fm G7 Cm | Eb Ab Bb Eb | Cm Ab G7 C` comes home to C
+  minor at its ninth bar; it had ended in E flat, the Picardy chord a tonicization
+  of C major
+- A passing tone is not a foreign note. A chromatic passing tone -- a semitone
+  from the notes either side, in a run that moves one way between structural notes
+  of the key within a bar -- a chromatic neighbour, and an appoggiatura resolving
+  into the chord under it weigh nothing toward what a key lacks, on both roads;
+  the detector now hears the line between its chords, so the two roads answer
+  alike on a melody over chords. A melody with two chromatic passing eighths in
+  every bar of its new key had named no key at all; a quarter-note neighbour under
+  a D7 had put G four bars late on the trajectory road; a passing F natural in
+  `E F F# G` had placed G three eighths into its bar. A minor key owns its raised
+  seventh only in its dominant chords, alone in the line, or leaning on its tonic
+  chord, so a G-major phrase with an E flat in it is no longer E minor's, and a
+  guessed opening is not confirmed by a note that is a passing tone of the key
+  the music is in
+- On the thirty-eight passages a second reviewer wrote, both roads now agree with
+  the musician on all thirty-eight (they had been wrong on seven), and with each
+  other on every passage of the three tables; on a third reviewer's thirty-one,
+  nineteen are right on both roads and join the fixture
 - `Phrase.StartIndex` and `EndIndex` address the buffer that was analysed, so
   `buffer.Get(StartIndex)` is the phrase's first note. They were positions in the
   analyzer's private copy -- rests dropped, then offset-sorted -- so with a rest

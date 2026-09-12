@@ -11,9 +11,10 @@ namespace Celeritas.Tests;
 /// for a phrase, a chord is not a key, a key owns its phrase, a secondary dominant is not a
 /// modulation, a key is entered when its own notes return, a key area begins with a phrase, the
 /// relative minor is reached when its dominant returns and left when its leading tone stops, a
-/// change at the first note is the opening key misjudged, and the two roads place the same
-/// modulations. Each passage names what the roads answered before the rules, measured on the
-/// library as it stood.
+/// change at the first note is the opening key misjudged, a key's chromatic chords are its own,
+/// the Picardy third is the minor key's cadence, a passing tone is not a foreign note, and the
+/// two roads place the same modulations. Each passage names what the roads answered before the
+/// rules, measured on the library as it stood.
 /// </summary>
 public class AKeyHoldsForAPhraseTests
 {
@@ -22,11 +23,11 @@ public class AKeyHoldsForAPhraseTests
     /// <summary>
     /// Block chords in close root position from C3, one whole note each unless suffixed
     /// <c>h</c> (a half note): <c>root[:quality]</c> with the root in semitones above C and the
-    /// quality one of <c>m 7 dim</c>; bar lines are ignored.
+    /// quality one of <c>m 7 m7 dim</c>; bar lines are ignored.
     /// </summary>
     private static NoteBuffer Chords(string tokens)
     {
-        var qualities = new Dictionary<string, int[]> { [""] = [0, 4, 7], ["m"] = [0, 3, 7], ["7"] = [0, 4, 7, 10], ["dim"] = [0, 3, 6] };
+        var qualities = new Dictionary<string, int[]> { [""] = [0, 4, 7], ["m"] = [0, 3, 7], ["7"] = [0, 4, 7, 10], ["m7"] = [0, 3, 7, 10], ["dim"] = [0, 3, 6] };
         var notes = new List<NoteEvent>();
         var time = Rational.Zero;
         foreach (var raw in tokens.Split(' ', StringSplitOptions.RemoveEmptyEntries))
@@ -199,12 +200,14 @@ public class AKeyHoldsForAPhraseTests
             Assert.Equal(Modulations(buffer, opening), Trajectory(buffer));
         }
 
-        // The held-out passages too, to the same keys within a bar of each other: the roads
-        // differ in what a sonority is, and a note held alone for a bar — the common tone of a
-        // common-tone modulation — is a sonority to the trajectory and no chord to the detector,
-        // which places the new key at the chord after it where the trajectory places it at the
-        // note.
-        foreach (var passage in RealModulationPassages.HeldOut)
+        // The held-out passages too, and the second reviewer's, to the same keys within a bar
+        // of each other: the roads differ in what a sonority is, and the detector's chords sound
+        // until the next where the trajectory's notes last their own length. Before the detector
+        // heard the line between its chords they were a bar or more apart on a melody over
+        // chords — a chromatic quarter-note neighbour under a D7 put G at bar 8 on the
+        // trajectory and at 4 on the detector, and a melody with two chromatic passing eighths
+        // in each bar of its G was G on the detector and no key on the trajectory.
+        foreach (var passage in RealModulationPassages.HeldOut.Concat(RealModulationPassages.ReviewerHeldOut))
         {
             using var buffer = passage.Build(0);
             var opening = new KeySignature((byte)passage.OpeningRoot, passage.OpeningIsMajor);
@@ -458,6 +461,216 @@ public class AKeyHoldsForAPhraseTests
         Assert.InRange(heard.Position.ToDouble(), 3.0, 4.0);
         Assert.Equal(1, heard.Position.Denominator);
         Assert.Equal([heard], Trajectory(buffer));
+    }
+
+    [Fact]
+    public void AKeysChromaticChordsAreItsOwn()
+    {
+        // C F G C | G E Am D7 | G C D7 G: the E major triad is V/ii of G, and a musician hears G
+        // from its fifth bar. Only a dominant seventh was an applied chord, so the G sharp was
+        // a foreign bar and both roads reached G two bars late, at the Am.
+        using var appliedTriad = Chords("0 5 7 0 | 7 4 9:m 2:7 | 7 0 2:7 7");
+
+        var heard = Assert.Single(Modulations(appliedTriad, CMajor));
+        Assert.Equal(new KeySignature(7, true), heard.ToKey);
+        Assert.Equal(new Rational(4, 1), heard.Position);
+        Assert.Equal([heard], Trajectory(appliedTriad));
+
+        // C F G C | G Cm D7 G | G C D7 G: the C minor chord is G's borrowed iv, resolving into
+        // its D7. It was a foreign bar too, and G began at the D7.
+        using var borrowed = Chords("0 5 7 0 | 7 0:m 2:7 7 | 7 0 2:7 7");
+
+        heard = Assert.Single(Modulations(borrowed, CMajor));
+        Assert.Equal(new KeySignature(7, true), heard.ToKey);
+        Assert.Equal(new Rational(4, 1), heard.Position);
+        Assert.Equal([heard], Trajectory(borrowed));
+
+        // A chord the key in force owns is that key's, whatever another key might borrow it as:
+        // C F G C A D G, round and round, is C with a chain of secondary dominants, not G with
+        // F as its flat seventh and A as its V/V. G owned every bar of it once its applied
+        // triads and borrowed chords counted, and the detector went to the dominant.
+        using var chain = Chords("0h 5h 7h 0h 9h 2h 7h 0h 5h 7h 0h 9h 2h 7h 0h 5h 7h 0h 9h 2h 7h 0h 5h 7h 0h 9h 2h 7h");
+
+        Assert.Empty(Modulations(chain, CMajor));
+        Assert.Empty(Trajectory(chain));
+
+        // A chord resolves into the chord on the root a fifth below, not into a seventh chord
+        // that holds that triad: F sharp seventh falling to G sharp minor seventh is the
+        // deceptive cadence of B, not V7 of B resolving. With G sharp minor seventh taken for a
+        // B chord, F sharp 7 was V7/V of E and B B7 F sharp 7 G sharp m7 was named E major.
+        using var deceptive = Chords("0 5 7 0 | 11 11:7 6:7 8:m7 | 0 5 7 0");
+
+        Assert.DoesNotContain(ModulationDetector.Analyze(deceptive, CMajor).Modulations, m => m.ToKey == new KeySignature(4, true));
+        Assert.DoesNotContain(Trajectory(deceptive), m => m.ToKey == new KeySignature(4, true));
+    }
+
+    [Fact]
+    public void ThePicardyThirdIsTheMinorKeysCadence()
+    {
+        // Cm Fm G7 Cm | Eb Ab Bb Eb | Cm Ab G7 C: a hymn in C minor that visits its relative
+        // major and comes home, closing on a Picardy third. The E natural of the final chord
+        // was a whole bar C minor did not own, so C minor never owned its closing phrase: both
+        // roads ended the piece in E flat, and the detector called the Picardy chord a
+        // tonicization of C major. A minor key's tonic major triad closing the piece is its
+        // cadence, its raised third owned as its raised seventh already is.
+        using var hymn = Chords("0:m 5:m 7:7 0:m | 3 8 10 3 | 0:m 8 7:7 0");
+        var cMinor = new KeySignature(0, false);
+
+        var heard = Modulations(hymn, cMinor);
+        Assert.Equal(2, heard.Count);
+        Assert.Equal(new KeySignature(3, true), heard[0].ToKey);
+        Assert.InRange(heard[0].Position.ToDouble(), 3.0, 4.0);
+        Assert.Equal(cMinor, heard[1].ToKey);
+        Assert.Equal(new Rational(8, 1), heard[1].Position);
+        Assert.Equal(heard, Trajectory(hymn));
+        Assert.DoesNotContain(ModulationDetector.Analyze(hymn, cMinor).Modulations, m => m.ToKey == CMajor);
+
+        // Cm Fm G7 Cm | Ab Fm G7 C: the Picardy third alone was a tonicization of C major too.
+        using var picardy = Chords("0:m 5:m 7:7 0:m | 8 5:m 7:7 0");
+
+        Assert.Empty(ModulationDetector.Analyze(picardy, cMinor).Modulations);
+        Assert.Empty(Trajectory(picardy));
+
+        // Four bars of C major after four of C minor are still the parallel major: the raised
+        // third is the minor key's only in the chord that closes the piece.
+        using var parallel = Chords("0:m 5:m 7:7 0:m | 0 5 7:7 0");
+
+        heard = Modulations(parallel, cMinor);
+        Assert.Equal([(new Rational(4, 1), CMajor)], heard);
+        Assert.Equal(heard, Trajectory(parallel));
+    }
+
+    [Fact]
+    public void APassingToneIsNotAForeignNote()
+    {
+        // Four bars in C, then four in G whose melody has two chromatic passing eighths in each
+        // of its first three bars — D C B Bb A Ab G, G A Bb B C C# D, D E F F# G Ab A — and
+        // closes B A G. Weighed as strays, the two eighths were a quarter of each bar, the most
+        // a key may lack of a bar it owns, and neither road named any key for the melody alone;
+        // over its chords, the detector — which never saw the eighths — said G and the
+        // trajectory said nothing. A passing tone weighs nothing.
+        var G = new KeySignature(7, true);
+        using var alone = RealModulationPassages.ReviewerHeldOutNamed("to the dominant, the melody with two chromatic passing eighths in each bar of the new key (melody alone)").Build(0);
+        using var overChords = RealModulationPassages.ReviewerHeldOutNamed("to the dominant, the melody with two chromatic passing eighths in each bar of the new key (melody over chords)").Build(0);
+
+        Assert.Equal([(new Rational(4, 1), G)], Modulations(alone, CMajor));
+        Assert.Equal([(new Rational(4, 1), G)], Trajectory(alone));
+        Assert.Equal([(new Rational(4, 1), G)], Modulations(overChords, CMajor));
+        Assert.Equal([(new Rational(4, 1), G)], Trajectory(overChords));
+
+        // A quarter-note C sharp under the D7 of a G-major melody over chords, approached by
+        // leap from A and resolved into D: an appoggiatura. It weighed exactly a quarter, and
+        // the trajectory placed G four bars late, at 8, where the detector said 4.
+        using var appoggiatura = RealModulationPassages.ReviewerHeldOutNamed("to the dominant, the melody with one chromatic quarter-note neighbour in the new key (melody over chords)").Build(0);
+
+        Assert.Equal([(new Rational(4, 1), G)], Modulations(appoggiatura, CMajor));
+        Assert.Equal([(new Rational(4, 1), G)], Trajectory(appoggiatura));
+
+        // E F F sharp G in the sixth bar of a passage that goes to G at its fifth: the F is a
+        // chromatic passing tone, and it was the last note G did not own, so the trajectory
+        // began G three eighths into the bar, at 43/8.
+        using var run = RealModulationPassages.ReviewerHeldOutNamed("to the dominant through a deceptive cadence, with a chromatic run E F F sharp G in bar 6 (melody over chords)").Build(0);
+
+        Assert.Equal([(new Rational(4, 1), G)], Modulations(run, CMajor));
+        Assert.Equal([(new Rational(4, 1), G)], Trajectory(run));
+
+        // A quarter E flat neighbour of D in a G-major melody. Weighed as a stray it kept G
+        // from owning its bar, and E minor — which owns E flat as its raised seventh, D sharp
+        // — was the only key that could; neither road heard the modulation at all.
+        var melody = MusicNotation.Parse(
+            "E4/4 G4/4 C5/2 | A4/4 F4/4 C5/2 | D5/4 B4/4 G4/2 | E4/4 D4/4 C4/2 | "
+            + "D5/4 C5/4 B4/4 A4/4 | G4/4 F#4/4 G4/4 A4/4 | B4/4 D5/4 Eb5/4 D5/4 | F#5/4 A5/4 G5/2");
+        using var neighbour = new NoteBuffer(melody.Length);
+        neighbour.AddRange(melody);
+
+        Assert.Equal([(new Rational(4, 1), G)], Modulations(neighbour, CMajor));
+        Assert.Equal([(new Rational(4, 1), G)], Trajectory(neighbour));
+
+        // Not every note between two steps is a passing tone. A passing or neighbour tone is
+        // unaccented: a melody in C whose F falls on a downbeat between two E's is in C, not in
+        // a G major that hears the F as a chromatic neighbour; read with the neighbour exempt,
+        // the trajectory went to G at the F. And a chromatic scale is what it always was to the
+        // judge — no key's — though every note in it is approached and left by a semitone: a
+        // run of notes on their way must set out from a structural note and land on one within
+        // a whole note, and a chromatic scale has neither.
+        var downbeat = MusicNotation.Parse(
+            "C4/4 E4/4 G4/4 G4/4 | G4/4 D4/4 E4/4 E4/4 | F4/4 F4/4 A4/4 A4/4 | G4/4 G4/4 D4/4 D4/4 | "
+            + "D4/4 A4/4 E4/4 E4/4 | F4/4 E4/4 D4/4 C4/4 | E4/4 B4/4 G4/4 D4/4 | C4/4 B4/4 B4/4 B4/4");
+        using var accented = new NoteBuffer(downbeat.Length);
+        accented.AddRange(downbeat);
+
+        Assert.Empty(Modulations(accented, CMajor));
+        Assert.Empty(Trajectory(accented));
+
+        using var chromatic = new NoteBuffer(64);
+        for (var i = 0; i < 64; i++)
+        {
+            chromatic.AddNote(60 + (i % 12), Rational.Eighth * i, Rational.Eighth);
+        }
+
+        Assert.Empty(ModulationDetector.Analyze(chromatic, CMajor).Modulations);
+        Assert.Empty(Trajectory(chromatic));
+    }
+
+    [Fact]
+    public void AKeyBeginsOnAChordOfItsOwn()
+    {
+        // In a descending-fifths sequence of major triads every four chords are V/V V I IV of
+        // the third one's key, and with plain triads applied B flat E flat A flat D flat began
+        // an A flat major area on the B flat chord. An applied or borrowed chord is heard as
+        // the key's only once the key is in force, so it cannot be where the key begins.
+        using var fifths = Chords("0 5 10 3 8 1 6 11 4 9 2 7 0");
+
+        Assert.Empty(Modulations(fifths, CMajor));
+        Assert.Empty(Trajectory(fifths));
+
+        // But a chord with a stray note in it is a chord of the key: the detector's eighth-note
+        // grid rounds the last thirty-seconds of a bar of C onto the D flat downbeat, and D flat
+        // begins on that downbeat — not an eighth later, where the first clean chord is.
+        var passage = RealModulationPassages.HeldOutNamed("up a semitone in thirty-second-note arpeggios (thirty-second arpeggios)");
+        using var thirtySeconds = passage.Build(0);
+
+        var heard = Assert.Single(Modulations(thirtySeconds, CMajor));
+        Assert.Equal(new KeySignature(1, true), heard.ToKey);
+        Assert.Equal(new Rational(4, 1), heard.Position);
+    }
+
+    // ---------- the third reviewer's two findings on iteration three ----------
+
+    [Fact]
+    public void AGuessedOpeningIsNotConfirmedByAPassingTone()
+    {
+        // A C-major melody whose third bar rises F F# G G# A A# and whose sixth falls G Gb F E
+        // Eb D Db. The profile opens it in E minor (E and B weigh most in the first phrase), and
+        // the judge drops a guessed opening only if the guessed key never sounded a note of its
+        // own before another key was read. With the chromatic notes weighed as passing tones for
+        // C, C owned every phrase — but the F sharp in the run counted as E minor's own note, so
+        // the guess stood and the trajectory reported a modulation to C at bar 4 in a piece that
+        // never left C. A home note that is a passing tone of the other key is no note of the
+        // guessed key's own: the same rule the patch already applied in Returns().
+        using var melody = RealModulationPassages.ThirdReviewerHeldOut
+            .Single(p => p.Name.StartsWith("a C major melody with a chromatic scale fragment")).Build(0);
+
+        Assert.Empty(Trajectory(melody));
+        Assert.Empty(Modulations(melody, CMajor));
+    }
+
+    [Fact]
+    public void TheLeadingToneLeansOnTheMinorTonic()
+    {
+        // Four bars of C, then eight of C minor over Cm Fm G7 Cm; in bars 8 and 12 the melody
+        // strikes B natural on the downbeat over the tonic chord and resolves to C. Owned only in
+        // the dominant's chords or alone in the line, the leading tone struck with the tonic was a
+        // note C minor lacked for a quarter — the floor — so C minor owned neither phrase, and
+        // both roads heard no modulation at all (HEAD: C minor at 4). The tonic chord with the
+        // leading tone leaning on it is the tonic chord, and C E flat G is still no chord of E
+        // minor's, so the borrowed-iv row the rule was written for is unchanged.
+        var cMinor = new KeySignature(0, false);
+        using var melody = RealModulationPassages.ThirdReviewerHeldOut
+            .Single(p => p.Name.StartsWith("to the parallel minor, the leading tone struck on the downbeat")).Build(0);
+
+        Assert.Equal([(new Rational(4, 1), cMinor)], Modulations(melody, CMajor));
+        Assert.Equal([(new Rational(4, 1), cMinor)], Trajectory(melody));
     }
 
     /// <summary>Each chord as R 3 5 8 5 3 R 3 in eighths, as the fixture's arpeggio texture is built.</summary>
