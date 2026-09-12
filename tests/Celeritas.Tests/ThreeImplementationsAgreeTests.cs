@@ -517,6 +517,10 @@ public class ThreeImplementationsAgreeTests
             "69", "2", "4", "min", "maj", "min7", "M7", "-7", "-", "Δ", "Δ7", "°", "°7", "ø", "ø7", "+", "+7",
             "7#9", "7b9", "7#11", "7(b9,#11)", "7alt", "alt", "add2", "no3", "omit5", "7sus4", "9sus4",
             "maj7#11", "m7(b5)", "7b13", "13#11", "M", "major", "minor", "halfdim7",
+            // One degree altered twice, in both orders: the builder used to keep the alteration
+            // written last and lose the other, so the export answered "C7(b9,#9)" and
+            // "C7(#9,b9)" with two different chords, neither of them the one written.
+            "7(b9,#9)", "7(#9,b9)", "7(b5,#5)", "9(b9,#9)", "7(b9,#9,#11,b13)",
         ];
         foreach (var root in roots)
         {

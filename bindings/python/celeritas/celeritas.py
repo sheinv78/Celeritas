@@ -72,14 +72,20 @@ _lib = _load_native_library()
 
 @dataclass
 class NoteEvent:
-    """Represents a single note event with pitch, time, duration, and velocity"""
+    """Represents a single note event with pitch, time, duration, and velocity.
+
+    ``velocity`` defaults to 102, the library's default loudness: 0.8 of full, written on the
+    MIDI scale as round(0.8 * 127), and the loudness every note ``parse_note`` hands back (a
+    parsed note carries no written loudness). It used to default to 80, so a note built here and
+    the same note parsed from text had two different loudnesses.
+    """
 
     pitch: int  # MIDI pitch (0-127)
     time_numerator: int
     time_denominator: int
     duration_numerator: int
     duration_denominator: int
-    velocity: int = 80
+    velocity: int = 102
 
     @property
     def time(self) -> float:

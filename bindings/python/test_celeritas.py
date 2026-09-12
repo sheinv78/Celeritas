@@ -146,6 +146,16 @@ class TestNoteEvent(unittest.TestCase):
         )
         self.assertAlmostEqual(note.duration, 0.375)
 
+    def test_a_note_left_at_its_default_loudness_is_as_loud_as_a_parsed_one(self):
+        """One library, one default loudness.
+
+        parse_note hands back the managed NoteEvent's default, 0.8 of full, which the export
+        writes as round(0.8 * 127) = 102; the dataclass answered the same question with 80, so a
+        note built in Python and a note parsed from text were the same note at two loudnesses.
+        """
+        self.assertEqual(NoteEvent(60, 0, 1, 1, 4).velocity, 102)
+        self.assertEqual(parse_note("C4").velocity, NoteEvent(60, 0, 1, 1, 4).velocity)
+
 
 class TestParseNote(unittest.TestCase):
     """Tests for parse_note function"""

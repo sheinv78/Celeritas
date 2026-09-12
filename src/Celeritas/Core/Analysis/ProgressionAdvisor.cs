@@ -18,11 +18,16 @@ public static class ProgressionAdvisor
     /// Supports: C, Am, G7, Dmaj7, F#m7, Bbdim, Csus4, C/E (slash chords), etc.
     /// A bare number is lead-sheet shorthand: C2 is Cadd9, C4 is Csus4 and C5 the power chord;
     /// 6, 7, 9, 11 and 13 are extensions, and any other number fails the parse.
+    /// The fifth, ninth, eleventh and thirteenth may be altered, each more than once: C7(b9,#9)
+    /// has both altered ninths and no natural one, C7(b5,#5) both altered fifths, and the order
+    /// the alterations are written in does not change the chord. "alt" is the minimal altered
+    /// dominant, #5 and b9.
     /// </summary>
     /// <remarks>
     /// The parser used to accept any number and act only on 6 and 7 upward, so C2, C3 and C4
     /// all came back as a plain C major triad and C8 as a C7, with nothing to say the number
-    /// had been dropped.
+    /// had been dropped. It also kept one alteration per degree, the last written, so C7(b9,#9)
+    /// came back without its b9 and C7(#9,b9) without its #9.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="symbol"/> is <see langword="null"/>.</exception>
     public static int[] ParseChordSymbol(string symbol)

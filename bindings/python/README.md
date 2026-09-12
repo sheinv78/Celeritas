@@ -101,8 +101,12 @@ import celeritas
 
 ### Types
 
-- `NoteEvent(pitch, time_numerator, time_denominator, duration_numerator, duration_denominator, velocity=80)`
+- `NoteEvent(pitch, time_numerator, time_denominator, duration_numerator, duration_denominator, velocity=102)`
     - Convenience properties: `note.time` and `note.duration` (floats)
+    - `velocity` defaults to 102, the library's default loudness — 0.8 of full, `round(0.8 * 127)`
+      — the loudness every note `parse_note` hands back
+    - Since 0.10.0: the default was 80, so `NoteEvent(60, 0, 1, 1, 4)` and `parse_note("C4")` were
+      the same note at two loudnesses; a note that should be softer still passes `velocity=80`
 - `ChordQuality` (enum)
 - `MordentType` (enum): `UPPER`, `LOWER`
 - `TurnType` (enum): `NORMAL`, `INVERTED`

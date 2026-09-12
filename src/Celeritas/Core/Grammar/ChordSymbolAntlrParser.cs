@@ -473,10 +473,21 @@ internal sealed class ChordBuildState
 
     private int? _extension;
 
-    private int? _alteredFifth;
-    private int? _alteredNinth;
-    private int? _alteredEleventh;
-    private int? _alteredThirteenth;
+    /// <summary>
+    /// Every alteration written for a degree, keyed by the degree (5, 9, 11 or 13) and holding
+    /// the semitones above the root each alteration names. Building removes the natural pitch of
+    /// an altered degree and adds every alteration named for it, so "C7(b9,#9)" carries both
+    /// altered ninths — the stock altered-dominant sound — and "C7(b5,#5)" both altered fifths.
+    /// "alt" and "ø" write into the same sets the explicit alterations do.
+    /// </summary>
+    /// <remarks>
+    /// One nullable slot per degree used to hold the last alteration written, so "C7(b9,#9)" came
+    /// back without its b9 and "C7(#9,b9)" without its #9: the pitch set of a symbol depended on
+    /// the order its alterations were written in, and both ninths could not be written at all.
+    /// </remarks>
+    private readonly Dictionary<int, HashSet<int>> _alterations = [];
+
+    private bool FifthIsAltered => _alterations.ContainsKey(5);
 
     private readonly HashSet<int> _adds = [];
 
@@ -568,7 +579,7 @@ internal sealed class ChordBuildState
             case "halfdim":
                 _triad = TriadQuality.Diminished;
                 _extension = Math.Max(_extension ?? 0, 7);
-                _alteredFifth = 6;
+                Alter(5, 6);
                 // half-diminished has a minor seventh
                 _wantsMajorSeventh = false;
                 break;
@@ -593,8 +604,8 @@ internal sealed class ChordBuildState
             case "alt":
                 _extension = Math.Max(_extension ?? 0, 7);
                 // Default altered dominant interpretation (minimal): #5 and b9.
-                _alteredFifth = 8;
-                _alteredNinth = 13;
+                Alter(5, 8);
+                Alter(9, 13);
                 break;
         }
     }
@@ -666,28 +677,29 @@ internal sealed class ChordBuildState
         }
     }
 
+    /// <summary>
+    /// An altered fifth, ninth, eleventh or thirteenth. A degree may be altered more than once —
+    /// "C7(b9,#9)", "C7(b5,#5)" — and keeps every alteration written for it; writing the same
+    /// one twice is one note. Any other degree names no chord and fails the parse.
+    /// </summary>
     public void ApplyAlteration(string accidental, int degree)
     {
-        var delta = accidental.Contains('#') ? 1 : -1;
-        var semitones = MapExtensionDegreeToSemitones(degree) + delta;
+        if (degree is not (5 or 9 or 11 or 13))
+            throw new ChordSymbolParseException($"Unsupported altered degree: {accidental}{degree} (expected 5, 9, 11 or 13).");
 
-        switch (degree)
+        var delta = accidental.Contains('#') ? 1 : -1;
+        Alter(degree, MapExtensionDegreeToSemitones(degree) + delta);
+    }
+
+    private void Alter(int degree, int semitones)
+    {
+        if (!_alterations.TryGetValue(degree, out var altered))
         {
-            case 5:
-                _alteredFifth = semitones;
-                break;
-            case 9:
-                _alteredNinth = semitones;
-                break;
-            case 11:
-                _alteredEleventh = semitones;
-                break;
-            case 13:
-                _alteredThirteenth = semitones;
-                break;
-            default:
-                throw new ChordSymbolParseException($"Unsupported altered degree: {accidental}{degree} (expected 5, 9, 11 or 13).");
+            altered = [];
+            _alterations[degree] = altered;
         }
+
+        altered.Add(semitones);
     }
 
     public List<int> BuildIntervals()
@@ -697,7 +709,7 @@ internal sealed class ChordBuildState
         if (_power)
         {
             if (!_omit5)
-                intervals.Add(_alteredFifth ?? 7);
+                AddFifth(intervals, 7);
             AddExtensionsAndAdds(intervals);
             return [.. intervals.OrderBy(x => x)];
         }
@@ -717,39 +729,41 @@ internal sealed class ChordBuildState
             intervals.Add(third);
 
         if (!_omit5)
-            intervals.Add(_alteredFifth ?? fifth);
+            AddFifth(intervals, fifth);
 
         AddExtensionsAndAdds(intervals);
 
-        // Apply 5th alteration after base build too (e.g., C7(b5)).
-        if (_alteredFifth.HasValue && !_omit5)
+        // Every altered degree loses its natural pitch — put in by the triad or by the extension
+        // above, so C9(b9,#9) has no natural ninth — and gains every alteration written for it.
+        foreach (var (degree, altered) in _alterations)
         {
-            intervals.Remove(7);
-            intervals.Remove(6);
-            intervals.Remove(8);
-            intervals.Add(_alteredFifth.Value);
-        }
+            if (degree == 5 && _omit5)
+                continue;
 
-        if (_alteredNinth.HasValue)
-        {
-            intervals.Remove(14);
-            intervals.Add(_alteredNinth.Value);
-        }
+            foreach (var natural in NaturalPitchesOf(degree))
+                intervals.Remove(natural);
 
-        if (_alteredEleventh.HasValue)
-        {
-            intervals.Remove(17);
-            intervals.Add(_alteredEleventh.Value);
-        }
-
-        if (_alteredThirteenth.HasValue)
-        {
-            intervals.Remove(21);
-            intervals.Add(_alteredThirteenth.Value);
+            intervals.UnionWith(altered);
         }
 
         return [.. intervals.OrderBy(x => x)];
     }
+
+    /// <summary>The fifth the chord carries: every alteration written for it, or the natural one.</summary>
+    private void AddFifth(HashSet<int> intervals, int natural)
+    {
+        if (_alterations.TryGetValue(5, out var altered))
+            intervals.UnionWith(altered);
+        else
+            intervals.Add(natural);
+    }
+
+    /// <summary>
+    /// The pitches an unaltered degree can occupy. The fifth is the triad's, whichever quality
+    /// named it — diminished, perfect or augmented; the upper degrees have one natural each.
+    /// </summary>
+    private static int[] NaturalPitchesOf(int degree) =>
+        degree == 5 ? [6, 7, 8] : [MapExtensionDegreeToSemitones(degree)];
 
     private void AddExtensionsAndAdds(HashSet<int> intervals)
     {
@@ -797,7 +811,8 @@ internal sealed class ChordBuildState
         return _triad switch
         {
             // Diminished: if explicitly dim7, use diminished 7th (9 semitones); otherwise minor 7th.
-            TriadQuality.Diminished when ext == 7 && !_alteredFifth.HasValue => 9,
+            // An altered fifth marks the half-diminished spelling ("ø", "m7b5"), which has the minor one.
+            TriadQuality.Diminished when ext == 7 && !FifthIsAltered => 9,
             _ => 10
         };
     }

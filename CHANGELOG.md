@@ -512,6 +512,15 @@ follows.
 - The documented native build script works, and says what is missing when it
   cannot: Native AOT needs `vswhere.exe`, which lives in the Visual Studio
   installer and not on PATH, and the failure blamed `link.exe` instead
+- Chord symbols keep every alteration written for a degree. The builder kept
+  one alteration per degree -- the last written -- so `C7(b9,#9)` lost its b9,
+  `C7(#9,b9)` lost its #9, `C7(b5,#5)` lost its b5, and the answer depended on
+  the order the alterations were written in; the stock altered-dominant sound
+  could not be written at all. `C7(b9,#9)` and `C7(#9,b9)` are both
+  `[60, 64, 67, 70, 73, 75]`, `C7(b5,#5)` is `[60, 64, 66, 68, 70]`, `C9(b9,#9)`
+  has no natural ninth, and the pitch set is the same in any order. The fix
+  reaches `TryParseChordSymbol`, `ProgressionAdvisor.Analyze`, the native export
+  and the Python `parse_chord_symbol`, which all parse through the one builder
 - A character outside the Basic Multilingual Plane -- an emoji, the musical
   symbol 𝄞 -- in a chord symbol or a notation string threw `ArgumentException`
   from inside the lexer ("Found a high surrogate char without a following low
@@ -577,6 +586,10 @@ Behavioral and API changes that can affect existing code:
 - `MidiImportOptions.SortByOffset = false` keeps the order the file lists its
   notes in, track by track; it used to change nothing, because the notes
   arrived already merged in time order
+- Python bindings: `NoteEvent.velocity` defaults to 102 -- the library's default
+  loudness, 0.8 of full, and the value `parse_note` already handed back --
+  instead of 80, so a note built in Python and the same note parsed from text
+  sound at one loudness. Pass `velocity=80` explicitly for the old value
 - The native `celeritas_parse_chord_symbol` writes the number of pitches the
   symbol names into `countOut`, which can exceed `maxCount`; it wrote the number
   that fit, so a caller could not tell a chord of exactly its buffer's size from
