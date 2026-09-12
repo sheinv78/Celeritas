@@ -95,9 +95,11 @@ public sealed class ModulationAnalysisResult
 /// changes. Both decide that by the same rules — a key holds for a phrase, a chord is not a
 /// key, a key owns its phrase, its chromatic chords and non-harmonic tones are its own, an
 /// arpeggiated chord is that chord, a secondary dominant is not a modulation, a key is entered
-/// when its own notes return and heard from where its own chords began — so from the same
-/// opening key they place the same modulations, each at the positions it reads at: the
-/// detector at every chord, the trajectory at its window positions.
+/// when its own notes return and heard from where its own chords began, a return to a key the
+/// music has been in is a homecoming, a chord sounds while its notes sound and its harmony
+/// holds until the next chord — so from the same opening key they place the same modulations,
+/// each at the positions it reads at: the detector at every chord, the trajectory at its window
+/// positions.
 /// </remarks>
 public static class ModulationDetector
 {
@@ -110,9 +112,11 @@ public static class ModulationDetector
     /// <remarks>
     /// <para>
     /// Harmonic evidence is taken from chords (2+ simultaneous onsets on an eighth-note grid),
-    /// each sounding until the next, and from the line between them: the notes that sound alone
-    /// at their onset, each for its own length, so that a passing tone in the melody can be told
-    /// from a note of the harmony. When the buffer is (nearly) monophonic and fewer than two
+    /// each note of a chord from the chord's onset to where that note stops, and from the line
+    /// between them: the notes that sound alone at their onset, each for its own length, so
+    /// that a passing tone in the melody can be told from a note of the harmony; a chord's
+    /// harmony holds under the line until the next chord, a whole note past its notes at most,
+    /// whatever its notes do. When the buffer is (nearly) monophonic and fewer than two
     /// such chords exist, every quantized onset is a pseudo-chord — single notes included — so
     /// melodic key changes are still detected; pivot-chord identification is unavailable in that
     /// fallback. The chords are judged as <see cref="KeyTrajectory.DetectModulations"/> judges
@@ -132,7 +136,10 @@ public static class ModulationDetector
     /// of the piece, closing on a tonic it has already sounded, from a key the music was still
     /// in — and its own notes return in a second bar before the old key's are heard again as
     /// harmony (a dominant leaving the old key is not the old key back), or the phrase is framed
-    /// by its tonic chord; a tonicization otherwise, lasting until the music is home again. The
+    /// by its tonic chord; a tonicization otherwise, lasting until the music is home again. A
+    /// return to a key the music has been in that closes the piece on that key's tonic is a
+    /// homecoming, and needs none of that confirmation, nor the profile's margin over the key
+    /// it leaves. The
     /// new key begins after the last note it does not own, on a chord of its own — not on one of
     /// its applied or borrowed chords — at its pivot chord when the bar before is its, or at the
     /// start of the phrase in which its own note first sounds when it owns every bar from there,
@@ -195,6 +202,25 @@ public static class ModulationDetector
     /// the detector, whose candidates are every onset, no longer begins a phrase in the middle of
     /// an arpeggiated chord, where it read a bar of borrowed C minor's last E flat as E minor.
     /// </para>
+    /// <para>
+    /// On twenty-three passages a fourth reviewer wrote — a Mozart transition over a chromatic
+    /// bass, a Mixolydian folk tune, escape tones, a ground bass, a 5/4 piece, trills, a
+    /// chorale phrase pair and Schubert's common-tone way to the flat submediant among them —
+    /// it was wrong on two: the chorale's two-bar return home, Dm G7 C, sounded no C before its
+    /// last chord, so the homecoming was a one-bar tonicization on this road and nothing on the
+    /// other; and where Schubert holds the common tone C alone for half a bar before the A flat
+    /// chord, this road's C major chord went on sounding until the next chord, so A flat could
+    /// not own the half bar and F minor, whose dominant C major is, was named — the trajectory,
+    /// hearing the notes stop, named A flat. A return to a key the music has been in is a
+    /// homecoming; a chord sounds while its notes sound, on both roads, and its harmony holds
+    /// until the next chord. Both roads agree with the musician on all twenty-three, and with
+    /// each other on every passage of the five tables — and on seventy-six texture variants of
+    /// sixteen of them: the chords staccato, a melody note held across the chord change, a
+    /// chord struck twice in its bar, a bar silent, the chords an eighth off the beat. Over
+    /// every chord-bearing passage of the five tables the first two variants split the roads
+    /// nowhere; the other three still do on seventeen passages of six hundred and eighty-two
+    /// (twenty-nine before), mostly arpeggio textures struck twice or shifted off their grid.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
     public static ModulationAnalysisResult Analyze(NoteBuffer buffer, KeySignature startKey)
@@ -214,11 +240,12 @@ public static class ModulationDetector
     /// <see cref="Analyze(NoteBuffer, KeySignature)"/> for what is reported and how it is judged.
     /// </summary>
     /// <remarks>
-    /// Harmonic evidence is taken from chords (2+ simultaneous onsets on an eighth-note grid)
-    /// and from the notes that sound alone between them, the line. When the input is (nearly)
-    /// monophonic and fewer than two such chords exist, every quantized onset is a pseudo-chord
-    /// — single notes included — so melodic key changes are still detected. Pivot-chord
-    /// identification is unavailable in that fallback.
+    /// Harmonic evidence is taken from chords (2+ simultaneous onsets on an eighth-note grid),
+    /// each note of a chord sounding from the chord's onset for its own length, and from the
+    /// notes that sound alone between them, the line. When the input is (nearly) monophonic and
+    /// fewer than two such chords exist, every quantized onset is a pseudo-chord — single notes
+    /// included, each for its own length — so melodic key changes are still detected.
+    /// Pivot-chord identification is unavailable in that fallback.
     /// </remarks>
     public static ModulationAnalysisResult Analyze(ReadOnlySpan<NoteEvent> notes, KeySignature startKey)
     {
@@ -257,38 +284,27 @@ public static class ModulationDetector
             };
         }
 
-        // Each chord sounds until the next one; the last until the music stops.
-        var end = Rational.Zero;
-        foreach (var note in notesArray)
-        {
-            var noteEnd = note.Offset + note.Duration;
-            if (noteEnd > end)
-                end = noteEnd;
-        }
-
-        // The judge hears the chords and, between them, the line: the notes that sound alone
-        // at their onset, each for as long as it lasts. A melody's passing eighth is not a
+        // The judge hears the chords — each note of a chord from the chord's onset to where
+        // that note stops (SonoritiesOf) — and, between them, the line: the notes that sound
+        // alone at their onset, each for as long as it lasts. A melody's passing eighth is not a
         // chord, but whether it is a passing tone or a foreign note decides where a key begins,
         // and the judge must see it to say which — as the trajectory road, which hands the
-        // judge every note, always has.
+        // judge every note, always has. The two are merged in onset order, so that the judge
+        // gets them sorted and the order inside a chord is the one SonoritiesOf chose.
         var sonorities = new List<Sonority>(chords.Count + line.Count);
         var candidates = new Rational[chords.Count];
+        var nextLine = 0;
         for (var i = 0; i < chords.Count; i++)
         {
-            var stop = i + 1 < chords.Count ? chords[i + 1].Offset : end;
-            if (stop <= chords[i].Offset)
-                stop = chords[i].Offset + Rational.Eighth;
-            sonorities.Add(new Sonority(chords[i].Offset, stop, chords[i].Mask, chords[i].Pitch));
+            while (nextLine < line.Count && line[nextLine].Offset < chords[i].Offset)
+                sonorities.Add(LineSonority(line[nextLine++]));
+
+            sonorities.AddRange(chords[i].Sonorities);
             candidates[i] = chords[i].Offset;
         }
 
-        foreach (var note in line)
-        {
-            var stop = note.Offset + note.Duration;
-            if (stop <= note.Offset)
-                stop = note.Offset + Rational.Eighth;
-            sonorities.Add(new Sonority(note.Offset, stop, (ushort)(1 << PitchMath.Fold(note.Pitch)), note.Pitch));
-        }
+        while (nextLine < line.Count)
+            sonorities.Add(LineSonority(line[nextLine++]));
 
         var judgement = KeyAreaJudge.Judge(sonorities, candidates, startKey, KeyAreaJudge.Phrase);
         var modulations = new List<ModulationEvent>();
@@ -357,8 +373,83 @@ public static class ModulationDetector
     /// <param name="Offset">Where the chord begins.</param>
     /// <param name="Mask">Its pitch classes, one bit each.</param>
     /// <param name="PitchClasses">Its pitch classes, listed.</param>
-    /// <param name="Pitch">The pitch of a pseudo-chord that is one note, in the monophonic fallback, or -1.</param>
-    private record ChordEvent(Rational Offset, ushort Mask, int[] PitchClasses, int Pitch = -1);
+    /// <param name="Sonorities">What the judge hears of it: its notes from its onset, each to where it stops (<see cref="SonoritiesOf"/>).</param>
+    private record ChordEvent(Rational Offset, ushort Mask, int[] PitchClasses, Sonority[] Sonorities);
+
+    /// <summary>
+    /// The sonorities the judge hears for the notes struck together at <paramref name="offset"/>:
+    /// each note from that onset to where it stops — never shorter than an eighth — the notes
+    /// that stop together merged into one sonority, and a note that doubles a pitch class
+    /// already in that sonority its own, as every note is on the trajectory road; a sonority
+    /// of one note keeps its pitch. A block chord is one sonority still; a chorale chord with
+    /// its root doubled is two; a melody note struck with a chord and let go before it is its
+    /// own.
+    /// </summary>
+    /// <remarks>
+    /// A chord used to sound until the next chord began, whatever its notes did — and a
+    /// melody's note struck with it was folded into its mask for as long. Where the common
+    /// tone C was held alone for half a bar between a C major chord and an A flat chord, the C
+    /// chord's E natural went on sounding under it, so A flat could not own that half bar and
+    /// F minor, whose dominant C major is, was named where a musician hears A flat; the
+    /// trajectory, which hears each note stop where it stops, named A flat. And the mask lost
+    /// the doubling: the root doubled in a four-voice cadence weighed once, and Dm G7 C closing
+    /// a chorale separated C from G by less than the margin on this road and by twice it on the
+    /// other. A chord stops where its notes stop, and the two roads weigh the same notes for
+    /// the same time.
+    /// </remarks>
+    private static Sonority[] SonoritiesOf(Rational offset, List<NoteEvent> notes)
+    {
+        // A pseudo-chord of one note, in the monophonic fallback: the note itself.
+        if (notes.Count == 1)
+            return [LineSonority(new NoteEvent(notes[0].Pitch, offset, notes[0].Duration, notes[0].Velocity))];
+
+        // The parts of the chord by where they stop, in order of first appearance; the
+        // doublings after them.
+        var parts = new (Rational End, ushort Mask, int Pitch)[notes.Count];
+        var partCount = 0;
+        List<Sonority>? doublings = null;
+        foreach (var note in notes)
+        {
+            var stop = StopOf(offset, note);
+            var pitchClass = (ushort)(1 << PitchMath.Fold(note.Pitch));
+            var part = -1;
+            for (var k = 0; k < partCount; k++)
+            {
+                if (parts[k].End == stop)
+                    part = k;
+            }
+
+            if (part < 0)
+            {
+                parts[partCount++] = (stop, pitchClass, note.Pitch);
+            }
+            else if ((parts[part].Mask & pitchClass) != 0)
+            {
+                (doublings ??= []).Add(new Sonority(offset, stop, pitchClass, note.Pitch));
+            }
+            else
+            {
+                parts[part] = (stop, (ushort)(parts[part].Mask | pitchClass), -1);
+            }
+        }
+
+        var sonorities = new Sonority[partCount + (doublings?.Count ?? 0)];
+        for (var k = 0; k < partCount; k++)
+            sonorities[k] = new Sonority(offset, parts[k].End, parts[k].Mask, parts[k].Pitch);
+        doublings?.CopyTo(sonorities, partCount);
+        return sonorities;
+    }
+
+    /// <summary>A note of the line as the judge hears it: at its quantized onset, for its own length.</summary>
+    private static Sonority LineSonority(NoteEvent note) =>
+        new(note.Offset, StopOf(note.Offset, note), (ushort)(1 << PitchMath.Fold(note.Pitch)), note.Pitch);
+
+    /// <summary>Where <paramref name="note"/>, heard from <paramref name="offset"/>, stops: its own length on, and never less than an eighth.</summary>
+    private static Rational StopOf(Rational offset, NoteEvent note)
+    {
+        var stop = offset + note.Duration;
+        return stop <= offset ? offset + Rational.Eighth : stop;
+    }
 
     /// <summary>
     /// The chords of <paramref name="notes"/> — two or more onsets on an eighth-note grid — and,
@@ -414,7 +505,7 @@ public static class ModulationDetector
             var mask = ChordAnalyzer.GetMask(group.Select(n => n.Pitch).ToArray());
             var pitchClasses = PitchClassSetAnalyzer.MaskToPitchClasses(mask);
 
-            chords.Add(new ChordEvent(offset, mask, pitchClasses));
+            chords.Add(new ChordEvent(offset, mask, pitchClasses, SonoritiesOf(offset, group)));
         }
 
         // Fallback for (nearly) monophonic input: with fewer than two simultaneous-onset
@@ -433,8 +524,9 @@ public static class ModulationDetector
                 var pitchClasses = PitchClassSetAnalyzer.MaskToPitchClasses(mask);
 
                 // A note alone keeps its pitch, so that the judge can tell a passing tone of
-                // the melody from a note of its harmony.
-                chords.Add(new ChordEvent(offset, mask, pitchClasses, group.Count == 1 ? group[0].Pitch : -1));
+                // the melody from a note of its harmony; and it sounds for its own length, as
+                // it does on the trajectory road, not until the next note.
+                chords.Add(new ChordEvent(offset, mask, pitchClasses, SonoritiesOf(offset, group)));
             }
         }
 

@@ -15,8 +15,10 @@ namespace Celeritas.Tests;
 /// the Picardy third is the minor key's cadence, a passing tone is not a foreign note, the
 /// resolution chain decides whose chord a chord is, an arpeggiated chord is that chord, a
 /// leaning note is the line's and not the chord's, a key is heard from where its own chords
-/// began, and the two roads place the same modulations. Each passage names what the roads
-/// answered before the rules, measured on the library as it stood.
+/// began, a return to a key the music has been in is a homecoming, a chord stops where its
+/// notes stop and its harmony holds until the next chord, and the two roads place the same
+/// modulations. Each passage names what the roads answered before the rules, measured on the
+/// library as it stood.
 /// </summary>
 public class AKeyHoldsForAPhraseTests
 {
@@ -203,14 +205,20 @@ public class AKeyHoldsForAPhraseTests
             Assert.Equal(Modulations(buffer, opening), Trajectory(buffer));
         }
 
-        // The held-out passages too, and the second reviewer's, to the same keys within a bar
-        // of each other: the roads differ in what a sonority is, and the detector's chords sound
-        // until the next where the trajectory's notes last their own length. Before the detector
-        // heard the line between its chords they were a bar or more apart on a melody over
-        // chords — a chromatic quarter-note neighbour under a D7 put G at bar 8 on the
-        // trajectory and at 4 on the detector, and a melody with two chromatic passing eighths
-        // in each bar of its G was G on the detector and no key on the trajectory.
-        foreach (var passage in RealModulationPassages.HeldOut.Concat(RealModulationPassages.ReviewerHeldOut))
+        // The held-out passages too, and every reviewer's, to the same keys within a bar of
+        // each other: the roads differ in where they read — the detector at every chord, the
+        // trajectory at its window positions — and in the eighth-note grid the detector's
+        // onsets sit on. Before the detector heard the line between its chords they were a bar
+        // or more apart on a melody over chords — a chromatic quarter-note neighbour under a D7
+        // put G at bar 8 on the trajectory and at 4 on the detector, and a melody with two
+        // chromatic passing eighths in each bar of its G was G on the detector and no key on
+        // the trajectory; and while the detector's chords sounded until the next chord, a C
+        // major chord went on sounding under the common tone C held alone after it, and the
+        // detector named F minor where the trajectory named A flat.
+        foreach (var passage in RealModulationPassages.HeldOut
+            .Concat(RealModulationPassages.ReviewerHeldOut)
+            .Concat(RealModulationPassages.ThirdReviewerHeldOut)
+            .Concat(RealModulationPassages.FourthReviewerHeldOut))
         {
             using var buffer = passage.Build(0);
             var opening = new KeySignature((byte)passage.OpeningRoot, passage.OpeningIsMajor);
@@ -896,6 +904,150 @@ public class AKeyHoldsForAPhraseTests
         var trajectory = Assert.Single(Trajectory(escapeTones));
         Assert.Equal(gMajor, trajectory.ToKey);
         Assert.InRange(trajectory.Position.ToDouble(), 4.0, 5.0);
+    }
+
+    // ---------- the fourth reviewer's two findings on iteration four ----------
+
+    [Fact]
+    public void AReturnToAKeyTheMusicHasBeenInIsAHomecoming()
+    {
+        // A chorale phrase pair in quarter-note chords: C F Dm G | Am G7 C || C D7 G Em | Am D7 G
+        // || G C D7 G | C D7 G || G Em Am A7 | Dm G7 C. To G at bar 3, and home at bar 7, where
+        // the G is the pivot and the A7 is C's V7/ii. The return is two bars long and closes
+        // the piece, and a stretch at the end shorter than a phrase used to be a key only if
+        // its tonic had already sounded before the close, from a key still in force — the rule
+        // that keeps V7/V–V at the end of a phrase a half cadence. Dm G7 C sounds no C before
+        // its last chord, and the bar before it holds the A7, so the return home was a one-bar
+        // tonicization on the detector and nothing on the trajectory. A return to a key the
+        // music has been in — the key it opened in, or one it established — needs no such
+        // confirmation: the ear knows the key, and a close on its tonic is its cadence.
+        var gMajor = new KeySignature(7, true);
+        using var chorale = Chords("0q 5q 2:mq 7q 9:mq 7:7q 0h | 0q 2:7q 7q 4:mq 9:mq 2:7q 7h | 7q 0q 2:7q 7q 0q 2:7q 7h | 7q 4:mq 9:mq 9:7q 2:mq 7:7q 0h");
+
+        var expected = new List<(Rational, KeySignature)> { (new Rational(2, 1), gMajor), (new Rational(6, 1), CMajor) };
+        Assert.Equal(expected, Modulations(chorale, CMajor));
+        Assert.Equal(expected, Trajectory(chorale));
+
+        // Nor does it need the profile's margin over the key it leaves. Dm G7 C after two
+        // phrases in G reads as G major on the profile still — the dominant sounded twice, the
+        // tonic once — so the plain ii V7 I home was refused for the separation that guards
+        // against a wobble; nothing follows a final cadence to wobble back to. C is written at
+        // the G before the Dm, the pivot chord.
+        using var home = Chords("0 5 7 0 | 7 0 2:7 7 | 7 0 2:7 7 | 2:m 7:7 0");
+
+        expected = [(new Rational(4, 1), gMajor), (new Rational(11, 1), CMajor)];
+        Assert.Equal(expected, Modulations(home, CMajor));
+        Assert.Equal(expected, Trajectory(home));
+
+        // Nor need the return be shorter than a phrase, or be reached by a candidate whose own
+        // window ends with the piece. Judged by the candidate's window, G Em Am D7 | G7 C C
+        // closing a piece that had gone to G was a tonicization on the detector and nothing on
+        // the trajectory: the candidate at the Am, whose window ended a bar before the piece
+        // did, reached the return first, was refused the margin, and its tonicization blocked
+        // the candidate after it, which would have qualified; and G7 C C C, a full phrase home,
+        // was refused for the second bar of C's own notes a new key must return. A return that
+        // stays in the key to the end of the piece and closes on its tonic is a homecoming
+        // whatever its length, and whichever candidate reaches it.
+        using var threeBars = Chords("0 5 7 0 | 7 0 2:7 7 | 7 4:m 9:m 2:7 | 7:7 0 0");
+
+        expected = [(new Rational(4, 1), gMajor), (new Rational(12, 1), CMajor)];
+        Assert.Equal(expected, Modulations(threeBars, CMajor));
+        Assert.Equal(expected, Trajectory(threeBars));
+
+        using var fullPhrase = Chords("0 5 7 0 | 7 0 2:7 7 | 7 0 2:7 7 | 7:7 0 0 0");
+
+        expected = [(new Rational(4, 1), gMajor), (new Rational(11, 1), CMajor)];
+        Assert.Equal(expected, Modulations(fullPhrase, CMajor));
+        Assert.Equal(expected, Trajectory(fullPhrase));
+
+        // The same shape a fifth up, Em A7 D closing the piece in G, is G's half cadence — vi
+        // V7/V V — as it always was: D major was never established, so its close must be a
+        // cadence heard as one, and it is a tonicization at most.
+        using var halfCadence = Chords("0 5 7 0 | 7 0 2:7 7 | 7 0 2:7 7 | 4:m 9:7 2");
+
+        Assert.Equal([(new Rational(4, 1), gMajor)], Modulations(halfCadence, CMajor));
+        Assert.Equal([(new Rational(4, 1), gMajor)], Trajectory(halfCadence));
+        Assert.Contains(ModulationDetector.Analyze(halfCadence, CMajor).Modulations, e =>
+            e.Type == ModulationType.Tonicization && e.ToKey == new KeySignature(2, true));
+
+        // In four voices — the reviewer's chorale, its roots doubled — the detector hears the
+        // homecoming only because it now weighs the doubled root as the trajectory does: with
+        // the chord a mask, Dm G7 C separated C from G by less than the margin on the detector
+        // road and by twice it on the other.
+        var passage = RealModulationPassages.FourthReviewerHeldOutNamed("chorale phrase pair: to the dominant, home through V7/ii (four voices)");
+        using var voices = passage.Build(0);
+
+        expected = [(new Rational(2, 1), gMajor), (new Rational(6, 1), CMajor)];
+        Assert.Equal(expected, Modulations(voices, CMajor));
+        Assert.Equal(expected, Trajectory(voices));
+    }
+
+    [Fact]
+    public void AChordStopsWhereItsNotesStop()
+    {
+        // Schubert's way to the flat submediant: C F G C | C(held alone, a half) Ab Db Eb Ab |
+        // Ab Db Eb7 Ab | C(held alone, a half) C F G C. The detector's chords used to sound
+        // until the next chord began, so where only the common tone C was held alone after the
+        // C major chord, that chord's E natural went on sounding under it; A flat could not own
+        // the half bar and F minor, whose dominant C major is, could, and the detector named F
+        // minor at bar 5 where the trajectory — which hears each note stop where it stops —
+        // named A flat. A chord stops where its notes stop, on both roads.
+        var passage = RealModulationPassages.FourthReviewerHeldOutNamed("Schubert: to the flat submediant and back, each by the common tone C held alone (block chords)");
+        using var schubert = passage.Build(0);
+
+        var expected = new List<(Rational, KeySignature)> { (new Rational(4, 1), new KeySignature(8, true)), (new Rational(12, 1), CMajor) };
+        Assert.Equal(expected, Modulations(schubert, CMajor));
+        Assert.Equal(expected, Trajectory(schubert));
+    }
+
+    [Fact]
+    public void AChordsHarmonyHoldsUntilTheNextChord()
+    {
+        // The same two melodies over staccato chords — each chord a quarter, then silence: a
+        // chromatic quarter-note neighbour C sharp under the D7 of the new key, and a chromatic
+        // appoggiatura struck with the chord on every downbeat of the new key. Each leans on the
+        // harmony of a chord whose notes have stopped by the time it resolves. Heard as sounding
+        // only while its notes sound, the D7 was gone when the C sharp came, the C sharp was a
+        // foreign quarter, and G began four bars late on the trajectory road (at 8, where a
+        // musician says 4) or not at all with an appoggiatura on every downbeat; the detector,
+        // whose chords sounded until the next chord, placed G at 4 — the roads disagreed, and
+        // making them hear the same note ends would have made both wrong. The sound of a chord
+        // stops with its notes; its harmony holds until the next chord, a whole note past its
+        // notes at most, and a note of the line leans on that.
+        var gMajor = new KeySignature(7, true);
+        foreach (var name in new[]
+        {
+            "to the dominant, the melody with one chromatic quarter-note neighbour in the new key (melody over chords)",
+            "to the dominant, a chromatic appoggiatura struck on every downbeat of the new key (melody over chords)",
+        })
+        {
+            var passage = RealModulationPassages.ReviewerHeldOut.Concat(RealModulationPassages.ThirdReviewerHeldOut).Single(p => p.Name == name);
+            using var staccato = Staccato(passage);
+
+            var heard = Assert.Single(Modulations(staccato, CMajor));
+            Assert.Equal((new Rational(4, 1), gMajor), heard);
+            Assert.Equal((new Rational(4, 1), gMajor), Assert.Single(Trajectory(staccato)));
+        }
+    }
+
+    /// <summary>The passage with every chord cut to a quarter — struck, then silence — under the melody as written.</summary>
+    private static NoteBuffer Staccato(RealModulationPassages.Passage passage)
+    {
+        var notes = new List<NoteEvent>();
+        using (var chords = (passage with { Melody = [] }).Build(0))
+        {
+            for (var i = 0; i < chords.Count; i++)
+            {
+                var chord = chords.Get(i);
+                notes.Add(new NoteEvent(chord.Pitch, chord.Offset, chord.Duration < Rational.Quarter ? chord.Duration : Rational.Quarter, chord.Velocity));
+            }
+        }
+
+        notes.AddRange(passage.Melody);
+
+        var buffer = new NoteBuffer(notes.Count);
+        buffer.AddRange(notes.OrderBy(n => n.Offset).ThenBy(n => n.Pitch).ToArray());
+        return buffer;
     }
 
     /// <summary>Each chord as R 3 5 8 5 3 R 3 in eighths, as the fixture's arpeggio texture is built.</summary>

@@ -1021,6 +1021,19 @@ public sealed class KeyTrajectory
     /// with each other on every passage of the four tables.
     /// </para>
     /// <para>
+    /// On twenty-three passages a fourth reviewer wrote it was wrong on one: a chorale's two-bar
+    /// return home, Dm G7 C, sounded no C before its last chord, and a stretch at the end
+    /// shorter than a phrase had to — so the homecoming was heard as nothing. A return to a key
+    /// the music has been in is a homecoming, and needs no such confirmation. And on this road
+    /// a melody over staccato chords — each chord a quarter, then silence — lost its
+    /// appoggiaturas, the harmony they leaned on having stopped sounding before they resolved,
+    /// so G began four bars late or not at all where the detector, whose chords then sounded
+    /// until the next chord, placed it at the bar: a chord's harmony holds until the next chord,
+    /// a whole note past its notes at most, and a note of the line leans on that. Both roads
+    /// agree with the musician on all twenty-three, and with each other on every passage of the
+    /// five tables.
+    /// </para>
+    /// <para>
     /// The window no longer limits what is heard: a one-bar window over arpeggiated triads has
     /// undecidable points, and the modulation is still found, because the phrase is read from
     /// the notes. The points remain the per-window readings they always were.

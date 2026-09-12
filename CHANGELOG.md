@@ -387,7 +387,36 @@ follows.
   G from bar 5, not 7
 - Both roads are as fast as before the judge read chords: 8000 random block chords
   57/33 ms -> 28/28 ms (trajectory/detector, warm medians), a 20000-eighth melody
-  20/88 -> 6/22 ms, 4000 chords over a 2000-bar pedal 151/13 -> 142/7 ms
+  20/88 -> 6/22 ms, 4000 chords over a 2000-bar pedal 151/13 -> 142/7 ms; the
+  detector now hears a pedal held under its chords, which the trajectory always
+  heard, at 6.5 -> 6.8-7.8 ms on that case, every other case unchanged within noise
+- A return to a key the music has been in is a homecoming. A stretch closing the
+  piece on the tonic of the key it opened in, or of a key it established since, is
+  that key's cadence without the confirmation a new key needs -- the tonic heard
+  before the close, a key still in force, a second bar of its own notes, the
+  profile's margin over the key it leaves. `C F Dm G | Am G7 C || C D7 G Em | Am D7
+  G || G C D7 G | C D7 G || G Em Am A7 | Dm G7 C` is home at bar 7, at the pivot G
+  (it had been a one-bar tonicization on the detector and nothing on the
+  trajectory); `Dm G7 C` closing two phrases in G is C (the profile still read it
+  as G, the dominant sounding twice); `Em A7 D` closing a piece in G stays G's half
+  cadence. The return is judged from where it begins to the end of the piece,
+  whatever its length and whichever candidate reaches it: `G Em Am D7 | G7 C C`
+  and `G7 C C C` closing a piece that had gone to G are home (judged by the
+  candidate's window they were tonicizations -- a candidate whose window ended a
+  bar before the piece did reached the return first and refused it, and a full
+  phrase home was asked for a second bar of its own notes). A pivot bar may hold
+  the new key's V7 after the chord it opens on
+- A chord sounds while its notes sound; its harmony holds until the next chord.
+  `ModulationDetector.Analyze` hands the judge each chord's notes from the chord's
+  onset to where they stop -- merged where they stop together, a doubled note its
+  own -- as the trajectory always has, so the two roads weigh the same notes for
+  the same time: where Schubert holds the common tone C alone before the A flat
+  chord, the detector had named F minor (the C major chord's E natural sounding on
+  under it) where the trajectory named A flat, and a root doubled in four voices
+  now weighs on both roads alike. A released chord's harmony holds under the line
+  until the next chord, a whole note past its notes at most, so a note leaning on
+  a staccato chord is an appoggiatura on both roads (under quarter-note chords the
+  trajectory had put G four bars late, or nowhere)
 - On the thirty-eight passages a second reviewer wrote, both roads now agree with
   the musician on all thirty-eight (they had been wrong on seven), and with each
   other on every passage of the tables; on a third reviewer's thirty-one, both
@@ -395,7 +424,16 @@ follows.
   on a fourth reviewer's twenty-three -- a Mozart-like transition over a chromatic
   bass, a jazz turnaround with tritone substitutes, a Mixolydian folk tune, a ground
   bass, 5/4, a whole-bar trill on a chromatic note, a chord that is pivot between
-  three keys -- twenty-one, which join the fixture
+  three keys -- both roads agree with the musician on all twenty-three (they had
+  been wrong on two, which join the fixture), with each other on every passage of
+  the five tables, and with each other on seventy-six texture variants of sixteen
+  of them -- staccato chords, a melody note held across the chord change, a chord
+  struck twice in its bar, a bar silent, the chords an eighth off the beat; and on
+  a fifth reviewer's thirty-eight -- staccato and pushed and delayed chords under
+  a legato melody, a nocturne's left hand, fermatas, a pedal under a late-entering
+  melody, a pickup into every phrase, returns home of two to five bars, returns to a
+  key established second, a canon at the fifth -- thirty-seven, which join the
+  fixture as a sixth table
 - `Phrase.StartIndex` and `EndIndex` address the buffer that was analysed, so
   `buffer.Get(StartIndex)` is the phrase's first note. They were positions in the
   analyzer's private copy -- rests dropped, then offset-sorted -- so with a rest

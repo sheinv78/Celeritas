@@ -79,6 +79,21 @@ namespace Celeritas.Tests;
 /// owned was that key's whatever it resolved into, and an arpeggiated chord was so many single
 /// notes; the melodies named no key, and the chord passages placed the new key a phrase late.
 /// </para>
+/// <para>
+/// The fifth table, <see cref="RealModulationPassages.FourthReviewerHeldOut"/>, holds the
+/// passages a fourth reviewer wrote after the fourth table was answered: repertoire shapes — a
+/// Mozart transition over a rising chromatic bass, a hymn in 3/4 closing on a Picardy third, a
+/// jazz turnaround with tritone substitutes, a Mixolydian folk tune, escape tones, a piece in
+/// 5/4, whole-bar trills, a ground bass — and each of the fourth table's rules pushed the other
+/// way; and, folded in after the reviewer's second look, the two both roads still got wrong: a
+/// chorale phrase pair going to the dominant and home through V7/ii, and Schubert's way to the
+/// flat submediant and back by the common tone C held alone. Judged on the library as it stood
+/// after the fourth table, the chorale's two-bar return home was a one-bar tonicization on the
+/// detector and nothing on the trajectory, because a stretch at the end shorter than a phrase
+/// had to sound its tonic before the close and Dm G7 C does not; and the detector, whose chords
+/// sounded until the next chord, heard the C major chord's E natural under the common tone held
+/// alone after it and named F minor where the trajectory named A flat.
+/// </para>
 /// </remarks>
 public class RealModulationsAreHeardWhereAMusicianHearsThemTests
 {
@@ -93,6 +108,8 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
     public static TheoryData<string> ThirdReviewerHeldOutPassages => [.. RealModulationPassages.ThirdReviewerHeldOut.Select(p => p.Name)];
 
     public static TheoryData<string> FourthReviewerHeldOutPassages => [.. RealModulationPassages.FourthReviewerHeldOut.Select(p => p.Name)];
+
+    public static TheoryData<string> TexturesAndHomecomings => [.. TexturesAndHomecomingsPassages.Table.Select(p => p.Name)];
 
     [Theory]
     [MemberData(nameof(Passages))]
@@ -143,6 +160,16 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
     [MemberData(nameof(FourthReviewerHeldOutPassages))]
     public void TheModulationDetectorHearsTheFourthReviewersModulationsAMusicianHearsInEveryKey(string name) =>
         AssertTheDetectorHears(RealModulationPassages.FourthReviewerHeldOutNamed(name));
+
+    [Theory]
+    [MemberData(nameof(TexturesAndHomecomings))]
+    public void TheKeyTrajectoryHearsTheTexturesAndHomecomingsAsAMusicianDoesInEveryKey(string name) =>
+        AssertTheTrajectoryHears(TexturesAndHomecomingsPassages.Table.Single(p => p.Name == name));
+
+    [Theory]
+    [MemberData(nameof(TexturesAndHomecomings))]
+    public void TheModulationDetectorHearsTheTexturesAndHomecomingsAsAMusicianDoesInEveryKey(string name) =>
+        AssertTheDetectorHears(TexturesAndHomecomingsPassages.Table.Single(p => p.Name == name));
 
     private static void AssertTheTrajectoryHears(RealModulationPassages.Passage passage) =>
         AssertHeardInEveryKey(
@@ -254,6 +281,22 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
         Assert.Equal(names.Count, names.Distinct().Count());
         var earlier = RealModulationPassages.All.Concat(RealModulationPassages.HeldOut)
             .Concat(RealModulationPassages.ReviewerHeldOut).Concat(RealModulationPassages.ThirdReviewerHeldOut).Select(p => p.Name);
+        Assert.Empty(names.Intersect(earlier));
+    }
+
+    [Fact]
+    public void EveryTextureAndHomecomingPassageIsBuiltAsItIsDescribed()
+    {
+        foreach (var passage in TexturesAndHomecomingsPassages.Table)
+        {
+            AssertBuilds(passage);
+        }
+
+        var names = TexturesAndHomecomingsPassages.Table.Select(p => p.Name).ToList();
+        Assert.True(TexturesAndHomecomingsPassages.Table.Count >= 35);
+        Assert.Equal(names.Count, names.Distinct().Count());
+        var earlier = RealModulationPassages.All.Concat(RealModulationPassages.HeldOut).Concat(RealModulationPassages.ReviewerHeldOut)
+            .Concat(RealModulationPassages.ThirdReviewerHeldOut).Concat(RealModulationPassages.FourthReviewerHeldOut).Select(p => p.Name);
         Assert.Empty(names.Intersect(earlier));
     }
 
@@ -1313,6 +1356,15 @@ internal static class RealModulationPassages
         "C4/4 D4/4 Db4/4 C4/4 | E4/4 F4/4 E4/4 Eb4/4 | G4/4 A4/4 Ab4/4 G4/4 | F4/4 E4/4 D4/4 C4/2 | "
         + "E4/4 F#4/4 G4/4 F4/4 | D4/4 E4/4 Eb4/4 D4/4 | B3/4 C4/4 C#4/4 D4/4 | E4/4 D4/4 C4/2";
 
+    // ---------- 1. a Bach-like chorale phrase pair: to V, and home through V7/ii ----------
+    // C F Dm G | Am G7 C(h) || C D7 G Em | Am D7 G(h) || G C D7 G | C D7 G(h) || G Em Am A7 | Dm G7 C(h)
+    // Phrase 2 opens on the pivot C (I of C, IV of G) and cadences in G; phrase 4 opens on G (I
+    // of G, V of C), and C is back at the A7 -> Dm (V7/ii ii) and the cadence.
+    private const string ChoraleTwoSoprano = "E5/4 F5/4 F5/4 D5/4 | C5/4 D5/4 C5/2 | E5/4 C5/4 B4/4 B4/4 | C5/4 C5/4 B4/2 | D5/4 E5/4 C5/4 B4/4 | C5/4 C5/4 B4/2 | D5/4 B4/4 C5/4 C#5/4 | D5/4 D5/4 C5/2";
+    private const string ChoraleTwoAlto = "G4/4 A4/4 A4/4 B4/4 | A4/4 B4/4 G4/2 | G4/4 A4/4 G4/4 G4/4 | A4/4 A4/4 G4/2 | B4/4 C5/4 A4/4 G4/4 | G4/4 A4/4 G4/2 | B4/4 G4/4 A4/4 G4/4 | A4/4 B4/4 G4/2";
+    private const string ChoraleTwoTenor = "C4/4 C4/4 D4/4 D4/4 | E4/4 F4/4 E4/2 | C4/4 F#4/4 D4/4 E4/4 | E4/4 F#4/4 D4/2 | G4/4 G4/4 F#4/4 D4/4 | E4/4 F#4/4 D4/2 | G4/4 E4/4 E4/4 E4/4 | F4/4 F4/4 E4/2";
+    private const string ChoraleTwoBass = "C3/4 F3/4 D3/4 G2/4 | A2/4 G2/4 C3/2 | C3/4 D3/4 G2/4 E3/4 | A2/4 D3/4 G2/2 | G3/4 C3/4 D3/4 G3/4 | C3/4 D3/4 G2/2 | G3/4 E3/4 A2/4 A2/4 | D3/4 G2/4 C3/2";
+
     /// <summary>
     /// The fourth reviewer's passages, held out from the work on the twelve rows that closed the
     /// fourth table and folded in afterwards: repertoire shapes, and each of that iteration's rules
@@ -1361,5 +1413,11 @@ internal static class RealModulationPassages
         new("a chain of applied chords to a half cadence on V7, never leaving C (melody over chords)", Texture.MelodyOverChords, true,
             AppliedChainChords, Notated(AppliedChainMelody), Nowhere),
         new("a chromatic passing tone inside an arch in every bar, never leaving C (melody alone)", Texture.MelodyAlone, true, "", Notated(ArchesInCMelody), Nowhere),
+
+        // ---------- folded in after the reviewer's second look: the two both roads still got wrong ----------
+        new("chorale phrase pair: to the dominant, home through V7/ii (four voices)", Texture.FourVoices, true, "",
+            Voices(ChoraleTwoSoprano, ChoraleTwoAlto, ChoraleTwoTenor, ChoraleTwoBass), [new(3, 7, true), new(7, 0, true)]),
+        Block("Schubert: to the flat submediant and back, each by the common tone C held alone (block chords)",
+            "0 5 7 0 | ~0h 8h 1 3 8 | 8 1 3:7 8 | ~0h 0h 5 7 0", [new(5, 8, true), new(13, 0, true)]),
     ];
 }

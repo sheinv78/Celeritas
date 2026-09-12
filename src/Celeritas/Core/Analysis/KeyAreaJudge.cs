@@ -9,8 +9,9 @@ namespace Celeritas.Core.Analysis;
 /// A note or a chord as the key judge hears it: when it starts, when it stops, which pitch
 /// classes it holds and — for a single note — its pitch, so that the judge can tell a step
 /// from a leap along the line. <see cref="KeyProfiler.AnalyzeModulations"/> hands the judge
-/// one of these per note; <see cref="ModulationDetector"/> hands it one per chord and one per
-/// note of the line between the chords.
+/// one of these per note; <see cref="ModulationDetector"/> hands it one per note of the line
+/// between its chords and, for each chord, one per group of its notes that stop together — a
+/// block chord is one — with a note doubling a pitch class already in it as one more.
 /// </summary>
 /// <param name="Onset">When it starts.</param>
 /// <param name="End">When it stops.</param>
@@ -133,9 +134,9 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// key owns to another within a whole note, a semitone from the notes either side of it, is a
 /// passing tone, and a note where the line turns is structural whatever came before it: the A
 /// flat of G A A♭ G passes; a note that leaves an owned note by a semitone and returns is a
-/// neighbour; a note of the line that leans on the harmony sounding under it — no tone of that
-/// chord, resolving by a semitone into one of its tones while the chord still sounds, sounding
-/// once in its bar, whatever its length and however approached — is an appoggiatura, an
+/// neighbour; a note of the line that leans on the harmony holding under it — no tone of that
+/// chord, resolving by a semitone into one of its tones while the chord's harmony still holds,
+/// sounding once in its bar, whatever its length and however approached — is an appoggiatura, an
 /// accented passing tone or a suspension; and a note struck with a chord that leans on it — one
 /// note outside a triad the chord holds, resolving by step into a tone of that triad at the
 /// next note of the line — is an accented appoggiatura, no tone of the chord, so that the
@@ -189,7 +190,11 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// to the start of its whole note across sonorities both keys own — an arpeggiated D7 begins on
 /// its D, not on the F sharp an eighth later; a modulation one bar earlier still when the new
 /// key owns that whole bar, which is the pivot chord: C F G C | G D7 G modulates at the G, as a
-/// musician writes it, not at the D7. And a key area begins with a phrase: when the new key's
+/// musician writes it, not at the D7. The pivot bar may hold the new key's own dominant
+/// sevenths after the chord it opens on, so long as it opens on a chord the new key owns
+/// outright: G Em Am A7 before Dm G7 C is C's bar with its V7/ii in it, and C is written at the
+/// G — asked for the bar outright, the judge wrote it a bar late, at the Dm. And a key area
+/// begins with a phrase: when the new key's
 /// own note falls later in the phrase — phrases counted from the first note, a phrase long —
 /// and the new key owns every bar from the phrase's start, the key began there, provided a
 /// phrase from there establishes it and it does not open on the old key's tonic chord, which is
@@ -213,6 +218,43 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// read was never there either: two hundred random diatonic melodies in C, opened in A minor, E
 /// minor or G by the profile, reported thirty-six modulations to C (two hundred more from
 /// another seed, forty-five; now two).</description></item>
+/// <item><description><b>A return to a key the music has been in is a homecoming.</b> A stretch
+/// at the end shorter than a phrase is a new key only if the piece closes on its tonic having
+/// already sounded it, from a key still in force, and a new key must beat the key it leaves on
+/// the profile by a margin — the hysteresis that keeps a wobble from reading as a return. A
+/// return to the key the piece opened in, or to a key it established since, that closes the
+/// piece on that key's tonic needs neither: the ear knows the key already, its cadence is a
+/// homecoming, and nothing follows a final cadence to wobble back to; it is enough that the
+/// stretch reads as that key, is owned by it and names it by ownership — a stretch that stays
+/// in the key from where it begins to the end of the piece, whatever its length and whichever
+/// candidate reaches it. C F Dm G | Am G7 C || C D7 G Em | Am D7 G || G C D7 G | C D7 G || G Em
+/// Am A7 | Dm G7 C is home at the G before the A7, as a musician writes it; asked to hear the
+/// tonic before the close, as a new key must, the judge heard a one-bar tonicization of C and
+/// no return, the Dm and the G7 sounding no C. And Dm G7 C closing two phrases in G reads as G
+/// major on the profile still — the dominant sounded twice, the tonic once — so the plainest
+/// ii V7 I home was refused for the margin. Judged only where the candidate's own window ended
+/// with the piece, G Em Am D7 | G7 C C after a phrase in G was a tonicization — the candidate
+/// at the Am, whose window ended a bar early, reached the return first and refused it, and its
+/// tonicization blocked the candidate after it — and G7 C C C, a full phrase home, was refused
+/// for the second bar of its own notes a new key must return. Em A7 D closing a piece in G is
+/// G's half cadence as before: D major was never established, so its close must be a cadence
+/// heard as one.</description></item>
+/// <item><description><b>A chord sounds while its notes sound; its harmony holds until the next
+/// chord.</b> What a chord weighs is the time its notes sound, on both roads: the detector
+/// hands the judge a chord's notes from the chord's onset to where each stops, as the
+/// trajectory always has, and a note held alone after a chord is the sonority there. But the
+/// harmony a chord sets holds until the next chord begins, a whole note past its notes at
+/// most — a staccato chord is released, and the ear keeps its harmony through the bar — and
+/// that is what a note of the line leans on, is a tone of, and resolves into. Sounding until
+/// the next chord on the detector road, a C major chord went on under the common tone C held
+/// alone after it, A flat could not own that half bar and F minor, whose dominant C major is,
+/// was named where a musician hears A flat — and where the trajectory, hearing the notes' real
+/// ends, named it; and the chord as one mask lost the doubling, so the root doubled in a
+/// four-voice cadence weighed once, and Dm G7 C separated C from G by less than the margin on
+/// one road and by twice it on the other. Heard only while its notes sound, on both roads, a
+/// D7 struck for a quarter was gone when the melody's C sharp came, the C sharp was a foreign
+/// quarter and no appoggiatura, and G began four bars late — or, with a chromatic appoggiatura
+/// struck on every downbeat over quarter-note chords, not at all.</description></item>
 /// </list>
 /// </remarks>
 internal static class KeyAreaJudge
@@ -261,7 +303,8 @@ internal static class KeyAreaJudge
     /// lands. And on what must pass: every modulation in the fixture leaves its new key 0.0 in
     /// every bar from where it begins; four bars of D flat in thirty-second-note arpeggios after
     /// four of C, whose last C notes quantize onto the D flat downbeat in the detector's
-    /// eighth-note chords, leave D flat 0.125 in that bar.
+    /// eighth-note chords, leave D flat 0.0625 in that bar — two thirty-seconds, each sounding
+    /// its own length from the grid point (0.25 while a chord sounded until the next chord).
     /// <para>
     /// The floor is <c>&gt;=</c> a quarter. It once weighed passing tones as it weighs strays:
     /// a chromatic quarter-note neighbour — a C sharp under the D7 of a G-major melody over
@@ -349,6 +392,10 @@ internal static class KeyAreaJudge
         // An opening key read from the profile alone, with no chord to open on, is a guess.
         var openingGuessed = startKey is null && !openingByChord;
 
+        // The keys the music has been in — the opening key and every key established since —
+        // one bit each by KeyIndex: a return to one of them is a homecoming (see below).
+        var wasIn = 1u << KeyIndex(current);
+
         // No change may be placed before this: the change before it, or the return home after a
         // tonicization, so that one excursion is counted once.
         var floor = Rational.Zero;
@@ -385,8 +432,21 @@ internal static class KeyAreaJudge
             if (next == current)
                 continue;
 
+            // A return to a key the music has been in — the key it opened in, or one it
+            // established since — in the stretch that closes the piece on that key's tonic is a
+            // homecoming, and the ear that knows the key needs no profile margin to hear it: the
+            // key that owns the close and names it by ownership has it. The profile reads A7 Dm
+            // G7 C, a ii–V7–I home after a phrase in G, as G major still — the dominant sounded
+            // twice, the tonic once — and a return that ends the piece was refused for that
+            // margin, which is hysteresis against a wobble, and nothing follows the final
+            // cadence to wobble back to. A return earlier in the piece faces the margin as any
+            // change does. Here, before the return's own stretch is known, the candidate's
+            // window stands in for it: a candidate whose window ends with the piece is reading
+            // its close.
+            var homeKey = (wasIn & (1u << KeyIndex(next))) != 0 && evidence.ClosesOn(next);
+
             var separation = Separation(reading.Result, next, current);
-            if (separation < MinSeparation)
+            if (separation < MinSeparation && !(homeKey && to == end))
                 continue;
 
             // A key owns its phrase: the phrase that names the new key sounds nothing the new
@@ -426,6 +486,7 @@ internal static class KeyAreaJudge
             {
                 opening = next;
                 current = next;
+                wasIn = 1u << KeyIndex(next);
                 continue;
             }
 
@@ -464,10 +525,19 @@ internal static class KeyAreaJudge
             if (boundary >= to)
                 continue;
 
+            // The return itself: from where the key begins, the music stays in it to the end of
+            // the piece and closes on its tonic — a homecoming whatever its length, and whichever
+            // candidate reaches it. Judged by the candidate's own window instead, a candidate
+            // whose window ended a bar before the piece did reached the same return first, was
+            // refused the margin, and blocked the candidate after it with a tonicization: G Em
+            // Am D7 | G7 C C closed a piece that had gone to G as a tonicization where G Em Am
+            // D7 | G7 C came home.
+            var returning = homeKey && evidence.FirstOnsetLacking(next, current, boundary, end) == end;
+
             // Does the new key hold from there through a phrase? A phrase that cannot decide is
             // extended, to the end at most.
             var holdTo = (b > boundary ? b : boundary) + phrase;
-            var (holds, hold, heldAs) = evidence.Holds(boundary, ref holdTo, next, current, phrase);
+            var (holds, hold, heldAs) = evidence.Holds(boundary, ref holdTo, next, current, phrase, returning ? 0f : MinSeparation);
 
             // The phrase from the boundary reads a third key decisively: the evidence straddled
             // two keys and its compromise reading named neither. Nothing happened here — unless
@@ -482,9 +552,15 @@ internal static class KeyAreaJudge
                 && Separation(hold.Result, heldAs.Key, current) >= MinSeparation;
 
             // The bar before the first note the new key alone owns, when the new key owns that
-            // whole bar outright: the pivot chord, a chord of both keys.
+            // whole bar outright: the pivot chord, a chord of both keys. Or owns it with its own
+            // dominant sevenths counted, when the bar opens on a chord it owns outright: G Em Am
+            // A7 before Dm G7 C is C's bar, the A7 its V7/ii, and C is written at the G, the
+            // pivot, where a musician writes it — asked for the bar outright, the judge wrote it
+            // a bar late, at the Dm.
             var previousBar = boundary - Rational.Whole;
-            var pivot = previousBar >= floor && evidence.BarIsOwned(previousBar, next, current, Exempt.Nothing);
+            var pivot = previousBar >= floor
+                && (evidence.BarIsOwned(previousBar, next, current, Exempt.Nothing)
+                    || (evidence.OpensOutright(next, previousBar) && evidence.BarIsOwned(previousBar, next, current, Exempt.Sevenths)));
 
             // A modulation is a change from the key the music is in: a stretch at the end can
             // only be a cadence in a key the music was in if the old key was still in force just
@@ -506,17 +582,30 @@ internal static class KeyAreaJudge
             // a pivot bar without the tonic in it (vi of the old key as ii of the new) is not
             // where the tonic was heard.
             var fragment = holdTo == end && holdTo - boundary < phrase;
+
+            // A return to a key the music has been in — the key it opened in, or one it
+            // established since — needs no such confirmation: the ear knows that key already,
+            // and a stretch at the end that closes on its tonic is its cadence, a homecoming,
+            // shorter than a phrase or not. G Em Am A7 | Dm G7 C, closing a chorale that opened
+            // in C and went to G, is C again at the A7 and the cadence; asked to hear the tonic
+            // before the close, as a new key must, the judge heard a one-bar tonicization of C
+            // and no return home. And G7 C C C, a full phrase home, needs no second bar of C's
+            // own notes either (below): asked for one, the judge heard a four-bar tonicization.
+            var homecoming = returning;
             var established = holds
                 && (!fragment
+                    || homecoming
                     || (fromOldKey && evidence.ClosesOn(next) && evidence.SoundsTonicBeforeClose(next, pivot ? previousBar : boundary)));
 
             // A key is entered when its own notes return: one bar of them is an applied
             // dominant, a second bar before the old key's own notes are heard again is the key
             // — unless the phrase is framed by the new tonic chord, which is a phrase in its
-            // key. A key that owns nothing the old key lacks has no note of its own to return.
+            // key. A key that owns nothing the old key lacks has no note of its own to return,
+            // and a homecoming at the close has no second bar to return them in.
             var held = hold.Distribution;
             if (established
                 && !ownsNothingNew
+                && !homecoming
                 && !evidence.Returns(newNotes, homeNotes, boundary, boundary + phrase + phrase, next, current)
                 && !evidence.FramedBy(next, boundary, holdTo))
             {
@@ -545,14 +634,18 @@ internal static class KeyAreaJudge
                     && evidence.BarsAreOwned(phraseStart, boundary, next, current))
                 {
                     var startTo = phraseStart + phrase;
-                    var (startHolds, earlier, _) = evidence.Holds(phraseStart, ref startTo, next, current, phrase);
+                    var (startHolds, earlier, _) = evidence.Holds(phraseStart, ref startTo, next, current, phrase, returning ? 0f : MinSeparation);
                     var startFragment = startTo == end && startTo - phraseStart < phrase;
+                    var startHomecoming = returning;
                     var barBefore = phraseStart - Rational.Whole;
                     var startFromOldKey = evidence.BarIsOwned(barBefore, current, null)
                         || evidence.BarIsOwned(barBefore, next, current, Exempt.Sevenths);
                     if (startHolds
-                        && (!startFragment || (startFromOldKey && evidence.ClosesOn(next) && evidence.SoundsTonicBeforeClose(next, phraseStart)))
-                        && (evidence.Returns(newNotes, homeNotes, phraseStart, phraseStart + phrase + phrase, next, current)
+                        && (!startFragment
+                            || startHomecoming
+                            || (startFromOldKey && evidence.ClosesOn(next) && evidence.SoundsTonicBeforeClose(next, phraseStart)))
+                        && (startHomecoming
+                            || evidence.Returns(newNotes, homeNotes, phraseStart, phraseStart + phrase + phrase, next, current)
                             || evidence.FramedBy(next, phraseStart, startTo)))
                     {
                         established = true;
@@ -590,6 +683,7 @@ internal static class KeyAreaJudge
             {
                 opening = next;
                 current = next;
+                wasIn = 1u << KeyIndex(next);
                 floor = evidence.NextOnsetAfter(boundary);
                 continue;
             }
@@ -620,6 +714,7 @@ internal static class KeyAreaJudge
             if (established)
             {
                 current = next;
+                wasIn |= 1u << KeyIndex(next);
                 floor = evidence.NextOnsetAfter(boundary);
             }
             else
@@ -768,6 +863,15 @@ internal static class KeyAreaJudge
         private readonly ushort[] _following;
         private readonly int[] _appliedRoot;
 
+        // Where each sonority's harmony holds to. A chord — two pitch classes or more — is the
+        // harmony under the line from its onset until the next chord begins, though its notes
+        // may stop sooner: a staccato chord is released, and the ear keeps its harmony through
+        // the bar; but no longer than a whole note past where its notes stop, so that a chord
+        // long gone governs no melody. A note of the line holds no harmony of its own, and its
+        // entry is its end. What a chord weighs is still the time its notes sound (_end).
+        private readonly double[] _harmonyEnd;
+        private readonly double _harmonyReachD;
+
         // Whether each sonority is a single note of the line — a pitch, alone at its onset —
         // and whether the chord it belongs to could be one of some key's chromatic chords: an
         // applied chord, a borrowed chord (it holds a triad) or the last chord (a Picardy
@@ -914,13 +1018,18 @@ internal static class KeyAreaJudge
                     seen |= _sonorities[k].PitchClasses;
 
                     // A doubling is the shorter sonority of a pitch class struck twice — the
-                    // melody's quarter over the chord's whole note — whatever order they came in.
+                    // melody's quarter over the chord's whole note — or, of two that end
+                    // together, the one with fewer pitch classes — the chorale's doubled root
+                    // beside the chord it doubles — whatever order they came in.
                     var doubling = false;
                     for (var other = i; other < next && !doubling; other++)
                     {
+                        var mine = _sonorities[k].PitchClasses;
+                        var theirs = _sonorities[other].PitchClasses;
                         doubling = other != k
-                            && (_sonorities[k].PitchClasses & ~_sonorities[other].PitchClasses) == 0
-                            && (_end[other] > _end[k] || (_end[other] == _end[k] && other < k));
+                            && (mine & ~theirs) == 0
+                            && (_end[other] > _end[k]
+                                || (_end[other] == _end[k] && (mine != theirs || other < k)));
                     }
 
                     _doubling[k] = doubling;
@@ -931,6 +1040,9 @@ internal static class KeyAreaJudge
             }
 
             _anyChord = anyChord;
+
+            // A melody alone sets no harmony, and its scans need reach no further back.
+            _harmonyReachD = anyChord ? _longestD + 1.0 : _longestD;
 
             MarkArpeggios();
 
@@ -945,6 +1057,31 @@ internal static class KeyAreaJudge
             }
 
             _groupCount = groupCount;
+
+            // Where each chord's harmony holds to: the next chord of two pitch classes or more,
+            // or a whole note past the chord's own end, whichever comes first — and never
+            // before its notes stop. Found from the end, chord by chord, before the leaning
+            // notes are, which ask what harmony holds where they resolve; a chord of two pitch
+            // classes stays one with a leaning note taken out, that being taken from four.
+            _harmonyEnd = new double[_sonorities.Length];
+            var nextChord = double.PositiveInfinity;
+            for (var i = _sonorities.Length - 1; i >= 0; i = _groupStart[i] - 1)
+            {
+                var start = _groupStart[i];
+                var groupEnd = _groupEnd[i];
+                ushort union = 0;
+                for (var k = start; k < groupEnd; k++)
+                    union |= _sonorities[k].PitchClasses;
+
+                var isChord = BitOperations.PopCount(union) > 1;
+                for (var k = start; k < groupEnd; k++)
+                    _harmonyEnd[k] = isChord ? Math.Max(_end[k], Math.Min(nextChord, _end[k] + 1.0)) : _end[k];
+                if (isChord)
+                    nextChord = _onset[start];
+
+                if (start == 0)
+                    break;
+            }
 
             for (var i = 0; i < _sonorities.Length; i = _groupEnd[i])
             {
@@ -1022,19 +1159,20 @@ internal static class KeyAreaJudge
         }
 
         /// <summary>
-        /// A sonority of the chord sounding under sonority <paramref name="index"/> — the
-        /// latest-beginning chord of two or more notes that began before it and is still
-        /// sounding when it begins — or -1.
+        /// A sonority of the chord whose harmony holds under sonority <paramref name="index"/>
+        /// — the latest-beginning chord of two or more notes that began before it and whose
+        /// harmony still holds when it begins (<see cref="_harmonyEnd"/>) — or -1.
         /// </summary>
         private int ChordUnder(int index)
         {
             var onset = _sonorities[index].Onset;
+            var onsetD = _onset[index];
             var under = -1;
-            foreach (var k in Reaching(onset))
+            foreach (var k in ReachingHarmony(onset))
             {
                 if (_sonorities[k].Onset >= onset)
                     break;
-                if (_sonorities[k].End > onset && BitOperations.PopCount(_chordPitchClasses[k]) > 1 && (under < 0 || _sonorities[k].Onset >= _sonorities[under].Onset))
+                if (_harmonyEnd[k] > onsetD && BitOperations.PopCount(_chordPitchClasses[k]) > 1 && (under < 0 || _sonorities[k].Onset >= _sonorities[under].Onset))
                     under = k;
             }
 
@@ -1144,9 +1282,10 @@ internal static class KeyAreaJudge
         /// bar a G chord with an A sharp in it, no bar of G major's, and a melody with one on
         /// every downbeat of its new key named no key; and A struck over E G sharp B — a 4-3
         /// suspension — made the chord no plain triad, so it was no longer G's V/ii and G began
-        /// two bars late. On the detector road the chord is one sonority with the melody's
-        /// downbeat folded in; on the trajectory road the note is its own sonority, and its
-        /// step is read in pitch.
+        /// two bars late. On the detector road the melody's downbeat is folded into the chord's
+        /// sonority when it stops with the chord, and its step is read in pitch class; where it
+        /// stops before the chord, and on the trajectory road always, the note is its own
+        /// sonority, and its step is read in pitch.
         /// </remarks>
         private ushort LeaningNoteIn(int start, int end, ushort together)
         {
@@ -1155,14 +1294,7 @@ internal static class KeyAreaJudge
 
             var resolution = _sonorities[end];
             var to = PitchMath.Fold(resolution.Pitch);
-            ushort sounding = 0;
-            foreach (var k in Reaching(resolution.Onset))
-            {
-                if (_sonorities[k].Onset > resolution.Onset)
-                    break;
-                if (_sonorities[k].End > resolution.Onset)
-                    sounding |= _sonorities[k].PitchClasses;
-            }
+            var sounding = HarmonyAt(resolution.Onset);
 
             // Of the notes that could be leaning, the one that leaves a plain chord behind — a
             // triad or a dominant seventh — before one that leaves a chord with a stranger in
@@ -1801,13 +1933,21 @@ internal static class KeyAreaJudge
         }
 
         /// <summary>
-        /// Whether the note of the line <paramref name="index"/> leans on the harmony sounding
-        /// under it — a chord of two notes or more that began before it: it is no tone of that
-        /// chord, resolves by a semitone into one of its tones while the chord still sounds, and
-        /// sounds once in its bar. An appoggiatura, an accented passing tone or a suspension,
-        /// whatever its length and however approached. Decided once per note; it does not depend
-        /// on the key.
+        /// Whether the note of the line <paramref name="index"/> leans on the harmony holding
+        /// under it — a chord of two notes or more that began before it, its harmony still
+        /// holding (<see cref="_harmonyEnd"/>): it is no tone of that chord, resolves by a
+        /// semitone into one of its tones while the harmony still holds, and sounds once in its
+        /// bar. An appoggiatura, an accented passing tone or a suspension, whatever its length
+        /// and however approached. Decided once per note; it does not depend on the key.
         /// </summary>
+        /// <remarks>
+        /// The chord had to be sounding — its notes not yet stopped — under the note and at its
+        /// resolution. A staccato D7, a quarter and then silence, was gone when the melody's C
+        /// sharp came on the next beat, so the C sharp leaned on nothing and was a foreign
+        /// quarter; G began four bars late on the trajectory road, and on the detector's too
+        /// once its chords stopped where their notes stop. The harmony of a released chord holds
+        /// until the next chord.
+        /// </remarks>
         private bool LeansOnHarmony(int index)
         {
             if (!_anyChord)
@@ -1823,7 +1963,7 @@ internal static class KeyAreaJudge
                 {
                     var resolution = After(index).StepsFrom(note, 0x0FFF, forward: true, semitone: true);
                     leans = (resolution.PitchClasses & under) != 0
-                        && (SoundingAt(note.End) & under) == under
+                        && (HarmonyAt(note.End) & under) == under
                         && !SoundsAgainInBar(index, index + 1, note.PitchClasses);
                 }
 
@@ -2026,11 +2166,11 @@ internal static class KeyAreaJudge
                 else
                 {
                     ushort sounding = 0;
-                    foreach (var k in Reaching(note.Onset))
+                    foreach (var k in ReachingHarmony(note.Onset))
                     {
                         if (_sonorities[k].Onset >= note.Onset)
                             break;
-                        if (_sonorities[k].End > note.Onset)
+                        if (_harmonyEnd[k] > _onset[index])
                             sounding |= _sonorities[k].PitchClasses;
                     }
 
@@ -2108,19 +2248,20 @@ internal static class KeyAreaJudge
         }
 
         /// <summary>
-        /// The pitch classes of the chords sounding under sonority <paramref name="index"/>: the
-        /// sonorities that began before it, in a group of two or more, and are still sounding
-        /// when it begins.
+        /// The pitch classes of the chords whose harmony holds under sonority <paramref name="index"/>:
+        /// the sonorities that began before it, in a group of two or more, and whose harmony
+        /// still holds when it begins (<see cref="_harmonyEnd"/>).
         /// </summary>
         private ushort SoundingUnder(int index)
         {
             var onset = _sonorities[index].Onset;
+            var onsetD = _onset[index];
             ushort under = 0;
-            foreach (var k in Reaching(onset))
+            foreach (var k in ReachingHarmony(onset))
             {
                 if (_sonorities[k].Onset >= onset)
                     break;
-                if (_sonorities[k].End > onset && BitOperations.PopCount(_chordPitchClasses[k]) > 1)
+                if (_harmonyEnd[k] > onsetD && BitOperations.PopCount(_chordPitchClasses[k]) > 1)
                     under |= _sonorities[k].PitchClasses;
             }
 
@@ -2622,10 +2763,12 @@ internal static class KeyAreaJudge
         /// Whether <paramref name="key"/> holds from <paramref name="from"/> through
         /// <paramref name="holdTo"/>: the stretch — extended by a phrase at a time while it
         /// cannot decide, to the end at most — is decidable, names the key over any rival by
-        /// <see cref="MinTold"/>, separates it from <paramref name="current"/>, and is owned by
-        /// it. Returns the reading and the name the stretch was given, for the caller's use.
+        /// <see cref="MinTold"/>, separates it from <paramref name="current"/> by
+        /// <paramref name="minSeparation"/> — <see cref="MinSeparation"/>, or nothing for a
+        /// homecoming — and is owned by it. Returns the reading and the name the stretch was
+        /// given, for the caller's use.
         /// </summary>
-        public (bool Holds, Reading Hold, Named HeldAs) Holds(Rational from, ref Rational holdTo, KeySignature key, KeySignature current, Rational phrase)
+        public (bool Holds, Reading Hold, Named HeldAs) Holds(Rational from, ref Rational holdTo, KeySignature key, KeySignature current, Rational phrase, float minSeparation)
         {
             if (holdTo > End)
                 holdTo = End;
@@ -2642,7 +2785,7 @@ internal static class KeyAreaJudge
             var holds = hold.Result.IsDecidable
                 && heldAs.Margin >= MinTold
                 && heldAs.Key == key
-                && Separation(hold.Result, key, current) >= MinSeparation
+                && Separation(hold.Result, key, current) >= minSeparation
                 && Owns(from, holdTo, key, current);
             return (holds, hold, heldAs);
         }
@@ -3016,6 +3159,27 @@ internal static class KeyAreaJudge
             return i < _sonorities.Length && IsTonicChord(key, SoundingAt(_sonorities[i].Onset));
         }
 
+        /// <summary>
+        /// Whether the chord at the first onset at or after <paramref name="from"/> is owned by
+        /// <paramref name="key"/> outright — every note of it in the key's scale, no chromatic
+        /// chord of the key's counted.
+        /// </summary>
+        public bool OpensOutright(KeySignature key, Rational from)
+        {
+            var i = FirstIndexAt(from);
+            if (i >= _sonorities.Length)
+                return false;
+
+            var onset = _sonorities[i].Onset;
+            for (var k = i; k < _sonorities.Length && _sonorities[k].Onset == onset; k++)
+            {
+                if (Outright(k, key) != 0)
+                    return false;
+            }
+
+            return true;
+        }
+
         /// <summary>The pitch classes of every sonority sounding at <paramref name="position"/> — less a note leaning on the chord it was struck with, which is no note of the harmony.</summary>
         private ushort SoundingAt(Rational position)
         {
@@ -3026,6 +3190,27 @@ internal static class KeyAreaJudge
                     break;
                 if (_sonorities[i].End > position)
                     together |= (ushort)(_sonorities[i].PitchClasses & ~_leaning[i]);
+            }
+
+            return together;
+        }
+
+        /// <summary>
+        /// The pitch classes of every sonority whose harmony holds at <paramref name="position"/>
+        /// (<see cref="_harmonyEnd"/>): what <see cref="SoundingAt"/> gives, with a chord that
+        /// was released before <paramref name="position"/> still counted until the next chord.
+        /// A note of the line leans on this, and an accented appoggiatura resolves into it.
+        /// </summary>
+        private ushort HarmonyAt(Rational position)
+        {
+            var positionD = position.ToDouble();
+            ushort together = 0;
+            foreach (var i in ReachingHarmony(position))
+            {
+                if (_sonorities[i].Onset > position)
+                    break;
+                if (_harmonyEnd[i] > positionD)
+                    together |= _sonorities[i].PitchClasses;
             }
 
             return together;
@@ -3285,13 +3470,21 @@ internal static class KeyAreaJudge
         /// first whose ordinary length could, in onset order. A loop over them stops itself where
         /// its onsets pass what it is looking for.
         /// </summary>
-        private ReachingIndices Reaching(Rational position) => new(this, position.ToDouble());
+        private ReachingIndices Reaching(Rational position) => new(this, position.ToDouble(), _longestD, harmony: false);
 
-        private ReachingIndices Reaching(double position) => new(this, position);
+        private ReachingIndices Reaching(double position) => new(this, position, _longestD, harmony: false);
 
-        private struct ReachingIndices(Evidence evidence, double position)
+        /// <summary>
+        /// The indices of the sonorities whose harmony may hold at <paramref name="position"/>
+        /// or that begin after it (<see cref="_harmonyEnd"/>): <see cref="Reaching(Rational)"/>
+        /// reaching a whole note further back, for a chord released before the note that
+        /// leans on it.
+        /// </summary>
+        private ReachingIndices ReachingHarmony(Rational position) => new(this, position.ToDouble(), _harmonyReachD, harmony: true);
+
+        private struct ReachingIndices(Evidence evidence, double position, double reach, bool harmony)
         {
-            private readonly int _mainStart = evidence.FirstIndexAt(position - evidence._longestD);
+            private readonly int _mainStart = evidence.FirstIndexAt(position - reach);
             private int _long = 0;
             private int _main = -1;
 
@@ -3304,7 +3497,7 @@ internal static class KeyAreaJudge
                 while (_long < evidence._long.Length)
                 {
                     var i = evidence._long[_long++];
-                    if (i < _mainStart && evidence._end[i] > position)
+                    if (i < _mainStart && (harmony ? evidence._harmonyEnd[i] : evidence._end[i]) > position)
                     {
                         Current = i;
                         return true;
