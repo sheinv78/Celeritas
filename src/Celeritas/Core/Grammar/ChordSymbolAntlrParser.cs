@@ -73,7 +73,12 @@ internal static class ChordSymbolAntlrParser
         input = NormalizeAccidentals(input);
         input = NormalizePlusAlterations(input);
 
-        var inputStream = new AntlrInputStream(input);
+        // A code-point stream, not AntlrInputStream: that one feeds the lexer UTF-16 units, so a
+        // character outside the Basic Multilingual Plane — an emoji, a musical symbol such as 𝄞 —
+        // arrived as a lone high surrogate, and the lexer's own error display threw
+        // ArgumentException on it before any listener was told. A symbol this parser could not
+        // read was promised a `false`, and "🎵" got an exception instead.
+        var inputStream = CharStreams.fromString(input);
         var lexer = new ChordSymbolLexer(inputStream);
         var tokenStream = new CommonTokenStream(lexer);
         var parser = new ChordSymbolParser(tokenStream);

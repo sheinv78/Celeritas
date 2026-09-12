@@ -242,6 +242,14 @@ public static class NativeExports
     /// <summary>
     /// Parse a chord symbol (e.g. "C7(b9,#11)", "C/E", "C|G") to MIDI pitches.
     /// </summary>
+    /// <remarks>
+    /// At most <paramref name="maxCount"/> pitches are written to <paramref name="pitchesOutPtr"/>;
+    /// <paramref name="countOutPtr"/> receives the number the symbol names, which can be larger.
+    /// A caller whose buffer was too small reads that number and asks again with a buffer that
+    /// size. It used to receive the number that fit, so a caller had no way to tell a chord of
+    /// exactly its buffer's size from one that had been cut to it, and the Python wrapper
+    /// returned thirty-two pitches of a forty-pitch polychord with nothing to say so.
+    /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "celeritas_parse_chord_symbol", CallConvs = [typeof(CallConvCdecl)])]
     public static byte ParseChordSymbol(IntPtr symbolPtr, IntPtr pitchesOutPtr, int maxCount, IntPtr countOutPtr)
     {
@@ -267,7 +275,7 @@ public static class NativeExports
                 Marshal.Copy(pitches, 0, pitchesOutPtr, count);
             }
 
-            Marshal.WriteInt32(countOutPtr, count);
+            Marshal.WriteInt32(countOutPtr, pitches.Length);
             return 1;
         }
         catch (Exception ex)

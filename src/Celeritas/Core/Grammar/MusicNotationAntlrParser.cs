@@ -36,7 +36,10 @@ internal static class MusicNotationAntlrParser
         if (string.IsNullOrWhiteSpace(input))
             return new ParseResult([], null, [], []);
 
-        var inputStream = new AntlrInputStream(input);
+        // A code-point stream, as in ChordSymbolAntlrParser: AntlrInputStream hands the lexer
+        // UTF-16 units, and a character outside the Basic Multilingual Plane made the lexer's own
+        // error display throw before the listener below could record a parse error.
+        var inputStream = CharStreams.fromString(input);
         var lexer = new MusicNotationLexer(inputStream);
         var tokenStream = new CommonTokenStream(lexer);
         var parser = new MusicNotationParser(tokenStream);

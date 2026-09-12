@@ -6,10 +6,13 @@ Author: Vladimir V. Shein
 License: BSL-1.1
 """
 
+import json
+import os
 import unittest
 from fractions import Fraction
-from typing import List
+from typing import Any, Callable, Dict, List
 from celeritas import (
+    CeleritasError,
     NoteEvent,
     parse_note,
     transpose,
@@ -79,6 +82,31 @@ class TestParseChordSymbol(unittest.TestCase):
         pitches = parse_chord_symbol("C|G")
         self.assertIsNotNone(pitches)
         self.assertEqual(sorted(pitches), sorted([60, 64, 67, 79, 83, 86]))
+
+    def test_a_symbol_naming_more_pitches_than_the_buffer_holds_gets_them_all(self):
+        """The wrapper asked for at most 32 pitches and returned what fit.
+
+        A polychord of four ten-note chords names forty; it came back as thirty-two, which is
+        also what a chord of exactly thirty-two would look like, where the C# library answers
+        forty. The export now reports how many the symbol names and the wrapper asks again.
+        """
+
+        forty = "|".join(["C7(b9,#11,b13)add2add4add6"] * 4)
+        pitches = parse_chord_symbol(forty)
+
+        self.assertIsNotNone(pitches)
+        self.assertEqual(len(pitches), 40)
+        self.assertEqual(pitches[:10], [60, 62, 64, 65, 67, 69, 70, 73, 78, 80])
+        self.assertEqual(pitches[-1], 116)
+
+    def test_an_explicit_cap_is_still_a_cap(self):
+        """A caller who names a maximum has asked for a cut, and gets the first pitches."""
+
+        self.assertEqual(parse_chord_symbol("C13", max_pitches=3), [60, 64, 67])
+        self.assertEqual(
+            parse_chord_symbol("C13", max_pitches=7), [60, 64, 67, 70, 74, 77, 81]
+        )
+        self.assertEqual(parse_chord_symbol("C13", max_pitches=0), [])
 
 
 class TestNoteEvent(unittest.TestCase):
@@ -739,6 +767,231 @@ class TestOrnamentsMatchTheLibrary(unittest.TestCase):
         for speed in (0, -1):
             with self.assertRaises(ValueError):
                 Trill(self._note(60), speed=speed).expand()
+
+
+# ---------------------------------------------------------------------------------------------
+# Three implementations of one theory: the managed library, the native exports this package
+# calls through ctypes, and the pure-Python rewrites in celeritas.py. The managed library writes
+# a table of questions and its answers to parity/managed-answers.json — the C# test class
+# ThreeImplementationsAgreeTests in tests/Celeritas.Tests keeps that file current — and the test
+# below asks the other two the same questions and reports every answer that differs, with the
+# question beside it.
+#
+# The three had drifted three times before anything compared them, each time found by a probe
+# written by hand: celeritas_parse_note handing back the first note of a chord and pitch -1 for a
+# rest, celeritas_detect_key naming B flat "A#", the Python Mordent leaving the keyboard where the
+# library's does not. A refused input is the string "error" on both sides: the export returning 0
+# (None or CeleritasError here), or the rewrite raising ValueError.
+#
+# To refresh the table after a deliberate change to the library, run the C# test with
+# CELERITAS_REGENERATE_GOLDEN=1, rebuild the native library (scripts/build-python-native.ps1) and
+# run this file again.
+# ---------------------------------------------------------------------------------------------
+
+_PARITY_TABLE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "parity", "managed-answers.json"
+)
+
+_REFUSED = "error"
+
+
+def _fraction_pair(numerator: int, denominator: int) -> List[int]:
+    return [numerator, denominator]
+
+
+def _rows(notes: List[NoteEvent]) -> List[List[int]]:
+    """Notes as the table writes them: pitch, offset and duration as numerator, denominator."""
+
+    return [
+        [
+            note.pitch,
+            note.time_numerator,
+            note.time_denominator,
+            note.duration_numerator,
+            note.duration_denominator,
+        ]
+        for note in notes
+    ]
+
+
+def _ask_parse_note(question: str) -> Any:
+    note = parse_note(question)
+    if note is None:
+        return _REFUSED
+    return [
+        note.pitch,
+        _fraction_pair(note.time_numerator, note.time_denominator),
+        _fraction_pair(note.duration_numerator, note.duration_denominator),
+        note.velocity,
+    ]
+
+
+def _ask_transpose(question: Dict[str, Any]) -> Any:
+    return transpose(question["pitches"], question["semitones"])
+
+
+def _ask_identify_chord(question: List[int]) -> Any:
+    try:
+        return identify_chord(question)
+    except CeleritasError:
+        return _REFUSED
+
+
+def _ask_detect_key(question: List[int]) -> Any:
+    try:
+        tonic, is_major = detect_key(question)
+    except CeleritasError:
+        return _REFUSED
+    return [tonic, is_major]
+
+
+def _ask_parse_chord_symbol(question: str) -> Any:
+    pitches = parse_chord_symbol(question)
+    return _REFUSED if pitches is None else pitches
+
+
+def _ask_midi_to_note_name(question: Dict[str, Any]) -> Any:
+    try:
+        return midi_to_note_name(
+            question["pitch"], prefer_flats=question["prefer_flats"]
+        )
+    except ValueError:
+        return _REFUSED
+
+
+def _base_note(question: Dict[str, Any]) -> NoteEvent:
+    return NoteEvent(
+        pitch=question["pitch"],
+        time_numerator=question["offset"][0],
+        time_denominator=question["offset"][1],
+        duration_numerator=question["duration"][0],
+        duration_denominator=question["duration"][1],
+        velocity=80,
+    )
+
+
+def _expansion(base: NoteEvent, expand: Callable[[], List[NoteEvent]]) -> Any:
+    try:
+        notes = expand()
+    except ValueError:
+        return _REFUSED
+    # The table does not carry velocity; both sides pass the base note's through unchanged, and
+    # a note that did not would be a disagreement the rows alone could not show.
+    for note in notes:
+        if note.velocity != base.velocity:
+            return (
+                f"velocity {note.velocity} on a note of a base note at {base.velocity}"
+            )
+    return _rows(notes)
+
+
+def _ask_trill(question: Dict[str, Any]) -> Any:
+    base = _base_note(question)
+    trill = Trill(
+        base,
+        interval=question["interval"],
+        speed=question["speed"],
+        start_with_upper=question["start_with_upper"],
+        end_with_turn=question["end_with_turn"],
+    )
+    return _expansion(base, trill.expand)
+
+
+def _ask_mordent(question: Dict[str, Any]) -> Any:
+    base = _base_note(question)
+    mordent_type = (
+        MordentType.UPPER if question["type"] == "upper" else MordentType.LOWER
+    )
+    mordent = Mordent(
+        base,
+        mordent_type=mordent_type,
+        interval=question["interval"],
+        alternations=question["alternations"],
+    )
+    return _expansion(base, mordent.expand)
+
+
+# One asker per section of the table. The native exports are asked through the same ctypes
+# wrappers the package exposes; the rewrites are the package's own classes and functions.
+_ASKERS: Dict[str, Callable[[Any], Any]] = {
+    "parse_note": _ask_parse_note,
+    "transpose": _ask_transpose,
+    "identify_chord": _ask_identify_chord,
+    "detect_key": _ask_detect_key,
+    "parse_chord_symbol": _ask_parse_chord_symbol,
+    "midi_to_note_name": _ask_midi_to_note_name,
+    "trill": _ask_trill,
+    "mordent": _ask_mordent,
+}
+
+
+class TestThreeImplementationsAgree(unittest.TestCase):
+    """Every answer in parity/managed-answers.json, asked again of the native library and the
+    pure-Python rewrites.
+
+    One test per section, so a run names the export or the rewrite that drifted; each test
+    lists every question the two sides answered differently rather than stopping at the first.
+    """
+
+    table: Dict[str, Any] = {}
+
+    @classmethod
+    def setUpClass(cls):
+        with open(_PARITY_TABLE, encoding="utf-8") as handle:
+            cls.table = json.load(handle)
+
+    def _agree(self, section: str) -> None:
+        entries = self.table[section]
+        self.assertGreater(len(entries), 0, f"{section} has no questions")
+
+        ask = _ASKERS[section]
+        differing = []
+        for entry in entries:
+            answer = ask(entry["q"])
+            if answer != entry["a"]:
+                differing.append(
+                    "  {}: managed {}, here {}".format(
+                        json.dumps(entry["q"], ensure_ascii=False),
+                        json.dumps(entry["a"], ensure_ascii=False),
+                        json.dumps(answer, ensure_ascii=False),
+                    )
+                )
+
+        if differing:
+            self.fail(
+                f"{len(differing)} of {len(entries)} {section} answers differ from the "
+                "managed library:\n" + "\n".join(differing)
+            )
+
+    def test_every_section_of_the_table_is_asked(self):
+        """A section the C# side adds without an asker here would be a question nobody re-asks."""
+
+        sections = sorted(name for name in self.table if not name.startswith("_"))
+        self.assertEqual(sections, sorted(_ASKERS))
+
+    def test_parse_note_agrees_with_the_managed_library(self):
+        self._agree("parse_note")
+
+    def test_transpose_agrees_with_the_managed_library(self):
+        self._agree("transpose")
+
+    def test_identify_chord_agrees_with_the_managed_library(self):
+        self._agree("identify_chord")
+
+    def test_detect_key_agrees_with_the_managed_library(self):
+        self._agree("detect_key")
+
+    def test_parse_chord_symbol_agrees_with_the_managed_library(self):
+        self._agree("parse_chord_symbol")
+
+    def test_midi_to_note_name_agrees_with_the_managed_library(self):
+        self._agree("midi_to_note_name")
+
+    def test_trill_agrees_with_the_managed_library(self):
+        self._agree("trill")
+
+    def test_mordent_agrees_with_the_managed_library(self):
+        self._agree("mordent")
 
 
 def run_tests():

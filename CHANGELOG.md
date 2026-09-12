@@ -512,6 +512,20 @@ follows.
 - The documented native build script works, and says what is missing when it
   cannot: Native AOT needs `vswhere.exe`, which lives in the Visual Studio
   installer and not on PATH, and the failure blamed `link.exe` instead
+- A character outside the Basic Multilingual Plane -- an emoji, the musical
+  symbol 𝄞 -- in a chord symbol or a notation string threw `ArgumentException`
+  from inside the lexer ("Found a high surrogate char without a following low
+  surrogate"): both ANTLR wrappers fed it UTF-16 units. `TryParseChordSymbol`
+  now answers `false`, `ParseChordSymbol` an empty array, and `MusicNotation.Parse`
+  a parse error about the notation, as each documents. The native
+  `celeritas_parse_chord_symbol` had swallowed the exception and answered
+  "refused", so the managed library and its C export disagreed on the same string
+  -- the first thing the parity gate below found
+- The Python `parse_chord_symbol` returned at most 32 pitches and said nothing
+  when it cut: a polychord naming forty came back as its first thirty-two,
+  indistinguishable from a chord of thirty-two, where the managed library answers
+  forty. It now returns every pitch the symbol names; an explicit `max_pitches`
+  is still a cap
 
 ### Changed
 
@@ -563,6 +577,12 @@ Behavioral and API changes that can affect existing code:
 - `MidiImportOptions.SortByOffset = false` keeps the order the file lists its
   notes in, track by track; it used to change nothing, because the notes
   arrived already merged in time order
+- The native `celeritas_parse_chord_symbol` writes the number of pitches the
+  symbol names into `countOut`, which can exceed `maxCount`; it wrote the number
+  that fit, so a caller could not tell a chord of exactly its buffer's size from
+  one cut to it. A C caller that read `countOut` as the number written must take
+  `min(countOut, maxCount)`; the Python wrapper reads it as the size to ask again
+  with
 - `MidiIo.Import` leaves the percussion channel out by default. A caller who
   imported a drum track knowingly without naming the channel now needs
   `IncludePercussion: true` or `Channel: 9`; `MidiImportOptions` gains that fourth
@@ -631,6 +651,19 @@ notes, so an upgrade failed to compile with nothing here to explain it.
   (`notes`, `buffer`, `xmlText`), now declared to the gate by a
   `<!-- snippet: given ... -->` comment, and one block was missing the
   `using System.Globalization;` it relied on
+- The three implementations of one theory are held together by a test. The
+  managed library, the C exports the Python package calls, and the pure-Python
+  rewrites of the ornaments and `midi_to_note_name` had drifted three times, each
+  found by a probe written by hand. `ThreeImplementationsAgreeTests` now asks the
+  managed library 6234 questions -- every note name in every octave, every chord
+  quality on every root in every inversion, keys, chord symbols with every suffix
+  a lead sheet uses, every MIDI number spelled both ways, trills and mordents at
+  the edges of the keyboard -- and writes the answers to
+  `bindings/python/parity/managed-answers.json`, failing when the checked-in table
+  is stale (`CELERITAS_REGENERATE_GOLDEN=1` refreshes it); the Python suite asks
+  the native library and the rewrites the same questions and lists every answer
+  that differs. Its first run found the surrogate exception and the silent
+  thirty-two above
 - SIMD out-of-bounds fixes in pitch transformer tail handling; SIMD dispatch centralized
   in `PitchTransformerFactory` (per-call `IsSupported` guards eliminated)
 - `KeyAnalyzer` profile rotation fix in Krumhansl-Schmuckler key detection

@@ -340,36 +340,49 @@ def detect_key(pitches: List[int]) -> Tuple[str, bool]:
     return (buffer.value.decode("utf-8"), bool(is_major.value))
 
 
-def parse_chord_symbol(symbol: str, max_pitches: int = 32) -> Optional[List[int]]:
+def parse_chord_symbol(
+    symbol: str, max_pitches: Optional[int] = None
+) -> Optional[List[int]]:
     """Parse a chord symbol (e.g. "C7(b9,#11)", "C/E", "C|G") into MIDI pitches.
 
     Args:
         symbol: Chord symbol string.
-        max_pitches: Maximum number of pitches to return.
+        max_pitches: A cap on the number of pitches returned; a longer answer is cut to this
+            many. None, the default, returns every pitch the symbol names, however many.
 
     Returns:
         List of MIDI pitches, or None if parsing failed.
+
+    The cap used to be 32 and silent: a polychord naming forty pitches came back as its first
+    thirty-two, indistinguishable from a chord of thirty-two, where the C# library answered all
+    forty. The native export now reports how many pitches the symbol names, so a buffer that
+    was too small is sized to that number and the export asked once more.
     """
 
     if symbol is None:
         return None
-    if max_pitches <= 0:
+    if max_pitches is not None and max_pitches <= 0:
         return []
 
-    out_count = ctypes.c_int()
-    out_array = (ctypes.c_int * max_pitches)()
+    capacity = 32 if max_pitches is None else max_pitches
+    while True:
+        out_count = ctypes.c_int()
+        out_array = (ctypes.c_int * capacity)()
 
-    success = _lib.celeritas_parse_chord_symbol(
-        symbol.encode("utf-8"),
-        out_array,
-        max_pitches,
-        ctypes.byref(out_count),
-    )
+        success = _lib.celeritas_parse_chord_symbol(
+            symbol.encode("utf-8"),
+            out_array,
+            capacity,
+            ctypes.byref(out_count),
+        )
 
-    if not success:
-        return None
+        if not success:
+            return None
 
-    return list(out_array)[: out_count.value]
+        if out_count.value <= capacity or max_pitches is not None:
+            return list(out_array)[: min(out_count.value, capacity)]
+
+        capacity = out_count.value
 
 
 def _playable(pitch: int) -> int:

@@ -116,13 +116,17 @@ import celeritas
 - `midi_to_note_name(pitch: int, prefer_flats: bool = False) -> str`
     - Converts MIDI pitch (0..127) to scientific pitch notation
 - `identify_chord(pitches: List[int]) -> str`
-    - Returns chord symbol like `Cmaj`, `Dm7`, `G7`
+    - Returns the root and quality run together, as the native library writes them: `CMajor`,
+      `DMinor7`, `GDominant7`; an unrecognized chord reads `CUnknown`
     - Raises `CeleritasError` if the native call fails
 - `detect_key(pitches: List[int]) -> Tuple[str, bool]`
     - Returns `(key_name, is_major)`
     - Raises `CeleritasError` if the native call fails
-- `parse_chord_symbol(symbol: str, max_pitches: int = 32) -> Optional[List[int]]`
+- `parse_chord_symbol(symbol: str, max_pitches: Optional[int] = None) -> Optional[List[int]]`
     - Parses chord symbols like `C7(b9,#11)`, `C/E`, `C|G`
+    - Returns every pitch the symbol names; `max_pitches` cuts the answer to that many
+    - Since 0.10.0: the cap was a silent 32, so a polychord naming forty pitches came back as
+      its first thirty-two, indistinguishable from a chord of thirty-two
     - Since 0.10.0: an unsupported alteration or added degree returns `None` instead of a
       best-effort voicing — `parse_chord_symbol("C7(b7)")` and `parse_chord_symbol("Cadd15")`
       are both `None`, where supported ones such as `C7(b9,#11)` still parse
