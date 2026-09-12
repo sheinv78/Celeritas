@@ -433,7 +433,33 @@ follows.
   a legato melody, a nocturne's left hand, fermatas, a pedal under a late-entering
   melody, a pickup into every phrase, returns home of two to five bars, returns to a
   key established second, a canon at the fifth -- thirty-seven, which join the
-  fixture as a sixth table
+  fixture as a sixth table; and on a sixth reviewer's thirty-three accompaniment
+  textures -- a waltz left hand, a bossa anticipated by a sixteenth, a ragtime left
+  hand, a chorale restruck on every beat, tremolo sixteenths, broken chords in
+  quarters, fermatas, a count-in bar, Picardy closes after the relative major and
+  the dominant minor -- twenty-eight, which join the fixture as a seventh table
+- The two modulation roads agree on every texture of every chord-bearing passage
+  of the six tables but one: every chord struck twice in its bar, the second bar
+  silent, every chord an eighth off the beat -- 762 cases in twelve keys; 17
+  disagreements and 47 misses of the musician's plan before, 1 and 3 after, and
+  that lens is now a test. A chord struck twice in its bar is one harmony; a melody
+  note struck with a chord and let go before it is the line's; the bars are heard
+  from the music's accents -- when every onset is an eighth late the bars are, a
+  chord released within an eighth after the bar line belongs to the bar before, a
+  chord arriving within an eighth under a melody note is the harmony it leans on,
+  and a phrase opens on the chord under its first note; the piece opens on its
+  first chord, struck, arpeggiated or an eighth behind the tune, and a given key
+  the piece does not open on is a guess the music may refute; the phrases are
+  counted from the first bar wherever in the piece's time the music begins, so a
+  piece that begins a bar in answers a bar later, not otherwise; a chain of
+  dominants is the key's whose cadence it reaches, its tonic or its dominant
+  (given to any key that owned a link outright, `B7 E7 A7 D7` in sixteen bars of C
+  was E minor's); and the Picardy third names the minor key it closes -- struck
+  once, twice in its bar, or repeated to the end under a fermata -- so `Am Dm E7 Am
+  | C F G C | C F G C | E7 A` is home in A minor, not a tonicization of A major
+- `ModulationDetector`: a note is rounded onto the eighth-note grid only when that
+  moves it by less than half its own length, so sixteenths and thirty-seconds
+  struck one after another are a line, not chords of neighbouring tones
 - `Phrase.StartIndex` and `EndIndex` address the buffer that was analysed, so
   `buffer.Get(StartIndex)` is the phrase's first note. They were positions in the
   analyzer's private copy -- rests dropped, then offset-sorted -- so with a rest

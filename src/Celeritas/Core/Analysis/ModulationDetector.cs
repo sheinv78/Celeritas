@@ -111,7 +111,8 @@ public static class ModulationDetector
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Harmonic evidence is taken from chords (2+ simultaneous onsets on an eighth-note grid),
+    /// Harmonic evidence is taken from chords (2+ onsets struck together — within an eighth, each
+    /// note moved onto the eighth grid only when that moves it by less than half its own length),
     /// each note of a chord from the chord's onset to where that note stops, and from the line
     /// between them: the notes that sound alone at their onset, each for its own length, so
     /// that a passing tone in the melody can be told from a note of the harmony; a chord's
@@ -214,12 +215,27 @@ public static class ModulationDetector
     /// hearing the notes stop, named A flat. A return to a key the music has been in is a
     /// homecoming; a chord sounds while its notes sound, on both roads, and its harmony holds
     /// until the next chord. Both roads agree with the musician on all twenty-three, and with
-    /// each other on every passage of the five tables — and on seventy-six texture variants of
-    /// sixteen of them: the chords staccato, a melody note held across the chord change, a
-    /// chord struck twice in its bar, a bar silent, the chords an eighth off the beat. Over
-    /// every chord-bearing passage of the five tables the first two variants split the roads
-    /// nowhere; the other three still do on seventeen passages of six hundred and eighty-two
-    /// (twenty-nine before), mostly arpeggio textures struck twice or shifted off their grid.
+    /// each other on every passage of the six tables.
+    /// </para>
+    /// <para>
+    /// Every chord-bearing passage of the six tables rebuilt in five textures — the chords
+    /// staccato, a melody note held across the chord change, every chord struck twice in its
+    /// bar, the second bar silent, every chord an eighth off the beat — asked of both roads in
+    /// twelve keys, split them on seventeen of six hundred and eighty-two cases and missed the
+    /// musician's plan on forty-seven. None was the judge's rules failing on music it had seen: a
+    /// chord struck twice resolved into its own restrike and was no applied chord; this road
+    /// rounded sixteenths struck one after another onto its eighth grid into two-note chords of
+    /// neighbouring tones; a silent bar left a given key nothing to refute it and a guessed one
+    /// nothing to confirm it, and the roads opened in different keys; and chords an eighth late
+    /// spilt a tail into the next clock bar or left the trajectory opening on a lone melody
+    /// note. A chord struck twice in its bar is one harmony, a note is rounded onto the grid
+    /// only when moved by less than half its length, the piece opens on its first chord — struck,
+    /// arpeggiated, or an eighth behind the tune — a given key the piece does not open on is a
+    /// guess, and the bars are heard from the music's accents (<see cref="KeyAreaJudge"/>).
+    /// The roads now part on one case of seven hundred and sixty-two, a D Dorian tune with its
+    /// second bar silent, where this road is told D minor and the other opens in C major, and
+    /// miss the plan on three; the same textures struck staccato or with the melody held hear
+    /// the plan everywhere (<c>TheTwoRoadsHearEveryTextureAlikeTests</c>).
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
@@ -240,8 +256,9 @@ public static class ModulationDetector
     /// <see cref="Analyze(NoteBuffer, KeySignature)"/> for what is reported and how it is judged.
     /// </summary>
     /// <remarks>
-    /// Harmonic evidence is taken from chords (2+ simultaneous onsets on an eighth-note grid),
-    /// each note of a chord sounding from the chord's onset for its own length, and from the
+    /// Harmonic evidence is taken from chords (2+ onsets struck together on an eighth-note grid,
+    /// a note rounded onto it only when moved by less than half its own length), each note of a
+    /// chord sounding from the chord's onset for its own length, and from the
     /// notes that sound alone between them, the line. When the input is (nearly) monophonic and
     /// fewer than two such chords exist, every quantized onset is a pseudo-chord — single notes
     /// included, each for its own length — so melodic key changes are still detected.
@@ -452,7 +469,8 @@ public static class ModulationDetector
     }
 
     /// <summary>
-    /// The chords of <paramref name="notes"/> — two or more onsets on an eighth-note grid — and,
+    /// The chords of <paramref name="notes"/> — two or more onsets struck together on an
+    /// eighth-note grid (<see cref="QuantizeOffset"/>) — and,
     /// in <paramref name="line"/>, the notes that sound alone at their quantized onset between
     /// them, at that onset and for their own duration: the melodic line the chords carry.
     /// </summary>
@@ -481,7 +499,7 @@ public static class ModulationDetector
 
         foreach (var note in notes)
         {
-            var quantizedOffset = QuantizeOffset(note.Offset, quantizationGrid);
+            var quantizedOffset = QuantizeOffset(note, quantizationGrid);
 
             groups[quantizedOffset] = groups.ContainsKey(quantizedOffset) switch
             {
@@ -533,11 +551,28 @@ public static class ModulationDetector
         return chords;
     }
 
-    private static Rational QuantizeOffset(Rational offset, Rational grid)
+    /// <summary>
+    /// The onset <paramref name="note"/> is heard at: the nearest point of <paramref name="grid"/>
+    /// when that moves the note by less than half its own length — the jitter of a chord's
+    /// notes struck a hair apart — and its own onset otherwise. A note moved by half its length
+    /// or more is at another place in time, not jittered: sixteenths struck one after another
+    /// are a line, not chords.
+    /// </summary>
+    /// <remarks>
+    /// Every onset used to be rounded to the eighth. Sixteenth-note arpeggios — an eighth-note
+    /// arpeggio with every note struck twice — were rounded in pairs onto the grid and heard as
+    /// two-note chords of neighbouring tones, E with G, G with C; the judge saw no arpeggiated
+    /// chord where the trajectory road, which never rounds, saw one, and G began at bar 7 on this
+    /// road and at bar 4 on the other. Thirty-second-note arpeggios lost the last notes of each
+    /// bar onto the next downbeat the same way.
+    /// </remarks>
+    private static Rational QuantizeOffset(NoteEvent note, Rational grid)
     {
-        var ratio = offset / grid;
+        var ratio = note.Offset / grid;
         var rounded = (int)Math.Round(ratio.ToDouble());
-        return grid * rounded;
+        var quantized = grid * rounded;
+        var shift = quantized > note.Offset ? quantized - note.Offset : note.Offset - quantized;
+        return shift + shift < note.Duration ? quantized : note.Offset;
     }
 
     private static ModulationType DetermineModulationType(KeySignature fromKey, KeySignature toKey)

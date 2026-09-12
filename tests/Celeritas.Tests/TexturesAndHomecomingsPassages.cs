@@ -273,6 +273,10 @@ internal static class TexturesAndHomecomingsPassages
             "0 5 7 0 | 9:m 2:m 4:7 9:m | 9:m 2:m 4:7 9:m | 7:7 0", [new(5, 9, false), new(13, 0, true)]),
         new("A minor, its relative major established, and home through E7 at the close (block chords)", RealModulationPassages.Texture.BlockChords, false,
             "9:m 2:m 4:7 9:m | 0 5 7 0 | 0 5 7 0 | 4:7 9:m", [], [new(5, 0, true), new(13, 9, false)]) { OpeningRoot = 9 },
+        // The Picardy cadence: the two-bar close E7 A is A minor home, not a tonicization of A
+        // major — the parallel major owns the close only by taking the Picardy chord for its tonic.
+        new("A minor, its relative major, and home to A minor closing on a Picardy third (block chords)", RealModulationPassages.Texture.BlockChords, false,
+            "9:m 2:m 4:7 9:m | 0 5 7 0 | 0 5 7 0 | 4:7 9", [], [new(5, 0, true), new(13, 9, false)]) { OpeningRoot = 9 },
         new("opening in G, to C, and closing in C: no return to the opening key (block chords)", RealModulationPassages.Texture.BlockChords, true,
             "7 0 2:7 7 | 0 5 7:7 0 | 0 5 7:7 0", [], At(5, 0, true)) { OpeningRoot = 7 },
         Blocks("to the dominant, home at the close through G's own I vi ii V7 and then G7 C (block chords)",
