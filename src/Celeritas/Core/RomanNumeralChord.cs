@@ -51,10 +51,23 @@ public readonly struct RomanNumeralChord(ScaleDegree degree, ChordQuality qualit
     public static RomanNumeralChord Invalid => new();
 
     /// <summary>
-    /// Gets the pitch class (0-11) of this chord's root in the given key.
+    /// Gets the pitch class (0-11) of this chord's root in the given key: the degree's step of
+    /// the major or natural-minor scale, except that a diminished-family chord on
+    /// <see cref="ScaleDegree.Vii"/> of a minor key stands on the raised seventh — the leading
+    /// tone of harmonic and melodic minor, where vii°, vii°7 and viiø7 live — a semitone below
+    /// the tonic. The subtonic a whole step below is never diminished in any form of the minor
+    /// scale, so the quality decides which seventh degree is meant.
     /// </summary>
+    /// <remarks>
+    /// <see cref="KeyAnalyzer.Analyze(int[], KeySignature)"/> reads Bdim7 in C minor as vii°7.
+    /// Spelled back through the natural-minor step alone, that chord came out on Bb — a
+    /// diminished seventh no minor key has — so a numeral and its own pitches disagreed.
+    /// </remarks>
     public byte GetRootPitchClass(KeySignature key)
     {
+        if (!key.IsMajor && Degree == ScaleDegree.Vii && KeyAnalyzer.IsLeadingToneChord(Quality))
+            return (byte)((key.Root + 11) % 12);
+
         return key.GetScaleDegreePitchClass(Degree);
     }
 

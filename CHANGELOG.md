@@ -556,6 +556,42 @@ follows.
   has no natural ninth, and the pitch set is the same in any order. The fix
   reaches `TryParseChordSymbol`, `ProgressionAdvisor.Analyze`, the native export
   and the Python `parse_chord_symbol`, which all parse through the one builder
+- The leading-tone chord of a minor key is read as the key's own: `Bdim7` in C
+  minor is `vii°7` (Dominant), `Bdim` is `vii°`, `Bm7b5` is `viiø7`, where all
+  three read `?`, "Chromatic (outside the key)" and were flagged borrowed in a
+  report whose own highlight called them the raised seventh. `KeyAnalyzer.Analyze`,
+  the progression report, `SuggestNext` and the CLI agree; a `RomanNumeralChord`
+  on `ScaleDegree.Vii` of a minor key spells its root on the leading tone when it
+  is diminished, on the subtonic otherwise
+- A dominant resolving into the tonic of the piece is never listed among
+  `SecondaryDominants`: after a passage in another key, `G7 -> Cm` closing a C
+  minor progression was reported as a tonicization of the home key, and `G7 -> C`
+  returning to C after a move to G as "G7 -> C (I)". A return that stays home is
+  still a modulation back, and what follows the return is read at home, so a
+  V7/ii two chords later is still listed
+- A chord is borrowed by its core, extensions and alterations aside: `Dø9` and
+  `Dø11` in C major are borrowed like `Dø7` (they were not), and `G13(b9)`,
+  `G7(b9,#9,#11,b13)` in C minor are the key's dominant like `G7b9` (they were
+  borrowed from C major). The same rule decides key membership for modulation
+  runs and pivot chords (`Em9` is iii9 of C = vi9 of G)
+- `Cdim9`, `Cdim11`, `Cdim13` keep the diminished seventh (C Eb Gb A D ...); they
+  took the minor seventh of `Cø9`, so `Gdim9` read `vø9`
+- A triad marker beside a power chord is refused instead of dropped: `Cm5`,
+  `Cmaj5`, `C5sus4` (and `C5maj7`, `C5Δ`) used to parse to the bare fifth C G by
+  stated policy; they now fail with a message saying a power chord has no third
+  to be minor, major or suspended. `C5`, `C5add9`, `C5(b9)` parse as before
+- The key scorer's resolution-by-fourth bonus asks whether the approaching chord
+  can be a dominant: `Cmaj7 Fmaj7 Cmaj7 Fmaj7` is `Imaj7 - IVmaj7` in C (it was
+  `Vmaj7 - Imaj7` in F with two authentic cadences), `Cmaj9 Fmaj9` likewise,
+  `C Bdim Em` is C major. A ii7-V7 names its key: `Dm7 G7` is C major (it was D
+  minor, a key G7 is not a chord of) and `SuggestNext(["Dm7","G7"])` offers `C`
+  first; `Dm9 G13 Em9 A13 Dm9 G13 Cmaj9` is C major, ii V iii VI ii V I (it was
+  D minor). A iiø7-V7 names its minor key: `Dm7b5 G7` is C minor. `Vmaj7 -> I` is
+  not an authentic cadence in the report, in `DetectCadence` or in `FormAnalyzer`
+- Native: `celeritas_get_last_error` describes the most recent call on the thread
+  only; every export clears it on entry. A C caller reading it after a successful
+  call was handed the previous failure's message (the Python wrapper reads it only
+  on failure and never saw it)
 - Chord symbols: nothing written is dropped. A power chord takes an alteration
   like any chord (`C5(b9)` is C G Db; it was a bare C5, and `C5(#11)` likewise).
   An alteration displaces only the perfect fifth: `Caug7(b5)` carries both

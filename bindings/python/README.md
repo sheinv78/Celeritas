@@ -150,6 +150,11 @@ import celeritas
       fifth (`Caug7(b5)` carries both fifths, `Cdim7(b5)` is `Cdim7`), an explicit add is heard
       beside an alteration of its degree (`C7(b9)add9` has both D♭ and D), and a polychord names
       each pitch once (`C9|D` gives `[60, 64, 67, 70, 74, 78, 81]`)
+    - Since 0.10.0: a diminished symbol under any extension keeps the diminished seventh —
+      `Cdim9` gives `[60, 63, 66, 69, 74]`, where it used to take the minor seventh of `Cø9`
+      (`[60, 63, 66, 70, 74]`) — and a triad marker beside a power chord is refused rather than
+      dropped: `Cm5`, `Cmaj5` and `C5sus4` return `None`, where they used to answer the bare
+      fifth `[60, 67]`; `C5`, `C5add9` and `C5(b9)` parse as before
 - `native_version() -> str`
     - Returns the version reported by the native library (e.g. `0.10.0`)
 
@@ -157,6 +162,11 @@ import celeritas
 
 - `CeleritasError` — raised when a native call fails; the message includes the
   error reported by the native library (via `celeritas_get_last_error`).
+- `celeritas_get_last_error` describes the most recent native call on the calling thread and
+  no other: a call that succeeds leaves no message. The wrapper reads it only after a call
+  reports failure, so this only concerns a caller going through `ctypes` directly. Since
+  0.10.0: the message was sticky — set on failure and never cleared — so a C caller reading it
+  after a successful call was handed the previous failure's complaint.
 
 ### Ornaments
 

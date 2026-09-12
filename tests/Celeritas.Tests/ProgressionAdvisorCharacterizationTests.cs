@@ -336,18 +336,20 @@ public class ProgressionAdvisorCharacterizationTests
     [Fact]
     public void SuggestNext_Dm7_G7()
     {
-        // D minor, last chord G7 = iv: V=A, i=Dm, ii°=Edim, III=F, subtonic VII=C.
-        // Was ["C", "Edim", "G", "C#dim"] — "C" for the dominant (the hardcoded
-        // fallback), "G" for the mediant. C#dim (harmonic-minor leading-tone
-        // diminished, 0.55) now falls just past the 5-suggestion cut because the
-        // five diatonic suggestions above it are finally distinct chords; it is
-        // still produced, and SuggestNext_Dm7_G7_LeadingToneDim_StillOfferedBeyondCut
-        // in ProgressionAdvisorFixesTests pins that.
+        // C major, last chord G7 = V7: I=C, deceptive vi=Am, mediant iii=Em, IV=F, vii°=Bdim —
+        // the same answers as after "C G", because ii7 - V7 is the same half cadence.
+        //
+        // This was pinned in D minor, "last chord G7 = iv", with suggestions
+        // ["A", "Dm", "Edim", "F", "C"]: the key scorer took the first chord for the tonic and
+        // took G7 for a blues tonic brought in by its own dominant, because Dm7's ROOT is a
+        // fifth above G — it never asked whether a minor seventh can be a dominant. Neither
+        // reading is a key G7 belongs to: D minor's fourth degree is minor. A musician reads
+        // Dm7 G7 as ii7 - V7 in C and expects C next.
         var s = ProgressionAdvisor.SuggestNext(["Dm7", "G7"]);
-        Assert.Equal(["A", "Dm", "Edim", "F", "C"], s.Select(x => x.Chord));
-        Assert.Equal(["Subdominant to dominant", "Plagal cadence", "Retrograde progression",
-            "Mediant for color", "Subtonic (natural minor)"], s.Select(x => x.Reason));
-        Assert.Equal([1.0f, 0.95f, 0.7f, 0.65f, 0.6f], s.Select(x => x.Score));
+        Assert.Equal(["C", "Am", "Em", "F", "Bdim"], s.Select(x => x.Chord));
+        Assert.Equal(["Perfect authentic cadence", "Deceptive cadence", "Mediant for color",
+            "Avoid resolution, continue tension", "Leading tone diminished"], s.Select(x => x.Reason));
+        Assert.Equal([1.0f, 0.9f, 0.65f, 0.6f, 0.6f], s.Select(x => x.Score));
     }
 
     [Fact]

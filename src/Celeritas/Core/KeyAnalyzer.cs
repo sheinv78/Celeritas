@@ -116,8 +116,24 @@ public static class KeyAnalyzer
     }
 
     /// <summary>
-    /// Analyze chord in the context of a key signature (array overload)
+    /// Analyze chord in the context of a key signature (array overload). The degrees of a major
+    /// key are the seven of its scale; the degrees of a minor key are the seven of natural minor
+    /// with the raised seventh of harmonic minor beside the natural one, so that the
+    /// leading-tone chord is read as vii°, vii°7 or viiø7 (Dominant function) and the subtonic
+    /// major triad as VII, both at <see cref="ScaleDegree.Vii"/>. Only a diminished-family chord
+    /// is read on the raised seventh: a major or minor triad there belongs to no form of the
+    /// minor scale and stays <see cref="RomanNumeralChord.Invalid"/>.
     /// </summary>
+    /// <remarks>
+    /// The minor key's degree map was natural minor alone, so the interval of eleven semitones
+    /// above the tonic mapped to no degree and Bdim7 in C minor — the leading-tone seventh,
+    /// the second commonest chord in a minor key after its dominant — was reported as
+    /// <see cref="RomanNumeralChord.Invalid"/>, "?" and "Chromatic (outside the key)" in a
+    /// progression report whose own highlight called it the harmonic-minor raised seventh,
+    /// while G7 on the same raised seventh read V7. A chord read at <see cref="ScaleDegree.Vii"/>
+    /// in a minor key spells its root back through <see cref="RomanNumeralChord.GetRootPitchClass"/>
+    /// by its quality: the leading tone for the diminished family, the subtonic for the rest.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="pitches"/> is <see langword="null"/>.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static RomanNumeralChord Analyze(int[] pitches, KeySignature key)
@@ -187,9 +203,23 @@ public static class KeyAnalyzer
             7 => new RomanNumeralChord(ScaleDegree.V, quality, HarmonicFunction.Dominant),   // V (or v)
             8 => new RomanNumeralChord(ScaleDegree.Vi, quality, HarmonicFunction.Tonic),     // VI
             10 => new RomanNumeralChord(ScaleDegree.Vii, quality, HarmonicFunction.Dominant), // VII
+            // The raised seventh of harmonic and melodic minor carries the leading-tone chord —
+            // vii°, vii°7, viiø7 — and nothing else: a major or minor triad there is in no form of
+            // the minor scale. Read from natural minor alone, Bdim7 in C minor was Invalid.
+            11 when IsLeadingToneChord(quality) => new RomanNumeralChord(ScaleDegree.Vii, quality, HarmonicFunction.Dominant), // vii°
             _ => RomanNumeralChord.Invalid
         };
     }
+
+    /// <summary>
+    /// Whether <paramref name="quality"/> is a chord the leading tone of a minor key carries:
+    /// the diminished triad of harmonic and melodic minor, the diminished seventh of harmonic
+    /// minor, the half-diminished seventh of melodic minor. The subtonic — a whole step below the
+    /// tonic — is never diminished in any form of the scale, so the quality alone tells which
+    /// seventh degree a <see cref="ScaleDegree.Vii"/> chord in a minor key stands on.
+    /// </summary>
+    internal static bool IsLeadingToneChord(ChordQuality quality) =>
+        quality is ChordQuality.Diminished or ChordQuality.Diminished7 or ChordQuality.HalfDim7;
 
     /// <summary>
     /// Identify the key of a collection of pitches: the 24 major and natural-minor scales are

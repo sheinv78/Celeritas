@@ -36,6 +36,16 @@ public static class NativeExports
     private static void SetLastError(Exception ex) => _lastError = ex.Message;
 
     /// <summary>
+    /// Forgets the calling thread's last error. Every export calls this first, so that
+    /// <see cref="GetLastError"/> describes the most recent call and no other: a failure's
+    /// message used to stay until the next failure overwrote it, and a C caller reading the
+    /// error after a call that had <em>succeeded</em> was handed the previous call's complaint.
+    /// (The Python wrapper reads the error only after a call reports failure, so it never saw
+    /// the stale message; a caller who checks the error unconditionally did.)
+    /// </summary>
+    private static void ClearLastError() => _lastError = null;
+
+    /// <summary>
     /// Write a NUL-terminated UTF-8 string into a caller-provided buffer.
     /// Fails (returns false) instead of truncating when the buffer is too small.
     /// </summary>
@@ -57,8 +67,14 @@ public static class NativeExports
     /// Copy the last error message (for the calling thread) into <paramref name="bufferPtr"/>
     /// as NUL-terminated UTF-8. Returns the number of bytes written (excluding the
     /// terminator). Truncates if the buffer is too small; returns 0 when there is
-    /// no pending error or the buffer is unusable.
+    /// no pending error or the buffer is unusable. The message describes the most recent
+    /// export called on this thread and no other: a call that succeeds leaves no message, so
+    /// after a failure and then a success this writes nothing and returns 0.
     /// </summary>
+    /// <remarks>
+    /// The message used to be sticky — set on failure and never cleared — so a caller who read
+    /// it after a successful call was handed the complaint of an earlier, unrelated one.
+    /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "celeritas_get_last_error", CallConvs = [typeof(CallConvCdecl)])]
     public static int GetLastError(IntPtr bufferPtr, int bufferSize)
     {
@@ -90,6 +106,8 @@ public static class NativeExports
     {
         try
         {
+            ClearLastError();
+
             var version = typeof(NativeExports).Assembly.GetName().Version;
             var text = version is null ? "0.0.0" : version.ToString(3);
 
@@ -116,6 +134,8 @@ public static class NativeExports
     {
         try
         {
+            ClearLastError();
+
             var notation = Marshal.PtrToStringUTF8(notationPtr);
             if (string.IsNullOrEmpty(notation))
             {
@@ -165,6 +185,8 @@ public static class NativeExports
     {
         try
         {
+            ClearLastError();
+
             unsafe
             {
                 int* pitches = (int*)pitchesPtr;
@@ -185,6 +207,8 @@ public static class NativeExports
     {
         try
         {
+            ClearLastError();
+
             var pitches = new int[count];
             Marshal.Copy(pitchesPtr, pitches, 0, count);
 
@@ -227,6 +251,8 @@ public static class NativeExports
     {
         try
         {
+            ClearLastError();
+
             if (count <= 0)
             {
                 SetLastError("Cannot detect a key from no notes: the pitch list is empty.");
@@ -274,6 +300,8 @@ public static class NativeExports
     {
         try
         {
+            ClearLastError();
+
             var symbol = Marshal.PtrToStringUTF8(symbolPtr);
             if (string.IsNullOrWhiteSpace(symbol))
             {

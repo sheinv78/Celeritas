@@ -540,6 +540,14 @@ public class ThreeImplementationsAgreeTests
             // own degree, which used to be taken out with the natural; and the thirteenth
             // chord with a flat ninth the progression report reads as V13(b9).
             "5(b9)", "5add9", "5(#11)", "dim7(b5)", "dim7(#5)", "aug7(b5)", "7(b9)add9", "9(b9)", "13(b9)",
+            // A diminished symbol under an extension: the diminished seventh chord coloured,
+            // where "ø9" has the minor seventh. The builder used to give the diminished seventh
+            // for "dim7" alone, so "dim9" came back as the half-diminished ninth.
+            "dim9", "dim11", "dim13", "°9", "ø9",
+            // A power chord beside a marker for the third it has not got. The builder used to
+            // drop the marker by stated policy and answer the bare fifth; a symbol the parser
+            // cannot spell is refused, like every other.
+            "m5", "maj5", "5sus4", "dim5", "aug5", "5m", "M5", "m(5)",
         ];
         foreach (var root in roots)
         {

@@ -12,7 +12,7 @@ import os
 import unittest
 from fractions import Fraction
 from typing import Any, Callable, Dict, List
-from celeritas.celeritas import _get_last_error, _lib
+from celeritas.celeritas import CNoteEvent, _get_last_error, _lib
 from celeritas import (
     CeleritasError,
     NoteEvent,
@@ -788,6 +788,189 @@ class TestNativeVersion(unittest.TestCase):
         if __version__ == "0.0.0":
             self.skipTest("package metadata not available")
         self.assertEqual(native_version(), __version__)
+
+
+def _c_parse_chord(symbol: bytes):
+    out = (ctypes.c_int * 16)()
+    count = ctypes.c_int()
+    rc = _lib.celeritas_parse_chord_symbol(symbol, out, 16, ctypes.byref(count))
+    return rc, list(out)[: count.value]
+
+
+def _c_parse_note(text: bytes):
+    note = CNoteEvent()
+    return _lib.celeritas_parse_note(text, ctypes.byref(note)), note
+
+
+def _c_identify(pitches):
+    arr = (ctypes.c_int * len(pitches))(*pitches)
+    buf = ctypes.create_string_buffer(64)
+    return _lib.celeritas_identify_chord(arr, len(pitches), buf, 64), buf.value.decode()
+
+
+def _c_detect_key(pitches):
+    arr = (
+        (ctypes.c_int * max(1, len(pitches)))(*pitches)
+        if pitches
+        else (ctypes.c_int * 1)()
+    )
+    buf = ctypes.create_string_buffer(64)
+    is_major = ctypes.c_int()
+    rc = _lib.celeritas_detect_key(arr, len(pitches), buf, 64, ctypes.byref(is_major))
+    return rc, buf.value.decode()
+
+
+class TestTheLastErrorIsTheLastCallsAloneAsACCallerSeesIt(unittest.TestCase):
+    """The reviewer's held-out checks on the native last-error, through ctypes as a C caller
+    would call it: a success reads empty, a failure then a success reads empty, two failures
+    leave the second, a failure in one export is cleared by a success in another."""
+
+    def test_success_first_reads_empty(self):
+        rc, pitches = _c_parse_chord(b"Dm7")
+        self.assertEqual(rc, 1)
+        self.assertEqual(pitches, [62, 65, 69, 72])
+        self.assertEqual(_get_last_error(), "")
+
+    def test_failure_then_success_then_read_is_empty(self):
+        rc, _ = _c_parse_chord(b"Xm7")
+        self.assertEqual(rc, 0)
+        self.assertNotEqual(_get_last_error(), "")
+        rc, pitches = _c_parse_chord(b"Gm7b5")
+        self.assertEqual(rc, 1)
+        self.assertEqual(pitches, [67, 70, 73, 77])
+        self.assertEqual(_get_last_error(), "")
+
+    def test_two_failures_in_a_row_leave_the_second_message(self):
+        rc, _ = _c_parse_chord(b"H7")
+        self.assertEqual(rc, 0)
+        first = _get_last_error()
+        self.assertIn("H7", first)
+        rc, _ = _c_parse_chord(
+            b"Cm5"
+        )  # (e): a power chord beside a minor marker is refused
+        self.assertEqual(rc, 0)
+        second = _get_last_error()
+        # The native export names the symbol, not the parser's reason (pre-existing format).
+        self.assertIn("Cm5", second)
+        self.assertNotIn("H7", second)
+
+    def test_a_failure_in_one_export_is_cleared_by_success_in_another(self):
+        rc, _ = _c_detect_key([])
+        self.assertEqual(rc, 0)
+        self.assertIn("empty", _get_last_error().lower())
+        rc, note = _c_parse_note(b"F#4")
+        self.assertEqual(rc, 1)
+        self.assertEqual(note.pitch, 66)
+        self.assertEqual(_get_last_error(), "")
+
+    def test_parse_note_failure_then_identify_chord_success(self):
+        rc, _ = _c_parse_note(b"Q9")
+        self.assertEqual(rc, 0)
+        self.assertNotEqual(_get_last_error(), "")
+        rc, name = _c_identify([60, 63, 67, 70])
+        self.assertEqual(rc, 1)
+        self.assertNotEqual(name, "")
+        self.assertEqual(_get_last_error(), "")
+
+    def test_success_after_success_stays_empty(self):
+        _c_parse_chord(b"Bdim7")
+        _c_parse_chord(b"Cdim9")
+        rc, pitches = _c_parse_chord(
+            b"Cdim9"
+        )  # (d): diminished seventh kept under the ninth
+        self.assertEqual(rc, 1)
+        self.assertEqual(pitches, [60, 63, 66, 69, 74])
+        self.assertEqual(_get_last_error(), "")
+
+    def test_get_last_error_itself_does_not_clear(self):
+        rc, _ = _c_parse_chord(b"H7")
+        self.assertEqual(rc, 0)
+        self.assertEqual(_get_last_error(), _get_last_error())
+        self.assertNotEqual(_get_last_error(), "")
+
+    def test_version_clears_a_prior_failure(self):
+        rc, _ = _c_parse_chord(b"H7")
+        self.assertEqual(rc, 0)
+        buf = ctypes.create_string_buffer(32)
+        self.assertEqual(_lib.celeritas_version(buf, 32), 1)
+        self.assertEqual(_get_last_error(), "")
+
+
+class TestTheLastErrorIsTheLastCalls(unittest.TestCase):
+    """celeritas_get_last_error describes the most recent export called, and no other.
+
+    The message used to be sticky: set when an export failed and never cleared, so a C caller
+    reading it after a call that had SUCCEEDED was handed the previous failure's complaint. The
+    Python wrapper reads it only after an export reports failure, so the package never showed
+    the stale message; these tests go through ctypes, as a C caller would, and the parity
+    table is unaffected - it records answers, not error messages.
+    """
+
+    @staticmethod
+    def _fail_to_parse_a_chord():
+        out = (ctypes.c_int * 8)()
+        count = ctypes.c_int()
+        rc = _lib.celeritas_parse_chord_symbol(b"H7", out, 8, ctypes.byref(count))
+        return rc
+
+    def test_a_failure_leaves_its_message(self):
+        self.assertEqual(self._fail_to_parse_a_chord(), 0)
+        self.assertEqual(_get_last_error(), "Could not parse chord symbol: 'H7'.")
+
+    def test_a_success_after_a_failure_leaves_no_message(self):
+        self.assertEqual(self._fail_to_parse_a_chord(), 0)
+        self.assertNotEqual(_get_last_error(), "")
+
+        out = (ctypes.c_int * 8)()
+        count = ctypes.c_int()
+        rc = _lib.celeritas_parse_chord_symbol(b"C", out, 8, ctypes.byref(count))
+
+        self.assertEqual(rc, 1)
+        self.assertEqual(_get_last_error(), "")
+
+    def test_every_export_clears_the_message_when_it_succeeds(self):
+        """Each export, not just the one that failed, starts with a clean slate."""
+
+        buffer = ctypes.create_string_buffer(64)
+        is_major = ctypes.c_int()
+        pitches = (ctypes.c_int * 3)(60, 64, 67)
+        note = CNoteEvent()
+
+        successes = (
+            ("celeritas_version", lambda: _lib.celeritas_version(buffer, 64)),
+            (
+                "celeritas_parse_note",
+                lambda: _lib.celeritas_parse_note(b"C4", ctypes.byref(note)),
+            ),
+            (
+                "celeritas_identify_chord",
+                lambda: _lib.celeritas_identify_chord(pitches, 3, buffer, 64),
+            ),
+            (
+                "celeritas_detect_key",
+                lambda: _lib.celeritas_detect_key(
+                    pitches, 3, buffer, 64, ctypes.byref(is_major)
+                ),
+            ),
+        )
+        for name, call in successes:
+            with self.subTest(export=name):
+                self.assertEqual(self._fail_to_parse_a_chord(), 0)
+                self.assertEqual(call(), 1)
+                self.assertEqual(_get_last_error(), "")
+
+        # transpose returns nothing, so its success is that the error is gone.
+        with self.subTest(export="celeritas_transpose"):
+            self.assertEqual(self._fail_to_parse_a_chord(), 0)
+            _lib.celeritas_transpose(pitches, 3, 0)
+            self.assertEqual(_get_last_error(), "")
+
+    def test_the_wrapper_reads_the_message_only_on_failure(self):
+        """The wrapper's own reading was never stale: it asks only after a 0 comes back."""
+
+        self.assertEqual(self._fail_to_parse_a_chord(), 0)
+        self.assertEqual(parse_chord_symbol("C"), [60, 64, 67])
+        self.assertEqual(_get_last_error(), "")
 
 
 class TestDotNetBridge(unittest.TestCase):

@@ -94,7 +94,16 @@ public sealed class ProgressionReport
     /// <summary>Notable highlights or interesting moments in the progression</summary>
     public IReadOnlyList<string> Highlights { get; init; } = [];
 
-    /// <summary>Detected secondary dominants (tonicizations).</summary>
+    /// <summary>
+    /// Detected secondary dominants (tonicizations): a dominant applied to a degree other than
+    /// the tonic. A dominant resolving into the tonic of <see cref="Key"/> is that key's V7 → I
+    /// and is never listed here, even where the chords before it had moved to another key.
+    /// </summary>
+    /// <remarks>
+    /// It used to be: judged against the key the music had moved to, the closing G7 → Cm of a
+    /// C minor progression whose middle passed through E flat was listed as a tonicization of C
+    /// minor, and a return to C through G7 → C after a move to G as "G7 → C (I)".
+    /// </remarks>
     public IReadOnlyList<SecondaryDominantInfo> SecondaryDominants { get; init; } = [];
 
     /// <summary>Quick flag: any secondary dominants?</summary>

@@ -139,14 +139,17 @@ public class ProgressionAdvisorFixesTests
     }
 
     [Fact]
-    public void SuggestNext_Dm7_G7_LeadingToneDim_StillOfferedBeyondCut()
+    public void SuggestNext_InMinorAfterIv_LeadingToneDim_StillOfferedBeyondCut()
     {
         // In D minor the harmonic leading-tone diminished chord is C#dim. It scores
-        // 0.55, below the five diatonic suggestions, so it needs a larger request
-        // than the default maxSuggestions of 5 to show up.
-        Assert.DoesNotContain(ProgressionAdvisor.SuggestNext(["Dm7", "G7"]),
-            x => x.Chord == "C#dim");
-        Assert.Contains(ProgressionAdvisor.SuggestNext(["Dm7", "G7"], 8),
+        // 0.55, below the five diatonic suggestions after iv, so it needs a larger request
+        // than the default maxSuggestions of 5 to show up. The progression used to be
+        // "Dm7 G7", which the key scorer read in D minor with G7 as iv; that is ii7 - V7 in
+        // C major, and is read so now, so a progression that is in D minor stands in.
+        string[] minor = ["Dm", "A7", "Dm", "Gm"];
+        Assert.Equal(new KeySignature(2, false), ProgressionAdvisor.Analyze(minor).Key);
+        Assert.DoesNotContain(ProgressionAdvisor.SuggestNext(minor), x => x.Chord == "C#dim");
+        Assert.Contains(ProgressionAdvisor.SuggestNext(minor, 8),
             x => x.Chord == "C#dim" && x.Reason == "Leading tone diminished");
     }
 

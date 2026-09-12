@@ -494,6 +494,14 @@ internal sealed class ChordBuildState
 
     private bool _power;
 
+    /// <summary>
+    /// Whether any marker named the third — m, maj, M, Δ, dim, aug, ø, sus and their spellings,
+    /// or the lead-sheet "4" — as distinct from <see cref="_triadNamed"/>, which a following
+    /// "maj" reads to decide whether it is about the triad or the seventh. A power chord has no
+    /// third for such a marker to describe, and <see cref="BuildIntervals"/> refuses the pair.
+    /// </summary>
+    private bool _thirdNamed;
+
     private int? _extension;
 
     /// <summary>
@@ -540,6 +548,10 @@ internal sealed class ChordBuildState
     public void ApplyQuality(string text)
     {
         var t = text.Trim();
+
+        // Every quality the grammar knows describes the third — major, minor, diminished,
+        // augmented, suspended, half-diminished, the Δ that says "major" of the seventh chord.
+        _thirdNamed = true;
 
         // Normalize common variants.
         // A bare Δ implies the major seventh even without an extension ("CΔ" = Cmaj7).
@@ -624,6 +636,7 @@ internal sealed class ChordBuildState
     public void ApplySus(int n)
     {
         _triad = n == 2 ? TriadQuality.Sus2 : TriadQuality.Sus4;
+        _thirdNamed = true;
         SusPending = false;
     }
 
@@ -742,7 +755,8 @@ internal sealed class ChordBuildState
     /// a power chord — and the extension chain go in first; then every altered degree loses its
     /// natural pitch and gains each alteration written for it; then the explicit adds, which are
     /// heard whatever else was written. The power chord takes the same road as every other
-    /// chord, so "C5(b9)" is C, G and Db.
+    /// chord, so "C5(b9)" is C, G and Db — and a power chord written beside a marker for the
+    /// third it has not got ("Cm5", "Cmaj5", "C5sus4", "Cdim5") is refused.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -750,6 +764,12 @@ internal sealed class ChordBuildState
     /// eleventh or thirteenth written on it — "C5(b9)", "C5(#11)" — was dropped without a word,
     /// against the rule that this parser refuses what it cannot spell rather than spelling
     /// something else.
+    /// </para>
+    /// <para>
+    /// A triad marker beside the "5" was dropped the same way, as stated policy: "Cm5", "Cmaj5"
+    /// and "C5sus4" all came back as the bare fifth C G, the m, the maj and the sus gone with
+    /// nothing to say so. Nobody writes them, and that is the point: a symbol nobody writes is
+    /// a symbol whose meaning the parser cannot know, and the policy is to fail, not to guess.
     /// </para>
     /// <para>
     /// The adds used to go in before the alterations, so an alteration of the same degree took
@@ -760,6 +780,13 @@ internal sealed class ChordBuildState
     /// </remarks>
     public List<int> BuildIntervals()
     {
+        // A power chord is the root and the fifth. A marker for its third names a chord this
+        // parser cannot spell, and the rule is to refuse such a symbol rather than drop the
+        // part of it that does not fit.
+        if (_power && _thirdNamed)
+            throw new ChordSymbolParseException(
+                "A power chord (5) has no third to be minor, major, diminished, augmented or suspended: write the triad or the power chord, not both.");
+
         var intervals = new HashSet<int> { 0 };
 
         var (third, fifth) = _triad switch
@@ -844,6 +871,19 @@ internal sealed class ChordBuildState
         }
     }
 
+    /// <summary>
+    /// The seventh an extension of 7, 9, 11 or 13 puts on the triad: the major seventh where
+    /// "maj" or Δ was written, the minor seventh on a minor or major triad and on the
+    /// half-diminished chord, and the diminished seventh on a diminished triad — under every
+    /// extension, so "Cdim9" is the diminished seventh chord with a ninth, C E♭ G♭ A D, and
+    /// "Cdim11" adds the eleventh above that.
+    /// </summary>
+    /// <remarks>
+    /// The diminished seventh used to be given for "dim7" alone; "dim9", "dim11" and "dim13"
+    /// took the minor seventh, so Cdim9 came back as C E♭ G♭ B♭ D — the half-diminished ninth,
+    /// which is what "Cø9" writes — and the progression report read Gdim9 as vø9. A diminished
+    /// symbol with an extension is a diminished seventh chord coloured, not a different chord.
+    /// </remarks>
     private int ResolveSeventh(int ext)
     {
         // If "maj" appears anywhere, interpret 7/9/11/13 as major 7th.
@@ -856,10 +896,10 @@ internal sealed class ChordBuildState
 
         return _triad switch
         {
-            // Diminished: if explicitly dim7, use diminished 7th (9 semitones); otherwise minor 7th.
+            // Diminished: the diminished seventh (9 semitones), whatever the extension.
             // Only the half-diminished mark ("ø", "halfdim") asks for the minor one — an altered
             // fifth written on a diminished chord says nothing about its seventh.
-            TriadQuality.Diminished when ext == 7 && !_halfDiminished => 9,
+            TriadQuality.Diminished when ext >= 7 && !_halfDiminished => 9,
             _ => 10
         };
     }

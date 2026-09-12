@@ -26,7 +26,12 @@ public static class ProgressionAdvisor
     /// fifth the triad's own quality names stays, so Caug7(b5) has both fifths like C7(b5,#5),
     /// and Cdim7(b5) is Cdim7; an explicit add is heard beside an alteration of its degree, so
     /// C7(b9)add9 has both Db and D; and a power chord takes an alteration like any other chord,
-    /// so C5(b9) is C, G and Db.
+    /// so C5(b9) is C, G and Db. A diminished symbol with an extension is the diminished seventh
+    /// chord coloured — Cdim9 is C, Eb, Gb, A and D — where Cø9 has the minor seventh; the
+    /// thirteenth of Cdim13 sounds the same note as its diminished seventh an octave up, and is
+    /// named, as the #11 of C7(b5,#11) is named beside the b5. A power chord beside a marker for
+    /// the third it has not got — Cm5, Cmaj5, C5sus4 — is refused: the parser fails on a symbol
+    /// it cannot spell rather than dropping part of it.
     /// </summary>
     /// <remarks>
     /// The parser used to accept any number and act only on 6 and 7 upward, so C2, C3 and C4
@@ -38,7 +43,10 @@ public static class ProgressionAdvisor
     /// Caug7(b5) was C7b5; the b5 of Cdim7(b5) was read as the half-diminished mark and turned
     /// the diminished seventh into a minor one; and the added ninth of C7(b9)add9 was taken
     /// out with the natural. A polychord also repeated a pitch its layers shared — the D of
-    /// C9|D came back twice.
+    /// C9|D came back twice. Two more of the same shape: the diminished seventh was given for
+    /// "dim7" alone, so Cdim9 came back with a minor seventh — the half-diminished ninth, a
+    /// different chord — and Gdim9 read vø9 in a report; and the m, maj or sus written beside a
+    /// power chord was dropped by stated policy, so Cm5 parsed to the bare fifth.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="symbol"/> is <see langword="null"/>.</exception>
     public static int[] ParseChordSymbol(string symbol)
@@ -222,8 +230,11 @@ public static class ProgressionAdvisor
             return CadenceType.None;
         }
 
-        // Detect cadence patterns
-        if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.I)
+        // Detect cadence patterns. A major-seventh chord on the fifth degree is not a dominant —
+        // the dominant's seventh is minor — so Vmaj7 → I is no authentic cadence: judged by
+        // degree alone, "Fmaj7 Cmaj7 Fmaj7 Cmaj7" heard in F reported one at every Cmaj7.
+        if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.I
+            && prevRoman.Quality != ChordQuality.Major7)
         {
             return CadenceType.Authentic;
         }
@@ -1099,8 +1110,10 @@ public static class ProgressionAdvisor
                 continue;
             }
 
-            // V -> I = Authentic
-            if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.I)
+            // V -> I = Authentic — when the V can be a dominant: a major-seventh chord on the
+            // fifth degree cannot, so Vmaj7 -> I is not one (mirrors DetectCadence).
+            if (prevRoman.Degree == ScaleDegree.V && currRoman.Degree == ScaleDegree.I
+                && prevRoman.Quality != ChordQuality.Major7)
             {
                 cadences.Add(new CadenceInfo(
                     CadenceType.Authentic, i - 1, prev.Symbol, curr.Symbol,
@@ -1182,6 +1195,16 @@ public static class ProgressionAdvisor
                         // modulation sets currentKey to G major, D → G is simply V → I there;
                         // tested against the MAIN key only, the report gained an entry reading
                         // "Modulation to G Major (same key)" — a modulation from a key to itself.
+                        //
+                        // Nor can it tonicize the key of the piece. A dominant resolving into the
+                        // home tonic is the home key's V7 → I, never V7/I: when the music has been
+                        // away and stays home for a phrase that is the return modulation, reported
+                        // below as every other is; when it has not, there is nothing to report.
+                        // Judged against the current key alone, "Cm Fm7 Bb7 Ebmaj7 Ab7 Dø7 G7 Cm"
+                        // — whose middle passes through the relative major — listed its closing
+                        // G7 → Cm among the SECONDARY dominants, as V7/vi of Eb, and a return to C
+                        // through G7 → C after a modulation to G was listed the same way, with
+                        // "I" as the degree it applied to.
                         if (!KeysEqual(tonicizedKey, currentKey))
                         {
                             // Tonicization or modulation? Related keys share most of their chords,
@@ -1192,6 +1215,17 @@ public static class ProgressionAdvisor
                             var run = RunIn(chords, i + 1, tonicizedKey);
                             var durationInNewKey = run.Count;
                             var isModulation = IsModulation(run, tonicizedKey);
+
+                            if (!isModulation && nextRoot == mainKey.Root)
+                            {
+                                // The home dominant has brought the music home, whether or not
+                                // it stays: what follows is read in the key of the piece, not in
+                                // the key it left. Kept in the old key, "... G7 C A7 Dm" read
+                                // C - A7 - Dm as a modulation to D minor through G7 and lost the
+                                // V7/ii that A7 → Dm is at home.
+                                currentKey = mainKey;
+                                continue;
+                            }
 
                             var keyRel = KeyRelationships.Describe(currentKey, tonicizedKey);
 
@@ -1343,9 +1377,12 @@ public static class ProgressionAdvisor
 
     /// <summary>
     /// Whether <paramref name="chord"/> is one of <paramref name="key"/>'s own chords — the test
-    /// every modulation, borrowing and pivot judgement in this class rests on.
+    /// every modulation, borrowing and pivot judgement in this class rests on. A chord is judged
+    /// by its core (<see cref="CoreMask"/>): the seventh chord or triad the numeral names, with
+    /// the extensions and alterations written above it left out of the question.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A minor key is its composite scale: natural minor with the raised sixth and seventh of
     /// the melodic and harmonic forms, so V, V7 and vii° — the chords every minor-key cadence is
     /// made of — are the key's own. Tested against natural minor alone, the dominant of every
@@ -1355,10 +1392,21 @@ public static class ProgressionAdvisor
     /// the sound of the key, not a departure from it — and a twelve-bar blues judged by strict
     /// scale membership scored nothing at home and was reported as modulating to the
     /// supertonic minor at its first chord.
+    /// </para>
+    /// <para>
+    /// The whole pitch-class set used to be tested, and an extended chord's colour tones decided
+    /// where its core belonged: Dø9 in C major — the borrowed iiø7 with a ninth — was not
+    /// borrowed, because its natural ninth lies outside C minor as well, so the whole set fit
+    /// neither key; and G13(b9) in C minor was borrowed from C major, because its natural
+    /// thirteenth lies outside the minor composite while the dominant-seventh arm above admitted
+    /// the core in major — in the same report that called the plain G7b9 the key's own. A chord
+    /// is borrowed, or fits, by its core: iiø7 with a ninth is still borrowed, V13(b9) is still
+    /// the key's dominant, coloured.
+    /// </para>
     /// </remarks>
     private static bool FitsKey(ParsedChord chord, KeySignature key)
     {
-        var chordMask = ChordAnalyzer.GetMask(chord.Pitches);
+        var chordMask = CoreMask(chord);
         if ((chordMask & ~KeyMask(key)) == 0)
         {
             return true;
@@ -1371,6 +1419,18 @@ public static class ProgressionAdvisor
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// The pitch classes a chord is judged against a key by: those of the seventh chord or triad
+    /// at its core, which <see cref="ChordLibrary.TryGetCore"/> names and whose quality the roman
+    /// numeral already carries in <see cref="ParsedChord.Info"/>; the whole set when the
+    /// templates name it whole, or when no core can be named.
+    /// </summary>
+    private static ushort CoreMask(ParsedChord chord)
+    {
+        var mask = ChordAnalyzer.GetMask(chord.Pitches);
+        return ChordLibrary.TryGetCore(mask, chord.Info.RootPitchClass, out _, out var coreMask) ? coreMask : mask;
     }
 
     /// <summary>
@@ -1472,9 +1532,10 @@ public static class ProgressionAdvisor
         }
 
         // Otherwise a chord made only of the key's own tones — a plain major triad on some
-        // degree — is not applied; one with a tone from outside is.
-        var chordMask = ChordAnalyzer.GetMask(chords[index].Pitches);
-        return (chordMask & ~KeyMask(key)) != 0;
+        // degree — is not applied; one with a tone from outside is. Judged on the core, as
+        // FitsKey judges membership, so that one chord is not "the key's own" to one test and
+        // "from outside" to the other on the strength of a colour tone.
+        return (CoreMask(chords[index]) & ~KeyMask(key)) != 0;
     }
 
     /// <summary>
@@ -1656,6 +1717,48 @@ public static class ProgressionAdvisor
         return (root, third);
     }
 
+    /// <summary>
+    /// Whether <paramref name="prev"/> rising a fourth into <paramref name="curr"/> can be a
+    /// dominant resolving to its tonic. A major triad, a dominant seventh and its altered forms,
+    /// an augmented triad, a major triad with an add or a sixth, a suspension, a power chord or a
+    /// stack of fourths can all stand on the dominant; a major seventh chord cannot — the
+    /// dominant's seventh is minor, and Imaj7 → IVmaj7 is the only thing Cmaj7 → Fmaj7 can be.
+    /// A minor chord can be the dominant of natural minor, so it resolves into a minor chord
+    /// (Gm → Cm) and not into a major one (Dm → G is ii → V); the diminished family stands on
+    /// the leading tone or the supertonic and resolves by step, never down a fifth.
+    /// </summary>
+    /// <remarks>
+    /// The fourth used to earn the tonic bonus whatever the approaching chord was, so
+    /// "Cmaj7 Fmaj7 Cmaj7 Fmaj7" — I and IV of C, a chord no key has a dominant seventh in —
+    /// was read in F major as Vmaj7 → Imaj7 with two authentic cadences, and "Cmaj9 Fmaj9" the
+    /// same. A chord the library cannot name at all keeps the bonus, as it always did: it
+    /// named its root, and the question here is one of quality.
+    /// </remarks>
+    private static bool CanResolveAsDominant(ChordInfo prev, ChordInfo curr)
+    {
+        return ChordLibrary.ThirdOf(prev.Quality) switch
+        {
+            ChordThird.Major => prev.Quality != ChordQuality.Major7,
+            ChordThird.Minor => prev.Quality is ChordQuality.Minor or ChordQuality.Minor7 or ChordQuality.Minor6
+                && ChordLibrary.ThirdOf(curr.Quality) == ChordThird.Minor,
+            _ => true,
+        };
+    }
+
+    /// <summary>
+    /// Whether <paramref name="prev"/> rising a fourth into <paramref name="curr"/> is ii7 going
+    /// to V7: a minor triad, a minor seventh or a half-diminished seventh into a dominant seventh
+    /// chord. A dominant seventh is the dominant of one major key and of its parallel minor, and
+    /// the chord a fourth below it is that key's supertonic — minor in major, half-diminished in
+    /// minor — so the pair names the key a fourth above the second chord, and its mode, without
+    /// sounding the tonic. A minor chord rising into a plain major triad does not count: vi → V/V
+    /// in the old key and ii → V in a new one are the same two triads, and which they are is for
+    /// the chords around them to say.
+    /// </summary>
+    private static bool IsSupertonicToDominant(ChordInfo prev, ChordInfo curr) =>
+        prev.Quality is ChordQuality.Minor or ChordQuality.Minor7 or ChordQuality.HalfDim7
+        && curr.Quality is ChordQuality.Dominant7 or ChordQuality.Dominant7Flat5 or ChordQuality.Augmented7;
+
     private static (KeySignature key, float confidence) DetectKeyFromProgression(
         List<ParsedChord> chords)
     {
@@ -1800,9 +1903,14 @@ public static class ProgressionAdvisor
         // cadence unless its own dominant brought it in: "Am7 ... Am7 - E7" ends on the V of A,
         // and the bonus goes to the key it leaves hanging, in both modes — the dominant of C major
         // and of C minor is the same G7. Brought in by its own dominant, as the C7 of
-        // "C7 - F - G7 - C7" is, it is the blues tonic and rests as itself.
-        if (last.Quality == ChordQuality.Dominant7
-            && !(chords.Count > 1 && chords[^2].Info.RootPitchClass == PitchMath.Fold(last.RootPitchClass + 7)))
+        // "C7 - F - G7 - C7" is, it is the blues tonic and rests as itself. Its own dominant is
+        // a chord that can be one: the root a fifth above used to be enough, so the Dm7 of
+        // "Dm7 G7" — ii7, not V7/V — made the G7 a blues tonic, and the half cadence that says
+        // C major louder than anything else in those two chords went uncounted.
+        var broughtInByItsDominant = chords.Count > 1
+            && chords[^2].Info.RootPitchClass == PitchMath.Fold(last.RootPitchClass + 7)
+            && CanResolveAsDominant(chords[^2].Info, last);
+        if (last.Quality == ChordQuality.Dominant7 && !broughtInByItsDominant)
         {
             var tonic = PitchMath.Fold(last.RootPitchClass + 5);
             keyScores[tonic] += 2.0f;
@@ -1820,20 +1928,32 @@ public static class ProgressionAdvisor
             var curr = chords[i].Info;
             var interval = (curr.RootPitchClass - prev.RootPitchClass + 12) % 12;
 
-            // Perfect 4th up (or 5th down) = V->I motion — with one exception. A minor chord
-            // rising a fourth into a MAJOR one is ii going to V, the commonest non-tonic fourth
-            // there is, not a dominant resolving: Dm -> G in "C Am Dm G" handed G the tonic
-            // bonus, and I-vi-ii-V — the most played progression in popular music — was
-            // reported in the key of its own dominant, in all twelve keys. A minor chord rising
-            // into a minor one keeps the bonus, because natural minor's dominant is minor and
-            // Gm -> Cm is how that key cadences; take it away and "Dsus4 Gm Cm" reads as D minor.
-            var prevThird = ChordLibrary.ThirdOf(prev.Quality);
-            var currThird = ChordLibrary.ThirdOf(curr.Quality);
-            var supertonicToDominant = prevThird == ChordThird.Minor && currThird == ChordThird.Major;
-
-            if (interval == 5 && !supertonicToDominant)
+            // Perfect 4th up (or 5th down) = V->I motion — when the chord doing the resolving
+            // can be a dominant. A minor chord rising a fourth into a MAJOR one is ii going to
+            // V, the commonest non-tonic fourth there is, not a dominant resolving: Dm -> G in
+            // "C Am Dm G" handed G the tonic bonus, and I-vi-ii-V — the most played progression
+            // in popular music — was reported in the key of its own dominant, in all twelve
+            // keys. When the V is a dominant SEVENTH the pair is evidence all the same, for the
+            // key a fourth above it: a ii7-V7 points at its tonic without reaching it, and
+            // "Dm7 G7" with nothing else was read in D minor — a key whose fourth degree is
+            // minor, so not a key G7 is a chord of — and SuggestNext advised on it there. A minor
+            // chord rising into a minor one keeps the bonus, because natural minor's dominant is
+            // minor and Gm -> Cm is how that key cadences; take it away and "Dsus4 Gm Cm" reads
+            // as D minor.
+            if (interval == 5)
             {
-                Tonic(keyScores, curr, 2.5f, closing: i == chords.Count - 1);
+                if (IsSupertonicToDominant(prev, curr))
+                {
+                    // ii7 - V7 points at the major key; iiø7 - V7 — the minor key's own ii–V —
+                    // at the minor one. "Dm7b5 G7" alone was read in C major, the half-diminished
+                    // chord counted as a major key's supertonic.
+                    var pointedAt = PitchMath.Fold(curr.RootPitchClass + 5);
+                    keyScores[(prev.Quality == ChordQuality.HalfDim7 ? 12 : 0) + pointedAt] += 1.5f;
+                }
+                else if (CanResolveAsDominant(prev, curr))
+                {
+                    Tonic(keyScores, curr, 2.5f, closing: i == chords.Count - 1);
+                }
             }
 
             // A dominant seventh falling a semitone is the tritone substitution resolving:

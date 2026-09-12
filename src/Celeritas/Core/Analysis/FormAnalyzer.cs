@@ -369,7 +369,9 @@ public static class FormAnalyzer
     /// </remarks>
     private static CadenceType ClassifyCadence(RomanNumeralChord from, RomanNumeralChord to, int[] fromPitches, bool isMajor)
     {
-        if (from.Degree == ScaleDegree.V && to.Degree == ScaleDegree.I)
+        // A major-seventh chord on V is not a dominant, so Vmaj7 → I is not authentic — the same
+        // reading ProgressionAdvisor.DetectCadence makes.
+        if (from.Degree == ScaleDegree.V && to.Degree == ScaleDegree.I && from.Quality != ChordQuality.Major7)
             return CadenceType.Authentic;
 
         if (from.Degree == ScaleDegree.Iv && to.Degree == ScaleDegree.I)

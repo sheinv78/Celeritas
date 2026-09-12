@@ -174,6 +174,29 @@ public class CliCommandTests
         Assert.Contains("?", output, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Progression_TheLeadingToneSeventhOfAMinorKey_IsNotPassedOffAsChromatic()
+    {
+        // The report is printed as the library gives it, so the CLI said "Bdim7 (? · Nashville ?)"
+        // and "Chromatic (outside the key)" for the harmonic-minor vii°7 that its own line
+        // above called the raised seventh.
+        var (exit, output) = Run("progression", "--chords", "Cm,Fm,Bdim7,Cm");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Bdim7 (vii°7 · Nashville 7°7)", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("?", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Chromatic", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Analyze_TheLeadingToneSeventhInAMinorKey_IsItsVii()
+    {
+        var (exit, output) = Run("analyze", "--notes", "B3", "D4", "F4", "Ab4", "--key", "Cm");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("In C Minor: vii°7 (Dominant)", output, StringComparison.Ordinal);
+    }
+
     // ---------- info ----------
 
     [Fact]

@@ -92,7 +92,19 @@ public sealed class ChordAnalysisDetail
     /// <summary>Special features (e.g., "adds dreamy quality via major 7th")</summary>
     public string? SpecialNote { get; init; }
 
-    /// <summary>Is this chord borrowed from parallel mode?</summary>
+    /// <summary>
+    /// Is this chord borrowed from the parallel mode? A chord outside the key altogether — one
+    /// whose <see cref="RomanNumeral"/> is <c>"?"</c> — counts as borrowed; otherwise the chord
+    /// is judged by its core, the seventh chord or triad the numeral names, with the extensions
+    /// and alterations written above it left out of the question: Dø9 in C major is borrowed
+    /// because Dø7 is, and G13(b9) in C minor is not because G7 is the key's own.
+    /// </summary>
+    /// <remarks>
+    /// The whole pitch-class set used to be tested, so a ninth or thirteenth decided where its
+    /// chord belonged: Dø9 in C major was not borrowed, its natural ninth lying outside C minor
+    /// too, and G13(b9) in C minor was borrowed from C major, in the same report that called the
+    /// plain G7b9 the key's own dominant.
+    /// </remarks>
     public bool IsBorrowed { get; init; }
 
     /// <summary>Does this chord use raised/lowered scale degrees?</summary>

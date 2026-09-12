@@ -108,6 +108,14 @@ degree (`"C7(b9)add9"` has both D♭ and D, while `"C9(b9)"` still gives its
 natural ninth up to the alteration — that is the convention); and a polychord
 names each pitch once (`"C9|D"` no longer lists D5 twice).
 
+Two more. A diminished symbol under any extension is the diminished seventh
+chord coloured — `"Cdim9"` is C E♭ G♭ A D, where 0.9.x gave it the minor
+seventh of `"Cø9"` — and a triad marker written beside a power chord is refused
+instead of dropped: `"Cm5"`, `"Cmaj5"` and `"C5sus4"` used to parse to the bare
+fifth C G by stated policy, and now fail with a message saying a power chord has
+no third to be minor, major or suspended. `"C5"`, `"C5add9"` and `"C5(b9)"`
+parse as before.
+
 ## Augmented and diminished-7th chords root on the bass
 
 Both qualities are symmetric under transposition: an augmented triad is three
@@ -235,6 +243,48 @@ alterations follow in parentheses in ascending order (`V7(b9,#9)`, `V7(#11)`),
 a seventh over a suspension precedes it (`V7sus4`), and a chord the templates
 name whole is written exactly as before. A dominant seventh on a root the key
 does not own — `Db7` in C — is still `"?"`.
+
+Nor is the leading-tone chord of a *minor* key chromatic. 0.9.x mapped a minor
+key's degrees from natural minor alone, so `Bdim7` in C minor — the harmonic-minor
+vii°7, the second commonest chord in a minor key after its dominant — was `"?"`,
+"Chromatic (outside the key)" and flagged as borrowed, in a report whose own
+highlight called it the raised seventh. 0.10 reads it as the key's own:
+
+```csharp
+ProgressionReport minor = ProgressionAdvisor.Analyze(["Cm", "Fm", "Bdim7", "Cm"]);
+
+Console.WriteLine(minor.Pattern);
+// i - iv - vii°7 - i          (was "i - iv - ? - i")
+
+ChordAnalysisDetail vii = minor.Chords[2];
+Console.WriteLine($"{vii.RomanNumeral} {vii.Function} borrowed={vii.IsBorrowed}");
+// vii°7 Dominant (tension/pull to resolve) borrowed=False
+```
+
+`Bdim` reads `vii°` and `Bm7b5` (melodic minor's) `viiø7`; `B` or `Bm` on the
+raised seventh is in no form of the scale and stays `"?"`; `Bb` is `VII` as before.
+[`KeyAnalyzer.Analyze`](xref:Celeritas.Core.KeyAnalyzer) gives the same reading,
+and a `RomanNumeralChord` on `ScaleDegree.Vii` of a minor key spells its root by
+its quality — the leading tone for the diminished family, the subtonic otherwise.
+
+Two judgements in the same report moved with it. A chord is **borrowed by its
+core**, the seventh chord or triad the numeral names, with its extensions and
+alterations left out of the question: `Dø9` in C major is borrowed (the iiø7
+with a ninth, where 0.9.x said not, because the ninth lies outside C minor too),
+and `G13(b9)` in C minor is not (V7 coloured, where 0.9.x said borrowed from C
+major because the thirteenth lies outside the minor scale). And a dominant that
+resolves into the tonic of the piece is the key's `V7`, never `V7/I`: after a
+passage in another key, `G7 → Cm` closing a C minor progression was listed in
+`SecondaryDominants` as a tonicization of the home key. It is not, in either
+mode; a return that stays home is still reported as a modulation back.
+
+The key itself is read more carefully for one shape. 0.9.x gave a chord
+approached by a fourth the tonic bonus whatever the approaching chord was, so
+`Cmaj7 Fmaj7 Cmaj7 Fmaj7` was in F major — `Vmaj7 - Imaj7`, with two authentic
+cadences. A major seventh chord cannot be a dominant, and 0.10 reads `Imaj7 -
+IVmaj7` in C. The same question, asked of a ii7–V7, reads `Dm7 G7` in C major
+(it was D minor, a key G7 is not a chord of) and `Dm7b5 G7` in C minor, so
+`SuggestNext(["Dm7", "G7"])` now offers `C` first.
 
 ## `TextureDensity` is time-weighted
 
