@@ -6,12 +6,14 @@ using Celeritas.Core.Analysis;
 namespace Celeritas.Tests;
 
 /// <summary>
-/// The rules both modulation roads now decide by, one passage each, beside the forty in
-/// <see cref="RealModulationsAreHeardWhereAMusicianHearsThemTests"/>: a key holds for a phrase,
-/// a chord is not a key, a secondary dominant is not a modulation, the relative minor is reached
-/// when its dominant returns and left when its leading tone stops, and the two roads place the
-/// same modulations. Each passage names what the roads answered before the rules, measured on
-/// the library as it stood.
+/// The rules both modulation roads now decide by, one passage each, beside the forty and the
+/// sixty-four in <see cref="RealModulationsAreHeardWhereAMusicianHearsThemTests"/>: a key holds
+/// for a phrase, a chord is not a key, a key owns its phrase, a secondary dominant is not a
+/// modulation, a key is entered when its own notes return, a key area begins with a phrase, the
+/// relative minor is reached when its dominant returns and left when its leading tone stops, a
+/// change at the first note is the opening key misjudged, and the two roads place the same
+/// modulations. Each passage names what the roads answered before the rules, measured on the
+/// library as it stood.
 /// </summary>
 public class AKeyHoldsForAPhraseTests
 {
@@ -196,6 +198,208 @@ public class AKeyHoldsForAPhraseTests
 
             Assert.Equal(Modulations(buffer, opening), Trajectory(buffer));
         }
+
+        // The held-out passages too, to the same keys within a bar of each other: the roads
+        // differ in what a sonority is, and a note held alone for a bar — the common tone of a
+        // common-tone modulation — is a sonority to the trajectory and no chord to the detector,
+        // which places the new key at the chord after it where the trajectory places it at the
+        // note.
+        foreach (var passage in RealModulationPassages.HeldOut)
+        {
+            using var buffer = passage.Build(0);
+            var opening = new KeySignature((byte)passage.OpeningRoot, passage.OpeningIsMajor);
+            var detector = Modulations(buffer, opening);
+            var trajectory = KeyProfiler.AnalyzeModulations(buffer, passage.TrajectoryWindow, new Rational(1, 1))
+                .DetectModulations()
+                .Select(m => (m.Position, m.ToKey))
+                .ToList();
+
+            if (passage.TrajectoryMayHearNoChange && trajectory.Count == 0)
+            {
+                continue;
+            }
+
+            Assert.True(detector.Count == trajectory.Count, passage.Name);
+            for (var i = 0; i < detector.Count; i++)
+            {
+                Assert.Equal(detector[i].ToKey, trajectory[i].ToKey);
+                Assert.True(Math.Abs((detector[i].Position - trajectory[i].Position).ToDouble()) <= 1.0, passage.Name);
+            }
+        }
+    }
+
+    [Fact]
+    public void AKeyMustOwnThePhraseItIsNamedFor()
+    {
+        // C Am D7 G | C A7 Dm G7, twice: a pop verse whose V7/V–V is a half cadence and whose
+        // A7 is V7/ii. The phrase after the Am pivot, D7 G C A7, left less of itself foreign to
+        // G than to C — one C sharp against a C sharp and an F sharp — and that was enough: the
+        // detector went to G at the Am, home at the Dm and to G again, and the trajectory,
+        // opening in G, came home at bar 7. A key owns its phrase only when the notes it lacks
+        // amount to less than a quarter note in every bar, and an A7 resolving to a D minor
+        // that G does not own is no chord of G.
+        using var verse = Chords("0 9:m 2:7 7 | 0 9:7 2:m 7:7 | 0 9:m 2:7 7 | 0 9:7 2:m 7:7");
+
+        Assert.Empty(Modulations(verse, CMajor));
+        Assert.Empty(Trajectory(verse));
+        Assert.Equal(CMajor, ModulationDetector.Analyze(verse, CMajor).StartKey);
+
+        // I IV V I in C, D, E and F sharp, two bars each: no key owns two of those areas, and
+        // both roads named one that was never there — A major, which leaves less of D G | A D E
+        // A B E foreign than D or E does — and F sharp from it. A wrong key is worse than none.
+        using var everyTwoBars = Chords("0h 5h 7h 0h | 2h 7h 9h 2h | 4h 9h 11h 4h | 6h 11h 1h 6h");
+
+        Assert.Empty(Modulations(everyTwoBars, CMajor));
+        Assert.Empty(Trajectory(everyTwoBars));
+
+        // A chromatic scale in eighths: every key lacks five of every eight notes. The detector
+        // reported thirty-six Direct modulations one eighth apart at confidence 0.67, the
+        // trajectory a turn to C minor; nothing is heard, not even a tonicization.
+        using var chromatic = new NoteBuffer(64);
+        for (var i = 0; i < 64; i++)
+        {
+            chromatic.AddNote(60 + (i % 12), Rational.Eighth * i, Rational.Eighth);
+        }
+
+        Assert.Empty(ModulationDetector.Analyze(chromatic, CMajor).Modulations);
+        Assert.Empty(Trajectory(chromatic));
+    }
+
+    [Fact]
+    public void AnAppliedDominantIsTheChordOfTheKeyItResolvesInto()
+    {
+        // C F G C | G A7 D7 G | C D7 G G: the second phrase is I V7/V V7 I in G, framed by its
+        // tonic, and a musician writes the modulation at its G. The A7's C sharp is no note of
+        // G, and counted foreign it kept the phrase from being G's: the modulation was placed
+        // at the D7, two bars late. A dominant seventh that resolves down a fifth into a chord
+        // the key owns is the key's own applied dominant.
+        using var buffer = Chords("0 5 7 0 | 7 9:7 2:7 7 | 0 2:7 7 7");
+
+        var heard = Assert.Single(Modulations(buffer, CMajor));
+        Assert.Equal(new KeySignature(7, true), heard.ToKey);
+        Assert.Equal(new Rational(4, 1), heard.Position);
+        Assert.Equal([heard], Trajectory(buffer));
+
+        // Not when it resolves into the tonic of the key the music is in: Am Dm E7 Am | A7 Dm
+        // Bb E7 | Am F Dm E7 | Am Am is A minor with V7/iv and the Neapolitan, and its E7 is A
+        // minor's dominant, not V7/v of a D minor that owns the A minor chord it resolves to.
+        using var neapolitan = Chords("9:m 2:m 4:7 9:m | 9:7 2:m 10 4:7 | 9:m 5 2:m 4:7 | 9:m 9:m");
+
+        Assert.Empty(Modulations(neapolitan, new KeySignature(9, false)));
+        Assert.Empty(Trajectory(neapolitan));
+    }
+
+    [Fact]
+    public void AKeyIsEnteredWhenItsOwnNotesReturnOrItsPhraseIsFramed()
+    {
+        // C F G C | D7 G C C | C F G C: V7/V V I I is a tonicization of the dominant inside a
+        // phrase of C. The phrase from the D7 held G — G owns D7 G C C — and G was a modulation
+        // at the C before it. One bar of the new key's own note is an applied dominant; a second
+        // bar before the old key's own note returns is the key, or a phrase framed by the new
+        // tonic chord.
+        using var tonicized = Chords("0 5 7 0 | 2:7 7 0 0 | 0 5 7 0");
+
+        Assert.Empty(Modulations(tonicized, CMajor));
+        Assert.Empty(Trajectory(tonicized));
+        Assert.Contains(ModulationDetector.Analyze(tonicized, CMajor).Modulations, e =>
+            e.Type == ModulationType.Tonicization && e.ToKey == new KeySignature(7, true));
+
+        // C F G C | Am Dm E7 Am | F G C C: i iv V7 i framed by A minor's tonic is a phrase in A
+        // minor though its G sharp sounds once, and the music comes home at the F.
+        using var framed = Chords("0 5 7 0 | 9:m 2:m 4:7 9:m | 5 7 0 0");
+
+        var heard = Modulations(framed, CMajor);
+        Assert.Equal(2, heard.Count);
+        Assert.Equal(new KeySignature(9, false), heard[0].ToKey);
+        Assert.Equal(new Rational(4, 1), heard[0].Position);
+        Assert.Equal(CMajor, heard[1].ToKey);
+        Assert.InRange(heard[1].Position.ToDouble(), 7.0, 8.0);
+        Assert.Equal(heard, Trajectory(framed));
+    }
+
+    [Fact]
+    public void AKeyAreaBeginsWithItsPhrase()
+    {
+        // C F G C | G C D7 G | C F G C | G C D7 G: four-bar areas alternating between C and G,
+        // each I IV V I in its key. The G area's F sharp falls in its third bar, and a phrase
+        // measured from the D7 ran into the return to C: the first G area was a tonicization and
+        // the second, reaching the end, a modulation at bar 14. The key began where its phrase
+        // did, at the G it owns from.
+        using var alternating = Chords("0 5 7 0 | 7 0 2:7 7 | 0 5 7:7 0 | 7 0 2:7 7");
+
+        var heard = Modulations(alternating, CMajor);
+        Assert.Equal(
+            [(new Rational(4, 1), new KeySignature(7, true)), (new Rational(8, 1), CMajor), (new Rational(12, 1), new KeySignature(7, true))],
+            heard);
+        Assert.Equal(heard, Trajectory(alternating));
+
+        // Not a phrase that opens on the old key's tonic chord, which is still the old key: C Am
+        // F G | C Am D7 G ends on a half cadence, and the Am before the D7 owns no G to be the
+        // pivot the tonic was heard in. Both roads modulated to G at the Am.
+        using var halfCadence = Chords("0 9:m 5 7 | 0 9:m 2:7 7");
+
+        Assert.Empty(Modulations(halfCadence, CMajor));
+        Assert.Empty(Trajectory(halfCadence));
+    }
+
+    [Fact]
+    public void AChangeAtTheFirstNoteIsTheOpeningKeyMisjudgedOnBothRoads()
+    {
+        // An A minor melody with its G sharp, then a C major melody, analyzed from C minor — a
+        // key the music was never in. The detector reported a modulation from C minor to A
+        // minor at the first note and kept C minor as the start; the trajectory, with no key
+        // given, already took a change at the first note for the opening key. The music opens
+        // in A minor on both roads and moves to C once.
+        var melody = MusicNotation.Parse(
+            "A4/4 B4/4 C5/4 D5/4 | E5/2 D5/4 C5/4 | B4/4 G#4/4 B4/4 D5/4 | C5/2 A4/2 | "
+            + "C5/4 D5/4 E5/4 F5/4 | G5/2 F5/4 E5/4 | D5/4 B4/4 D5/4 F5/4 | E5/2 C5/2");
+        using var buffer = new NoteBuffer(melody.Length);
+        buffer.AddRange(melody);
+
+        var result = ModulationDetector.Analyze(buffer, new KeySignature(0, false));
+        Assert.Equal(new KeySignature(9, false), result.StartKey);
+        var heard = Assert.Single(result.Modulations);
+        Assert.Equal(new KeySignature(9, false), heard.FromKey);
+        Assert.Equal(CMajor, heard.ToKey);
+        Assert.Equal(CMajor, result.EndKey);
+        Assert.Equal([(heard.Offset, heard.ToKey)], Trajectory(buffer));
+
+        // G C F G | C F G C opens on its dominant. The profile read the first phrase as G, and
+        // the trajectory modulated to C at the second chord; a guessed opening key that never
+        // sounded a note of its own before another key was read — no F sharp anywhere — was
+        // never there.
+        using var onTheDominant = Chords("7 0 5 7 | 0 5 7 0");
+
+        Assert.Empty(Trajectory(onTheDominant));
+        Assert.Empty(Modulations(onTheDominant, CMajor));
+    }
+
+    [Fact]
+    public void ATonicizationLastsUntilTheMusicIsHomeAgain()
+    {
+        // C F | E7 Am | F G | C C: the tonicization of vi is the E7 and the Am, two bars. Its
+        // Duration ran to the end of the piece — six bars — because it was measured to the first
+        // note A minor does not own, and A minor owns every note of C major. It lasts until the
+        // music is home: the first whole note after the new tonic that neither is that chord nor
+        // sounds a note of the new key's own.
+        using var buffer = Chords("0 5 | 4:7 9:m | 5 7 | 0 0");
+
+        var excursion = Assert.Single(ModulationDetector.Analyze(buffer, CMajor).Modulations);
+        Assert.Equal(ModulationType.Tonicization, excursion.Type);
+        Assert.Equal(new KeySignature(9, false), excursion.ToKey);
+        Assert.Equal(new Rational(2, 1), excursion.Offset);
+        Assert.Equal(new Rational(2, 1), excursion.Duration);
+
+        // Arpeggiated I V7/V V I twice: the excursion to G is the D7 and the G, read by whole
+        // notes, because an arpeggiated D7 sounds its A and C after its F sharp and read note by
+        // note the excursion ended inside the chord that began it.
+        using var arpeggiated = Arpeggiate("0 2:7 7 0 | 0 2:7 7:7 0");
+
+        var applied = Assert.Single(ModulationDetector.Analyze(arpeggiated, CMajor).Modulations);
+        Assert.Equal(ModulationType.Tonicization, applied.Type);
+        Assert.Equal(new KeySignature(7, true), applied.ToKey);
+        Assert.Equal(new Rational(1, 1), applied.Offset);
+        Assert.Equal(new Rational(2, 1), applied.Duration);
     }
 
     [Fact]

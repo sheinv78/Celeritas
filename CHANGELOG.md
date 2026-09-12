@@ -274,7 +274,7 @@ follows.
   piece changes key by one judge, over phrases of the music rather than one window at
   a time. A new key must hold for a phrase (four whole notes, or the analysis window
   when that is longer), be decidable and clearly named, sound a note the old key lacks
-  and leave fewer notes foreign, and still read from where it began through the
+  and own the phrase it is named for, and still read from where it began through the
   phrase -- or to the end of the piece, closing on a tonic it has already sounded; a
   change that does not hold is a tonicization, which the detector reports as one and
   the trajectory not at all; a modulation is placed at the start of the bar the new
@@ -291,6 +291,39 @@ follows.
   sounds, and the trajectory's opening key is read from an opening extended until it
   can decide, not from the whole piece, so a piece that modulates no longer opens with
   a modulation from a key it was never in
+- A key must own the phrase it is named for, and be entered. `KeyTrajectory.DetectModulations`
+  and `ModulationDetector.Analyze` now require the notes the new key lacks to weigh
+  less than a quarter note in every bar of the phrase -- an applied dominant seventh
+  that resolves into a chord of the key counted as the key's own -- and the key to be
+  entered: its own notes returning in a second bar before the old key's are heard
+  again, or its phrase framed by its tonic chord. Judged on sixty-four further
+  passages a reviewer wrote -- a pop verse of applied dominants, keys visited for two
+  bars each, a chromatic scale, alternating four-bar areas, common-tone modulations,
+  a chorale, an Alberti bass, a waltz, an anacrusis, real tunes with their chords --
+  the detector had been wrong on nine and the trajectory on eight: `C Am D7 G | C A7
+  Dm G7` went to G at its Am and back, a passage visiting D and E for two bars each
+  read as A major, a chromatic scale was thirty-six modulations one eighth apart, and
+  `C F G C | G C D7 G | C F G C` held G for two bars and was a tonicization. Both
+  roads agree with the musician on all sixty-four, and on the forty before them
+- A key area begins with its phrase: when the new key's distinguishing note falls
+  late in the phrase and the key owns every bar from the phrase's start, the
+  modulation is placed there (`C F G C | G C D7 G` is in G from its fifth bar, not a
+  tonicization at its seventh); a closing stretch shorter than a phrase is a cadence
+  only in a key the music was still in, and only if its tonic is heard in the pivot
+  bar or the stretch, so `C Am F G | C Am D7 G` is a half cadence, not a modulation
+- `ModulationEvent.Duration` of a tonicization lasts until the music is home: the
+  first note the key does not own, or the first whole note after its tonic chord that
+  is neither the tonic nor a note of the key's own. The tonicization of vi in `C F |
+  E7 Am | F G | C C` ran to the end of the piece, because A minor owns every note of C
+- `ModulationAnalysisResult.StartKey` is the key the music opens in: a change placed
+  at the first note is the caller's key misjudged, not a modulation, on the detector
+  road as it already was on the trajectory road (an A minor melody analyzed from C
+  minor reported a modulation to A minor at its first note). The trajectory's opening
+  key is the key of the chord the piece opens on when that key owns the phrase as
+  well as any, and an opening guessed from the profile that never sounds a note of
+  its own before another key is read is dropped: on two hundred random diatonic
+  melodies in C the trajectory reported thirty-six modulations, now none; on two
+  hundred more from another seed, forty-five, now two
 - `Phrase.StartIndex` and `EndIndex` address the buffer that was analysed, so
   `buffer.Get(StartIndex)` is the phrase's first note. They were positions in the
   analyzer's private copy -- rests dropped, then offset-sorted -- so with a rest

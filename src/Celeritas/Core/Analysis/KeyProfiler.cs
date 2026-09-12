@@ -678,10 +678,11 @@ public static class KeyProfiler
     /// is the harmonic road: it starts from a key the caller knows, reads chords rather than
     /// windows, and tells a tonicization from a modulation, names the type and finds the pivot
     /// chord. Both decide where the key changes by the same rules — a key holds for a phrase, a
-    /// chord is not a key, a secondary dominant is not a modulation — so from the same opening
-    /// key they place the same modulations, each at the positions it reads at (this one at its
-    /// window positions, the detector at every chord); use this one to see how the key reading
-    /// moves, and the detector to have the changes classified.
+    /// chord is not a key, a key owns its phrase, a secondary dominant is not a modulation, a
+    /// key is entered when its own notes return — so from the same opening key they place the
+    /// same modulations, each at the positions it reads at (this one at its window positions,
+    /// the detector at every chord); use this one to see how the key reading moves, and the
+    /// detector to have the changes classified.
     /// </para>
     /// <para>
     /// The window is the resolution of the trajectory, not the length a key must hold:
@@ -929,14 +930,22 @@ public sealed class KeyTrajectory
     /// A change is a modulation when a phrase — four whole notes, or the analysis window when
     /// that is longer — read from where the new key begins is decidable, names the new key
     /// clearly, fits it better than the key the music was in, sounds a note the new key owns and
-    /// the old does not, and leaves fewer notes foreign to the new key than to the old; and when
-    /// the new key still reads from there through the phrase, or to the end of the piece closing
-    /// on its tonic. A key change that does not hold that long is a tonicization — an applied
-    /// dominant, a borrowed chord — and is not reported here; <see cref="ModulationDetector"/>
-    /// reports those, as <see cref="ModulationType.Tonicization"/>. The opening key is the key
-    /// of the opening phrase, extended a phrase at a time while it cannot decide, or of the
-    /// whole piece as a last resort; a change placed at the first note is that key heard
-    /// better, not a modulation.
+    /// the old does not, and is owned by the new key — the notes it lacks amounting to less than
+    /// a quarter note in any bar, an applied dominant that resolves into a chord of the key
+    /// counted as the key's; when the new key still reads from there through the phrase, or to
+    /// the end of the piece closing on its tonic from a key the music was still in; and when the
+    /// new key's own notes return in a second bar before the old key's are heard again, or the
+    /// phrase is framed by the new tonic chord. A key change that does not hold that long is a
+    /// tonicization — an applied dominant, a borrowed chord — and is not reported here;
+    /// <see cref="ModulationDetector"/> reports those, as <see cref="ModulationType.Tonicization"/>.
+    /// The new key begins after the last note it does not own: at its pivot chord when the bar
+    /// before is its, or at the start of the phrase — phrases counted from the first note — in
+    /// which its own note first sounds, when it owns every bar from there. The opening key is
+    /// the key of the chord the piece opens on when that key owns the opening phrase as well as
+    /// any key does, else the key the opening phrase sounds like, extended a phrase at a time
+    /// while it cannot decide, or the whole piece as a last resort; a change placed at the first
+    /// note is that key heard better, not a modulation, and so is a change from an opening key
+    /// read off the profile alone that never sounded a note of its own.
     /// </para>
     /// <para>
     /// This used to report a modulation at every confident, decidable window whose key differed
@@ -951,6 +960,22 @@ public sealed class KeyTrajectory
     /// modulations in block chords, arpeggios, melody alone and melody over chords — it was
     /// wrong on thirty-four; judged by phrase it agrees with the musician on all forty, in
     /// every key.
+    /// </para>
+    /// <para>
+    /// Judged by phrase alone, on sixty-four further passages a reviewer wrote — a pop verse
+    /// of applied dominants, keys visited for two bars each, a chromatic scale, alternating
+    /// four-bar areas, real tunes with their chords — it was wrong on eight: a key that left
+    /// less of a phrase foreign than the key the music was in was taken for the phrase's key,
+    /// so C Am D7 G | C A7 Dm G7 opened in G and came home at its Dm, a passage visiting D and
+    /// E for two bars each read as E then F sharp, a chromatic scale in eighths turned to C
+    /// minor, and C F G C | G C D7 G | C F G C, measured from the D7, held G for two bars and
+    /// was no modulation at all. A key must own the phrase it is named for, be entered by its
+    /// own notes returning or by a phrase framed by its tonic, and begin with the phrase in
+    /// which it is heard; both roads agree with the musician on all sixty-four. Two hundred
+    /// random diatonic melodies in C, which the profile opens in A minor, E minor or G as
+    /// readily as in C, reported thirty-six modulations to C; they report none, and two
+    /// hundred more from another seed, which reported forty-five, report two (melodies whose
+    /// second half never sounds F, so that G major owns it outright).
     /// </para>
     /// <para>
     /// The window no longer limits what is heard: a one-bar window over arpeggiated triads has
@@ -969,7 +994,7 @@ public sealed class KeyTrajectory
 
         var phrase = _windowSize > KeyAreaJudge.Phrase ? _windowSize : KeyAreaJudge.Phrase;
 
-        foreach (var change in KeyAreaJudge.Judge(_sonorities, candidates, startKey: null, phrase))
+        foreach (var change in KeyAreaJudge.Judge(_sonorities, candidates, startKey: null, phrase).Changes)
         {
             if (change.Established)
                 yield return (change.Position, change.From, change.To);

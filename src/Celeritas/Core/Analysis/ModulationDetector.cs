@@ -55,7 +55,16 @@ public sealed class ModulationAnalysisResult
     // Produced by ModulationDetector; not constructible by consumers (#18 API freeze).
     internal ModulationAnalysisResult() { }
 
-    /// <summary>Starting key signature.</summary>
+    /// <summary>
+    /// The key the music opens in: the key the caller gave, unless the music was never in it.
+    /// </summary>
+    /// <remarks>
+    /// A change of key placed at the first note is the opening key misjudged, not a
+    /// modulation, and the key heard there is the start. An A minor melody analyzed from C
+    /// minor used to report a modulation from C minor to A minor at its first note and keep C
+    /// minor here, a key the music was never in; it now opens in A minor, with no modulation,
+    /// as the trajectory road — which has no key given — always treated its own opening.
+    /// </remarks>
     public required KeySignature StartKey { get; init; }
 
     /// <summary>All detected modulations.</summary>
@@ -83,9 +92,10 @@ public sealed class ModulationAnalysisResult
 /// the statistical one. The detector reads chords, tells a tonicization from a modulation,
 /// names each change's type and finds its pivot chord; the trajectory reads fixed windows of
 /// the notes with no starting key and reports where the key changes. Both decide that by the
-/// same rules — a key holds for a phrase, a chord is not a key, a secondary dominant is not a
-/// modulation — so from the same opening key they place the same modulations, each at the
-/// positions it reads at: the detector at every chord, the trajectory at its window positions.
+/// same rules — a key holds for a phrase, a chord is not a key, a key owns its phrase, a
+/// secondary dominant is not a modulation, a key is entered when its own notes return — so
+/// from the same opening key they place the same modulations, each at the positions it reads
+/// at: the detector at every chord, the trajectory at its window positions.
 /// </remarks>
 public static class ModulationDetector
 {
@@ -104,9 +114,15 @@ public static class ModulationDetector
     /// fallback. The chords are judged as <see cref="KeyTrajectory.DetectModulations"/> judges
     /// its notes: a new key must be read over a phrase (four whole notes), be decidable and
     /// clearly named, fit better than the key the music is in, sound a note it owns and the old
-    /// key lacks, and leave fewer notes foreign to it than to the old key; it is a modulation if
-    /// it still reads from where it began through a phrase — or to the end of the piece, closing
-    /// on a tonic it has already sounded — and a tonicization otherwise. Each modulation's
+    /// key lacks, and own the phrase — the notes it lacks amounting to less than a quarter note
+    /// in any bar, an applied dominant that resolves into a chord of the key counted as the
+    /// key's; it is a modulation if it still reads from where it began through a phrase — or to
+    /// the end of the piece, closing on a tonic it has already sounded, from a key the music
+    /// was still in — and its own notes return in a second bar before the old key's are heard
+    /// again, or the phrase is framed by its tonic chord; a tonicization otherwise, lasting
+    /// until the music is home again. The new key begins after the last note it does not own,
+    /// at its pivot chord when the bar before is its, or at the start of the phrase in which its
+    /// own note first sounds when it owns every bar from there. Each modulation's
     /// <see cref="ModulationEvent.Confidence"/> is how clearly the phrase chose the new key over
     /// the old, scaled by how much of the stretch that established it the new key owns.
     /// </para>
@@ -124,6 +140,20 @@ public static class ModulationDetector
     /// nursery tunes and textbook modulations in block chords, arpeggios, melody alone and
     /// melody over chords — it was wrong on sixteen; judged by phrase it agrees with the
     /// musician on all forty, in every key.
+    /// </para>
+    /// <para>
+    /// Judged by phrase alone, on sixty-four further passages a reviewer wrote — a pop verse of
+    /// applied dominants, keys visited for two bars each, a chromatic scale, alternating
+    /// four-bar areas — it was wrong on nine: a key that left less of a phrase foreign than the
+    /// key the music was in was taken for the phrase's key, so C Am D7 G | C A7 Dm G7 went to
+    /// G at its Am and back, and a passage visiting D and E for two bars each read as A major;
+    /// a chromatic scale in eighths was thirty-six modulations one eighth apart; and C F G C |
+    /// G C D7 G | C F G C, measured from the D7, held G for two bars and was a tonicization. A
+    /// key must own the phrase it is named for, be entered by its own notes returning or by a
+    /// phrase framed by its tonic, and begin with the phrase in which it is heard; the
+    /// tonicization of C F | E7 Am | F G | C C, once six bars long — to the end of the piece,
+    /// because A minor owns every note of C — lasts the E7 and the Am. Both roads agree with
+    /// the musician on all sixty-four.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
@@ -206,10 +236,11 @@ public static class ModulationDetector
             candidates[i] = chords[i].Offset;
         }
 
+        var judgement = KeyAreaJudge.Judge(sonorities, candidates, startKey, KeyAreaJudge.Phrase);
         var modulations = new List<ModulationEvent>();
-        var currentKey = startKey;
+        var currentKey = judgement.Opening;
 
-        foreach (var change in KeyAreaJudge.Judge(sonorities, candidates, startKey, KeyAreaJudge.Phrase))
+        foreach (var change in judgement.Changes)
         {
             // The chord the new key begins with: the first at or after the judged position.
             var boundaryIndex = chords.Count - 1;
@@ -263,7 +294,7 @@ public static class ModulationDetector
 
         return new ModulationAnalysisResult
         {
-            StartKey = startKey,
+            StartKey = judgement.Opening,
             Modulations = modulations,
             EndKey = currentKey
         };
