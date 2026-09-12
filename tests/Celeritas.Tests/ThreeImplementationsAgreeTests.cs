@@ -422,11 +422,24 @@ public class ThreeImplementationsAgreeTests
     {
         foreach (var pitches in DetectKeyQuestions())
         {
-            var result = KeyProfiler.DetectFromPitches(pitches);
-            // The tonic as the key is written, "Bb" not "A#": the name the export writes.
-            var answer = new JsonArray(JsonValue.Create(KeySpelling.TonicName(result.Key)), JsonValue.Create(result.Key.IsMajor));
-            yield return Entry(Ints(pitches), answer);
+            yield return Entry(Ints(pitches), DetectKeyAnswer(pitches));
         }
+    }
+
+    private static JsonNode DetectKeyAnswer(int[] pitches)
+    {
+        // The export refuses an empty list before it profiles. The managed library answers it
+        // with a sentinel, C major at confidence 0, that a C# caller can read; the export hands
+        // back only the tonic and the mode, so it passed the sentinel on as the answer and
+        // Python's detect_key([]) was ("C", True) with nothing to check.
+        if (pitches.Length == 0)
+        {
+            return Refused;
+        }
+
+        var result = KeyProfiler.DetectFromPitches(pitches);
+        // The tonic as the key is written, "Bb" not "A#": the name the export writes.
+        return new JsonArray(JsonValue.Create(KeySpelling.TonicName(result.Key)), JsonValue.Create(result.Key.IsMajor));
     }
 
     private static IEnumerable<int[]> DetectKeyQuestions()

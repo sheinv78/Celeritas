@@ -207,13 +207,32 @@ public static class NativeExports
     }
 
     /// <summary>
-    /// Detect key from pitches
+    /// Detect key from pitches. Refuses an empty list (returns 0 with a last-error message
+    /// saying a key needs notes): a key is a question about which notes sound, and no notes
+    /// have no key.
     /// </summary>
+    /// <remarks>
+    /// The managed <see cref="KeyProfiler.DetectFromPitches(ReadOnlySpan{int})"/> answers empty
+    /// input with the library's empty-input sentinel — C major at confidence 0, documented on
+    /// its <see cref="NoteEvent"/> and notation overloads — which a C# caller can tell from a
+    /// detection by reading the confidence. This export hands back only the tonic's name
+    /// and whether the key is major, so it used to pass the sentinel on as if it were the answer:
+    /// Python's <c>detect_key([])</c> returned <c>("C", True)</c>, indistinguishable from the same
+    /// answer for a C major scale, with nothing a caller could check. An analysis entry point
+    /// that would turn a sentinel into a confident wrong answer refuses instead (ADR 0002), the
+    /// way this export already refused a buffer too small for the name.
+    /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "celeritas_detect_key", CallConvs = [typeof(CallConvCdecl)])]
     public static byte DetectKey(IntPtr pitchesPtr, int count, IntPtr bufferPtr, int bufferSize, IntPtr isMajorPtr)
     {
         try
         {
+            if (count <= 0)
+            {
+                SetLastError("Cannot detect a key from no notes: the pitch list is empty.");
+                return 0;
+            }
+
             var pitches = new int[count];
             Marshal.Copy(pitchesPtr, pitches, 0, count);
 

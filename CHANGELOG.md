@@ -591,6 +591,15 @@ follows.
   `celeritas_parse_chord_symbol` had swallowed the exception and answered
   "refused", so the managed library and its C export disagreed on the same string
   -- the first thing the parity gate below found
+- The native `celeritas_detect_key` refuses an empty pitch list -- it returns 0
+  with the message "Cannot detect a key from no notes: the pitch list is
+  empty." -- so the Python `detect_key([])` raises `CeleritasError` as it does
+  for any refused input. The managed `KeyProfiler.DetectFromPitches` answers
+  empty input with a documented sentinel, C major at confidence 0, that a C#
+  caller tells from a detection by reading the confidence; the export hands back
+  only the tonic and the mode, so it passed the sentinel on as the answer and no
+  notes were indistinguishable from a C major scale. The managed sentinel is
+  unchanged
 - The Python `parse_chord_symbol` returned at most 32 pitches and said nothing
   when it cut: a polychord naming forty came back as its first thirty-two,
   indistinguishable from a chord of thirty-two, where the managed library answers

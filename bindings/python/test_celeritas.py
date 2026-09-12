@@ -6,11 +6,13 @@ Author: Vladimir V. Shein
 License: BSL-1.1
 """
 
+import ctypes
 import json
 import os
 import unittest
 from fractions import Fraction
 from typing import Any, Callable, Dict, List
+from celeritas.celeritas import _get_last_error, _lib
 from celeritas import (
     CeleritasError,
     NoteEvent,
@@ -327,6 +329,127 @@ class TestDetectKey(unittest.TestCase):
         self.assertTrue(is_major)
         scale = [63, 65, 67, 68, 70, 72, 74, 75]  # Eb major scale
         self.assertEqual(detect_key(scale)[0], "Eb")
+
+    def test_no_notes_have_no_key(self):
+        """detect_key([]) raises, and the message says why.
+
+        The C# library answers empty input with a sentinel - C major at confidence 0 - that
+        a caller there can tell from a detection by reading the confidence. This function
+        hands back only the tonic and the mode, so it passed the sentinel on as the answer:
+        detect_key([]) was ("C", True), the same answer as for a C major scale, with nothing
+        to check. The native export now refuses an empty list the way it refuses any other
+        input it cannot answer.
+        """
+
+        with self.assertRaises(CeleritasError) as raised:
+            detect_key([])
+        self.assertIn("no notes", str(raised.exception))
+        self.assertIn("empty", str(raised.exception))
+
+    # The reviewer's held-out checks for that refusal: it is decided by the count and not by
+    # the pointer, it leaves the caller's buffers alone, every other answer the export gave
+    # still stands, and it is the only "error" the detect_key parity section carries.
+
+    def test_the_refusal_is_by_count_not_by_pointer(self):
+        """The export reads count before it reads the pitches.
+
+        The wrapper passes a zero-length ctypes array for [], whose address is whatever ctypes
+        hands back; a C caller may pass NULL, or a valid array with count 0. All three are the
+        same question - no notes - and get the same refusal.
+        """
+
+        buffer = ctypes.create_string_buffer(16)
+        is_major = ctypes.c_int()
+        valid = (ctypes.c_int * 3)(60, 64, 67)
+
+        for label, pitches in (("NULL", None), ("valid array", valid)):
+            with self.subTest(pitches=label):
+                rc = _lib.celeritas_detect_key(
+                    pitches, 0, buffer, 16, ctypes.byref(is_major)
+                )
+                self.assertEqual(rc, 0)
+                self.assertEqual(
+                    _get_last_error(),
+                    "Cannot detect a key from no notes: the pitch list is empty.",
+                )
+
+    def test_a_refusal_leaves_the_outputs_untouched(self):
+        """A caller who ignores the 0 must not read a key out of its own buffers."""
+
+        buffer = ctypes.create_string_buffer(b"UNTOUCHED", 16)
+        is_major = ctypes.c_int(42)
+
+        rc = _lib.celeritas_detect_key(None, 0, buffer, 16, ctypes.byref(is_major))
+
+        self.assertEqual(rc, 0)
+        self.assertEqual(buffer.value, b"UNTOUCHED")
+        self.assertEqual(is_major.value, 42)
+
+    def test_one_note_is_still_answered(self):
+        """One note is not no notes: the (str, bool) API answers it as it always did.
+
+        Whether this API should be able to say "undecidable" for one note is a separate
+        question; this pins that the empty-input refusal did not widen to it.
+        """
+
+        self.assertEqual(detect_key([60]), ("C", True))
+        self.assertEqual(detect_key([69]), ("A", True))
+        self.assertEqual(detect_key([70]), ("Bb", True))
+
+    def test_two_notes_and_a_tritone_are_still_answered(self):
+        self.assertEqual(detect_key([60, 67]), ("C", True))
+        self.assertEqual(detect_key([60, 66]), ("C", True))
+
+    def test_every_pitch_in_and_out_of_the_range_is_still_answered(self):
+        """128 notes, notes below zero, notes above 127: a key is a question about pitch
+        classes, so these fold rather than being dropped or refused."""
+
+        self.assertEqual(detect_key(list(range(128))), ("C", True))
+        self.assertEqual(detect_key([-12, -10, -8, -7, -5, -3, -1]), ("C", True))
+        self.assertEqual(detect_key([128, 130, 132, 133, 135, 137, 139]), ("Ab", True))
+        self.assertEqual(detect_key([-1]), ("B", True))
+
+    def test_a_tuple_of_pitches_is_a_list_of_pitches(self):
+        self.assertEqual(detect_key((60, 64, 67)), ("C", True))
+
+    def test_a_wrong_type_is_a_type_error_not_a_key(self):
+        """None and non-integers are Python type errors, raised before the native call."""
+
+        with self.assertRaises(TypeError):
+            detect_key(None)  # type: ignore[arg-type]
+        with self.assertRaises(TypeError):
+            detect_key([60.5])  # type: ignore[list-item]
+        with self.assertRaises(TypeError):
+            detect_key(["C4"])  # type: ignore[list-item]
+
+    def test_the_buffer_too_small_refusal_still_stands(self):
+        """The refusal the empty-input one was modelled on is still there, with its message."""
+
+        buffer = ctypes.create_string_buffer(1)
+        is_major = ctypes.c_int()
+        pitches = (ctypes.c_int * 3)(60, 64, 67)
+
+        rc = _lib.celeritas_detect_key(pitches, 3, buffer, 1, ctypes.byref(is_major))
+
+        self.assertEqual(rc, 0)
+        self.assertIn("Buffer too small", _get_last_error())
+
+    def test_the_sibling_exports_answer_empty_input_as_before(self):
+        """identify_chord([]) is an honest Unknown, transpose([]) is a no-op: neither was a
+        sentinel leaking and neither moved."""
+
+        self.assertEqual(identify_chord([]), "CUnknown")
+        self.assertEqual(transpose([], 3), [])
+
+    def test_the_parity_table_refuses_only_the_empty_question(self):
+        """The one "error" in the detect_key section is []; no other pin moved to error."""
+
+        with open(_PARITY_TABLE, encoding="utf-8") as handle:
+            table = json.load(handle)
+
+        refused = [entry["q"] for entry in table["detect_key"] if entry["a"] == "error"]
+
+        self.assertEqual(refused, [[]])
 
 
 class TestTrill(unittest.TestCase):

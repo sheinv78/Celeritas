@@ -129,7 +129,10 @@ import celeritas
     - Raises `CeleritasError` if the native call fails
 - `detect_key(pitches: List[int]) -> Tuple[str, bool]`
     - Returns `(key_name, is_major)`
-    - Raises `CeleritasError` if the native call fails
+    - Raises `CeleritasError` if the native call fails, or if `pitches` is empty
+    - Since 0.10.0: `detect_key([])` answered `("C", True)` — the C# library's empty-input
+      sentinel, C major at confidence 0, passed on without the confidence — so no notes and a
+      C major scale gave the same answer with nothing to tell them apart
 - `parse_chord_symbol(symbol: str, max_pitches: Optional[int] = None) -> Optional[List[int]]`
     - Parses chord symbols like `C7(b9,#11)`, `C/E`, `C|G`
     - Returns every pitch the symbol names; `max_pitches` cuts the answer to that many

@@ -321,7 +321,7 @@ def detect_key(pitches: List[int]) -> Tuple[str, bool]:
     """Detect the key of a sequence of pitches.
 
     Args:
-        pitches: List of MIDI pitch values
+        pitches: List of MIDI pitch values. At least one: no notes have no key.
 
     Returns:
         Tuple of (key_name, is_major). The name is the tonic as the key is written -
@@ -330,7 +330,12 @@ def detect_key(pitches: List[int]) -> Tuple[str, bool]:
         from a sharp table of the native export's own, so a B-flat scale answered 'A#'.)
 
     Raises:
-        CeleritasError: If the native key detection fails.
+        CeleritasError: If the native key detection fails, or if `pitches` is empty. The
+            C# library answers empty input with a sentinel - C major at confidence 0 -
+            that a caller there can tell from a detection by reading the confidence.
+            This function hands back only the tonic and the mode, so it used to pass the
+            sentinel on as the answer: detect_key([]) was ('C', True), the same answer as
+            for a C major scale, with nothing to check.
     """
 
     n = len(pitches)
