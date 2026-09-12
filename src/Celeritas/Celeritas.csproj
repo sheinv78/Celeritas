@@ -22,7 +22,7 @@
         <Description>High-Performance Music Engine for .NET with SIMD acceleration (AVX-512, AVX2, SSE2, ARM NEON). Provides harmonic analysis, chord recognition, key detection, voice leading, melody harmonization, rhythm analysis, MIDI I/O, and pitch class set analysis.</Description>
         <Copyright>Copyright (c) 2025 Vladimir V. Shein</Copyright>
         <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-        <PackageProjectUrl>https://github.com/sheinv78/Celeritas</PackageProjectUrl>
+        <PackageProjectUrl>https://sheinv78.github.io/Celeritas/</PackageProjectUrl>
         <RepositoryUrl>https://github.com/sheinv78/Celeritas</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>music;midi;simd;audio;daw;chord;harmony;analysis;avx512;avx2;neon;voice-leading;key-detection;rhythm;melody;counterpoint</PackageTags>

@@ -9,10 +9,13 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]()
 [![CI/CD](https://github.com/sheinv78/Celeritas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sheinv78/Celeritas/actions/workflows/ci.yml)
 [![Python Bindings CI](https://github.com/sheinv78/Celeritas/actions/workflows/python-ci.yml/badge.svg?branch=main)](https://github.com/sheinv78/Celeritas/actions/workflows/python-ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-sheinv78.github.io%2FCeleritas-0A7EA4)](https://sheinv78.github.io/Celeritas/)
 
 <p align="center">
   <img src="assets/banner.jpg" alt="Celeritas Banner" width="800"/>
 </p>
+
+📖 **Documentation: [sheinv78.github.io/Celeritas](https://sheinv78.github.io/Celeritas/)** — [getting started](https://sheinv78.github.io/Celeritas/guide/getting-started.html), a [10-minute tour](https://sheinv78.github.io/Celeritas/guide/tour.html), the [concepts](https://sheinv78.github.io/Celeritas/concepts/time-model.html) the API is built on, the full [API reference](https://sheinv78.github.io/Celeritas/api/), the [cookbook](https://sheinv78.github.io/Celeritas/COOKBOOK.html), and the [Python quickstart](https://sheinv78.github.io/Celeritas/guide/python.html). Rebuilt from the sources on every push to `main`.
 
 ## What is Celeritas?
 
@@ -355,6 +358,13 @@ Console.WriteLine(SpnNote.CSharp(4).ToNotation(preferSharps: false)); // Db4
 
 ### 📚 Complete Documentation
 
+- **[Documentation site](https://sheinv78.github.io/Celeritas/)** - The guide, concepts, cookbook and API reference, generated from the sources on every push
+  - [Getting started](https://sheinv78.github.io/Celeritas/guide/getting-started.html) - From an empty project to a first analysis
+  - [10-minute tour](https://sheinv78.github.io/Celeritas/guide/tour.html) - Chords, keys, modes, progressions, voice leading, MIDI
+  - [Upgrading to 0.10](https://sheinv78.github.io/Celeritas/guide/upgrading-to-0.10.html) - What changed for code written against 0.9.x
+  - [API reference](https://sheinv78.github.io/Celeritas/api/) - Every public type and member, by namespace
+  - The same pages as Markdown, for reading in the repository: [docs/](docs/)
+
 - **[Examples](examples/)** - Working code samples organized by topic
   - [Notation Basics](examples/01-notation-basics.cs) - Parsing, chords, rests, ties
   - [Round-Trip Formatting](examples/02-round-trip.cs) - Export back to notation
@@ -587,6 +597,7 @@ This triggers:
 
 ## 📧 Contact
 
+- **Documentation:** [sheinv78.github.io/Celeritas](https://sheinv78.github.io/Celeritas/)
 - **GitHub Issues:** Bugs and feature requests
 - **Email:** [sheinv78@gmail.com](mailto:sheinv78@gmail.com)
 

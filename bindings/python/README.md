@@ -1,6 +1,10 @@
 # Celeritas Python Bindings
 
-Python bindings for the Celeritas high-performance music engine.
+Python bindings for the Celeritas high-performance music engine. The engine's own
+documentation — guide, concepts, cookbook and API reference — is at
+[sheinv78.github.io/Celeritas](https://sheinv78.github.io/Celeritas/); the
+[Python quickstart](https://sheinv78.github.io/Celeritas/guide/python.html) there covers
+both the `ctypes` fast path described here and the full .NET API through pythonnet.
 
 ## Installation
 
