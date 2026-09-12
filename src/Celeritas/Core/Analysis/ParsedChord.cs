@@ -11,9 +11,11 @@ namespace Celeritas.Core.Analysis;
 /// <param name="Symbol">The original chord symbol (e.g., "Cmaj7", "Dm/F").</param>
 /// <param name="Pitches">MIDI pitches for the chord (octave 4 = middle C).</param>
 /// <param name="Info">The identified chord: the root the symbol names, and the quality its
-/// intervals above that root spell. Unlike a <see cref="ChordInfo"/> from
+/// intervals above that root spell — of the whole set when a template has it, else of the
+/// seventh chord or triad at its core, so "G9" and "G7b9" are both Dominant7 on G (see
+/// <see cref="ChordLibrary.TryGetCore"/>). Unlike a <see cref="ChordInfo"/> from
 /// <see cref="ChordAnalyzer.Identify(ReadOnlySpan{int})"/>, the root here is real even when the
-/// quality is <see cref="ChordQuality.Unknown"/> — "G9" is Unknown on G.</param>
+/// quality is <see cref="ChordQuality.Unknown"/> — "C7no3" is Unknown on C.</param>
 internal readonly record struct ParsedChord(string Symbol, int[] Pitches, ChordInfo Info)
 {
     /// <summary>

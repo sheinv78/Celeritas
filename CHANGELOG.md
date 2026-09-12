@@ -554,6 +554,34 @@ follows.
   has no natural ninth, and the pitch set is the same in any order. The fix
   reaches `TryParseChordSymbol`, `ProgressionAdvisor.Analyze`, the native export
   and the Python `parse_chord_symbol`, which all parse through the one builder
+- Chord symbols: nothing written is dropped. A power chord takes an alteration
+  like any chord (`C5(b9)` is C G Db; it was a bare C5, and `C5(#11)` likewise).
+  An alteration displaces only the perfect fifth: `Caug7(b5)` carries both
+  fifths as `C7(b5,#5)` does (it came back as C7b5 with the augmented fifth
+  gone), `Cdim7(#5)` keeps its diminished fifth, and a redundant `Cdim7(b5)` is
+  Cdim7 (its b5 was read as the half-diminished mark and flipped the seventh, to
+  Cø7). An explicit add is heard beside an alteration of its degree: `C7(b9)add9`
+  has both Db and D (the D was taken out with the natural); `C9(b9)` still gives
+  its natural ninth up to the alteration. A polychord names each pitch once:
+  `C9|D` listed D5 twice, the ninth of C9 and the root of the D triad an octave
+  up, and `C7(b9,#9)|Db` its Db twice. A lowercase root (`c7`, `cm7`) stays
+  refused -- a lead sheet writes roots in capitals and `b` is the flat sign --
+  and the parser's unreachable lowercase arms are gone
+- `ProgressionAdvisor`: an extended or altered chord on a diatonic root keeps the
+  roman numeral of the seventh chord at its core and figures the rest. `G7b9` in
+  C major is `V7(b9)`, Dominant, not borrowed; `G9` is `V9`, `G13(b9)` `V13(b9)`,
+  `G7(b9,#9)` `V7(b9,#9)`, `G7sus4` `V7sus4`, `Dm9` `ii9`, `Cmaj9` `Imaj9`,
+  `Dm7b5` still `iiø7`. Every one but `Dm7b5` read `?` / "Chromatic (outside the
+  key)", because no `ChordQuality` has a ninth and a chord was a whole-set
+  template match or nothing. Nashville follows (`57(b9)`, `59`, `2m9`), and so
+  do a secondary dominant's target degree and a pivot chord's two readings,
+  which had kept the bare numeral while `Pattern` carried the figure. `Db7` in C
+  is still `?`. Extended chords now count in key detection, cadences, secondary
+  dominants and modal mixture as their core does: `Dm7 Db7b9 Cmaj7` is C major
+  (was D minor), `C A7b9 Dm7 G7 C` has its V7/ii, and a dominant with a b9 is no
+  longer reported as modal mixture. `ChordCharacterClassifier`: `G7b9` is Tense,
+  `Dm9` Warm, `Cmaj9` Dreamy, `G7alt` Mysterious (all came back as the Unknown
+  classification, whose character is Modal)
 - A character outside the Basic Multilingual Plane -- an emoji, the musical
   symbol 𝄞 -- in a chord symbol or a notation string threw `ArgumentException`
   from inside the lexer ("Found a high surrogate char without a following low

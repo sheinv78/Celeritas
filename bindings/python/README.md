@@ -142,6 +142,11 @@ import celeritas
       `[60, 64, 67, 71]` and `CmΔ` gives `[60, 63, 67, 71]`
     - Since 0.10.0: augmented and diminished-seventh chords are rooted on the bass note —
       `Bdim7` gives `[71, 74, 77, 80]` (B D F A♭) and `Baug7` gives `[71, 75, 79, 81]`
+    - Since 0.10.0: nothing written in a symbol is dropped — a power chord takes an
+      alteration (`C5(b9)` gives `[60, 67, 73]`), an alteration displaces only the perfect
+      fifth (`Caug7(b5)` carries both fifths, `Cdim7(b5)` is `Cdim7`), an explicit add is heard
+      beside an alteration of its degree (`C7(b9)add9` has both D♭ and D), and a polychord names
+      each pitch once (`C9|D` gives `[60, 64, 67, 70, 74, 78, 81]`)
 - `native_version() -> str`
     - Returns the version reported by the native library (e.g. `0.10.0`)
 

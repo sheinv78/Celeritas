@@ -15,10 +15,15 @@ namespace Celeritas.Core;
 internal static class ChordSymbolAntlrParser
 {
     /// <summary>
-    /// Parse a chord symbol into MIDI pitches (octave 4 root = C4/60).
+    /// Parse a chord symbol into MIDI pitches (octave 4 root = C4/60), each pitch named once.
     /// For slash chords, bass is placed at octave 3 (C3/48).
     /// For polychords ("C|G"), subsequent layers are placed one octave higher.
     /// </summary>
+    /// <remarks>
+    /// The layers of a polychord used to be concatenated as built, so a pitch two layers share —
+    /// the D of "C9|D", which is the ninth of the lower chord and the root of the upper one an
+    /// octave up; the Db of "C7(b9,#9)|Db" — came back twice in one list.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="input"/> is <see langword="null"/>.</exception>
     public static int[] ParsePitches(string input)
     {
@@ -200,12 +205,19 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
         if (chords.Length == 1)
             return Visit(chords[0]);
 
+        // A pitch two layers share is one pitch: the ninth of "C9" and the root of the D triad
+        // stacked above it both land on D5.
         var pitches = new List<int>();
+        var seen = new HashSet<int>();
         for (var i = 0; i < chords.Length; i++)
         {
             // Stack each additional chord one octave above the previous to reduce collisions.
             var rootBase = 60 + (12 * i);
-            pitches.AddRange(BuildChordPitches(chords[i], rootBase));
+            foreach (var pitch in BuildChordPitches(chords[i], rootBase))
+            {
+                if (seen.Add(pitch))
+                    pitches.Add(pitch);
+            }
         }
 
         return [.. pitches];
@@ -410,6 +422,16 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
         return value;
     }
 
+    /// <summary>
+    /// The pitch class of a root or slash bass. The letter is a capital: a lead sheet writes its
+    /// roots in capitals, and the grammar's PITCH_NAME token admits nothing else, so "c7" and
+    /// "cm7" are refused before this runs — a lowercase letter is not a chord by any convention
+    /// a musician relies on, and "b" is the flat sign.
+    /// </summary>
+    /// <remarks>
+    /// This switch used to carry a lowercase arm beside each capital, code no input could reach,
+    /// which read as if the parser accepted "cm7". It never did; the arms are gone.
+    /// </remarks>
     private static int ParsePitchClass(ChordSymbolParser.NoteContext note)
     {
         var text = note.GetText();
@@ -419,14 +441,15 @@ internal sealed class ChordSymbolVisitorImpl : ChordSymbolBaseVisitor<int[]>
         var n = text[0];
         var pc = n switch
         {
-            'C' or 'c' => 0,
-            'D' or 'd' => 2,
-            'E' or 'e' => 4,
-            'F' or 'f' => 5,
-            'G' or 'g' => 7,
-            'A' or 'a' => 9,
-            'B' or 'b' => 11,
-            _ => 0
+            'C' => 0,
+            'D' => 2,
+            'E' => 4,
+            'F' => 5,
+            'G' => 7,
+            'A' => 9,
+            'B' => 11,
+            // The lexer admits only A-G here; anything else is a grammar change, not a chord.
+            _ => throw new ChordSymbolParseException($"Not a root letter: '{n}'.")
         };
 
         // Remaining characters are accidentals ('-' is a quality token, never an accidental).
@@ -487,7 +510,18 @@ internal sealed class ChordBuildState
     /// </remarks>
     private readonly Dictionary<int, HashSet<int>> _alterations = [];
 
-    private bool FifthIsAltered => _alterations.ContainsKey(5);
+    /// <summary>
+    /// Whether "ø" or "halfdim" named the chord. The half-diminished seventh is the minor one, and
+    /// this mark is the only thing that says so for a diminished triad: "m7b5" gets its minor
+    /// seventh from the minor triad it is written on.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ResolveSeventh"/> used to read any altered fifth as this mark, so an explicit
+    /// b5 on a diminished seventh chord — "Cdim7(b5)", a redundant flat on a fifth that is already
+    /// flat — flipped its seventh from diminished to minor and answered Cø7 for a chord that was
+    /// written Cdim7.
+    /// </remarks>
+    private bool _halfDiminished;
 
     private readonly HashSet<int> _adds = [];
 
@@ -581,6 +615,7 @@ internal sealed class ChordBuildState
                 _extension = Math.Max(_extension ?? 0, 7);
                 Alter(5, 6);
                 // half-diminished has a minor seventh
+                _halfDiminished = true;
                 _wantsMajorSeventh = false;
                 break;
         }
@@ -702,17 +737,30 @@ internal sealed class ChordBuildState
         altered.Add(semitones);
     }
 
+    /// <summary>
+    /// The semitones above the root the symbol names, in order. The triad — or the bare fifth of
+    /// a power chord — and the extension chain go in first; then every altered degree loses its
+    /// natural pitch and gains each alteration written for it; then the explicit adds, which are
+    /// heard whatever else was written. The power chord takes the same road as every other
+    /// chord, so "C5(b9)" is C, G and Db.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The power chord used to return early with its fifth and its adds, so an altered ninth,
+    /// eleventh or thirteenth written on it — "C5(b9)", "C5(#11)" — was dropped without a word,
+    /// against the rule that this parser refuses what it cannot spell rather than spelling
+    /// something else.
+    /// </para>
+    /// <para>
+    /// The adds used to go in before the alterations, so an alteration of the same degree took
+    /// the added natural out with the one from the extension chain: "C7(b9)add9" lost the D that
+    /// was written beside its Db. A ninth chord's own ninth still gives way — "C9(b9)" has no D,
+    /// that is the convention — but an explicit add is a note asked for by name.
+    /// </para>
+    /// </remarks>
     public List<int> BuildIntervals()
     {
         var intervals = new HashSet<int> { 0 };
-
-        if (_power)
-        {
-            if (!_omit5)
-                AddFifth(intervals, 7);
-            AddExtensionsAndAdds(intervals);
-            return [.. intervals.OrderBy(x => x)];
-        }
 
         var (third, fifth) = _triad switch
         {
@@ -725,13 +773,17 @@ internal sealed class ChordBuildState
             _ => (4, 7)
         };
 
-        if (!_omit3)
+        // A power chord is the root and the perfect fifth, whatever triad marker sits beside it.
+        if (_power)
+            fifth = 7;
+
+        if (!_power && !_omit3)
             intervals.Add(third);
 
         if (!_omit5)
-            AddFifth(intervals, fifth);
+            intervals.Add(fifth);
 
-        AddExtensionsAndAdds(intervals);
+        AddExtensions(intervals);
 
         // Every altered degree loses its natural pitch — put in by the triad or by the extension
         // above, so C9(b9,#9) has no natural ninth — and gains every alteration written for it.
@@ -740,62 +792,56 @@ internal sealed class ChordBuildState
             if (degree == 5 && _omit5)
                 continue;
 
-            foreach (var natural in NaturalPitchesOf(degree))
-                intervals.Remove(natural);
-
+            intervals.Remove(NaturalPitchOf(degree));
             intervals.UnionWith(altered);
         }
+
+        foreach (var add in _adds)
+            intervals.Add(add);
 
         return [.. intervals.OrderBy(x => x)];
     }
 
-    /// <summary>The fifth the chord carries: every alteration written for it, or the natural one.</summary>
-    private void AddFifth(HashSet<int> intervals, int natural)
-    {
-        if (_alterations.TryGetValue(5, out var altered))
-            intervals.UnionWith(altered);
-        else
-            intervals.Add(natural);
-    }
-
     /// <summary>
-    /// The pitches an unaltered degree can occupy. The fifth is the triad's, whichever quality
-    /// named it — diminished, perfect or augmented; the upper degrees have one natural each.
+    /// The pitch an alteration of <paramref name="degree"/> displaces: the perfect fifth, or the
+    /// one natural of an upper degree. A diminished or augmented fifth named by the triad's own
+    /// quality is not displaced: "aug" says #5 and "(b5)" says b5, and a chord written
+    /// "Caug7(b5)" carries both fifths, exactly as "C7(b5,#5)" does.
     /// </summary>
-    private static int[] NaturalPitchesOf(int degree) =>
-        degree == 5 ? [6, 7, 8] : [MapExtensionDegreeToSemitones(degree)];
+    /// <remarks>
+    /// Every fifth used to be displaced, so "Caug7(b5)" came back as C7b5 with the augmented fifth
+    /// that was written gone, and "Cdim7(#5)" lost its diminished one.
+    /// </remarks>
+    private static int NaturalPitchOf(int degree) => MapExtensionDegreeToSemitones(degree);
 
-    private void AddExtensionsAndAdds(HashSet<int> intervals)
+    private void AddExtensions(HashSet<int> intervals)
     {
         // A bare Δ or maj-after-minor ("CΔ", "CmΔ", "Cmmaj") marks the major seventh
         // without an explicit extension: default the extension to 7 so the seventh is
         // actually emitted instead of collapsing to a plain triad.
         var extension = _extension ?? (_wantsMajorSeventh ? 7 : (int?)null);
 
-        if (extension.HasValue)
+        if (!extension.HasValue)
+            return;
+
+        var ext = extension.Value;
+
+        if (ext == 6)
         {
-            var ext = extension.Value;
-
-            if (ext == 6)
-            {
-                intervals.Add(9);
-            }
-            else if (ext >= 7)
-            {
-                if (!_omit7)
-                    intervals.Add(ResolveSeventh(ext));
-
-                if (ext >= 9)
-                    intervals.Add(14);
-                if (ext >= 11)
-                    intervals.Add(17);
-                if (ext >= 13)
-                    intervals.Add(21);
-            }
+            intervals.Add(9);
         }
+        else if (ext >= 7)
+        {
+            if (!_omit7)
+                intervals.Add(ResolveSeventh(ext));
 
-        foreach (var add in _adds)
-            intervals.Add(add);
+            if (ext >= 9)
+                intervals.Add(14);
+            if (ext >= 11)
+                intervals.Add(17);
+            if (ext >= 13)
+                intervals.Add(21);
+        }
     }
 
     private int ResolveSeventh(int ext)
@@ -811,8 +857,9 @@ internal sealed class ChordBuildState
         return _triad switch
         {
             // Diminished: if explicitly dim7, use diminished 7th (9 semitones); otherwise minor 7th.
-            // An altered fifth marks the half-diminished spelling ("ø", "m7b5"), which has the minor one.
-            TriadQuality.Diminished when ext == 7 && !FifthIsAltered => 9,
+            // Only the half-diminished mark ("ø", "halfdim") asks for the minor one — an altered
+            // fifth written on a diminished chord says nothing about its seventh.
+            TriadQuality.Diminished when ext == 7 && !_halfDiminished => 9,
             _ => 10
         };
     }

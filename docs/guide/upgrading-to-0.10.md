@@ -99,6 +99,15 @@ with its index in the original input.
 **Fix:** call `TryParseChordSymbol` instead of `ParseChordSymbol`, and check
 `SkippedSymbols` before trusting a report's positions.
 
+The same rule reaches four edges where 0.9.x still dropped a note it had read. A
+power chord takes an alteration like any other chord (`"C5(b9)"` is C G D♭, not
+a bare C5); an alteration displaces only the *perfect* fifth, so `"Caug7(b5)"`
+carries both fifths exactly as `"C7(b5,#5)"` does and a redundant `"Cdim7(b5)"`
+is Cdim7, not Cø7; an explicit add is heard beside an alteration of its own
+degree (`"C7(b9)add9"` has both D♭ and D, while `"C9(b9)"` still gives its
+natural ninth up to the alteration — that is the convention); and a polychord
+names each pitch once (`"C9|D"` no longer lists D5 twice).
+
 ## Augmented and diminished-7th chords root on the bass
 
 Both qualities are symmetric under transposition: an augmented triad is three
@@ -203,6 +212,29 @@ does not explain.
 **Fix:** treat `"?"` as "outside the key" wherever you match on `RomanNumeral`,
 `Nashville` or `Pattern` — a pattern string is no longer guaranteed to be all
 roman numerals.
+
+An *extended* chord on a diatonic root is not chromatic, and no longer reads as
+one. The library has no quality for a ninth, eleventh or thirteenth chord, so
+0.9.x gave `G7b9` in C major — the commonest dominant there is in a minor key —
+no roman numeral at all. 0.10 names such a chord by the seventh chord at its core
+and figures the rest after the numeral, the way a musician annotates it:
+
+```csharp
+ProgressionReport jazz = ProgressionAdvisor.Analyze(["Dm9", "G13(b9)", "Cmaj9"]);
+
+Console.WriteLine(jazz.Pattern);
+// ii9 - V13(b9) - Imaj9   (was "? - ? - ?")
+
+ChordAnalysisDetail g = jazz.Chords[1];
+Console.WriteLine($"{g.Symbol} {g.RomanNumeral} {g.Nashville} {g.Function}");
+// G13(b9) V13(b9) 513(b9) Dominant (tension/pull to resolve)
+```
+
+The natural extension takes the seventh's place (`V9`, `V13`, `ii9`, `Imaj9`),
+alterations follow in parentheses in ascending order (`V7(b9,#9)`, `V7(#11)`),
+a seventh over a suspension precedes it (`V7sus4`), and a chord the templates
+name whole is written exactly as before. A dominant seventh on a root the key
+does not own — `Db7` in C — is still `"?"`.
 
 ## `TextureDensity` is time-weighted
 

@@ -208,21 +208,27 @@ public static unsafe class ChordAnalyzer
     /// <summary>
     /// Identifies the chord <paramref name="pitches"/> spell when their root is already known —
     /// from a chord symbol that named it. The answer is rooted on
-    /// <paramref name="rootPitchClass"/> whatever the bass, and is
-    /// <see cref="ChordQuality.Unknown"/> <em>on that root</em> when no template has those
-    /// intervals above it, so a caller holding a ninth chord keeps its root.
+    /// <paramref name="rootPitchClass"/> whatever the bass. When no template has every interval
+    /// above that root, the quality is that of the seventh chord or triad at the chord's core —
+    /// "G7b9", "G9", "G13" and "G7(#11)" are all <see cref="ChordQuality.Dominant7"/> on G, "Dm9"
+    /// a <see cref="ChordQuality.Minor7"/> on D — and <see cref="ChordQuality.Unknown"/>
+    /// <em>on that root</em> only when there is no such core; see
+    /// <see cref="ChordLibrary.TryGetCore"/> for how the core is found.
     /// </summary>
     /// <remarks>
     /// <see cref="Identify(ReadOnlySpan{int})"/> reads the bass to root what it hears, which is
     /// the right question for notes and the wrong one for a symbol: "Am7/C" is A minor seventh
     /// in first inversion and was identified as C6, and "G9", which no template covers, as an
     /// Unknown chord rooted on C — so a ii7-V9-I was read in the key of its ii chord in eleven
-    /// of twelve transpositions.
+    /// of twelve transpositions. With the root settled, the whole set was still asked of the
+    /// templates as one, so every ninth, eleventh and thirteenth chord — every altered dominant
+    /// — was Unknown, and the progression report gave G7b9 in C major no roman numeral and the
+    /// function "Chromatic (outside the key)".
     /// </remarks>
     internal static ChordInfo Identify(ReadOnlySpan<int> pitches, int rootPitchClass)
     {
         var root = (byte)PitchMath.Fold(rootPitchClass);
-        ChordLibrary.TryGetQuality(GetMask(pitches), root, out var quality);
+        ChordLibrary.TryGetCore(GetMask(pitches), root, out var quality, out _);
         return new ChordInfo(root, quality);
     }
 

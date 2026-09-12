@@ -14,20 +14,31 @@ public static class ProgressionAdvisor
 {
 
     /// <summary>
-    /// Parse a chord symbol into MIDI pitches (octave 4 = middle C).
+    /// Parse a chord symbol into MIDI pitches (octave 4 = middle C), each pitch named once.
     /// Supports: C, Am, G7, Dmaj7, F#m7, Bbdim, Csus4, C/E (slash chords), etc.
     /// A bare number is lead-sheet shorthand: C2 is Cadd9, C4 is Csus4 and C5 the power chord;
     /// 6, 7, 9, 11 and 13 are extensions, and any other number fails the parse.
     /// The fifth, ninth, eleventh and thirteenth may be altered, each more than once: C7(b9,#9)
     /// has both altered ninths and no natural one, C7(b5,#5) both altered fifths, and the order
     /// the alterations are written in does not change the chord. "alt" is the minimal altered
-    /// dominant, #5 and b9.
+    /// dominant, #5 and b9. An alteration displaces the natural of its own degree — the perfect
+    /// fifth, or the ninth, eleventh or thirteenth of the extension chain — and nothing else: a
+    /// fifth the triad's own quality names stays, so Caug7(b5) has both fifths like C7(b5,#5),
+    /// and Cdim7(b5) is Cdim7; an explicit add is heard beside an alteration of its degree, so
+    /// C7(b9)add9 has both Db and D; and a power chord takes an alteration like any other chord,
+    /// so C5(b9) is C, G and Db.
     /// </summary>
     /// <remarks>
     /// The parser used to accept any number and act only on 6 and 7 upward, so C2, C3 and C4
     /// all came back as a plain C major triad and C8 as a C7, with nothing to say the number
     /// had been dropped. It also kept one alteration per degree, the last written, so C7(b9,#9)
-    /// came back without its b9 and C7(#9,b9) without its #9.
+    /// came back without its b9 and C7(#9,b9) without its #9. Four more silent drops followed
+    /// the same shape: the power chord ignored every alteration but the fifth, so C5(b9) was a
+    /// bare C5; an altered fifth displaced the augmented or diminished one the triad named, so
+    /// Caug7(b5) was C7b5; the b5 of Cdim7(b5) was read as the half-diminished mark and turned
+    /// the diminished seventh into a minor one; and the added ninth of C7(b9)add9 was taken
+    /// out with the natural. A polychord also repeated a pitch its layers shared — the D of
+    /// C9|D came back twice.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="symbol"/> is <see langword="null"/>.</exception>
     public static int[] ParseChordSymbol(string symbol)
@@ -633,7 +644,7 @@ public static class ProgressionAdvisor
                 Chord = sdChord,
                 Target = sdTarget,
                 TargetDegree = m.Position + 1 < parsedChords.Count
-                    ? FormatRomanNumeral(romans[m.Position + 1], parsedChords[m.Position + 1].Info.Quality)
+                    ? FiguredRomanNumeral(romans[m.Position + 1], parsedChords[m.Position + 1])
                     : null
             });
         }
@@ -919,11 +930,19 @@ public static class ProgressionAdvisor
         // A chromatic chord yields RomanNumeralChord.Invalid, whose default Degree
         // (ScaleDegree.I) would otherwise present it as the tonic. Surface it as
         // "?" / chromatic instead, deriving the character from the chord quality.
-        var romanStr = FormatRomanNumeral(roman, info.Quality);
+        // The quality is the chord's core — G7b9 is a dominant seventh on G, and reads V7 — and
+        // what the symbol wrote above that core is figured after the numeral: "V7(b9)", "V9",
+        // "V13(b9)", "ii9". A chord the templates name whole is left exactly as it was.
+        var romanStr = FiguredRomanNumeral(roman, new ParsedChord(symbol, pitches, info));
         // Nashville uses the actual chord quality (info.Quality), matching the roman numeral above.
         var nashvilleStr = roman.IsValid
             ? new RomanNumeralChord(roman.Degree, info.Quality, roman.Function).ToNashville()
             : "?";
+        if (roman.IsValid)
+        {
+            var bare = new RomanNumeralChord(roman.Degree, ChordQuality.Major, roman.Function);
+            nashvilleStr = ChordFigures.Figure(nashvilleStr, bare.ToNashville(), pitches, info);
+        }
         var function = roman.IsValid
             ? ProgressionNarrator.GetFunctionName(roman.Function)
             : "Chromatic (outside the key)";
@@ -994,6 +1013,29 @@ public static class ProgressionAdvisor
             ? new RomanNumeralChord(roman.Degree, quality, roman.Function).ToRomanNumeral()
             : "?";     // Chromatic chords have no diatonic roman numeral — do not leak
                        // Invalid's default Degree (ScaleDegree.I) as a fake tonic.
+
+    /// <summary>
+    /// <see cref="FormatRomanNumeral"/> for a chord read from a symbol, with what the symbol wrote
+    /// above the chord's core figured after the numeral — "ii9" for Dm9, "V7(b9)" for G7b9 — so
+    /// that every place a report names one chord names it the same way: its
+    /// <see cref="ChordAnalysisDetail.RomanNumeral"/>, the <see cref="SecondaryDominantInfo.TargetDegree"/>
+    /// of the applied dominant that aims at it, and the <see cref="ModulationInfo.PivotAnalysis"/>
+    /// that reads it in two keys.
+    /// </summary>
+    /// <remarks>
+    /// The figures were first spliced in for the chord-by-chord detail alone, so one report
+    /// called Dm9 "ii9" in its pattern and "ii7" as the target of A7 — two fields disagreeing
+    /// about one chord, the shape <see cref="FormatRomanNumeral"/>'s own history records.
+    /// </remarks>
+    private static string FiguredRomanNumeral(RomanNumeralChord roman, ParsedChord chord)
+    {
+        var label = FormatRomanNumeral(roman, chord.Info.Quality);
+        if (!roman.IsValid)
+            return label;
+
+        var bare = new RomanNumeralChord(roman.Degree, ChordQuality.Major, roman.Function);
+        return ChordFigures.Figure(label, bare.ToRomanNumeral(), chord.Pitches, chord.Info);
+    }
 
     private static ChordCharacter DetermineCharacter(ChordQuality quality, HarmonicFunction function, KeySignature key)
     {
@@ -1171,7 +1213,7 @@ public static class ProgressionAdvisor
                                     pivotChord = pivot.Symbol;
                                     var oldRoman = KeyAnalyzer.Analyze(pivot.Info, currentKey);
                                     var newRoman = KeyAnalyzer.Analyze(pivot.Info, tonicizedKey);
-                                    pivotAnalysis = $"{FormatRomanNumeral(oldRoman, pivot.Info.Quality)} in {currentKey} = {FormatRomanNumeral(newRoman, pivot.Info.Quality)} in {tonicizedKey}";
+                                    pivotAnalysis = $"{FiguredRomanNumeral(oldRoman, pivot)} in {currentKey} = {FiguredRomanNumeral(newRoman, pivot)} in {tonicizedKey}";
                                 }
                             }
 
@@ -1246,7 +1288,7 @@ public static class ProgressionAdvisor
                                 pivotChord = prev.Symbol;
                                 var oldRoman = KeyAnalyzer.Analyze(prev.Info, currentKey);
                                 var newRoman = KeyAnalyzer.Analyze(prev.Info, altKey);
-                                pivotAnalysis = $"{FormatRomanNumeral(oldRoman, prev.Info.Quality)} in {currentKey} = {FormatRomanNumeral(newRoman, prev.Info.Quality)} in {altKey}";
+                                pivotAnalysis = $"{FiguredRomanNumeral(oldRoman, prev)} in {currentKey} = {FiguredRomanNumeral(newRoman, prev)} in {altKey}";
                             }
                             else
                             {
@@ -1578,11 +1620,14 @@ public static class ProgressionAdvisor
     /// named when it could name one and from the notes themselves when it could not.
     /// </summary>
     /// <remarks>
-    /// The library has no <see cref="ChordQuality"/> for a ninth, eleventh or thirteenth chord,
-    /// so their quality is Unknown — but the symbol named the root, <see cref="ParsedChord"/>
-    /// kept it, and the third is a semitone count above it. A key scorer that reads only the
-    /// named quality throws all of that away and treats "C9" as no evidence of anything; one that
-    /// took the lowest pitch for the root read "Am7/C" as a chord on C.
+    /// The library has no <see cref="ChordQuality"/> for a ninth, eleventh or thirteenth chord;
+    /// <see cref="ParsedChord"/> now names them by the seventh chord at their core, so "C9" is a
+    /// Dominant7 here, but a chord with no core the templates know — "C7no3", a triad on a
+    /// fifth the library does not name — is still Unknown. The symbol named its root,
+    /// <see cref="ParsedChord"/> kept it, and the third is a semitone count above it. A key
+    /// scorer that reads only the named quality throws all of that away and treats such a
+    /// chord as no evidence of anything; one that took the lowest pitch for the root read
+    /// "Am7/C" as a chord on C.
     /// </remarks>
     private static (int Root, ChordThird Third) RootAndThird(int[] pitches, ChordInfo info)
     {

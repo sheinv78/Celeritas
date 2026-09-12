@@ -30,7 +30,11 @@ public class ASymbolNamesItsOwnRootTests
     [InlineData("Cm7/Eb", 0, ChordQuality.Minor7)]
     [InlineData("C6", 0, ChordQuality.Major6)]
     [InlineData("Am7", 9, ChordQuality.Minor7)]
-    [InlineData("G9", 7, ChordQuality.Unknown)]
+    // A ninth chord is the seventh chord at its core with a ninth on it: G9 is a dominant
+    // seventh on G. This row used to pin Unknown, which was the root being right and the
+    // quality still missing — the report gave G9 no roman numeral for want of it.
+    [InlineData("G9", 7, ChordQuality.Dominant7)]
+    [InlineData("G7no3", 7, ChordQuality.Unknown)]
     [InlineData("C/E", 0, ChordQuality.Major)]
     [InlineData("Eaug", 4, ChordQuality.Augmented)]
     [InlineData("F#7b5", 6, ChordQuality.Dominant7Flat5)]

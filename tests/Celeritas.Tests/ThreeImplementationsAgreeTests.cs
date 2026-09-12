@@ -521,6 +521,12 @@ public class ThreeImplementationsAgreeTests
             // written last and lose the other, so the export answered "C7(b9,#9)" and
             // "C7(#9,b9)" with two different chords, neither of them the one written.
             "7(b9,#9)", "7(#9,b9)", "7(b5,#5)", "9(b9,#9)", "7(b9,#9,#11,b13)",
+            // A power chord under an alteration, which used to be dropped; a redundant or
+            // contradictory fifth on a diminished or augmented seventh, which used to displace
+            // the fifth the triad named or flip the seventh; an add beside an alteration of its
+            // own degree, which used to be taken out with the natural; and the thirteenth
+            // chord with a flat ninth the progression report reads as V13(b9).
+            "5(b9)", "5add9", "5(#11)", "dim7(b5)", "dim7(#5)", "aug7(b5)", "7(b9)add9", "9(b9)", "13(b9)",
         ];
         foreach (var root in roots)
         {
@@ -530,11 +536,13 @@ public class ThreeImplementationsAgreeTests
             }
         }
 
-        // Slash chords and polychords.
+        // Slash chords and polychords. The last two share a pitch between their layers — the
+        // ninth of C9 is the root of the D triad an octave up, the flat ninth of C7(b9,#9) the
+        // root of Db — and used to name it twice.
         string[] compound =
         [
             "C/E", "C/G", "C/Bb", "C/B", "C/C", "Am7/C", "G7/B", "Dm/F", "F#m7b5/A", "Bb/D", "C/E/G", "C/", "/E",
-            "C/X", "C/H", "C|G", "D|C", "C|G|D", "C|", "|C", "C||G", "Cmaj7|Dm7",
+            "C/X", "C/H", "C|G", "D|C", "C|G|D", "C|", "|C", "C||G", "Cmaj7|Dm7", "C9|D", "C7(b9,#9)|Db",
         ];
         foreach (var symbol in compound)
         {
@@ -546,8 +554,9 @@ public class ThreeImplementationsAgreeTests
         // thirty-two with nothing to say it had been cut; the export now reports how many the
         // symbol names so the wrapper can ask again. Ten tones a layer — a seventh chord with a
         // flat ninth, a sharp eleventh, a flat thirteenth and the second, fourth and sixth added
-        // — keeps four layers inside the keyboard; the twenty-eight-pitch stack beside it fits
-        // the buffer as it was.
+        // — keeps four layers inside the keyboard; the stack of thirteenths beside it — twenty-
+        // four distinct pitches, since a pitch two layers share is named once — fits the buffer
+        // as it was.
         var tenTones = "C7(b9,#11,b13)add2add4add6";
         yield return string.Join('|', Enumerable.Repeat(tenTones, 4));
         yield return "C13|G13|D13|A13";

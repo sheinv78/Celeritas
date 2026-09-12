@@ -59,10 +59,25 @@ public sealed class ChordAnalysisDetail
     /// <summary>Notes in the chord</summary>
     public required string[] Notes { get; init; }
 
-    /// <summary>Roman numeral in key (e.g., "i", "VI", "V"), or "?" if non-diatonic.</summary>
+    /// <summary>
+    /// Roman numeral in key (e.g., "i", "VI", "V"), or "?" if non-diatonic. An extended or
+    /// altered chord is figured on the numeral of the seventh chord at its core: G7b9 in C
+    /// major is "V7(b9)", G9 "V9", G13(b9) "V13(b9)", G7sus4 "V7sus4", Dm9 "ii9" — the
+    /// natural extension takes the seventh's place, the alterations follow in parentheses
+    /// in ascending order.
+    /// </summary>
+    /// <remarks>
+    /// The library has no quality for a ninth, eleventh or thirteenth chord, and a chord with
+    /// no quality had no numeral: every extended dominant — G7b9, the commonest dominant in a
+    /// minor key — read "?" here, with <see cref="Function"/> "Chromatic (outside the key)".
+    /// </remarks>
     public required string RomanNumeral { get; init; }
 
-    /// <summary>Nashville Number System label in key (e.g., "6m", "1", "5"), or "?" if non-diatonic.</summary>
+    /// <summary>
+    /// Nashville Number System label in key (e.g., "6m", "1", "5"), or "?" if non-diatonic. An
+    /// extended or altered chord is figured the way <see cref="RomanNumeral"/> is: G7b9 in C
+    /// major is "57(b9)", G9 "59", Dm9 "2m9".
+    /// </summary>
     public required string Nashville { get; init; }
 
     /// <summary>Functional role</summary>

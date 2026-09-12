@@ -293,6 +293,108 @@ public static class ChordLibrary
     }
 
     /// <summary>
+    /// The chord at the heart of a set whose root is known: the whole set when a template has
+    /// those intervals above the root, and otherwise its seventh chord or triad — the root, the
+    /// third, the fifth and the seventh (or the sixth), where the four together are a chord the
+    /// library names; failing that, the triad or suspension alone. What remains above the core
+    /// is the chord's colour: ninths, elevenths and thirteenths, natural or altered, and a second
+    /// fifth. <paramref name="coreMask"/> is the core's pitch classes, in the mask's own
+    /// numbering, so a caller can see which pitches the core did not account for.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is how a musician names an extended chord: G7b9, G9, G13 and G7(#11) are all the
+    /// dominant seventh on G — the same V7, coloured (G7alt, whose fifth is raised, is the
+    /// augmented seventh on G) — and Dm9 is the same ii7 as Dm7. Read
+    /// only against the whole set, every one of them was <see cref="ChordQuality.Unknown"/>,
+    /// and the progression report called G7b9 in C major — the commonest dominant there is in
+    /// minor and an ordinary one in major — "Chromatic (outside the key)" with no roman numeral.
+    /// </para>
+    /// <para>
+    /// The third is the major one when both thirds sound (the minor is then a #9); the fifth is
+    /// the perfect one when it sounds, else the diminished, else the augmented (the other is a
+    /// #11 or b13 above a perfect fifth, a second fifth otherwise); the seventh is the minor one
+    /// when it sounds, else the major, else the sixth, which is a seventh only on a diminished
+    /// triad and a sixth chord elsewhere. Without a third the core is a suspension — sus4
+    /// before sus2, the stack of fourths before the bare fifth — and a bare fifth under a seventh
+    /// is no core at all: "C7no3" is not named, as before.
+    /// </para>
+    /// </remarks>
+    internal static bool TryGetCore(ushort mask, int rootPitchClass, out ChordQuality quality, out ushort coreMask)
+    {
+        if (TryGetQuality(mask, rootPitchClass, out quality))
+        {
+            coreMask = mask;
+            return true;
+        }
+
+        var root = PitchMath.Fold(rootPitchClass);
+        var intervals = (ushort)(((mask >> root) | (mask << (12 - root))) & 0xFFF);
+
+        var core = CoreOf(intervals);
+        if (core != 0 && HasQuality[core])
+        {
+            quality = QualityByIntervals[core];
+            coreMask = (ushort)(((core << root) | (core >> (12 - root))) & 0xFFF);
+            return true;
+        }
+
+        quality = ChordQuality.Unknown;
+        coreMask = 0;
+        return false;
+    }
+
+    /// <summary>
+    /// The core of <paramref name="intervals"/> (a set of semitones above the root, bit 0 the
+    /// root) as an interval set: the seventh chord or sixth chord if the library names it, else
+    /// the triad or suspension if it does, else 0.
+    /// </summary>
+    private static ushort CoreOf(ushort intervals)
+    {
+        static bool Has(ushort set, int semitone) => (set & (1 << semitone)) != 0;
+
+        var third = Has(intervals, 4) ? 4 : Has(intervals, 3) ? 3 : -1;
+        var fifth = Has(intervals, 7) ? 7 : Has(intervals, 6) ? 6 : Has(intervals, 8) ? 8 : -1;
+        var seventh = Has(intervals, 10) ? 10 : Has(intervals, 11) ? 11 : Has(intervals, 9) ? 9 : -1;
+
+        ushort triad;
+        if (third >= 0)
+        {
+            if (fifth < 0)
+                return 0;
+
+            triad = (ushort)(1 | (1 << third) | (1 << fifth));
+        }
+        else
+        {
+            // No third: a suspension or a stack of fourths, whichever the set holds, and the bare
+            // fifth only when there is no seventh to make it a chord it cannot name.
+            ushort[] candidates = [0b0000_1010_0001, 0b0000_1000_0101, 0b0100_0010_0001, 0b0000_1000_0001];
+            triad = 0;
+            foreach (var candidate in candidates)
+            {
+                if ((intervals & candidate) == candidate)
+                {
+                    triad = candidate;
+                    break;
+                }
+            }
+
+            if (triad == 0 || (triad == 0b0000_1000_0001 && seventh is 10 or 11))
+                return 0;
+        }
+
+        if (seventh >= 0 && !Has(triad, seventh))
+        {
+            var tetrad = (ushort)(triad | (1 << seventh));
+            if (HasQuality[tetrad])
+                return tetrad;
+        }
+
+        return HasQuality[triad] ? triad : (ushort)0;
+    }
+
+    /// <summary>
     /// The third <paramref name="quality"/> is built on — the interval that decides whether a
     /// chord sounds major or minor, and <see cref="ChordThird.None"/> for the suspended, power
     /// and quartal chords, which state a root and leave the mode open.
