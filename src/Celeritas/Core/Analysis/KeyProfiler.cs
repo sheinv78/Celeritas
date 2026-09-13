@@ -1034,6 +1034,32 @@ public sealed class KeyTrajectory
     /// five tables.
     /// </para>
     /// <para>
+    /// On thirty-three passages a sixth reviewer wrote — accompaniment textures, and the pop
+    /// loop told either of its keys — it was wrong on five: a bar of silence inside the new
+    /// key's first phrase put G at bar 9, where a musician hears it from bar 5; the Picardy
+    /// close with the melody arpeggiating up through the final chord was a modulation to A
+    /// major; and Am F C G four times was a modulation to C at bar 2 told A minor, and told C
+    /// too on this road, which opens on the A minor chord where the detector was told C and
+    /// heard none — the relative major named by the profile with no cadence and no frame. A
+    /// key is heard from where its phrases began and a silent bar is neither key's, a melody
+    /// moving through the tones of the closing chord is that chord, and the relative major is
+    /// confirmed by its cadence or its frame. Both roads agree with the musician on all
+    /// thirty-three, and with each other on every passage of the seven tables.
+    /// </para>
+    /// <para>
+    /// On thirty-five passages a seventh reviewer wrote — the pop loops a musician plays every
+    /// day, told either of their keys; the same loop a tone up; a loop turning into a real move to
+    /// the relative key; silence around the new key's first phrase; the melody over the Picardy
+    /// chord — the frame reaching back had swallowed a phrase of V I V I closing on the old tonic (G
+    /// at bar 5 for bar 9), the cadence that confirms the relative major had been found at the seam
+    /// of two phrases (C at bar 5 for bar 9), and a scale run or a turn over the closing chord had
+    /// kept it from ending the piece (a modulation to A major again). A reached-back phrase is
+    /// framed by the new tonic, opening and closing on it; a confirming cadence closes a phrase of
+    /// the piece's count; notes on their way by step between the closing chord's tones are that
+    /// chord's. Both roads agree with the musician on the twenty-four that join the fixture as an
+    /// eighth table, and with each other on every passage of the eight tables.
+    /// </para>
+    /// <para>
     /// The window no longer limits what is heard: a one-bar window over arpeggiated triads has
     /// undecidable points, and the modulation is still found, because the phrase is read from
     /// the notes. The points remain the per-window readings they always were.

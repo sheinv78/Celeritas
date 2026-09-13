@@ -433,14 +433,25 @@ follows.
   a legato melody, a nocturne's left hand, fermatas, a pedal under a late-entering
   melody, a pickup into every phrase, returns home of two to five bars, returns to a
   key established second, a canon at the fifth -- thirty-seven, which join the
-  fixture as a sixth table; and on a sixth reviewer's thirty-three accompaniment
+  fixture as a sixth table; on a sixth reviewer's thirty-three accompaniment
   textures -- a waltz left hand, a bossa anticipated by a sixteenth, a ragtime left
   hand, a chorale restruck on every beat, tremolo sixteenths, broken chords in
   quarters, fermatas, a count-in bar, Picardy closes after the relative major and
-  the dominant minor -- twenty-eight, which join the fixture as a seventh table
+  the dominant minor, the pop loop told either of its keys -- all thirty-three (the
+  roads had been wrong on five, which join the fixture as the seventh table's last
+  rows: a bar of silence inside the new key's first phrase, alone and under the
+  melody; the Picardy close with the melody arpeggiating up through the final
+  chord; and `Am F C G` four times told C and told A minor -- and four more from
+  the seventh reviewer: a V I V I phrase closing on the old tonic between C's
+  phrase and G's, the seam of `Am F C G | C F G C`, and the Picardy close under a
+  scale run and under a turn); and on a seventh reviewer's thirty-five -- the pop
+  loops a musician plays every day told either of their keys, the same loop a tone
+  up, a loop turning into a real move to the relative key, silence around the new
+  key's first phrase, the melody over the Picardy chord -- twenty-four, which join
+  the fixture as an eighth table
 - The two modulation roads agree on every texture of every chord-bearing passage
-  of the six tables but one: every chord struck twice in its bar, the second bar
-  silent, every chord an eighth off the beat -- 762 cases in twelve keys; 17
+  of the eight tables but one: every chord struck twice in its bar, the second bar
+  silent, every chord an eighth off the beat -- 862 cases in twelve keys; 17
   disagreements and 47 misses of the musician's plan before, 1 and 3 after, and
   that lens is now a test. A chord struck twice in its bar is one harmony; a melody
   note struck with a chord and let go before it is the line's; the bars are heard
@@ -456,7 +467,22 @@ follows.
   (given to any key that owned a link outright, `B7 E7 A7 D7` in sixteen bars of C
   was E minor's); and the Picardy third names the minor key it closes -- struck
   once, twice in its bar, or repeated to the end under a fermata -- so `Am Dm E7 Am
-  | C F G C | C F G C | E7 A` is home in A minor, not a tonicization of A major
+  | C F G C | C F G C | E7 A` is home in A minor, not a tonicization of A major.
+  A key is heard from where its phrases began, phrase by phrase, each phrase framed
+  by the new tonic -- opening and closing on it -- and a silent bar is neither
+  key's: it neither ends a phrase nor splits its frame, and a key begins at its
+  first sounding bar, so `C F G C | G C R G | G C D7 G` is G from bar 5 (it was bar
+  9), `C F G C | R | G C D7 G | G C D7 G` is G at bar 6 (it was bar 7), and `C F G C
+  | G C G C | G C D7 G`, whose second phrase closes on C, stays G at bar 9; a melody
+  moving through the tones of the closing chord, by step through passing and
+  neighbour notes, is that chord, so the Picardy cadence under a tune ending C
+  sharp E A, or under a scale run or a turn, is A minor's homecoming, not a
+  modulation to A major; and the relative major is confirmed by its cadence or
+  its frame -- framed by its tonic chord, looping on it, or closing V-I at a
+  phrase end -- so `Am F C G` four times is one key told C or told A minor (it
+  was C at bar 2 told A minor on both roads, and C at bar 2 on the trajectory told
+  C, where the detector heard none), and `Am F C G | Am F C G | C F G C | C F G
+  C` is C where the phrase framed by its chord begins, bar 9, not bar 5
 - `ModulationDetector`: a note is rounded onto the eighth-note grid only when that
   moves it by less than half its own length, so sixteenths and thirty-seconds
   struck one after another are a line, not chords of neighbouring tones

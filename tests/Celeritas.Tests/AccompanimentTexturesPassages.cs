@@ -21,9 +21,32 @@ namespace Celeritas.Tests;
 /// modulation.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Chord tokens are the fixture's — <c>root[:quality][h|q|t]</c> — plus <c>R</c> for a bar of
 /// silence, as the sixth table writes it. Textures the fixture's builders cannot write are built
 /// here as note lists and handed to the four-voice road, whose <c>Build</c> transposes every note.
+/// </para>
+/// <para>
+/// Five of the rows were wrong on both roads on the library as it stood after the sixth table,
+/// and were folded in after the reviewer's second look: a bar of silence inside the new key's
+/// first phrase, alone and under the melody, put G at bar 9 where a musician hears it from bar
+/// 5 — the phrase G C – G has no F sharp to be named for, and the frame that hears a key from
+/// where its own chords began reached only the phrase that holds one; the Picardy close with
+/// the melody arpeggiating up through the final chord was a modulation to A major at bar 11 —
+/// three melody notes struck after the chord, so it was not the last harmony and no Picardy
+/// third; and Am F C G four times, told C major, was no modulation on the detector and C at bar
+/// 2 on the trajectory, which opens on the A minor chord, and told A minor was C at bar 2 on
+/// both — the relative major, which owns no note the minor lacks, named by the profile with no
+/// cadence and no frame to confirm it.
+/// </para>
+/// <para>
+/// Four rows pin what the seventh reviewer's held-out passages found the rules overreaching or
+/// stopping short on: a phrase V I V I closing on the old tonic between C's phrase and G's is
+/// C's, not G's (the frame reaching back had taken it for G's and put G at bar 5, where the
+/// library before it had bar 9); the seam of Am F C G | C F G C is no cadence in C, and C begins
+/// with the phrase framed by its chord at bar 9, not at bar 5; and a scale run down to the final
+/// note, or a turn on it, ends the piece on the Picardy chord as an arpeggio of its tones does.
+/// </para>
 /// </remarks>
 internal static class AccompanimentTexturesPassages
 {
@@ -214,8 +237,25 @@ internal static class AccompanimentTexturesPassages
 
     private const string WaltzChordsToG = "0t 5t 7t 0t | 7t 0t 2:7t 7t | 7t 0t 2:7t 7t";
 
+    /// <summary>The tune to G with bar 7 silent in the melody too.</summary>
+    private const string TuneToGBarSevenSilent =
+        "E4/4 G4/4 C5/2 | A4/4 F4/4 C5/2 | D5/4 B4/4 G4/2 | E5/4 D5/4 C5/2 | "
+        + "B4/4 D5/4 G5/2 | E5/4 C5/4 G4/2 | R/1 | B4/4 D5/4 G4/2 | "
+        + "D5/4 B4/4 G4/2 | E5/4 G5/4 C5/2 | A4/4 C5/4 F#5/2 | G5/1";
 
+    /// <summary>A minor, its relative major, A minor again closing on a Picardy third — the melody arpeggiating up through the final A major chord.</summary>
+    private const string PicardyTuneMovingClose =
+        "C5/4 B4/4 A4/2 | F5/4 D5/4 A4/2 | G#4/4 B4/4 E5/2 | C5/4 B4/4 A4/2 | "
+        + "E5/4 G5/4 C5/2 | A4/4 F5/4 C5/2 | D5/4 B4/4 G4/2 | E5/4 D5/4 C5/2 | "
+        + "C5/4 B4/4 A4/2 | F5/4 D5/4 A4/2 | G#4/4 B4/4 E5/2 | C#5/4 E5/4 A5/2";
 
+    private const string PicardyChordsMovingClose = "9:m 2:m 4:7 9:m | 0 5 7 0 | 9:m 2:m 4:7 9";
+
+    /// <summary>The Picardy tune without its last bar; the closes below supply it.</summary>
+    private const string PicardyTuneOpen =
+        "C5/4 B4/4 A4/2 | F5/4 D5/4 A4/2 | G#4/4 B4/4 E5/2 | C5/4 B4/4 A4/2 | "
+        + "E5/4 G5/4 C5/2 | A4/4 F5/4 C5/2 | D5/4 B4/4 G4/2 | E5/4 D5/4 C5/2 | "
+        + "C5/4 B4/4 A4/2 | F5/4 D5/4 A4/2 | G#4/4 B4/4 E5/2 | ";
 
     // ---------- the table ----------
 
@@ -250,6 +290,10 @@ internal static class AccompanimentTexturesPassages
         // ---------- silence inside the new key's first phrase ----------
         Notes("a bar of silence before the new key's own note: C F G C | G R D7 G | G C D7 G (block chords as notes)",
             Block("0 5 7 0 | 7 R 2:7 7 | 7 0 2:7 7"), At(5, 7, true)),
+        Notes("a bar of silence inside the new key's first phrase: C F G C | G C R G | G C D7 G (block chords as notes)",
+            Block("0 5 7 0 | 7 0 R 7 | 7 0 2:7 7"), At(5, 7, true)),
+        Notes("a bar of silence inside the new key's first phrase, melody and chords both (four voices)",
+            Together(Block("0 5 7 0 | 7 0 R 7 | 7 0 2:7 7"), Notated(TuneToGBarSevenSilent)), At(5, 7, true)),
 
         // ---------- 3/4 with the chords an eighth late ----------
         Notes("a waltz in block chords, every chord an eighth late: C then G (3/4)",
@@ -302,6 +346,12 @@ internal static class AccompanimentTexturesPassages
             "9:m 2:m 4:7 9:m | 9 2 4:7 9 | 9 2 4:7 9 | 4:7 9", [], At(5, 9, true)) { OpeningRoot = 9 },
 
         // ---------- the Picardy chord with the melody still moving over it ----------
+        Notes("A minor, its relative major, home to A minor closing on a Picardy third, the melody arpeggiating up through the final chord (four voices)",
+            Together(Block(PicardyChordsMovingClose), Notated(PicardyTuneMovingClose)), [new(5, 0, true), new(9, 9, false)], major: false),
+        Notes("the Picardy close under a scale run down to the final note, E D C sharp B A (four voices)",
+            Together(Block(PicardyChordsMovingClose), Notated(PicardyTuneOpen + "E5/8 D5/8 C#5/8 B4/8 A4/2")), [new(5, 0, true), new(9, 9, false)], major: false),
+        Notes("the Picardy close under a turn on the final note, A B A G sharp A (four voices)",
+            Together(Block(PicardyChordsMovingClose), Notated(PicardyTuneOpen + "A4/8 B4/8 A4/8 G#4/8 A4/2")), [new(5, 0, true), new(9, 9, false)], major: false),
 
         // ---------- the music begins a bar in ----------
         Notes("a count-in bar of silence, then the pickup passage: R | G(q) C F G C | G C D7 G G (block chords as notes)",
@@ -310,5 +360,15 @@ internal static class AccompanimentTexturesPassages
             Shift(Delayed(ChordsToG, Rational.Eighth), Rational.Whole), [new(new Rational(5, 1), 7, true)]),
 
         // ---------- a vi IV I V loop, told either of its keys ----------
+        new("Am F C G four times, told C major (block chords)", RealModulationPassages.Texture.BlockChords, true,
+            "9:m 5 0 7 | 9:m 5 0 7 | 9:m 5 0 7 | 9:m 5 0 7", [], Nowhere),
+        new("Am F C G four times, told A minor (block chords)", RealModulationPassages.Texture.BlockChords, false,
+            "9:m 5 0 7 | 9:m 5 0 7 | 9:m 5 0 7 | 9:m 5 0 7", [], Nowhere) { OpeningRoot = 9 },
+        new("Am F C G twice, then C F G C twice: the relative major begins with the phrase framed by its chord, told A minor (block chords)", RealModulationPassages.Texture.BlockChords, false,
+            "9:m 5 0 7 | 9:m 5 0 7 | 0 5 7 0 | 0 5 7 0", [], At(9, 0, true)) { OpeningRoot = 9 },
+
+        // ---------- a phrase closing on the old tonic between the old key's phrase and the new key's ----------
+        Blocks("C F G C | G C G C | G C D7 G: the V I V I closing on C is C's, and G begins at bar 9 (block chords)",
+            "0 5 7 0 | 7 0 7 0 | 7 0 2:7 7", At(9, 7, true)),
     ];
 }

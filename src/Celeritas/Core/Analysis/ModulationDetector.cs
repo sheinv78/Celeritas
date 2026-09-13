@@ -218,10 +218,40 @@ public static class ModulationDetector
     /// each other on every passage of the six tables.
     /// </para>
     /// <para>
-    /// Every chord-bearing passage of the six tables rebuilt in five textures — the chords
+    /// On thirty-three passages a sixth reviewer wrote — accompaniment textures: a waltz's left
+    /// hand, a bossa's pushed chords, a ragtime bass, a tremolo, a fermata, the pop loop — it
+    /// was wrong on four, and the other road on five: a bar of silence inside the new key's
+    /// first phrase put G at bar 9, the frame that hears a key from where its phrase began
+    /// reaching only the phrase that holds the F sharp; the Picardy close with the melody
+    /// arpeggiating up through the final chord was a modulation to A major, three notes
+    /// struck after the chord making it no last harmony; and Am F C G four times, told A
+    /// minor, modulated to C at bar 2 — the relative major named by the profile with no
+    /// cadence and no frame — while told C this road heard none and the other, opening on the
+    /// A minor chord, heard C. A key is heard from where its phrases began and a silent bar is
+    /// neither key's, a melody moving through the tones of the closing chord is that chord,
+    /// and the relative major is confirmed by its cadence or its frame. Both roads agree with
+    /// the musician on all thirty-three, and with each other on every passage of the seven
+    /// tables.
+    /// </para>
+    /// <para>
+    /// On thirty-five passages a seventh reviewer wrote — the pop loops a musician plays every
+    /// day, told either of their keys; the same loop a tone up; a loop turning into a real move to
+    /// the relative key; silence around the new key's first phrase; the melody over the Picardy
+    /// chord — the frame reaching back had swallowed a phrase of V I V I closing on the old tonic (G
+    /// at bar 5 for bar 9), the cadence that confirms the relative major had been found at the seam
+    /// of two phrases (C at bar 5 for bar 9), and a scale run or a turn over the closing chord had
+    /// kept it from ending the piece (a modulation to A major again). A reached-back phrase is
+    /// framed by the new tonic, opening and closing on it; a confirming cadence closes a phrase of
+    /// the piece's count; notes on their way by step between the closing chord's tones are that
+    /// chord's. Both roads agree with the musician on the twenty-four that join the fixture as an
+    /// eighth table, and with each other on every passage of the eight tables.
+    /// </para>
+    /// <para>
+    /// Every chord-bearing passage of the tables rebuilt in five textures — the chords
     /// staccato, a melody note held across the chord change, every chord struck twice in its
     /// bar, the second bar silent, every chord an eighth off the beat — asked of both roads in
-    /// twelve keys, split them on seventeen of six hundred and eighty-two cases and missed the
+    /// twelve keys, split them on seventeen of the first five tables' six hundred and
+    /// eighty-two cases and missed the
     /// musician's plan on forty-seven. None was the judge's rules failing on music it had seen: a
     /// chord struck twice resolved into its own restrike and was no applied chord; this road
     /// rounded sixteenths struck one after another onto its eighth grid into two-note chords of
@@ -232,7 +262,7 @@ public static class ModulationDetector
     /// only when moved by less than half its length, the piece opens on its first chord — struck,
     /// arpeggiated, or an eighth behind the tune — a given key the piece does not open on is a
     /// guess, and the bars are heard from the music's accents (<see cref="KeyAreaJudge"/>).
-    /// The roads now part on one case of seven hundred and sixty-two, a D Dorian tune with its
+    /// The roads now part on one case of eight hundred and sixty-two, a D Dorian tune with its
     /// second bar silent, where this road is told D minor and the other opens in C major, and
     /// miss the plan on three; the same textures struck staccato or with the melody held hear
     /// the plan everywhere (<c>TheTwoRoadsHearEveryTextureAlikeTests</c>).

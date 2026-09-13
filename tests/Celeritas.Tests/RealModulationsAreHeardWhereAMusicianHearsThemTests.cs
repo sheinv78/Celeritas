@@ -113,6 +113,8 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
 
     public static TheoryData<string> AccompanimentTextures => [.. AccompanimentTexturesPassages.Table.Select(p => p.Name)];
 
+    public static TheoryData<string> LoopsSilencesAndCloses => [.. LoopsSilencesAndClosesPassages.Table.Select(p => p.Name)];
+
     [Theory]
     [MemberData(nameof(Passages))]
     public void TheKeyTrajectoryHearsTheModulationsAMusicianHearsInEveryKey(string name) =>
@@ -182,6 +184,16 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
     [MemberData(nameof(AccompanimentTextures))]
     public void TheModulationDetectorHearsTheAccompanimentTexturesAsAMusicianDoesInEveryKey(string name) =>
         AssertTheDetectorHears(AccompanimentTexturesPassages.Table.Single(p => p.Name == name));
+
+    [Theory]
+    [MemberData(nameof(LoopsSilencesAndCloses))]
+    public void TheKeyTrajectoryHearsTheLoopsSilencesAndClosesAsAMusicianDoesInEveryKey(string name) =>
+        AssertTheTrajectoryHears(LoopsSilencesAndClosesPassages.Table.Single(p => p.Name == name));
+
+    [Theory]
+    [MemberData(nameof(LoopsSilencesAndCloses))]
+    public void TheModulationDetectorHearsTheLoopsSilencesAndClosesAsAMusicianDoesInEveryKey(string name) =>
+        AssertTheDetectorHears(LoopsSilencesAndClosesPassages.Table.Single(p => p.Name == name));
 
     private static void AssertTheTrajectoryHears(RealModulationPassages.Passage passage) =>
         AssertHeardInEveryKey(
@@ -321,11 +333,28 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
         }
 
         var names = AccompanimentTexturesPassages.Table.Select(p => p.Name).ToList();
-        Assert.True(AccompanimentTexturesPassages.Table.Count >= 25);
+        Assert.True(AccompanimentTexturesPassages.Table.Count >= 37);
         Assert.Equal(names.Count, names.Distinct().Count());
         var earlier = RealModulationPassages.All.Concat(RealModulationPassages.HeldOut).Concat(RealModulationPassages.ReviewerHeldOut)
             .Concat(RealModulationPassages.ThirdReviewerHeldOut).Concat(RealModulationPassages.FourthReviewerHeldOut)
             .Concat(TexturesAndHomecomingsPassages.Table).Select(p => p.Name);
+        Assert.Empty(names.Intersect(earlier));
+    }
+
+    [Fact]
+    public void EveryLoopSilenceAndClosePassageIsBuiltAsItIsDescribed()
+    {
+        foreach (var passage in LoopsSilencesAndClosesPassages.Table)
+        {
+            AssertBuilds(passage);
+        }
+
+        var names = LoopsSilencesAndClosesPassages.Table.Select(p => p.Name).ToList();
+        Assert.True(LoopsSilencesAndClosesPassages.Table.Count >= 20);
+        Assert.Equal(names.Count, names.Distinct().Count());
+        var earlier = RealModulationPassages.All.Concat(RealModulationPassages.HeldOut).Concat(RealModulationPassages.ReviewerHeldOut)
+            .Concat(RealModulationPassages.ThirdReviewerHeldOut).Concat(RealModulationPassages.FourthReviewerHeldOut)
+            .Concat(TexturesAndHomecomingsPassages.Table).Concat(AccompanimentTexturesPassages.Table).Select(p => p.Name);
         Assert.Empty(names.Intersect(earlier));
     }
 
