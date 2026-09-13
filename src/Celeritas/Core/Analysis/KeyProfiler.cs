@@ -1099,8 +1099,8 @@ public sealed class KeyTrajectory
     /// now, and the lens's residual besides. The minor blues in sevenths told C was C going to A minor at its E7 on the detector road,
     /// where this road heard A minor from bar 1: the given C was taken for opened on, its
     /// tonic with a note above it being what Am7 read as — a seventh chord is the tonic of its
-    /// root's key alone, and a given major key whose tonic chord never sounds before its
-    /// relative minor is read was the caller's guess; C Dm G Am7 twice between A minor's
+    /// root's key alone, and a given major key whose tonic chord never sounds in the opening
+    /// phrase was the caller's guess; C Dm G Am7 twice between A minor's
     /// cadences, whose G → Am7 read as C's V–I6, is one key as the loop with a plain A minor
     /// triad is. Two silent bars after a fifth bar of tonic — a pause off the phrase grid —
     /// and a two-bar fermata after a silent bar each left G a tonicization: a pause between
@@ -1130,14 +1130,46 @@ public sealed class KeyTrajectory
     /// whose tonic is voiced as a sixth chord had opened in the relative minor and heard its plain
     /// triads as a modulation, the four notes of A C E G being A minor's i7 and C major's tonic with
     /// a sixth on it alike. An opening named by a seventh chord is a reading of a voicing, which the
-    /// music may refute as it refutes a guess. Both roads agree with the musician on the twenty-six
-    /// that join the fixture as a tenth table, and with each other on every passage of the ten
-    /// tables in every texture but the Dorian tune with its second bar silent.
+    /// music may refute as it refutes a guess. Both roads agree with the musician on twenty-eight
+    /// of them, and on two of the library's own beside; the thirty join the fixture as a tenth
+    /// table, and the roads agree with each other on every passage of the ten tables in every
+    /// texture but the Dorian tune with its second bar silent.
+    /// </para>
+    /// <para>
+    /// Three more of the reviewer's are heard now. A piece told C that opens on A minor's i7 and
+    /// moves to C — Am7 Dm7 E7 Am7 | C F G C | C F G7 C — was C throughout on the detector road
+    /// and A minor going to C at bar 4 on the trajectory: a given key is refuted where the piece
+    /// opens, the tonic chord that confirms it is looked for in the opening phrase alone, and the
+    /// margin a change must clear does not guard a caller's guess — a relative pair separate by
+    /// 0.020, a fifth of it. C F G C | R | G C D7 G over a held dominant pedal had no bar of
+    /// silence, so the pause between its phrases was never heard and the roads read a two-bar
+    /// tonicization of G and no change at all: a bar in which nothing is STRUCK is a bar of
+    /// silence for the phrase count, whatever is still sounding from before, and a fermata —
+    /// a chord held with nothing struck under it — closes its own phrase as it always did. And a
+    /// trill in sixteenths over the
+    /// Picardy chord restruck in quarters closed the piece as a modulation to A major on both
+    /// roads: a restrike carries the chord's harmony on, and the line over it is looked through
+    /// against the harmony last struck.
     /// </para>
     /// <para>
     /// The window no longer limits what is heard: a one-bar window over arpeggiated triads has
     /// undecidable points, and the modulation is still found, because the phrase is read from
     /// the notes. The points remain the per-window readings they always were.
+    /// </para>
+    /// <para>
+    /// On thirty-four passages a tenth reviewer wrote — one modulating passage in four metres and a
+    /// piece that changes metre at its modulation; a pedal that changes with the key, one inner
+    /// voice held across a silent bar, a chord tied across the pivot, a fermata in the upper voices
+    /// while the bass rests; a piece told a key whose tonic chord arrives only at the end, told the
+    /// key of its second chord, told the relative minor of a piece opening on I6, a piece opening on
+    /// a lone bass note or a bare fifth; the closing chord as a two-hand arpeggio over three
+    /// octaves, the melody arpeggiating it alone in sixteenths; the loop in 3/4 and over its own
+    /// pedal; a sequence through three keys in 6/8 — twenty-two are heard as a musician hears them
+    /// and join the fixture as an eleventh table. Twelve are not, in three families the remarks
+    /// state plainly: the metre, which no road passes the judge, so a 12/8 passage and a slow piece
+    /// of two-bar chords are heard late or not at all; a silent chord-bar over a held tonic pedal,
+    /// where the pedal keeps the old key owning the bar; and a closing figure that is not below the
+    /// tune — above it, crossed by it, or rolled as a spread chord — which loses the homecoming.
     /// </para>
     /// </remarks>
     public IEnumerable<(Rational Position, KeySignature FromKey, KeySignature ToKey)> DetectModulations()

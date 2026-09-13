@@ -12,8 +12,11 @@ namespace Celeritas.Tests;
 /// and folded in afterwards. Five lenses: the GIVEN KEY refuted at the opening (a piece told its
 /// relative major or minor, its dominant, its subdominant, a tritone away; told a key whose tonic
 /// is the piece's ii7, vi7 or IVmaj7; a tonic voiced as a sixth chord — the same four pitch classes
-/// as the relative minor's i7 — followed by plain triads), SILENCE in its places (a half-bar rest,
-/// a fermata then silence, a general pause in the NEW key, silence before the return home),
+/// as the relative minor's i7 — followed by plain triads; a piece that opens on its relative
+/// minor's i7 and moves to the major it was told), SILENCE in its places (a half-bar rest,
+/// a fermata then silence, a general pause in the NEW key, silence before the return home, the
+/// accompaniment stopping for a bar over a held pedal, the same pedal with nothing silent
+/// under it, and two voices of the last chord tied over the rest),
 /// the DECORATED CLOSE in a major piece and in the dominant-minor return (quarters under the
 /// seventh and under the ninth, tremolo under a passing tone, an appoggiatura on the last chord),
 /// METRE (the same modulating passage in 2/4 half notes) and the LOOP UNDER A TUNE (the loops of
@@ -25,16 +28,20 @@ namespace Celeritas.Tests;
 /// <c>d</c> for a chord of two whole notes and <c>6</c> for a sixth chord. The plans are a
 /// musician's, in whole notes; a 4/4 bar = 1, bar k begins at position k-1; a move to the relative
 /// key is planned where a chord only the new key owns first sounds, the pivot chord a bar before
-/// it. Of the reviewer's thirty-four, twenty-six are here; eight the library still reads otherwise
-/// and are the next iteration's work: a silent 3/4 bar and two silent 6/8 bars (the judge is given
-/// no metre — the roads pass it none — so it counts phrases in whole notes); a silent chord-bar
-/// under a held tonic pedal (the pedal sounds, so the bar is not silence and the pause is not
-/// heard); a piece told C that opens on A minor's i7 and moves to C, where the given C is refuted
-/// by no note and its tonic chord sounds later, so this road keeps C and the other hears A minor
-/// first; and four decorated closes whose tune is as quick as the figure under it — an Alberti
-/// bass under a scale run in eighths, a chord restruck in quarters under a trill in sixteenths,
-/// and the dominant-minor return closed as an Alberti bass or in quarters, which lose the
-/// homecoming to A minor.
+/// it. Of the reviewer's thirty-four, twenty-eight are here, with two of this iteration's own —
+/// the pedal pair. Six the library still reads otherwise, and they are the next iteration's work:
+/// a silent 3/4 bar and two silent 6/8 bars (the judge is given no metre — neither road passes it
+/// one — so it counts phrases in whole notes, and reading the metre from
+/// <see cref="Celeritas.Core.Analysis.RhythmAnalyzer.DetectMeter"/> would poison the count, it
+/// calling fifty-five of this fixture's 4/4 passages 2/2, 2/4, 3/4 or 6/8 and costing as much
+/// again as the whole analysis); a silent chord-bar under a held TONIC pedal, where the pause is
+/// now heard but the pedal's own pitch class swamps the profile, so the new key separates from
+/// the old by nothing and both roads hear one key; the Picardy close as an Alberti bass under a
+/// scale run in eighths, where the two voices can be told apart by register on the trajectory
+/// road but not on the detector road, which fuses the figure's note and the tune's into one
+/// sonority when they are struck and released together; and the dominant-minor return closed as
+/// an Alberti bass or in quarters, whose plan asks for a key area one bar long — the same
+/// passage closed on a plain block chord reads the same way, and a key holds for a phrase.
 /// </remarks>
 internal static class RefutedKeysPausesAndDecoratedClosesPassages
 {
@@ -125,6 +132,9 @@ internal static class RefutedKeysPausesAndDecoratedClosesPassages
         return [.. notes];
     }
 
+    /// <summary>One note held from <paramref name="from"/> for <paramref name="length"/> — an organ pedal.</summary>
+    private static NoteEvent[] Pedal(int pitch, Rational from, Rational length) => [new NoteEvent(pitch, from, length)];
+
     private static NoteEvent[] Notated(string notation) => MusicNotation.Parse(notation);
 
     private static NoteEvent[] Together(params NoteEvent[][] parts) =>
@@ -210,6 +220,11 @@ internal static class RefutedKeysPausesAndDecoratedClosesPassages
         // going to the tonic because C E G A was read as A minor's i7.
         Notes("the tonic voiced as a SIXTH CHORD, then plain triads: C6 F G C6 | C F G C | C F G7 C (block chords as notes)", Block("0:6 5 7 0:6 | 0 5 7 0 | 0 5 7:7 0"), Nowhere),
         Notes("the subdominant's tonic voiced as a sixth chord: F6 Bb C F6 | F Bb C F | F Bb C7 F (block chords as notes)", Block("5:6 10 0 5:6 | 5 10 0 5 | 5 10 0:7 5"), Nowhere, openingRoot: 5),
+        // A given major key is refuted where the piece opens: the C of bar 5 speaks for bar 5,
+        // not for the A minor the piece opens on, and the relative pair separate by 0.020 on
+        // the profile — a fifth of the margin a change must clear, which does not guard a
+        // caller's guess.
+        Blocks("A minor opening on its i7 and moving to its relative major, told C: Am7 Dm7 E7 Am7 | C F G C | C F G7 C (block chords)", "9:m7 2:m7 4:7 9:m7 | 0 5 7 0 | 0 5 7:7 0", At(5, 0, true)),
 
         // ---------- SILENCE in every metre and place ----------
         Notes("a HALF-BAR rest before the new key, not a pause between phrases: C F G C | G(half) R(half) C D7 G | G C D7 G (block chords as notes)", Block("0 5 7 0 | 7h Rh 0 2:7 7 | 7 0 2:7 7"), At(5, 7, true)),
@@ -217,6 +232,20 @@ internal static class RefutedKeysPausesAndDecoratedClosesPassages
             Together(Block("0 5 7 0 | R | R | R | 7 0 2:7 7"), Fermata("7", new Rational(4, 1), new Rational(2, 1))), At(5, 7, true)),
         Notes("a general pause in the NEW key, after its first phrase: C F G C | G C D7 G | R | R | G C D7 G (block chords as notes)", Block("0 5 7 0 | 7 0 2:7 7 | R | R | 7 0 2:7 7"), At(5, 7, true)),
         Notes("two silent bars before the RETURN home: C F G C | G C D7 G | R | R | C F G7 C (block chords as notes)", Block("0 5 7 0 | 7 0 2:7 7 | R | R | 0 5 7:7 0"), [new(5, 7, true), new(11, 0, true)]),
+        // The accompaniment stopping over a held pedal is a pause between phrases: the fifth
+        // bar strikes nothing, and the count moves on with the G of bar 6 though the pedal
+        // sounds through it. The same passage with no silent bar is the shape the rule must
+        // not fire on — the pedal sounds through every bar of it too.
+        Notes("a silent bar in the chords over a held DOMINANT pedal: C F G C | R | G C D7 G, the G pedal sounding throughout (four voices)",
+            Together(Block("0 5 7 0 | R | 7 0 2:7 7"), Pedal(43, Rational.Zero, new Rational(9, 1))), At(6, 7, true)),
+        Notes("no silent bar, the same held DOMINANT pedal: C F G C | G C D7 G | G C D7 G (four voices)",
+            Together(Block("0 5 7 0 | 7 0 2:7 7 | 7 0 2:7 7"), Pedal(43, Rational.Zero, new Rational(12, 1))), At(5, 7, true)),
+        // Two voices tied over the rest are no more played than one: what is held over is not
+        // what is struck, and the pause is the same pause. A fermata — a chord struck alone and
+        // held — closes its phrase by its own rule, and the chorales read as they did.
+        Notes("the fourth bar's E and G TIED over the silent bar, the others resting: C F G C | (E and G alone) | G C D7 G (four voices)",
+            Together(Block("0 5 7 0 | R | 7 0 2:7 7"), Pedal(52, new Rational(3, 1), new Rational(2, 1)), Pedal(55, new Rational(3, 1), new Rational(2, 1))),
+            At(6, 7, true)),
 
         // ---------- the DECORATED CLOSE in a major piece and in the dominant-minor return ----------
         Notes("a MAJOR piece home at the close, the final chord as an Alberti bass in eighths under the tune (four voices)",
@@ -227,6 +256,10 @@ internal static class RefutedKeysPausesAndDecoratedClosesPassages
             Together(Block(MajorCloseChordsOpen), TremoloEighths("0", new Rational(11, 1), Rational.Whole), Notated(MajorCloseTuneOpen + "C5/4 D5/4 E5/2")), MajorClosePlan),
         Notes("the Picardy close, an APPOGGIATURA on the final chord: B falling to A over A major (four voices)",
             Together(Block(PicardyChordsOpen + " 9"), Notated(PicardyTuneOpen + "B4/4 A4/2.")), PicardyPlan, major: false, openingRoot: 9),
+        // A restrike carries the chord's harmony on: the trill runs past where the first
+        // quarter's harmony held, and it is the second quarter that holds it there.
+        Notes("the Picardy close restruck in quarters under a TRILL on the third: C sharp D C sharp D ... (four voices)",
+            Together(Block(PicardyChordsOpen), Quarters("9", new Rational(11, 1), Rational.Whole), Notated(PicardyTuneOpen + "C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16 C#5/2")), PicardyPlan, major: false, openingRoot: 9),
 
         // ---------- METRE: the same modulating passage in 3/4, 6/8 and 2/4 ----------
         Notes("to the dominant in 3/4: C F G C | G C D7 G | G C D7 G, a bar of three quarters (block chords in 3/4)", Block("0t 5t 7t 0t | 7t 0t 2:7t 7t | 7t 0t 2:7t 7t"), AtPosition(new Rational(3, 1), 7, true)),

@@ -6,7 +6,7 @@ using Celeritas.Core.Analysis;
 namespace Celeritas.Tests;
 
 /// <summary>
-/// The roads-disagree lens as a test. Every chord-bearing passage of the ten tables in
+/// The roads-disagree lens as a test. Every chord-bearing passage of the eleven tables in
 /// <see cref="RealModulationsAreHeardWhereAMusicianHearsThemTests"/> is rebuilt in five
 /// textures — every chord staccato for a quarter; a melody note held across every other chord
 /// change; every chord struck twice in its bar; its second bar silent; every chord an eighth
@@ -15,8 +15,8 @@ namespace Celeritas.Tests;
 /// which change no harmony, the musician's plan must still be heard. Before the rules below,
 /// the roads parted on seventeen of the six hundred and eighty-two cases of the first five
 /// tables and missed the plan on forty-seven; the rules are each one passage here, with what
-/// the roads answered before, measured on the library as it stood. Over the ten tables —
-/// one thousand and fourteen cases — the roads part on one, the residual named below, and
+/// the roads answered before, measured on the library as it stood. Over the eleven tables —
+/// one thousand and twenty-six cases — the roads part on one, the residual named below, and
 /// miss the plan on two more: the German sixth an eighth off the beat, within the bar's
 /// tolerance, and the pickup passage with its second bar silent, where the given key is a guess
 /// nothing confirms and both roads hear no change, as the fact below pins.
@@ -73,7 +73,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     private static readonly KeySignature CMajor = new(0, true);
     private static readonly KeySignature GMajor = new(7, true);
 
-    /// <summary>Every passage of the ten tables that is built from chords — block chords, arpeggios, a melody over chords or an Alberti bass — by name.</summary>
+    /// <summary>Every passage of the eleven tables that is built from chords — block chords, arpeggios, a melody over chords or an Alberti bass — by name.</summary>
     public static TheoryData<string> ChordBearingPassages => [.. AllPassages().Where(p => p.Chords.Length > 0).Select(p => p.Name)];
 
     private static IEnumerable<RealModulationPassages.Passage> AllPassages() =>
@@ -86,7 +86,8 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
             .Concat(AccompanimentTexturesPassages.Table)
             .Concat(LoopsSilencesAndClosesPassages.Table)
             .Concat(OpeningsSequencesAndTremolosPassages.Table)
-            .Concat(RefutedKeysPausesAndDecoratedClosesPassages.Table);
+            .Concat(RefutedKeysPausesAndDecoratedClosesPassages.Table)
+            .Concat(MetresPedalsAndSharedRegistersPassages.Table);
 
     private static RealModulationPassages.Passage Named(string name) => AllPassages().Single(p => p.Name == name);
 
@@ -814,6 +815,93 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(restingOnNothing));
     }
 
+    [Fact]
+    public void AGivenKeyIsRefutedWhereThePieceOpensAndNotByWhatComesLater()
+    {
+        // A given major key the piece does not open on is the caller's guess, and its tonic
+        // chord is what confirms it, the relative minor owning no note the major lacks. The
+        // chord was looked for over the window the minor was read in, which reaches past the
+        // opening phrase, so the C of bar 5 answered for bar 1; and the refutation waited behind
+        // the margin a change must clear, which is hysteresis against a wobble away from the key
+        // the music is in and has nothing to guard at the opening — a relative pair separate by
+        // almost nothing, 0.020 here. Told C, Am7 Dm7 E7 Am7 | C F G C | C F G7 C was C
+        // throughout on the detector road and A minor going to C at bar 4 on the trajectory,
+        // which is told nothing: the roads apart in all twelve keys, where a musician hears A
+        // minor first and C from bar 5 on both.
+        using var openingOnTheRelativeMinor = Blocks("9:m7 2:m7 4:7 9:m7 | 0 5 7 0 | 0 5 7:7 0");
+        Assert.Equal([(new Rational(3, 1), CMajor)], Detector(openingOnTheRelativeMinor, CMajor));
+        Assert.Equal([(new Rational(3, 1), CMajor)], Trajectory(openingOnTheRelativeMinor));
+
+        // And the everyday shapes the rule must not fire on: a loop that opens on vi and sounds
+        // its C inside the opening phrase is C's with vi first, and a minor blues told C that
+        // never sounds a C major chord is A minor from bar 1, as before.
+        using var viFirst = Blocks("9:m 5 0 7 | 9:m 5 0 7 | 9:m 5 0 7 | 9:m 5 0 7");
+        Assert.Empty(Detector(viFirst, CMajor));
+        Assert.Empty(Trajectory(viFirst));
+
+        using var minorBlues = Blocks("9:m7 9:m7 9:m7 9:m7 | 2:m7 2:m7 9:m7 9:m7 | 4:7 2:m7 9:m7 4:7");
+        Assert.Empty(Detector(minorBlues, CMajor));
+        Assert.Empty(Trajectory(minorBlues));
+    }
+
+    [Fact]
+    public void TheAccompanimentStoppingOverAHeldPedalIsAPauseBetweenPhrases()
+    {
+        // A bar in which nothing is struck is a bar of silence for the phrase count, whatever
+        // one voice is still holding. Counted only where nothing sounded at all, C F G C | R |
+        // G C D7 G over a held dominant pedal had no silent bar, so the pause between its
+        // phrases was never heard: the detector heard a two-bar tonicization of G at bar 8 and
+        // the trajectory no change at all, the roads apart in all twelve keys, where a musician
+        // hears G from bar 6 on both — as both roads hear it when the pedal is lifted.
+        using var pause = BlocksOver(43, new Rational(9, 1), ("0 5 7 0", 0), ("7 0 2:7 7", 5));
+        Assert.Equal([(new Rational(5, 1), GMajor)], Detector(pause, CMajor));
+        Assert.Equal([(new Rational(5, 1), GMajor)], Trajectory(pause));
+
+        // Two voices of the fourth bar's chord tied over the rest are no more played than one:
+        // counted a pause only where one pitch class at most sounded on, this read as no
+        // modulation at all on both roads, where a musician hears the same G from bar 6.
+        using var tied = BlocksUnder(
+            [new NoteEvent(52, new Rational(3, 1), new Rational(2, 1)), new NoteEvent(55, new Rational(3, 1), new Rational(2, 1))],
+            ("0 5 7 0", 0), ("7 0 2:7 7", 5));
+        Assert.Equal([(new Rational(5, 1), GMajor)], Detector(tied, CMajor));
+        Assert.Equal([(new Rational(5, 1), GMajor)], Trajectory(tied));
+
+        // The same pedal with nothing silent under it is the shape the rule must not fire on,
+        // and a fermata — a chord struck alone and held with nothing struck under it — is no
+        // pause either: it closes its own phrase, and its chorale is read as it was.
+        using var unbroken = BlocksOver(43, new Rational(12, 1), ("0 5 7 0 | 7 0 2:7 7 | 7 0 2:7 7", 0));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Detector(unbroken, CMajor));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(unbroken));
+
+        using var chorale = Named("a chorale, C, G, and home to C in a two-bar phrase, fermatas on every phrase (four voices)").Build(0);
+        var expected = new List<(Rational, KeySignature)> { (new Rational(5, 1), GMajor), (new Rational(10, 1), CMajor) };
+        Assert.Equal(expected, Detector(chorale, CMajor));
+        Assert.Equal(expected, Trajectory(chorale));
+    }
+
+    [Fact]
+    public void ARestrikeCarriesTheChordsHarmonyOnUnderTheLine()
+    {
+        // The last harmony of the piece is the last chord struck, its restrikes and the notes of
+        // the line sounding while its harmony holds looked through. The harmony was measured
+        // from the first strike alone, so a trill in sixteenths over the Picardy chord restruck
+        // in quarters ran past where the first quarter's harmony held: that first strike was no
+        // last harmony, its C sharp was a note A minor lacks, and the Picardy cadence was a
+        // modulation to A major at bar 11 on both roads. A restrike carries the harmony on.
+        var aMinor = new KeySignature(9, false);
+        using var trill = Named("the Picardy close restruck in quarters under a TRILL on the third: C sharp D C sharp D ... (four voices)").Build(0);
+        var expected = new List<(Rational, KeySignature)> { (new Rational(3, 1), CMajor), (new Rational(8, 1), aMinor) };
+        Assert.Equal(expected, Detector(trill, aMinor));
+        Assert.Equal(expected, Trajectory(trill));
+
+        // A chord restruck under a tune that ends on a note it does not hold is heard as it was:
+        // the seventh over the closing tonic triad is the line's, and the close is the key's.
+        using var seventh = Named("a MAJOR piece home at the close, the final chord restruck in quarters under a tune ending on the SEVENTH, B (four voices)").Build(0);
+        expected = [(new Rational(4, 1), GMajor), (new Rational(9, 1), CMajor)];
+        Assert.Equal(expected, Detector(seventh, CMajor));
+        Assert.Equal(expected, Trajectory(seventh));
+    }
+
     // ---------- the textures ----------
 
     /// <summary>The passage's chords and its melody, built in <paramref name="tonic"/>, apart.</summary>
@@ -908,6 +996,35 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     /// <summary>Block chords in close root position from C3, one whole note each: <c>root[:quality]</c> as the fixture writes them; bar lines are ignored.</summary>
     private static NoteBuffer Blocks(string chords) =>
         new RealModulationPassages.Passage("blocks", RealModulationPassages.Texture.BlockChords, true, chords, [], []).Build(0);
+
+    /// <summary>
+    /// Stretches of block chords, each from the whole note it is written at, with one note held
+    /// under them all from the first bar for <paramref name="length"/> — an organ pedal. The
+    /// bars no stretch covers are silent in the chords and sound the pedal alone.
+    /// </summary>
+    private static NoteBuffer BlocksOver(int pedal, Rational length, params (string Chords, int At)[] parts) =>
+        BlocksUnder([new NoteEvent(pedal, Rational.Zero, length)], parts);
+
+    /// <summary>
+    /// Stretches of block chords, each from the whole note it is written at, with
+    /// <paramref name="held"/> sounding under or among them — a pedal, or voices of one chord
+    /// tied over the rest that follows it. The bars no stretch covers strike nothing.
+    /// </summary>
+    private static NoteBuffer BlocksUnder(NoteEvent[] held, params (string Chords, int At)[] parts)
+    {
+        var notes = new List<NoteEvent>(held);
+        foreach (var (chords, at) in parts)
+        {
+            using var blocks = Blocks(chords);
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                var note = blocks.Get(i);
+                notes.Add(new NoteEvent(note.Pitch, note.Offset + new Rational(at, 1), note.Duration, note.Velocity));
+            }
+        }
+
+        return Buffer(notes);
+    }
 
     private static NoteBuffer Buffer(List<NoteEvent> notes)
     {

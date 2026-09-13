@@ -467,10 +467,21 @@ follows.
   before the return home; closes decorated with quarters under the seventh and the
   ninth, tremolo under a passing tone, an appoggiatura; 2/4 half notes; the loops
   under tunes carrying a leading tone or a raised sixth -- twenty-six, which join
-  the fixture as a tenth table
+  the fixture as a tenth table (three more after the tenth iteration's rules, with
+  two pedal passages of the library's own and one of the reviewer's beside them);
+  and on a tenth reviewer's thirty-four -- one modulating passage in four metres
+  and a piece that changes metre at its modulation; a pedal that changes with the
+  key, one inner voice held across a silent bar, a chord tied across the pivot, a
+  fermata in the upper voices while the bass rests; a piece told a key whose tonic
+  chord arrives only at the end, told the key of its second chord, told the
+  relative minor of a piece opening on I6, a piece opening on a lone bass note or a
+  bare fifth; the closing chord as a two-hand arpeggio over three octaves, the
+  melody arpeggiating it alone in sixteenths; the loop in 3/4 and over its own
+  pedal; a sequence through three keys in 6/8 -- twenty-two, which join the fixture
+  as an eleventh table
 - The two modulation roads agree on every texture of every chord-bearing passage
-  of the ten tables but one: every chord struck twice in its bar, the second bar
-  silent, every chord an eighth off the beat -- 1014 cases in twelve keys; 17
+  of the eleven tables but one: every chord struck twice in its bar, the second bar
+  silent, every chord an eighth off the beat -- 1026 cases in twelve keys; 17
   disagreements and 47 misses of the musician's plan before, 1 and 3 after (the D
   Dorian tune with its second bar silent, where the given key and the guessed one
   differ), and that lens is now a test. A chord
@@ -548,7 +559,20 @@ follows.
   notes -- opens in that chord's key when that key owns the phrase as well, so
   `F G C C | F G C C | Dm G C C` with its second bar silent is C throughout on the
   trajectory road, as the detector told C hears it; it had opened in F and gone to
-  C at bar 5
+  C at bar 5. A given key is refuted where the piece OPENS: the tonic chord that
+  confirms a caller's major key is looked for in the opening phrase alone, not in
+  the window the relative minor was read in, and that refutation does not wait
+  behind the margin a key change must clear, which is hysteresis guarding a key the
+  music has been in -- so `Am7 Dm7 E7 Am7 | C F G C | C F G7 C` told C, which was C
+  throughout on the detector road and A minor going to C on the trajectory, is A
+  minor first on both. A bar in which nothing is STRUCK is a bar of silence for the
+  phrase count, whatever is still sounding from before, so `C F G C | R | G C D7 G`
+  over a held dominant pedal is G from bar 6 on both roads, where the detector had
+  heard a two-bar tonicization and the trajectory no change at all; a fermata is no
+  pause, closing its own phrase as it always did. And a chord's restrike carries
+  its harmony on, so a trill in sixteenths over the Picardy chord restruck in
+  quarters no longer runs past the first quarter's harmony and closes the piece in
+  A minor, not as a modulation to A major
 - `ModulationDetector`: a note is rounded onto the eighth-note grid only when that
   moves it by less than half its own length, so sixteenths and thirty-seconds
   struck one after another are a line, not chords of neighbouring tones
