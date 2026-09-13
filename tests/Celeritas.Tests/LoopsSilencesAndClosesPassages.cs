@@ -24,13 +24,26 @@ namespace Celeritas.Tests;
 /// silence. The plans are a musician's, in whole notes; a 4/4 bar = 1, bar k begins at position
 /// k-1; a move to the relative key is planned where a chord only the new key owns first sounds,
 /// the pivot chord a bar before it (the fixture's convention). Of the reviewer's thirty-five,
-/// twenty-four are here: four were the seventh table's own rows under another name, one told the
-/// detector C over a loop the trajectory rightly opens in A minor (no plan can speak for both),
-/// and six the library still reads otherwise (a minor twelve-bar blues in sevenths, the
-/// trajectory guessing C major from its Am7; the loop a tone up named B minor where the piece
-/// was told C; two bars of silence before the new key; the relative major from its IV, and a
-/// phrase closing on the minor's tonic, both debatable; the closing chord in tremolo eighths)
-/// and are the next iteration's work.
+/// twenty-eight are here: four were the seventh table's own rows under another name, and two
+/// told the detector C over a loop the trajectory rightly opens in A minor — Am F C G twice then
+/// C F G C twice, and Am F C G twice then Bm G D A twice — where no plan can speak for both
+/// roads (the detector's readings of those are facts in
+/// <see cref="TheTwoRoadsHearEveryTextureAlikeTests"/>). Four were the eighth iteration's work
+/// and are here now: the minor twelve-bar blues in sevenths, which the trajectory opened in C
+/// major from its Am7 — A C E G read as C6 — and took to A minor at the E7 (a seventh chord
+/// opens the key of its root); A minor's cadence, C Dm G Am twice and A minor's cadence, which
+/// both roads took to C at bar 4 and home at bar 13 for a pair of phrases opening on the
+/// relative major's chord and closing on the minor's tonic (a loop that comes to rest on the
+/// old tonic is the old key's); two bars of silence before the new key, which both roads heard
+/// as a two-bar tonicization of G, the phrase count running through the silence (a musician
+/// counts the new phrase from the re-entry); and the Picardy chord in tremolo eighths under
+/// the melody, whose alternating dyads no rule read as one chord, so that both roads ended the
+/// piece in A major (a tremolo is the chord it spells whatever its speed). One is kept out with
+/// its debate: A minor's cadence, then F G C Am | F G C C — the reviewer plans the relative
+/// major from its IV at bar 5, IV V I vi | IV V I I; the library hears C from the cadencing
+/// phrase, at bar 9 with the Am of bar 8 its pivot, because the phrase F G C Am closes on the
+/// minor's tonic and is the minor's by the rule that keeps C Dm G Am twice in A minor. Bar 9
+/// has defenders and bar 5 has defenders; the lead decides.
 /// </remarks>
 internal static class LoopsSilencesAndClosesPassages
 {
@@ -75,6 +88,25 @@ internal static class LoopsSilencesAndClosesPassages
     /// <summary>Block chords in close root position from C3, each for its written length; R is a bar of silence.</summary>
     private static NoteEvent[] Block(string chords) =>
         [.. ParseChords(chords).SelectMany(c => c.Intervals.Select(i => new NoteEvent(ChordRegister + c.Root + i, c.Offset, c.Duration)))];
+
+    /// <summary>One chord from <paramref name="from"/> in tremolo eighths: root and third against fifth and octave (or seventh), alternating for <paramref name="length"/>.</summary>
+    private static NoteEvent[] TremoloEighths(string chord, Rational from, Rational length)
+    {
+        var c = ParseChords(chord)[0];
+        int[] lower = [c.Intervals[0], c.Intervals[1]];
+        int[] upper = c.Intervals.Length == 4 ? [c.Intervals[2], c.Intervals[3]] : [c.Intervals[2], 12];
+        var count = (int)(length / Rational.Eighth).ToDouble();
+        var notes = new List<NoteEvent>();
+        for (var k = 0; k < count; k++)
+        {
+            foreach (var i in k % 2 == 0 ? lower : upper)
+            {
+                notes.Add(new NoteEvent(ChordRegister + c.Root + i, from + (Rational.Eighth * k), Rational.Eighth));
+            }
+        }
+
+        return [.. notes];
+    }
 
     /// <summary>One chord held from <paramref name="from"/> for <paramref name="length"/> — a fermata.</summary>
     private static NoteEvent[] Fermata(string chord, Rational from, Rational length) =>
@@ -135,6 +167,7 @@ internal static class LoopsSilencesAndClosesPassages
         Blocks("the Andalusian descent i bVII bVI V four times: Am G F E, told A minor (block chords)", "9:m 7 5 4 | 9:m 7 5 4 | 9:m 7 5 4 | 9:m 7 5 4", Nowhere, major: false, openingRoot: 9),
         Blocks("i III VII VI four times: Am C G F, told A minor (block chords)", "9:m 0 7 5 | 9:m 0 7 5 | 9:m 0 7 5 | 9:m 0 7 5", Nowhere, major: false, openingRoot: 9),
         Blocks("i III VII VI four times: Am C G F, told C major (block chords)", "9:m 0 7 5 | 9:m 0 7 5 | 9:m 0 7 5 | 9:m 0 7 5", Nowhere),
+        Blocks("a minor twelve-bar blues in sevenths: Am7 | Dm7 Am7 | E7 Dm7 Am7 E7, told A minor (block chords)", "9:m7 9:m7 9:m7 9:m7 | 2:m7 2:m7 9:m7 9:m7 | 4:7 2:m7 9:m7 4:7", Nowhere, major: false, openingRoot: 9),
         Blocks("Am F C E7 four times, the raised leading tone in the loop, told A minor (block chords)", "9:m 5 0 4:7 | 9:m 5 0 4:7 | 9:m 5 0 4:7 | 9:m 5 0 4:7", Nowhere, major: false, openingRoot: 9),
         Blocks("Am F C E7 four times, the raised leading tone in the loop, told C major (block chords)", "9:m 5 0 4:7 | 9:m 5 0 4:7 | 9:m 5 0 4:7 | 9:m 5 0 4:7", Nowhere),
 
@@ -142,6 +175,7 @@ internal static class LoopsSilencesAndClosesPassages
         Blocks("Am F C G twice, then Bm G D A twice: the second loop a key of its own, told A minor (block chords)", "9:m 5 0 7 | 9:m 5 0 7 | 11:m 7 2 9 | 11:m 7 2 9", At(9, 11, false), major: false, openingRoot: 9),
         Blocks("a loop of the relative major cadencing into the minor: C G Am E7 | Am Dm E7 Am | Am Dm E7 Am, told C — A minor from its dominant at bar 4, the Am before it the pivot (block chords)", "0 7 9:m 4:7 | 9:m 2:m 4:7 9:m | 9:m 2:m 4:7 9:m", At(4, 9, false)),
         Blocks("A minor's cadence, then the mirror loop C Am F G three times, told A minor (block chords)", "9:m 2:m 4:7 9:m | 0 9:m 5 7 | 0 9:m 5 7 | 0 9:m 5 7", At(5, 0, true), major: false, openingRoot: 9),
+        Blocks("A minor's cadence, then C Dm G Am twice closing on the minor tonic, then A minor's cadence: one key, told A minor (block chords)", "9:m 2:m 4:7 9:m | 0 2:m 7 9:m | 0 2:m 7 9:m | 9:m 2:m 4:7 9:m", Nowhere, major: false, openingRoot: 9),
         Blocks("A minor's cadence, a phrase Am F G C opening on the minor's tonic and closing on the relative major's chord, then A minor's cadence: one key, told A minor (block chords)", "9:m 2:m 4:7 9:m | 9:m 5 7 0 | 9:m 2:m 4:7 9:m", Nowhere, major: false, openingRoot: 9),
         Blocks("A minor's cadence, a phrase C G Am C framed by the relative major's tonic, then A minor's cadence, told A minor (block chords)", "9:m 2:m 4:7 9:m | 0 7 9:m 0 | 9:m 2:m 4:7 9:m", [new(5, 0, true), new(9, 9, false)], major: false, openingRoot: 9),
 
@@ -154,6 +188,7 @@ internal static class LoopsSilencesAndClosesPassages
         Notes("two silent bars inside the new key's first phrase: C F G C | G R R G | G C D7 G (block chords as notes)", Block("0 5 7 0 | 7 R R 7 | 7 0 2:7 7"), At(5, 7, true)),
         Notes("a silent bar closing the old key's phrase: C F G R | G C D7 G | G C D7 G (block chords as notes)", Block("0 5 7 R | 7 0 2:7 7 | 7 0 2:7 7"), At(5, 7, true)),
         Notes("a silent bar in the chords while the melody carries on with its F sharp: C F G C | G C R G | G C D7 G under the tune (four voices)", Together(Block("0 5 7 0 | 7 0 R 7 | 7 0 2:7 7"), Notated(TuneToG)), At(5, 7, true)),
+        Notes("two bars of silence before the new key: C F G C | R | R | G C D7 G (block chords as notes)", Block("0 5 7 0 | R | R | 7 0 2:7 7"), At(7, 7, true)),
         Notes("a silent second bar in the new key's first phrase: C F G C | G R C G | G C D7 G (block chords as notes)", Block("0 5 7 0 | 7 R 0 7 | 7 0 2:7 7"), At(5, 7, true)),
 
         // ---------- the CLOSE: what the melody may do over the Picardy chord ----------
@@ -161,6 +196,8 @@ internal static class LoopsSilencesAndClosesPassages
             Together(Block(PicardyChords), Notated(PicardyTuneOpen + "A5/4 E5/4 C#5/2")), PicardyPlan, major: false, openingRoot: 9),
         Notes("the Picardy close, the melody ending on the third and the fifth, not the tonic (four voices)",
             Together(Block(PicardyChords), Notated(PicardyTuneOpen + "C#5/2 E5/2")), PicardyPlan, major: false, openingRoot: 9),
+        Notes("the Picardy close, the final chord in tremolo eighths under the melody arpeggiating up (four voices)",
+            Together(Block(PicardyChordsOpen), TremoloEighths("9", new Rational(11, 1), Rational.Whole), Notated(PicardyTuneOpen + "C#5/4 E5/4 A5/2")), PicardyPlan, major: false, openingRoot: 9),
         Notes("the Picardy close, the final chord held under a fermata for two bars, the melody arpeggiating through both (four voices)",
             Together(Block(PicardyChordsOpen), Fermata("9", new Rational(11, 1), new Rational(2, 1)), Notated(PicardyTuneOpen + "C#5/4 E5/4 A5/4 C#6/4 | E5/4 C#5/4 A4/2")), PicardyPlan, major: false, openingRoot: 9),
         Notes("A minor, its dominant minor for eight bars, home to A minor on a Picardy third, the melody arpeggiating up through the final chord (four voices)",

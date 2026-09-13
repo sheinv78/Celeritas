@@ -365,6 +365,50 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// and the Picardy cadence was a modulation to A major at bar 11 on both roads, where the
 /// same chords under a melody that stops with them were A minor's homecoming at bar
 /// 9.</description></item>
+/// <item><description><b>A seventh chord opens the key of its root.</b> The chord the piece
+/// opens on names its key as a triad does when it is the tonic seventh chord of that key —
+/// Am7 opens A minor, Cmaj7 opens C — and a dominant seventh names nothing, the blues opening
+/// on its I7 and a hymn on its V7, which the profile decides as before. Read for its pitch
+/// classes alone, A C E G was C major's tonic with a note above it as much as A minor's, and
+/// no key's tonic triad outright, so a minor twelve-bar blues in sevenths opened in C major
+/// on the trajectory road and modulated to A minor at its E7 — A minor's own dominant — where
+/// the detector, told A minor, heard none.</description></item>
+/// <item><description><b>A sequence keeps the reading of its model.</b> Among keys that own a
+/// phrase equally, when the phrase is the phrase before it transposed — the same chords at
+/// the same places, every pitch class moved by one interval — and the key in force owns that
+/// phrase, the new phrase is heard in the key in force moved by that interval, before the
+/// chord it opens on is asked. Am F C G twice then Bm G D A twice, told C, is C major with vi
+/// first and then D major with vi first, at the pivot G of bar 8; named by its opening chord,
+/// the second loop was B minor whether the piece was told C or A minor. Told A minor — and on
+/// the trajectory road, which opens on the A minor chord — the model is A minor's, and B minor
+/// keeps its name. A phrase repeated is its model at the unison and keeps its key, judged from
+/// the phrase a candidate falls in: Am Dm G C twice then Bm Em A D twice, told A minor, is B
+/// minor from the copy, where the copy's repeat, read from its second chord, closed the piece
+/// with A D and was D major.</description></item>
+/// <item><description><b>A loop that comes to rest on the old tonic is the old key's.</b> A
+/// loop that returns to its first chord confirms the relative major only when it does not
+/// close on the minor's tonic: a phrase closing on the old key's tonic is the old key's, as
+/// the frame reaching back already says. Am Dm E7 Am | C Dm G Am | C Dm G Am | Am Dm E7 Am,
+/// told A minor — I ii V vi twice, or III iv VII i twice — went to C at bar 4 and came home at
+/// bar 13 on both roads, where between A minor's cadences a musician hears one key with a lean
+/// to the relative major; the mirror loop C Am F G, closing on G, confirms C as
+/// before.</description></item>
+/// <item><description><b>A musician counts the new phrase from the re-entry.</b> The phrases
+/// are counted from the first bar, and again from the bar the music resumes in after a whole
+/// bar or more of silence that begins where a phrase would — a pause between phrases, not
+/// bars of a phrase nobody plays; a silent bar inside a phrase is a rest in it, and the count
+/// stands. Counted through the silence, C F G C | R | R | G C D7 G had its phrase grid on the
+/// silent fifth bar and on the D7, so the G of bar 7 opened no phrase and both roads heard a
+/// two-bar tonicization of G where a musician hears G from bar 7; with one silent bar the grid
+/// landed on the silence and the parenthesis rule passed over it by luck.</description></item>
+/// <item><description><b>A tremolo is the chord it spells whatever its speed.</b> Strokes of
+/// two notes or more, none longer than an eighth, that spell a triad or a dominant seventh
+/// together within a bar, a half or a quarter are that chord, as an arpeggio in quick single
+/// notes is, and the tune's longer notes over them that are the chord's own tones are the
+/// line. Heard stroke by stroke, the Picardy chord in tremolo eighths — A C sharp against E A
+/// under the tune's C sharp, E, A — was a dyad with a C sharp in it followed by another, no
+/// chord's restrike and no Picardy third, and the close was a modulation to A major on both
+/// roads.</description></item>
 /// </list>
 /// </remarks>
 internal static class KeyAreaJudge
@@ -494,7 +538,7 @@ internal static class KeyAreaJudge
         if (sonorities.Count == 0)
             return new Judgement(startKey ?? new KeySignature(0, true), changes);
 
-        var evidence = new Evidence(sonorities);
+        var evidence = new Evidence(sonorities) { PhraseLength = phrase };
         var end = evidence.End;
         var firstOnset = evidence.FirstOnset;
         var openingByChord = false;
@@ -745,8 +789,9 @@ internal static class KeyAreaJudge
             // the profile alone cannot tell it from the minor: it is reached when the phrase
             // that reads as it is framed by its tonic chord — opens on it and closes within it,
             // or opens on it and the phrase after opens on it again, a loop that returns to
-            // its first chord — or closes on its tonic from its dominant, the cadence the minor
-            // cannot make (its dominant carries the raised seventh). A phrase the minor owns
+            // its first chord without coming to rest on the minor's tonic — or closes on its
+            // tonic from its dominant, the cadence the minor cannot make (its dominant carries
+            // the raised seventh). A phrase the minor owns
             // chord for chord, opening on the minor's tonic and closing elsewhere, confirms
             // nothing and is nothing — no tonicization either, which would run until the
             // minor's own note returned, or call the F C G that closes the loop a touch of C.
@@ -756,7 +801,7 @@ internal static class KeyAreaJudge
             if (ownsNothingNew
                 && !homecoming
                 && !evidence.FramedBy(next, boundary, holdTo)
-                && !evidence.ReturnsToItsTonic(next, boundary, phrase)
+                && !evidence.ReturnsToItsTonic(next, current, boundary, phrase)
                 && !evidence.ClosesWithACadence(next, boundary, holdTo, phrase))
             {
                 continue;
@@ -970,6 +1015,15 @@ internal static class KeyAreaJudge
         && (pitchClasses & ~TonicTriad(key)) == 0
         && (pitchClasses & (1 << key.Root)) != 0;
 
+    /// <summary>
+    /// Whether <paramref name="pitchClasses"/> is exactly the seventh chord on <paramref name="key"/>'s
+    /// tonic — a minor key's tonic minor seventh, i7, or a major key's tonic major seventh,
+    /// Imaj7 — which names its root as the tonic triad does. A dominant seventh is neither: a
+    /// piece may open on its V7 as on its I7 — the blues does — and the profile decides those.
+    /// </summary>
+    private static bool IsTonicSeventhChord(KeySignature key, ushort pitchClasses) =>
+        pitchClasses == (ushort)(TonicTriad(key) | (1 << PitchMath.Fold(key.Root + (key.IsMajor ? 11 : 10))));
+
     /// <summary>The weight of the material that <paramref name="key"/> does not own.</summary>
     private static float Outside(ReadOnlySpan<float> distribution, KeySignature key)
     {
@@ -1155,6 +1209,13 @@ internal static class KeyAreaJudge
         /// parallel major (<see cref="Owners"/>).
         /// </summary>
         public uint KeysTheMusicHasBeenIn { get; set; }
+
+        /// <summary>
+        /// The length a key must hold — the phrase the judge reads by; <see cref="Judge"/> sets
+        /// it. A sequence is a phrase of this length transposed from the phrase before it
+        /// (<see cref="IsSequenceOfThePhraseBefore"/>).
+        /// </summary>
+        public Rational PhraseLength { get; set; } = KeyAreaJudge.Phrase;
 
         /// <summary>The onset of the first sonority, or zero when there is none.</summary>
         public Rational FirstOnset => _sonorities.Length > 0 ? _sonorities[0].Onset : Rational.Zero;
@@ -1497,10 +1558,13 @@ internal static class KeyAreaJudge
         }
 
         /// <summary>
-        /// An arpeggiated chord is that chord: a bar, a half bar or a quarter of single notes of
-        /// the line, none longer than an eighth, whose pitch classes together are exactly a
-        /// major or a minor triad or a dominant seventh is one chord, and its notes are that
-        /// chord's tones.
+        /// An arpeggiated chord is that chord, and so is a tremolo: a bar, a half bar or a quarter
+        /// of single notes of the line, none longer than an eighth, whose pitch classes together
+        /// are exactly a major or a minor triad or a dominant seventh is one chord, and its notes
+        /// are that chord's tones; and a bar, a half or a quarter of strokes of two notes or more,
+        /// none longer than an eighth — root and third against fifth and octave — that spell
+        /// such a chord together is that chord whatever its speed, the tune's longer notes over
+        /// it that are the chord's own tones being the line over it.
         /// </summary>
         /// <remarks>
         /// Heard note by note, the E major chord of C F G C | G E Am D7 | G C D7 G arpeggiated
@@ -1511,7 +1575,13 @@ internal static class KeyAreaJudge
         /// and a half bar of C are two chords, not a cluster. Arpeggiation is a texture of quick,
         /// even notes; a tune in quarters that happens to outline a triad is a tune: read as
         /// chords, the bars of a D Dorian folk tune that outline G and C made the piece open in
-        /// C major.
+        /// C major — and a tune in quarters and eighths is a tune too, so the longer notes are
+        /// allowed only over a tremolo, whose strokes are chords already. Heard stroke by
+        /// stroke, the Picardy chord closing A minor's piece in tremolo eighths — A C sharp
+        /// against E A under the tune's C sharp, E, A — was a dyad with a C sharp in it followed
+        /// by another, no chord's restrike and no Picardy third, so A major owned the close and
+        /// the cadence was a modulation to A major on both roads; in sixteenths the same
+        /// tremolo under a tune to G had passed, its dyads all G's own.
         /// </remarks>
         private void MarkArpeggios() => MarkArpeggios(_phase, mark: true);
 
@@ -1550,15 +1620,54 @@ internal static class KeyAreaJudge
             if (last - first < 3)
                 return 0;
 
-            ushort together = 0;
-            var quickLineNotes = true;
+            // The quick sonorities — an eighth or less — and what they spell together; whether
+            // every sonority is one of them and a single note of the line, an arpeggio; whether
+            // some onset strikes two pitch classes or more of them, a tremolo's stroke; and the
+            // single notes of the line longer than an eighth over them — the tune over a
+            // tremolo — with what they sound. A chord longer than an eighth is neither.
+            ushort quick = 0;
+            ushort over = 0;
+            var arpeggio = true;
+            var tremolo = false;
             for (var k = first; k < last; k++)
             {
-                quickLineNotes &= _lineNote[k] && _eighthOrLess[k];
-                together |= _sonorities[k].PitchClasses;
+                var pitchClasses = _sonorities[k].PitchClasses;
+                if (_eighthOrLess[k])
+                {
+                    quick |= pitchClasses;
+                    if (!_lineNote[k])
+                    {
+                        // A stroke of the tremolo: two pitch classes or more struck together and
+                        // quick — one sonority of two, or two quick sonorities at one onset. A
+                        // quick note struck with a long note of the tune is no stroke.
+                        arpeggio = false;
+                        tremolo |= BitOperations.PopCount(pitchClasses) >= 2
+                            || (k + 1 < last && _onset[k + 1] == _onset[k] && _eighthOrLess[k + 1])
+                            || (k > first && _onset[k - 1] == _onset[k] && _eighthOrLess[k - 1]);
+                    }
+                }
+                else if (_sonorities[k].Pitch >= 0 && BitOperations.PopCount(pitchClasses) == 1)
+                {
+                    over |= pitchClasses;
+                    arpeggio = false;
+                }
+                else
+                {
+                    quick = 0;
+                    break;
+                }
             }
 
-            if (quickLineNotes && IsTriadOrDominantSeventh(together))
+            // An arpeggio is quick single notes and nothing else: a tune in quarters that outlines
+            // a triad is a tune, and so is one in quarters and eighths. A tremolo is the chord it
+            // spells whatever its speed — strokes of two notes or more, none longer than an eighth
+            // — and the tune's longer notes over it that are the chord's own tones are the line
+            // over that chord; a note of the tune the chord does not hold leaves the strokes what
+            // they are, chords of two notes each.
+            var oneChord = quick != 0
+                && IsTriadOrDominantSeventh(quick)
+                && (arpeggio || (tremolo && (over & ~quick) == 0));
+            if (oneChord)
             {
                 if (mark)
                 {
@@ -2994,8 +3103,9 @@ internal static class KeyAreaJudge
         }
 
         /// <summary>
-        /// The key whose tonic chord the piece opens on — the profile's favourite among them
-        /// when several qualify — provided it owns [0, <paramref name="to"/>) or leaves as
+        /// The key whose tonic chord the piece opens on — its tonic triad, or its tonic seventh
+        /// chord, i7 or Imaj7 (<see cref="IsTonicSeventhChord"/>); the profile's favourite among
+        /// them when several qualify — provided it owns [0, <paramref name="to"/>) or leaves as
         /// little of it foreign as any key does, an applied dominant seventh counted as the
         /// key's. Failing that, when the piece opens on a triad and exactly one major key owns
         /// the phrase outright, that key: G C F G opens in C, on its dominant.
@@ -3040,11 +3150,21 @@ internal static class KeyAreaJudge
             // for its V7/V — and did, once a melody note over the G7 counted as that chord's, so
             // that F left nothing foreign and C an eighth. Opened in F, the piece reached G as
             // a tonicization and the trajectory road heard no modulation at all.
+            // A seventh chord names its root as a triad does: the piece that opens on Am7 opens
+            // in A minor, the one that opens on Cmaj7 in C — not in the key of the triad inside
+            // the chord. Read for its pitch classes alone, A C E G was C major's tonic with an A
+            // above it as much as A minor's with a G, and neither key's tonic chord outright, so
+            // the opening fell to the profile, which took a minor blues in sevenths — Am7 × 4 |
+            // Dm7 Dm7 Am7 Am7 | E7 Dm7 Am7 E7 — for C major and heard a modulation to A minor at
+            // its E7, on the trajectory road, where the detector, told A minor, heard none.
             for (var i = 0; i < reading.AllCorrelations.Length && i < 24; i++)
             {
                 var candidate = reading.AllCorrelations[i].Key;
-                if (IsTonicChord(candidate, chord) && (foreign[i] <= least + tolerance || Owns(Rational.Zero, to, candidate, current: null)))
+                if ((IsTonicChord(candidate, chord) || IsTonicSeventhChord(candidate, chord))
+                    && (foreign[i] <= least + tolerance || Owns(Rational.Zero, to, candidate, current: null)))
+                {
                     return candidate;
+                }
             }
 
             if (BitOperations.PopCount(chord) > 3 || least > tolerance)
@@ -3259,6 +3379,45 @@ internal static class KeyAreaJudge
                     leastChromatic = chromatic[keyIndex];
             }
 
+            // A sequence keeps the reading of its model. Among keys that own the span equally,
+            // when the phrase the span falls in is the phrase before it transposed — the same
+            // chords at the same places, every pitch class moved by the same interval — and the
+            // key in force owns that phrase, the span is heard in the key in force moved by that
+            // interval: the loop Am F C G is C major with vi first when the music is in C, and
+            // the same loop a tone up is D major with vi first, not B minor for opening on B
+            // minor's chord. Named by the chord it opened on, Bm G D A after Am F C G twice was
+            // B minor on both roads whether the piece was told C major or A minor, where a
+            // musician told C hears D; told A minor, the model is A minor's and B minor keeps its
+            // name. A phrase repeated is its model at the unison, and keeps its key too — judged
+            // from the phrase the span falls in, not from the span alone, so that a candidate
+            // inside the repeat reads the repeat: Am Dm G C twice then Bm Em A D twice, told A
+            // minor, was B minor at the copy and D major at the copy's repeat, whose closing A D,
+            // read from its second chord, was the cadence that closes the piece.
+            var equalOwners = 0;
+            for (var keyIndex = 0; keyIndex < 24; keyIndex++)
+            {
+                if ((present >> keyIndex & 1) != 0 && foreign[keyIndex] <= least + tolerance && chromatic[keyIndex] <= leastChromatic + tolerance)
+                    equalOwners++;
+            }
+
+            if (equalOwners > 1 && spans && current is { } modelKey)
+            {
+                var phraseFrom = PhraseStart(from, PhraseLength);
+                if (IsSequenceOfThePhraseBefore(phraseFrom, out var interval)
+                    && Owns(phraseFrom - PhraseLength, phraseFrom, modelKey, current: null))
+                {
+                    var sequenceKey = KeyIndex(new KeySignature((byte)PitchMath.Fold(modelKey.Root + interval), modelKey.IsMajor));
+                    if ((present >> sequenceKey & 1) != 0
+                        && foreign[sequenceKey] <= least + tolerance
+                        && chromatic[sequenceKey] <= leastChromatic + tolerance)
+                    {
+                        for (var k = 0; k < count; k++)
+                            owns[k] = KeyIndex(candidates[k].Key) == sequenceKey;
+                        return;
+                    }
+                }
+            }
+
             // Among keys that own the span equally, one whose tonic chord — a chord, not a lone
             // note of the line — opens or closes it owns it better than one that does not: a
             // phrase is heard in the key of the chord it opens or closes on. G E Am D7 with a
@@ -3285,6 +3444,71 @@ internal static class KeyAreaJudge
                     && (!anyFramed || (framedByAChord >> keyIndex & 1) != 0);
             }
         }
+
+        /// <summary>
+        /// Whether the phrase beginning at <paramref name="from"/> is the phrase before it
+        /// transposed — the same chords, two or more of them, at the same places in the phrase,
+        /// every pitch class moved by the same <paramref name="interval"/>, the unison to eleven
+        /// semitones: a phrase repeated is its model at the unison. The chords alone are compared
+        /// — sonorities of two pitch classes or more, struck or arpeggiated — for a sequence is
+        /// heard in its harmony, whatever the tune does over it.
+        /// </summary>
+        private bool IsSequenceOfThePhraseBefore(Rational from, out int interval)
+        {
+            interval = 0;
+            var phrase = PhraseLength;
+            // The copy may end before its phrase does — its last chord staccato, or short — and
+            // is the model's copy still: every chord of the model must be matched below.
+            var modelFrom = from - phrase;
+            if (modelFrom < FirstOnset)
+                return false;
+
+            var model = FirstIndexAt(modelFrom);
+            var modelEnd = FirstIndexAt(from);
+            var copy = modelEnd;
+            var toD = (from + phrase).ToDouble();
+            var shift = phrase.ToDouble();
+            var chords = 0;
+            while (true)
+            {
+                while (model < modelEnd && BitOperations.PopCount(_chordPitchClasses[model]) < 2)
+                    model = _groupEnd[model];
+                while (copy < _sonorities.Length && _onset[copy] < toD && BitOperations.PopCount(_chordPitchClasses[copy]) < 2)
+                    copy = _groupEnd[copy];
+
+                var modelDone = model >= modelEnd;
+                var copyDone = copy >= _sonorities.Length || _onset[copy] >= toD;
+                if (modelDone || copyDone)
+                    return modelDone && copyDone && chords >= 2;
+
+                if (_onset[model] + shift != _onset[copy])
+                    return false;
+
+                var before = _chordPitchClasses[model];
+                var after = _chordPitchClasses[copy];
+                if (chords == 0)
+                {
+                    for (interval = 0; interval < 12 && Transposed(before, interval) != after; interval++)
+                    {
+                    }
+
+                    if (interval == 12)
+                        return false;
+                }
+                else if (Transposed(before, interval) != after)
+                {
+                    return false;
+                }
+
+                chords++;
+                model = _groupEnd[model];
+                copy = _groupEnd[copy];
+            }
+        }
+
+        /// <summary>The pitch classes <paramref name="pitchClasses"/> moved up by <paramref name="interval"/> semitones.</summary>
+        private static ushort Transposed(ushort pitchClasses, int interval) =>
+            (ushort)(((pitchClasses << interval) | (pitchClasses >> (12 - interval))) & 0x0FFF);
 
         // What each chord weighs against each key, found once per chord: for each key, by
         // KeyIndex, five bytes — how many of the chord's pitch classes the key lacks outright,
@@ -3893,12 +4117,43 @@ internal static class KeyAreaJudge
         /// <summary>
         /// Whether the phrase beginning at <paramref name="from"/> — a phrase of the piece's own
         /// count (<see cref="PhraseStart"/>) — opens on <paramref name="key"/>'s tonic chord and
-        /// the phrase after it opens on that chord again: a loop that returns to its first chord
-        /// is the key of that chord. Counted from the piece's phrases, not from any chord: the C
-        /// of Am F C G comes round every four bars too, but no phrase of the loop begins on it.
+        /// the phrase after it opens on that chord again, and the phrase does not close on the
+        /// tonic chord of <paramref name="current"/>, the key in force: a loop that returns to
+        /// its first chord is the key of that chord, unless it comes to rest on the old key's
+        /// tonic every time round, when it is the old key's — I ii V vi is III iv VII i as much.
+        /// Counted from the piece's phrases, not from any chord: the C of Am F C G comes round
+        /// every four bars too, but no phrase of the loop begins on it.
         /// </summary>
-        public bool ReturnsToItsTonic(KeySignature key, Rational from, Rational phrase) =>
-            PhraseStart(from, phrase) == from && OpensOn(key, from) && OpensOn(key, from + phrase);
+        /// <remarks>
+        /// A phrase that closes on the old key's tonic is the old key's — the rule the frame
+        /// reaching back already follows (<see cref="Judge"/>) — and the loop asked only where
+        /// its phrases opened. Am Dm E7 Am | C Dm G Am | C Dm G Am | Am Dm E7 Am, told A minor,
+        /// went to C major at its fifth bar and came home at its thirteenth on both roads, for a
+        /// pair of phrases that open on the relative major's chord and close, each of them, on
+        /// A minor's; between A minor's cadences a musician hears one key with a lean to the
+        /// relative major, and no modulation. The mirror loop C Am F G, closing on G, is
+        /// confirmed as before.
+        /// </remarks>
+        public bool ReturnsToItsTonic(KeySignature key, KeySignature current, Rational from, Rational phrase) =>
+            PhraseStart(from, phrase) == from
+            && OpensOn(key, from)
+            && OpensOn(key, from + phrase)
+            && !ClosesOnTheTonicOf(current, from, from + phrase);
+
+        /// <summary>
+        /// Whether the last chord in [<paramref name="from"/>, <paramref name="to"/>) — a chord
+        /// of two notes or more; the melody's last note over it closes on it — is
+        /// <paramref name="key"/>'s tonic chord, with or without a note above it.
+        /// </summary>
+        private bool ClosesOnTheTonicOf(KeySignature key, Rational from, Rational to)
+        {
+            var last = FirstIndexAt(to) - 1;
+            if (last < FirstIndexAt(from))
+                return false;
+
+            var chord = _groupStart[_lineNote[last] && _under[last] >= 0 ? _under[last] : last];
+            return BitOperations.PopCount(_chordPitchClasses[chord]) >= 2 && IsTonicChordOf(key, chord);
+        }
 
         /// <summary>
         /// Whether [<paramref name="from"/>, <paramref name="to"/>) closes with <paramref name="key"/>'s
@@ -4029,9 +4284,71 @@ internal static class KeyAreaJudge
         /// </summary>
         public Rational PhraseStart(Rational position, Rational phrase)
         {
-            var anchor = FirstBar;
+            var anchor = PhraseAnchor(position, phrase);
             var phrases = (long)Math.Floor(((position - anchor) / phrase).ToDouble());
             return anchor + (phrase * phrases);
+        }
+
+        // The bars the phrase count is anchored on, in order (PhraseAnchor), and the phrase
+        // length they were found for.
+        private List<Rational>? _phraseAnchors;
+        private Rational _phraseAnchorsFor;
+
+        /// <summary>
+        /// The bar the phrases holding <paramref name="position"/> are counted from: the first
+        /// bar (<see cref="FirstBar"/>), or — after a whole bar or more of silence that begins
+        /// where a phrase of the count would begin — the bar the music resumes in. A musician
+        /// counts the new phrase from the re-entry: the silence between two phrases is a pause,
+        /// not bars of a phrase nobody is playing. A silent bar inside a phrase — beginning
+        /// where no phrase does — is a rest in the phrase, and the count stands.
+        /// </summary>
+        /// <remarks>
+        /// Counted from the first bar alone, the phrases ran on through the silence: in C F G C
+        /// | R | R | G C D7 G the phrase grid fell on the silent fifth bar and on the ninth, the
+        /// D7 — so the G phrase's first bar, the seventh, was no phrase start, the D7's phrase
+        /// was two bars to the end, and both roads heard a two-bar tonicization of G where a
+        /// musician hears G from the seventh bar; with one silent bar the grid landed a bar
+        /// early, on the silence, and the parenthesis rule passed over it by luck. A silent bar
+        /// inside a phrase is not a pause between phrases: C F G C | G R R G | G C D7 G keeps its
+        /// count, and G's phrase begins on the G of bar 5 as before.
+        /// </remarks>
+        private Rational PhraseAnchor(Rational position, Rational phrase)
+        {
+            if (_phraseAnchors is null || _phraseAnchorsFor != phrase)
+            {
+                _phraseAnchorsFor = phrase;
+                var found = _phraseAnchors ??= [];
+                found.Clear();
+                var anchor = FirstBar;
+                found.Add(anchor);
+                for (var bar = anchor + phrase; bar < End; bar += phrase)
+                {
+                    if (!BarRests(bar))
+                        continue;
+
+                    var resumes = FirstSoundingBar(bar);
+                    if (resumes >= End)
+                        break;
+
+                    anchor = resumes;
+                    found.Add(anchor);
+                    bar = anchor;
+                }
+            }
+
+            var anchors = _phraseAnchors;
+            var lo = 0;
+            var hi = anchors.Count - 1;
+            while (lo < hi)
+            {
+                var mid = (lo + hi + 1) >> 1;
+                if (anchors[mid] <= position)
+                    lo = mid;
+                else
+                    hi = mid - 1;
+            }
+
+            return anchors[lo];
         }
 
         /// <summary>

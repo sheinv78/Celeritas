@@ -447,14 +447,27 @@ follows.
   scale run and under a turn); and on a seventh reviewer's thirty-five -- the pop
   loops a musician plays every day told either of their keys, the same loop a tone
   up, a loop turning into a real move to the relative key, silence around the new
-  key's first phrase, the melody over the Picardy chord -- twenty-four, which join
-  the fixture as an eighth table
+  key's first phrase, the melody over the Picardy chord -- twenty-eight, which join
+  the fixture as an eighth table (four of them after the eighth iteration's rules:
+  a minor twelve-bar blues in sevenths, `C Dm G Am` twice between A minor's
+  cadences, two bars of silence before the new key, the Picardy chord in tremolo
+  eighths); and on an eighth reviewer's forty-seven -- pieces opening on a seventh
+  chord, on ii or IV, told a key they never sound; the same loop moved a fourth, a
+  minor third, a tone and two tones, told either key; a real sequence through three
+  keys; a circle of fifths; three silent bars; tremolo eighths for a whole passage
+  and on a major close; a trill on the Picardy third; the relative major's cadence
+  inside a phrase and at its end -- thirty-five, which join the fixture as a ninth
+  table (the four transposed loops told C are the major with vi first on the
+  detector road and the minor on the trajectory, which opens on the A minor chord,
+  and are pinned road by road instead)
 - The two modulation roads agree on every texture of every chord-bearing passage
-  of the eight tables but one: every chord struck twice in its bar, the second bar
-  silent, every chord an eighth off the beat -- 862 cases in twelve keys; 17
-  disagreements and 47 misses of the musician's plan before, 1 and 3 after, and
-  that lens is now a test. A chord struck twice in its bar is one harmony; a melody
-  note struck with a chord and let go before it is the line's; the bars are heard
+  of the nine tables but two: every chord struck twice in its bar, the second bar
+  silent, every chord an eighth off the beat -- 982 cases in twelve keys; 17
+  disagreements and 47 misses of the musician's plan before, 2 and 3 after (a D
+  Dorian tune and a piece opening on IV, each with its second bar silent, where
+  the given key and the guessed one differ), and that lens is now a test. A chord
+  struck twice in its bar is one harmony; a melody note struck with a chord and
+  let go before it is the line's; the bars are heard
   from the music's accents -- when every onset is an eighth late the bars are, a
   chord released within an eighth after the bar line belongs to the bar before, a
   chord arriving within an eighth under a melody note is the harmony it leans on,
@@ -482,7 +495,28 @@ follows.
   phrase end -- so `Am F C G` four times is one key told C or told A minor (it
   was C at bar 2 told A minor on both roads, and C at bar 2 on the trajectory told
   C, where the detector heard none), and `Am F C G | Am F C G | C F G C | C F G
-  C` is C where the phrase framed by its chord begins, bar 9, not bar 5
+  C` is C where the phrase framed by its chord begins, bar 9, not bar 5. A seventh
+  chord opens the key of its root -- `Am7` opens A minor, `Cmaj7` C; a dominant
+  seventh still falls to the profile, so a blues on its I7 and a piece opening on V7
+  are unchanged -- and the minor twelve-bar blues in sevenths no longer opens in C
+  major on the trajectory to "modulate" to A minor at its own E7; a sequence keeps
+  the reading of its model, so `Am F C G` twice then `Bm G D A` twice told C is D
+  major with vi first (it was B minor, for the chord it opened on), and a phrase
+  repeated keeps its key, judged from the phrase a candidate falls in, so the
+  copy's verbatim repeat no longer flips to the relative major at the piece-closing
+  cadence (`Am Dm G C` twice then `Bm Em A D` twice, told A minor, is B minor once,
+  not B minor then D; `Am Dm G C` four times is one key, not C at its fourth
+  statement); a loop that comes to rest on the old tonic is the old key's, so `Am
+  Dm E7 Am | C Dm G Am | C Dm G Am | Am Dm E7 Am` told A minor is one key, not C at
+  bar 4 and home at bar 13; a musician counts the new phrase from the re-entry
+  after a whole bar or more of silence between phrases, so `C F G C | R | R | G C
+  D7 G` is G from bar 7, not a two-bar tonicization; and a tremolo is the chord it
+  spells whatever its speed, so the Picardy chord in tremolo eighths under the
+  melody is A minor's homecoming, not a modulation to A major. The relative major
+  from its IV -- `Am Dm E7 Am | F G C Am | F G C C` -- is left with its debate
+  documented: the reviewer plans C from bar 5, the judge hears it from the
+  cadencing phrase at bar 9 with the Am of bar 8 its pivot, because a phrase
+  closing on the minor's tonic is the minor's
 - `ModulationDetector`: a note is rounded onto the eighth-note grid only when that
   moves it by less than half its own length, so sixteenths and thirty-seconds
   struck one after another are a line, not chords of neighbouring tones

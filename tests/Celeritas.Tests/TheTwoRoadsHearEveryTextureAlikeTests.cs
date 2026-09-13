@@ -6,7 +6,7 @@ using Celeritas.Core.Analysis;
 namespace Celeritas.Tests;
 
 /// <summary>
-/// The roads-disagree lens as a test. Every chord-bearing passage of the eight tables in
+/// The roads-disagree lens as a test. Every chord-bearing passage of the nine tables in
 /// <see cref="RealModulationsAreHeardWhereAMusicianHearsThemTests"/> is rebuilt in five
 /// textures — every chord staccato for a quarter; a melody note held across every other chord
 /// change; every chord struck twice in its bar; its second bar silent; every chord an eighth
@@ -15,11 +15,11 @@ namespace Celeritas.Tests;
 /// which change no harmony, the musician's plan must still be heard. Before the rules below,
 /// the roads parted on seventeen of the six hundred and eighty-two cases of the first five
 /// tables and missed the plan on forty-seven; the rules are each one passage here, with what
-/// the roads answered before, measured on the library as it stood. Over the eight tables —
-/// eight hundred and sixty-two cases — the roads part on one, the residual named below, and miss
-/// the plan on two more: the German sixth an eighth off the beat, within the bar's tolerance,
-/// and the pickup passage with its second bar silent, where the given key is a guess nothing
-/// confirms and both roads hear no change, as the fact below pins.
+/// the roads answered before, measured on the library as it stood. Over the nine tables —
+/// nine hundred and eighty-two cases — the roads part on two, the residuals named below, and
+/// miss the plan on two more: the German sixth an eighth off the beat, within the bar's
+/// tolerance, and the pickup passage with its second bar silent, where the given key is a guess
+/// nothing confirms and both roads hear no change, as the fact below pins.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -45,7 +45,20 @@ namespace Celeritas.Tests;
 /// The eighth table — the pop loops a musician plays every day, told either of their keys, the
 /// same loop a tone up, silence around the new key's first phrase, the melody over the Picardy
 /// chord — brought sixty cases and no disagreement: the roads alike on every one, and the
-/// plan heard wherever the harmony is unchanged.
+/// plan heard wherever the harmony is unchanged. The eighth iteration's four rows bring eight
+/// more, alike on every one; before their rules the minor blues in sevenths parted the roads in
+/// every texture — the trajectory opening in C major from its Am7 — and the phrases C Dm G Am
+/// between A minor's cadences were C on both roads in every texture. The loop a tone up told
+/// C is a fact below and no row: the trajectory, told nothing, opens on the A minor chord and
+/// hears the told-A-minor answer, B minor, where the detector told C hears D major — the roads
+/// alike from the same opening key, and a plan cannot speak for both.
+/// </para>
+/// <para>
+/// The ninth table — pieces opening on a seventh chord or on ii or IV, the same loop moved a
+/// fourth, a minor third, a tone and two tones, a circle of fifths, three silent bars, tremolo
+/// eighths for a whole passage, a trill on the Picardy third, the relative major's cadence inside
+/// a phrase and at its end — brings a hundred and four cases and one disagreement, named below:
+/// the piece opening on IV with its second bar silent, where the trajectory opens on the F chord.
 /// </para>
 /// </remarks>
 public class TheTwoRoadsHearEveryTextureAlikeTests
@@ -55,7 +68,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     private static readonly KeySignature CMajor = new(0, true);
     private static readonly KeySignature GMajor = new(7, true);
 
-    /// <summary>Every passage of the eight tables that is built from chords — block chords, arpeggios, a melody over chords or an Alberti bass — by name.</summary>
+    /// <summary>Every passage of the nine tables that is built from chords — block chords, arpeggios, a melody over chords or an Alberti bass — by name.</summary>
     public static TheoryData<string> ChordBearingPassages => [.. AllPassages().Where(p => p.Chords.Length > 0).Select(p => p.Name)];
 
     private static IEnumerable<RealModulationPassages.Passage> AllPassages() =>
@@ -66,7 +79,8 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
             .Concat(RealModulationPassages.FourthReviewerHeldOut)
             .Concat(TexturesAndHomecomingsPassages.Table)
             .Concat(AccompanimentTexturesPassages.Table)
-            .Concat(LoopsSilencesAndClosesPassages.Table);
+            .Concat(LoopsSilencesAndClosesPassages.Table)
+            .Concat(OpeningsSequencesAndTremolosPassages.Table);
 
     private static RealModulationPassages.Passage Named(string name) => AllPassages().Single(p => p.Name == name);
 
@@ -81,7 +95,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     ];
 
     /// <summary>
-    /// The one case the lens still leaves the roads apart on, and why. The lead decides: the
+    /// The two cases the lens still leaves the roads apart on, and why. The lead decides. The
     /// D Dorian tune with its second bar silent, analyzed from D minor — a key that lacks the
     /// tune's B natural — is C major from bar 3 on the detector road, which is told D minor,
     /// and no modulation on the trajectory road, which opens in C major by the tune's notes.
@@ -94,11 +108,18 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     /// guess — the piece opens on its tonic chord — so the music may not refute it, and the B
     /// natural of the third bar is a note D minor lacks, whatever D Dorian owns; a rule that
     /// reached the first note across the silence — every bar back to it the new key's, the old
-    /// key's own notes never sounded — took C C | G C D7 G, told C, for G throughout.
+    /// key's own notes never sounded — took C C | G C D7 G, told C, for G throughout. And the
+    /// piece opening on IV — F G C C | F G C C | Dm G C C, told C — with its second bar silent:
+    /// the trajectory opens on the F chord, and with the second bar silent neither the G nor
+    /// the cadence into C refutes that guess before bar 5, so it hears C at bar 5 where the
+    /// detector, told C, hears no change and a musician hears C throughout (IV V I I); with the
+    /// second bar sounding both roads hear none. The ninth iteration's work, with the rest of
+    /// what the eighth reviewer found.
     /// </summary>
     private static readonly HashSet<(string Passage, string Texture)> TheRoadsStillDifferOn =
     [
         ("a D Dorian folk tune, the raised sixth in every other bar (melody over chords)", "bar 2 silent"),
+        ("a piece opening on IV: F G C C | F G C C | Dm G C C, told C (block chords)", "bar 2 silent"),
     ];
 
     [Theory]
@@ -499,6 +520,156 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         using var seam = Blocks("9:m 5 0 7 | 9:m 5 0 7 | 0 5 7 0 | 0 5 7 0");
         Assert.Equal([(new Rational(7, 1), CMajor)], Detector(seam, aMinor));
         Assert.Equal([(new Rational(7, 1), CMajor)], Trajectory(seam));
+    }
+
+    [Fact]
+    public void ASeventhChordOpensTheKeyOfItsRoot()
+    {
+        // A minor twelve-bar blues in sevenths: Am7 × 4 | Dm7 Dm7 Am7 Am7 | E7 Dm7 Am7 E7. The
+        // piece opens on its first chord, and that chord is named A minor seventh — but read for
+        // its pitch classes alone, A C E G was no key's tonic triad outright, so the opening fell
+        // to the profile, which took it for C major (the same four notes are C6), and the
+        // trajectory heard a modulation from C major to A minor at the E7 — A minor's own
+        // dominant — where the detector, told A minor, heard none. A seventh chord names its
+        // root as a triad does: Am7 opens A minor, Cmaj7 opens C. A dominant seventh does not:
+        // the blues opens on its I7 and a piece may open on its V7, and the profile decides
+        // those as before — a major blues in sevenths is its key on both roads, and a piece
+        // opening on G7 in C is C throughout.
+        var aMinor = new KeySignature(9, false);
+        using var minorBlues = Blocks("9:m7 9:m7 9:m7 9:m7 | 2:m7 2:m7 9:m7 9:m7 | 4:7 2:m7 9:m7 4:7");
+        Assert.Empty(Detector(minorBlues, aMinor));
+        Assert.Empty(Trajectory(minorBlues));
+
+        using var majorBlues = Blocks("0:7 0:7 0:7 0:7 | 5:7 5:7 0:7 0:7 | 7:7 5:7 0:7 7:7");
+        Assert.Empty(Detector(majorBlues, CMajor));
+        Assert.Empty(Trajectory(majorBlues));
+        Assert.Equal(CMajor, ModulationDetector.Analyze(majorBlues, CMajor).StartKey);
+
+        using var onTheDominant = Blocks("7:7 0 5 7 | 0 5 7 0");
+        Assert.Empty(Detector(onTheDominant, CMajor));
+        Assert.Empty(Trajectory(onTheDominant));
+
+        using var majorSeventh = Blocks("0:maj7 5 7 0 | 9:m 2:m 7:7 0:maj7");
+        Assert.Empty(Detector(majorSeventh, CMajor));
+        Assert.Empty(Trajectory(majorSeventh));
+    }
+
+    [Fact]
+    public void ASequenceKeepsTheReadingOfItsModel()
+    {
+        // Am F C G twice, then Bm G D A twice. A loop with no leading tone is either of its
+        // relative keys, and the second loop is the first a tone up: the reading follows the
+        // opening. Told A minor, the first loop is A minor's — i VI III VII — and the second is
+        // B minor at the pivot G of bar 8, on both roads, as before. Told C, the first loop is C
+        // major with vi first, and the same loop a tone up is D major with vi first; named by the
+        // chord it opened on, it was B minor on the detector road too. A phrase that is the
+        // phrase before it transposed is heard in the key in force moved by the same interval.
+        // The trajectory is told nothing and opens on the A minor chord, so it hears the
+        // told-A-minor answer — the roads read the same loop alike from the same opening key.
+        // And a phrase repeated is its model at the unison: the copy's repeat keeps the copy's
+        // key, judged from the phrase a candidate falls in. Judged from the span alone, Am Dm G C
+        // twice then Bm Em A D twice, told A minor, was B minor at the copy and D major at the
+        // copy's repeat — the repeat read from its second chord, Em A D, closing the piece with
+        // the cadence A D — a modulation between two identical phrases; and Am Dm G C four times,
+        // told A minor, changed to C at its fourth statement by the same closing cadence. One
+        // loop is one key.
+        var aMinor = new KeySignature(9, false);
+        var bMinor = new KeySignature(11, false);
+        var dMajor = new KeySignature(2, true);
+        using var aToneUp = Blocks("9:m 5 0 7 | 9:m 5 0 7 | 11:m 7 2 9 | 11:m 7 2 9");
+        Assert.Equal([(new Rational(7, 1), bMinor)], Detector(aToneUp, aMinor));
+        Assert.Equal([(new Rational(7, 1), dMajor)], Detector(aToneUp, CMajor));
+        Assert.Equal([(new Rational(7, 1), bMinor)], Trajectory(aToneUp));
+
+        using var cadencingCopy = Blocks("9:m 2:m 7 0 | 9:m 2:m 7 0 | 11:m 4:m 9 2 | 11:m 4:m 9 2");
+        Assert.Equal([(new Rational(8, 1), bMinor)], Detector(cadencingCopy, aMinor));
+        Assert.Equal([(new Rational(8, 1), bMinor)], Trajectory(cadencingCopy));
+        Assert.Equal([(new Rational(8, 1), dMajor)], Detector(cadencingCopy, CMajor));
+
+        using var oneLoop = Blocks("9:m 2:m 7 0 | 9:m 2:m 7 0 | 9:m 2:m 7 0 | 9:m 2:m 7 0");
+        Assert.Empty(Detector(oneLoop, aMinor));
+        Assert.Empty(Trajectory(oneLoop));
+
+        // The same loop moved a fourth up, a minor third up, a tone up and a tone up again, and
+        // moved once only: told C, the detector names each copy the major with vi first — F, E
+        // flat, D then E, D — at the pivot; the trajectory, opening on the A minor chord, names
+        // the minor a fourth, a minor third, a tone and two tones up. The eighth reviewer's rows,
+        // which no one plan can pin for both roads.
+        using var aFourthUp = Blocks("9:m 5 0 7 | 9:m 5 0 7 | 2:m 10 5 0 | 2:m 10 5 0");
+        Assert.Equal([(new Rational(8, 1), new KeySignature(5, true))], Detector(aFourthUp, CMajor));
+        Assert.Equal([(new Rational(8, 1), new KeySignature(2, false))], Trajectory(aFourthUp));
+
+        using var aMinorThirdUp = Blocks("9:m 5 0 7 | 9:m 5 0 7 | 0:m 8 3 10 | 0:m 8 3 10");
+        Assert.Equal([(new Rational(8, 1), new KeySignature(3, true))], Detector(aMinorThirdUp, CMajor));
+        Assert.Equal([(new Rational(7, 1), new KeySignature(0, false))], Trajectory(aMinorThirdUp));
+
+        using var twiceUp = Blocks("9:m 5 0 7 | 9:m 5 0 7 | 11:m 7 2 9 | 11:m 7 2 9 | 1:m 9 4 11 | 1:m 9 4 11");
+        Assert.Equal([(new Rational(7, 1), dMajor), (new Rational(15, 1), new KeySignature(4, true))], Detector(twiceUp, CMajor));
+        Assert.Equal([(new Rational(7, 1), bMinor), (new Rational(15, 1), new KeySignature(1, false))], Trajectory(twiceUp));
+
+        using var movedOnce = Blocks("9:m 5 0 7 | 11:m 7 2 9 | 11:m 7 2 9");
+        Assert.Equal([(new Rational(3, 1), dMajor)], Detector(movedOnce, CMajor));
+        Assert.Equal([(new Rational(3, 1), bMinor)], Trajectory(movedOnce));
+    }
+
+    [Fact]
+    public void ALoopThatComesToRestOnTheOldTonicIsTheOldKeys()
+    {
+        // Am Dm E7 Am | C Dm G Am | C Dm G Am | Am Dm E7 Am, told A minor. Each middle phrase
+        // opens on the relative major's chord and closes on the minor's tonic — I ii V vi twice,
+        // or III iv VII i twice — and a loop that returns to its first chord confirmed the
+        // relative major without asking where the loop came to rest: both roads went to C at bar
+        // 4 and came home at bar 13. A phrase that closes on the old key's tonic is the old key's,
+        // as the frame reaching back already says; between A minor's cadences a musician hears
+        // one key with a lean to the relative major. The mirror loop C Am F G, closing on G, is
+        // C from the pivot Am of bar 4 as before.
+        var aMinor = new KeySignature(9, false);
+        using var resting = Blocks("9:m 2:m 4:7 9:m | 0 2:m 7 9:m | 0 2:m 7 9:m | 9:m 2:m 4:7 9:m");
+        Assert.Empty(Detector(resting, aMinor));
+        Assert.Empty(Trajectory(resting));
+
+        using var mirror = Blocks("9:m 2:m 4:7 9:m | 0 9:m 5 7 | 0 9:m 5 7 | 0 9:m 5 7");
+        Assert.Equal([(new Rational(3, 1), CMajor)], Detector(mirror, aMinor));
+        Assert.Equal([(new Rational(3, 1), CMajor)], Trajectory(mirror));
+    }
+
+    [Fact]
+    public void AMusicianCountsTheNewPhraseFromTheReEntry()
+    {
+        // C F G C | R | R | G C D7 G. The phrases were counted from the first bar through the
+        // silence, so the grid fell on the silent fifth bar and on the ninth, the D7: the G of bar
+        // 7 opened no phrase, the D7's phrase was two bars to the end, and both roads heard a
+        // two-bar tonicization of G — no modulation — where a musician hears G from bar 7, the
+        // first sounding bar of its phrase. A whole bar or more of silence beginning where a
+        // phrase would is a pause between phrases, and the count resumes with the music. A
+        // silent bar inside a phrase is a rest in it, and the count stands: C F G C | G R R G |
+        // G C D7 G is G from bar 5 as before.
+        using var pause = LoopsSilencesAndClosesPassages.Table.Single(p => p.Name.StartsWith("two bars of silence before the new key")).Build(0);
+        Assert.Equal([(new Rational(6, 1), GMajor)], Detector(pause, CMajor));
+        Assert.Equal([(new Rational(6, 1), GMajor)], Trajectory(pause));
+
+        using var rest = LoopsSilencesAndClosesPassages.Table.Single(p => p.Name.StartsWith("two silent bars inside the new key's first phrase")).Build(0);
+        Assert.Equal([(new Rational(4, 1), GMajor)], Detector(rest, CMajor));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(rest));
+    }
+
+    [Fact]
+    public void ATremoloIsTheChordItSpellsWhateverItsSpeed()
+    {
+        // The Picardy close with the final A major chord in tremolo eighths — A C sharp against
+        // E A — under the melody arpeggiating C sharp, E, A. An arpeggiated chord was single
+        // notes only, so the strokes stayed dyads: a chord with a C sharp in it followed by
+        // another, no restrike and no Picardy third, and A major owned the close — a modulation
+        // to A major at bar 11 on both roads. Strokes of two notes or more, none longer than an
+        // eighth, that spell a triad together are that chord, and the tune's notes over them
+        // that are its tones are the line: the close is A minor's Picardy cadence, home at the
+        // pivot Am of bar 9, as with the chord struck once or held under a fermata.
+        var aMinor = new KeySignature(9, false);
+        using var tremolo = LoopsSilencesAndClosesPassages.Table.Single(p => p.Name.StartsWith("the Picardy close, the final chord in tremolo eighths")).Build(0);
+        var expected = new List<(Rational, KeySignature)> { (new Rational(3, 1), CMajor), (new Rational(8, 1), aMinor) };
+        Assert.Equal(expected, Detector(tremolo, aMinor));
+        Assert.Equal(expected, Trajectory(tremolo));
+        Assert.DoesNotContain(ModulationDetector.Analyze(tremolo, aMinor).Modulations, m => m.ToKey == new KeySignature(9, true));
     }
 
     // ---------- the textures ----------

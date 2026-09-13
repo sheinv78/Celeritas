@@ -1060,6 +1060,41 @@ public sealed class KeyTrajectory
     /// eighth table, and with each other on every passage of the eight tables.
     /// </para>
     /// <para>
+    /// Of the seventh reviewer's six passages the library still read otherwise, four are heard
+    /// now: a minor twelve-bar blues in sevenths opened here in C major — its Am7 read as C6 —
+    /// and modulated to A minor at its own E7 (a seventh chord opens the key of its root);
+    /// two bars of silence before the new key were counted as bars of a phrase, and G was a
+    /// two-bar tonicization (a musician counts the new phrase from the re-entry); a pair of
+    /// phrases C Dm G Am between A minor's cadences went to C and came home (a loop that comes
+    /// to rest on the old tonic is the old key's); and the Picardy chord in tremolo eighths was
+    /// dyads, no Picardy third, and the close was a modulation to A major (a tremolo is the
+    /// chord it spells whatever its speed). The loop Bm G D A after Am F C G twice, told C, is D
+    /// major on the detector road (a sequence keeps the reading of its model); this road is
+    /// told nothing, opens on the A minor chord, and hears B minor, the told-A-minor answer. The
+    /// relative major from its IV, F G C Am | F G C C after A minor's cadence, is left with its
+    /// debate: the reviewer plans C from bar 5, the judge hears it from the cadencing phrase at
+    /// bar 9 with the Am of bar 8 its pivot. Both roads agree with the musician on the
+    /// twenty-eight of the eighth table, and with each other on every passage of the eight
+    /// tables.
+    /// </para>
+    /// <para>
+    /// On forty-seven passages an eighth reviewer wrote — pieces opening on a seventh chord, on ii
+    /// or IV, told a key they never sound; the same loop moved a fourth, a minor third, a tone and
+    /// two tones, told either key; a real sequence through three keys; a circle of fifths; three
+    /// silent bars, a re-entry in the old key; tremolo eighths for a whole passage, on a major
+    /// close, on the dominant sevenths; a trill on the Picardy third; the relative major's cadence
+    /// inside a phrase and at its end — the sequence rule had fired on the copy alone and not on
+    /// its verbatim repeat, so `Am Dm G C` twice then `Bm Em A D` twice, told A minor, was B minor
+    /// at the copy and D major at the repeat, whose closing A D read from its second chord was the
+    /// cadence that closes the piece; and `Am Dm G C` four times changed to C at its fourth
+    /// statement the same way. A phrase repeated is its model at the unison and keeps its key,
+    /// judged from the phrase a candidate falls in. Both roads agree with the musician on the
+    /// thirty-five that join the fixture as a ninth table, and with each other on every passage of
+    /// the nine tables; the four transposed loops told C are the major with vi first on the
+    /// detector road and the minor on this one, which opens on the A minor chord, as the fact in
+    /// <c>TheTwoRoadsHearEveryTextureAlikeTests</c> pins road by road.
+    /// </para>
+    /// <para>
     /// The window no longer limits what is heard: a one-bar window over arpeggiated triads has
     /// undecidable points, and the modulation is still found, because the phrase is read from
     /// the notes. The points remain the per-window readings they always were.
