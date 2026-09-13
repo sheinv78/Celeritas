@@ -123,6 +123,8 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
 
     public static TheoryData<string> BarsFromTheMusicAndSharedRegisters => [.. BarsFromTheMusicAndSharedRegistersPassages.Table.Select(p => p.Name)];
 
+    public static TheoryData<string> OrdinaryMusic => [.. OrdinaryMusicPassages.Table.Select(p => p.Name)];
+
     [Theory]
     [MemberData(nameof(Passages))]
     public void TheKeyTrajectoryHearsTheModulationsAMusicianHearsInEveryKey(string name) =>
@@ -242,6 +244,16 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
     [MemberData(nameof(BarsFromTheMusicAndSharedRegisters))]
     public void TheModulationDetectorHearsTheBarsFromTheMusicAndSharedRegistersAsAMusicianDoesInEveryKey(string name) =>
         AssertTheDetectorHears(BarsFromTheMusicAndSharedRegistersPassages.Table.Single(p => p.Name == name));
+
+    [Theory]
+    [MemberData(nameof(OrdinaryMusic))]
+    public void TheKeyTrajectoryHearsTheOrdinaryMusicAsAMusicianDoesInEveryKey(string name) =>
+        AssertTheTrajectoryHears(OrdinaryMusicPassages.Table.Single(p => p.Name == name));
+
+    [Theory]
+    [MemberData(nameof(OrdinaryMusic))]
+    public void TheModulationDetectorHearsTheOrdinaryMusicAsAMusicianDoesInEveryKey(string name) =>
+        AssertTheDetectorHears(OrdinaryMusicPassages.Table.Single(p => p.Name == name));
 
     private static void AssertTheTrajectoryHears(RealModulationPassages.Passage passage) =>
         AssertHeardInEveryKey(
@@ -470,13 +482,33 @@ public class RealModulationsAreHeardWhereAMusicianHearsThemTests
         }
 
         var names = BarsFromTheMusicAndSharedRegistersPassages.Table.Select(p => p.Name).ToList();
-        Assert.True(BarsFromTheMusicAndSharedRegistersPassages.Table.Length >= 24);
+        Assert.True(BarsFromTheMusicAndSharedRegistersPassages.Table.Length >= 33);
         Assert.Equal(names.Count, names.Distinct().Count());
         var earlier = RealModulationPassages.All.Concat(RealModulationPassages.HeldOut).Concat(RealModulationPassages.ReviewerHeldOut)
             .Concat(RealModulationPassages.ThirdReviewerHeldOut).Concat(RealModulationPassages.FourthReviewerHeldOut)
             .Concat(TexturesAndHomecomingsPassages.Table).Concat(AccompanimentTexturesPassages.Table)
             .Concat(LoopsSilencesAndClosesPassages.Table).Concat(OpeningsSequencesAndTremolosPassages.Table)
             .Concat(RefutedKeysPausesAndDecoratedClosesPassages.Table).Concat(MetresPedalsAndSharedRegistersPassages.Table).Select(p => p.Name);
+        Assert.Empty(names.Intersect(earlier));
+    }
+
+    [Fact]
+    public void EveryOrdinaryMusicPassageIsBuiltAsItIsDescribed()
+    {
+        foreach (var passage in OrdinaryMusicPassages.Table)
+        {
+            AssertBuilds(passage);
+        }
+
+        var names = OrdinaryMusicPassages.Table.Select(p => p.Name).ToList();
+        Assert.True(OrdinaryMusicPassages.Table.Length >= 25);
+        Assert.Equal(names.Count, names.Distinct().Count());
+        var earlier = RealModulationPassages.All.Concat(RealModulationPassages.HeldOut).Concat(RealModulationPassages.ReviewerHeldOut)
+            .Concat(RealModulationPassages.ThirdReviewerHeldOut).Concat(RealModulationPassages.FourthReviewerHeldOut)
+            .Concat(TexturesAndHomecomingsPassages.Table).Concat(AccompanimentTexturesPassages.Table)
+            .Concat(LoopsSilencesAndClosesPassages.Table).Concat(OpeningsSequencesAndTremolosPassages.Table)
+            .Concat(RefutedKeysPausesAndDecoratedClosesPassages.Table).Concat(MetresPedalsAndSharedRegistersPassages.Table)
+            .Concat(BarsFromTheMusicAndSharedRegistersPassages.Table).Select(p => p.Name);
         Assert.Empty(names.Intersect(earlier));
     }
 

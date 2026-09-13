@@ -6,18 +6,21 @@ namespace Celeritas.Tests;
 
 /// <summary>
 /// The twelfth table of <see cref="RealModulationsAreHeardWhereAMusicianHearsThemTests"/>: the
-/// eleventh reviewer's passages, written against the bar the judge now reads from the music's own
-/// chord changes, the pedal that is one note under the harmony, and the closing figure that may
-/// lie either side of the tune — and folded in afterwards. Four lenses: the BAR read from the
-/// music (the same modulating passage in 9/8, 5/8, 7/8 and 2/2; a 6/8 piece with a harmony on each
-/// dotted quarter; a piece that changes metre twice; a rubato whose chords drift by a sixteenth;
-/// chords struck on the half bar throughout; whole-bar chords with one bar of four quarters; an
-/// accompaniment in eighths under whole-bar harmonies — the bar comes from the harmony, not from
-/// the fastest note; a harmony held two bars throughout; a half-bar pickup of two chords), the
-/// PEDAL (a pedal entering late and holding under the pivot, two pedal notes a fifth apart, a
-/// pedal in the top voice), the CLOSE where tune and figure share a register (an inner-voice
-/// figure between a held bass and the tune, the tune holding one chord tone while the figure
-/// moves) and the OPENING of a piece told C that begins on ii.
+/// eleventh reviewer's passages, written against the bar the judge reads from the music's own
+/// chord changes, the pedal that is one note under the harmony — held or struck again — the chord
+/// spread, and the closing figure that may lie either side of the tune or in its own octave. Four
+/// lenses: the BAR read from the music (the same modulating passage in 9/8, 5/8, 7/8 and 2/2; a
+/// 6/8 piece with a harmony on each dotted quarter; a piece that changes metre twice; a rubato
+/// whose chords drift by a sixteenth; chords struck on the half bar throughout; whole-bar chords
+/// with one bar of four quarters; an accompaniment in eighths under whole-bar harmonies — the bar
+/// comes from the harmony, not from the fastest note; a harmony held two bars throughout; a
+/// half-bar pickup of two chords), the PEDAL (a pedal entering late and holding under the pivot,
+/// two pedal notes a fifth apart, a pedal in the top voice, a tonic pedal struck afresh at every
+/// bar line), the CLOSE where tune and figure share a register (the last chord rolled upwards,
+/// rolled downwards, rolled over two bars; a figure in the tune's own octave; an inner-voice
+/// figure between a held bass and the tune; the tune holding one chord tone while the figure
+/// moves) and the OPENING of a piece told C that begins on vi, on iii or on ii, with and without
+/// the tonic triad in its opening phrase.
 /// </summary>
 /// <remarks>
 /// Chord tokens are the fixture's — <c>root[:quality]</c> — plus <c>R</c> for a rest, the lengths
@@ -25,17 +28,17 @@ namespace Celeritas.Tests;
 /// <c>f</c> (five quarters), <c>n</c> (a bar and a half), <c>d</c> (two whole notes), and an exact
 /// length written <c>@num/den</c> in whole notes. The plans are a musician's, in whole notes; a
 /// 4/4 bar = 1, bar k begins at position k-1, and a bar of another metre is as long as its own
-/// chords say. Of the reviewer's thirty-eight, twenty-five are here; thirteen the library still
-/// reads otherwise and are the next iteration's work, in four families. The BAR where the chord
-/// changes have no majority: chords of irregular length in no pattern fall back to the clock and
-/// the dominant is heard three bars late, and a melody alone in 3/4 — no chords to read a bar
-/// from — parts the roads. The PEDAL rule reaches only a pedal struck with a chord: struck again
-/// every bar, or struck an eighth before the first chord, the pedal is a note of the line again.
-/// The CLOSE where the figure is not a run of quick single notes below or above the tune: a chord
-/// rolled a sixteenth at a time and held, rolled over two bars, a figure in the tune's own octave,
-/// a two-hand arpeggio under a trill, and a tune outlining the chord's upper thirds above it all
-/// lose the homecoming. And the OPENING told C of a piece that begins on vi or iii, which parts
-/// the roads in every texture — a family wider than the ninth table's statement of it.
+/// chords say. Of the reviewer's thirty-eight, thirty-three are here. The five left out are the
+/// documented limitations named in the judge's own remarks, and nothing else of his is unheard:
+/// the BAR where the chord changes have no majority — chords of irregular length in no pattern,
+/// where the clock stands and the dominant is heard three bars late, and a melody alone in 3/4,
+/// which has no chord changes to read a bar from at all, so that the detector hears the
+/// musician's answer and the trajectory hears none; the CLOSE under a tune as quick as the figure
+/// — a two-hand arpeggio in sixteenths under a trill, whose notes together spell no chord, and a
+/// tune in eighths above the held chord outlining its upper thirds, which is read as the chord
+/// those thirds make — both losing the homecoming; and the PEDAL struck an eighth BEFORE the
+/// first chord, which sounds alone at its onset and is therefore a note of the line, so that the
+/// passage reads as one key.
 /// </remarks>
 internal static class BarsFromTheMusicAndSharedRegistersPassages
 {
@@ -260,8 +263,23 @@ internal static class BarsFromTheMusicAndSharedRegistersPassages
             AtPosition(new Rational(4, 1), 7, true)),
         Notes("a pedal in the TOP voice, a high C held over the whole passage (four voices)",
             Together(Block(MetrePassage), Pedal(84, Rational.Zero, new Rational(12, 1))), AtPosition(new Rational(4, 1), 7, true)),
+        Notes("a tonic pedal STRUCK AGAIN every bar, not held (four voices)",
+            Together(Block(MetrePassage), Restruck(36, Rational.Zero, Rational.Whole, 12)), AtPosition(new Rational(4, 1), 7, true)),
 
         // ---------- the CLOSE where tune and figure share a register ----------
+        Notes("the Picardy close, the last chord ROLLED UPWARDS a sixteenth at a time and all held, under the tune (four voices)",
+            Together(Block(PicardyChordsOpen), Rolled(new Rational(11, 1), new Rational(12, 1), new Rational(1, 16), 45, 57, 61, 64),
+                Notated(PicardyTuneOpen + "C5/4 B4/4 A4/2")), PicardyPlan, major: false, openingRoot: 9),
+        Notes("the Picardy close, the last chord ROLLED DOWNWARDS from the top a sixteenth at a time and all held, under the tune (four voices)",
+            Together(Block(PicardyChordsOpen), Rolled(new Rational(11, 1), new Rational(12, 1), new Rational(1, 16), 64, 61, 57, 45),
+                Notated(PicardyTuneOpen + "C5/4 B4/4 A4/2")), PicardyPlan, major: false, openingRoot: 9),
+        Notes("the Picardy close, the last chord ROLLED OVER TWO BARS, its notes a quarter apart and all held (four voices)",
+            Together(Block(PicardyChordsOpen), Rolled(new Rational(11, 1), new Rational(13, 1), Rational.Quarter, 45, 57, 61, 64),
+                Notated(PicardyTuneOpen + "C5/4 B4/4 A4/1")), PicardyPlan, major: false, openingRoot: 9),
+        Notes("the Picardy close, the figure in the TUNE'S OWN OCTAVE over a held bass (four voices)",
+            Together(Block(PicardyChordsOpen), Pedal(45, new Rational(11, 1), Rational.Whole),
+                Figure("9", new Rational(11, 1), Rational.Whole, ChordRegister + 12),
+                Notated(PicardyTuneOpen + "C5/4 B4/4 A4/2")), PicardyPlan, major: false, openingRoot: 9),
         Notes("the Picardy close, an INNER-VOICE figure between a held bass and the tune above it (four voices)",
             Together(Block(PicardyChordsOpen), Pedal(33, new Rational(11, 1), Rational.Whole), Figure("9", new Rational(11, 1), Rational.Whole, ChordRegister + 12),
                 Notated(PicardyTuneOpenHigh + "C6/4 B5/4 A5/2")), PicardyPlan, major: false, openingRoot: 9),
@@ -280,6 +298,12 @@ internal static class BarsFromTheMusicAndSharedRegistersPassages
             AtPosition(new Rational(4, 1), 7, true)),
 
         // ---------- the OPENING of a piece told C ----------
+        Blocks("told C, opening on VI with the tonic triad in the opening phrase: Am Dm G7 C | C F G C | C F G7 C (block chords)",
+            "9:m 2:m 7:7 0 | 0 5 7 0 | 0 5 7:7 0", Nowhere),
+        Blocks("told C, opening on VI with no tonic triad in the opening phrase: Am Dm F G | C F G C | C F G7 C (block chords)",
+            "9:m 2:m 5 7 | 0 5 7 0 | 0 5 7:7 0", Nowhere),
+        Blocks("told C, opening on III with the tonic triad in the opening phrase: Em Am C G | C F G C | C F G7 C (block chords)",
+            "4:m 9:m 0 7 | 0 5 7 0 | 0 5 7:7 0", Nowhere),
         Blocks("told C, opening on III with no tonic triad in the opening phrase: Em Am Dm G | C F G C | C F G7 C (block chords)",
             "4:m 9:m 2:m 7 | 0 5 7 0 | 0 5 7:7 0", Nowhere),
         Blocks("told C, opening on II with the tonic triad in the opening phrase: Dm G7 C C | C F G C | C F G7 C (block chords)",

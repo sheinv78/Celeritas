@@ -6,7 +6,7 @@ using Celeritas.Core.Analysis;
 namespace Celeritas.Tests;
 
 /// <summary>
-/// The roads-disagree lens as a test. Every chord-bearing passage of the twelve tables in
+/// The roads-disagree lens as a test. Every chord-bearing passage of the thirteen tables in
 /// <see cref="RealModulationsAreHeardWhereAMusicianHearsThemTests"/> is rebuilt in five
 /// textures — every chord staccato for a quarter; a melody note held across every other chord
 /// change; every chord struck twice in its bar; its second bar silent; every chord an eighth
@@ -15,8 +15,8 @@ namespace Celeritas.Tests;
 /// which change no harmony, the musician's plan must still be heard. Before the rules below,
 /// the roads parted on seventeen of the six hundred and eighty-two cases of the first five
 /// tables and missed the plan on forty-seven; the rules are each one passage here, with what
-/// the roads answered before, measured on the library as it stood. Over the twelve tables —
-/// one thousand and thirty-eight cases — the roads part on one, the residual named below, and
+/// the roads answered before, measured on the library as it stood. Over the thirteen tables —
+/// one thousand and ninety-four cases — the roads part on two, the residuals named below, and
 /// miss the plan on two more: the German sixth an eighth off the beat, within the bar's
 /// tolerance, and the pickup passage with its second bar silent, where the given key is a guess
 /// nothing confirms and both roads hear no change, as the fact below pins.
@@ -73,7 +73,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     private static readonly KeySignature CMajor = new(0, true);
     private static readonly KeySignature GMajor = new(7, true);
 
-    /// <summary>Every passage of the twelve tables that is built from chords — block chords, arpeggios, a melody over chords or an Alberti bass — by name.</summary>
+    /// <summary>Every passage of the thirteen tables that is built from chords — block chords, arpeggios, a melody over chords or an Alberti bass — by name.</summary>
     public static TheoryData<string> ChordBearingPassages => [.. AllPassages().Where(p => p.Chords.Length > 0).Select(p => p.Name)];
 
     private static IEnumerable<RealModulationPassages.Passage> AllPassages() =>
@@ -88,7 +88,8 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
             .Concat(OpeningsSequencesAndTremolosPassages.Table)
             .Concat(RefutedKeysPausesAndDecoratedClosesPassages.Table)
             .Concat(MetresPedalsAndSharedRegistersPassages.Table)
-            .Concat(BarsFromTheMusicAndSharedRegistersPassages.Table);
+            .Concat(BarsFromTheMusicAndSharedRegistersPassages.Table)
+            .Concat(OrdinaryMusicPassages.Table);
 
     private static RealModulationPassages.Passage Named(string name) => AllPassages().Single(p => p.Name == name);
 
@@ -103,8 +104,9 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     ];
 
     /// <summary>
-    /// The one case the lens still leaves the roads apart on, and why. The lead decides. The
-    /// D Dorian tune with its second bar silent, analyzed from D minor — a key that lacks the
+    /// The two cases the lens still leaves the roads apart on, and why. The lead decides.
+    /// <para>
+    /// The D Dorian tune with its second bar silent, analyzed from D minor — a key that lacks the
     /// tune's B natural — is C major from bar 3 on the detector road, which is told D minor,
     /// and no modulation on the trajectory road, which opens in C major by the tune's notes.
     /// Given the same opening key the judge answers alike on both roads; the split is between
@@ -128,10 +130,25 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     /// rules do not reach it either: the tune has no chords, so its bar is the clock's as
     /// before; it has no pedal and no figure; and the case is not a pivot bar but a given key
     /// against a guessed one. It reads exactly as it did.
+    /// </para>
+    /// <para>
+    /// The thirteenth table brought the second, of the same shape: F G Am E7 | Am Dm E7 Am | Am
+    /// Dm E7 Am told A minor, with its second bar silent. Told A minor, the detector hears one
+    /// key, the musician's answer; the trajectory is told nothing, opens on the F major chord
+    /// that begins the piece — the key of the first chord, as it has since the sixth iteration —
+    /// and with the G of bar 2 silenced nothing refutes F before the cadence, so it reports A
+    /// minor at bar 2. With bar 2 sounding, the G and the E7 refute F within the opening phrase
+    /// and both roads hear one key. The split is again between a given key and a guessed one,
+    /// and the twelfth iteration's rule does not reach it: that rule reads a MINOR triad opening
+    /// a piece, and the chord here is F major. The same passage told A minor with the major
+    /// triad opening it — C G Am E7 | Am Dm E7 Am — is the thirteenth iteration's work, and this
+    /// residual will go with it or stay named here.
+    /// </para>
     /// </summary>
     private static readonly HashSet<(string Passage, string Texture)> TheRoadsStillDifferOn =
     [
         ("a D Dorian folk tune, the raised sixth in every other bar (melody over chords)", "bar 2 silent"),
+        ("told A minor, opening on its VI: F G Am E7 | Am Dm E7 Am | Am Dm E7 Am (block chords)", "bar 2 silent"),
     ];
 
     [Theory]
@@ -1022,6 +1039,128 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         using var pivot = Blocks("0 5 7 0 | 7 2:7 7");
         Assert.Equal([(new Rational(4, 1), GMajor)], Detector(pivot, CMajor));
         Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(pivot));
+    }
+
+    [Fact]
+    public void AMinorChordOpeningAPieceIsNoKeyUntilTheMusicMakesItOne()
+    {
+        // vi, iii and ii are chords of a key, not keys. Told C, the detector heard no change in
+        // any of these three; the trajectory, told nothing, opened on the A minor or E minor
+        // chord and reported C at bar 3 or bar 4 — the roads apart in all twelve keys and in
+        // every texture, where a musician hears C throughout with a vi or a iii first.
+        using var sixWithTheTonic = Blocks("9:m 2:m 7:7 0 | 0 5 7 0 | 0 5 7:7 0");
+        Assert.Empty(Detector(sixWithTheTonic, CMajor));
+        Assert.Empty(Trajectory(sixWithTheTonic));
+
+        using var sixWithout = Blocks("9:m 2:m 5 7 | 0 5 7 0 | 0 5 7:7 0");
+        Assert.Empty(Detector(sixWithout, CMajor));
+        Assert.Empty(Trajectory(sixWithout));
+
+        using var third = Blocks("4:m 9:m 0 7 | 0 5 7 0 | 0 5 7:7 0");
+        Assert.Empty(Detector(third, CMajor));
+        Assert.Empty(Trajectory(third));
+
+        // The shapes the rule must not fire on. A phrase that makes the minor its own keeps it:
+        // the loop Am F C G comes back to its Am every fourth bar and is A minor to a road told
+        // nothing, so the relative major is heard where the fixture pins it, at the phrase its
+        // own chord frames.
+        var aMinor = new KeySignature(9, false);
+        using var loop = Named("Am F C G twice, then C F G C twice: the relative major begins with the phrase framed by its chord, told A minor (block chords)").Build(0);
+        Assert.Equal([(new Rational(7, 1), CMajor)], Detector(loop, aMinor));
+        Assert.Equal([(new Rational(7, 1), CMajor)], Trajectory(loop));
+
+        // And a phrase whose E7 no major key owns is A minor's own: Am Dm E7 Am | C F G C is
+        // A minor to bar 5 on both roads.
+        using var cadence = Blocks("9:m 2:m 4:7 9:m | 0 5 7 0");
+        Assert.Equal([(new Rational(4, 1), CMajor)], Detector(cadence, aMinor));
+        Assert.Equal([(new Rational(4, 1), CMajor)], Trajectory(cadence));
+    }
+
+    [Fact]
+    public void APedalStruckAgainWithEveryChordIsStillOneNoteUnderTheHarmony()
+    {
+        // The guitar's and the keyboard's ordinary accompaniment: the tonic struck afresh at
+        // every bar line. Struck with the chord and stopping with it, it is one sonority with
+        // the chord on both roads — the detector road merges the notes that stop together into
+        // one part with no pitch at all — so a tonic C under C Dm G7 C | G C D7 G | G C D7 G
+        // made Dm7 of the ii and a G7 with an added fourth of the V, and both roads heard one
+        // key where a musician hears the dominant from bar 5, as both roads hear it when the
+        // pedal is held instead of struck.
+        using var struckPedal = Named("a tonic pedal STRUCK AGAIN every bar, not held (four voices)").Build(0);
+        Assert.Equal([(new Rational(4, 1), GMajor)], Detector(struckPedal, CMajor));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(struckPedal));
+
+        // The shape the rule must not fire on: a bass that walks sounds no one pitch class
+        // under the harmony, and its chords are the chords they are.
+        var walking = new List<NoteEvent>();
+        int[] roots = [0, 5, 7, 0, 7, 0, 2, 7];
+        using (var blocks = Blocks("0 5 7 0 | 7 0 2:7 7"))
+        {
+            for (var i = 0; i < blocks.Count; i++)
+            {
+                walking.Add(blocks.Get(i));
+            }
+        }
+
+        for (var bar = 0; bar < roots.Length; bar++)
+        {
+            walking.Add(new NoteEvent(36 + roots[bar], new Rational(bar, 1), Rational.Whole));
+        }
+
+        using var bassLine = Buffer(walking);
+        Assert.Equal([(new Rational(4, 1), GMajor)], Detector(bassLine, CMajor));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(bassLine));
+    }
+
+    [Fact]
+    public void AChordSpreadIsThatChordStruckAtItsFirstNote()
+    {
+        // A chord rolled — its notes struck a sixteenth or a quarter apart and all held — is one
+        // chord, not so many single notes. Rolled, A minor's Picardy close left the piece with
+        // no chord in its last bar, so it closed on nothing and the return home at bar 9 was
+        // heard on neither road: both stopped at the relative major of bar 5.
+        var aMinor = new KeySignature(9, false);
+        var home = new List<(Rational, KeySignature)> { (new Rational(4, 1), CMajor), (new Rational(8, 1), aMinor) };
+        using var rolled = Named("the Picardy close, the last chord ROLLED UPWARDS a sixteenth at a time and all held, under the tune (four voices)").Build(0);
+        Assert.Equal(home, Detector(rolled, aMinor));
+        Assert.Equal(home, Trajectory(rolled));
+
+        using var spread = Named("the Picardy close, the last chord ROLLED OVER TWO BARS, its notes a quarter apart and all held (four voices)").Build(0);
+        Assert.Equal(home, Detector(spread, aMinor));
+        Assert.Equal(home, Trajectory(spread));
+
+        // The shapes the rule must not fire on. An arpeggio is quick notes let go one by one,
+        // and stays one; and a block chord with a note of the tune let go with it is no chord
+        // spread — the notes must be struck one after another, three strokes or more.
+        using var arpeggio = Named("the Picardy close, the melody arpeggiating the final chord ALONE in sixteenths (four voices)").Build(0);
+        Assert.Equal(home, Detector(arpeggio, aMinor));
+        Assert.Equal(home, Trajectory(arpeggio));
+
+        using var ahead = Named("every chord pushed an eighth ahead of the bar under a melody on the beat: to the dominant (four voices)").Build(0);
+        Assert.Equal([(new Rational(4, 1), GMajor)], Detector(ahead, CMajor));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(ahead));
+    }
+
+    [Fact]
+    public void TheFigureIsTheVoiceThatSpellsOneChordEvenInTheTunesOwnOctave()
+    {
+        // Where the figure lies in the tune's own octave, the register cannot tell them apart,
+        // and the figure is the voice that spells one chord while the other voice moves: quick
+        // notes running unbroken from the beginning of the bar to its end. A closing A major
+        // figure — A E C sharp E in eighths — under a tune C sharp, B, A in the same octave over
+        // a held bass was so many single notes, the last bar held no chord, and A minor's return
+        // home at bar 9 went missing on both roads.
+        var aMinor = new KeySignature(9, false);
+        var home = new List<(Rational, KeySignature)> { (new Rational(4, 1), CMajor), (new Rational(8, 1), aMinor) };
+        using var sameOctave = Named("the Picardy close, the figure in the TUNE'S OWN OCTAVE over a held bass (four voices)").Build(0);
+        Assert.Equal(home, Detector(sameOctave, aMinor));
+        Assert.Equal(home, Trajectory(sameOctave));
+
+        // The shape the rule must not fire on: a tune in quarters and eighths is a tune, whose
+        // eighths do not run the bar through, whatever they spell.
+        using var tune = Named("to the dominant with escape tones and anticipations, three of the escape tones chromatic (melody over chords)").Build(0);
+        Assert.Equal([(new Rational(5, 1), GMajor)], Detector(tune, CMajor));
+        Assert.Equal([(new Rational(5, 1), GMajor)], Trajectory(tune));
     }
 
     // ---------- the textures ----------

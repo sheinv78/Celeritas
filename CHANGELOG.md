@@ -487,13 +487,24 @@ follows.
   two pedal notes a fifth apart, a pedal in the top voice; an inner-voice figure
   between a held bass and the tune, the tune holding one chord tone while the
   figure moves; a piece told C that opens on ii -- twenty-five, which join the
-  fixture as a twelfth table
+  fixture as a twelfth table (eight more after the twelfth iteration's rules); and
+  on a twelfth reviewer's thirty passages of ordinary music -- a piece told a key it
+  opens away from (on vi, on ii, on IV, on a first-inversion tonic; told the minor,
+  opening on its VI; a song whose verse is the relative minor and whose chorus the
+  major; and a piece told the major that opens on vi and later modulates for real,
+  which the new rule must not swallow), closes as they are actually written (a
+  rolled final chord under a fermata, a spread chord in a hymn's last bar, the last
+  chord arpeggiated by both hands, a close whose tune ends on the fifth), pedals as
+  they are actually played (an oom-pah on the tonic, a drone, a dominant pedal under
+  a cadence -- and a walking bass, which is no pedal), and the everyday shapes the
+  whole series leans on -- twenty-four, which join the fixture as a thirteenth table
 - The two modulation roads agree on every texture of every chord-bearing passage
-  of the twelve tables but one: every chord struck twice in its bar, the second bar
-  silent, every chord an eighth off the beat -- 1038 cases in twelve keys; 17
-  disagreements and 47 misses of the musician's plan before, 1 and 3 after (the D
-  Dorian tune with its second bar silent, where the given key and the guessed one
-  differ), and that lens is now a test. A chord
+  of the thirteen tables but two: every chord struck twice in its bar, the second
+  bar silent, every chord an eighth off the beat -- 1094 cases in twelve keys; 17
+  disagreements and 47 misses of the musician's plan before, 2 and 3 after (a D
+  Dorian tune, and a piece told A minor that opens on its VI, each with its second
+  bar silent, where the given key and the guessed one differ), and that lens is now
+  a test. A chord
   struck twice in its bar is one harmony; a melody note struck with a chord and
   let go before it is the line's; the bars are heard
   from the music's accents -- when every onset is an eighth late the bars are, a
@@ -612,6 +623,50 @@ follows.
   cadence; and Picardy closes, relative-major areas and homecomings are now
   reported at the bar their own phrase begins in -- one bar later than before in
   every such passage of the fixture, which is the bar its plan always named
+- Modulation judge: **vi, iii and ii are chords of a key, not keys.** A minor triad
+  opening a piece named its key outright, so `Am Dm G7 C | C F G C | C F G7 C` told
+  C opened in A minor on the road that is told nothing and reported C at bar 3,
+  where the road told C heard no change and a musician hears C throughout with a vi
+  first; opening on iii did the same, and the three such passages parted the roads
+  in all twelve keys and in every texture. The opening chord now names its minor
+  only where the music makes that key its own -- where the opening phrase comes to
+  rest on it, where the minor's own dominant sounds (its raised leading tone no
+  major key owns, so no major owns the phrase outright), or where that chord sounds
+  again anywhere after the phrase, as the loop `Am F C G` returns to its Am every
+  fourth bar -- and where none of those holds the phrase is read as any other is.
+  One later vi is enough to keep the older reading, and a major triad opening a
+  minor piece is untouched; both are written up as limitations
+- Modulation judge: **a chord spread is that chord struck at its first note.** A
+  chord rolled -- struck a sixteenth or a quarter at a time and held, the keyboard's
+  and the harp's ordinary notation -- was so many single notes, so a minor key's
+  Picardy close left the piece no chord in its last bar and the return home was
+  heard on neither road. Single notes struck one after another within a bar, three
+  strokes or more, all still sounding when the last is struck and all released
+  within an eighth of one another, whose pitch classes spell a plain triad or a
+  dominant seventh, are now one chord, and the other voice's notes among them are
+  the line over it; an arpeggio is quick notes let go one by one and stays one. And
+  where a figure lies in the tune's own octave, so that no register tells them
+  apart, the figure is the voice that spells one chord while the other moves
+- Modulation judge: **a pedal struck again with every chord is still one note under
+  the harmony.** The guitar's and the keyboard's ordinary accompaniment strikes the
+  tonic afresh at every bar line, so it stops with the chord and both roads hear one
+  sonority: read as harmony, a tonic C under `C Dm G7 C | G C D7 G | G C D7 G` made
+  a Dm7 of the ii and a G7 with an added fourth of the V, and both roads heard one
+  key where a musician hears the dominant from bar 5. The one pitch class sounding
+  in every chord of a piece that, in two chords or more, turns a plain triad or a
+  dominant seventh into a chord that is neither is now a pedal, and in those chords
+  the harmony is what sounds above it. A pedal struck oftener than once a bar sounds
+  between the chords and is not reached
+- Modulation judge: what it does not hear is written down. Seven shapes are known
+  and unheard, named in the judge's class remarks with their failure cases and their
+  reasons and repeated in a sentence each in `ModulationDetector.Analyze` and
+  `KeyTrajectory.DetectModulations`: the bar where the chord changes have no
+  majority (chords of irregular length in no pattern, and a melody alone, where the
+  clock stands); the close under a tune as quick as the figure (a two-hand arpeggio
+  in sixteenths under a trill, and a tune in eighths above the held chord outlining
+  its upper thirds); a pedal struck an eighth before the first chord, or struck
+  oftener than once a bar, which sounds alone and is a chord of its own; the opening
+  chord that sounds again later; and a major triad opening a minor piece
 - `ModulationDetector`: a note is rounded onto the eighth-note grid only when that
   moves it by less than half its own length, so sixteenths and thirty-seconds
   struck one after another are a line, not chords of neighbouring tones

@@ -1170,12 +1170,32 @@ public sealed class KeyTrajectory
     /// and no longer outweighs what is played over it; the closing figure may lie above the tune as
     /// well as below it; and the bar a phrase closes on in the key it leaves is that key's cadence
     /// and no pivot, which moved every Picardy close and every homecoming of the fixture to the bar
-    /// its own phrase begins in. Four are not heard: a 3/4 piece whose phrases are three bars where
-    /// the judge's are four; a piece told C that opens on vi and sounds no C triad in its opening
-    /// phrase, where the detector told C hears one key and this road, opening on the A minor chord,
-    /// hears C from bar 4; and two closes where tune and figure share a register — the tune crossing
-    /// below the figure with both in eighths, and the last chord rolled as a spread chord, which is
-    /// heard note by note and is no chord.
+    /// its own phrase begins in. Two are not heard: a 3/4 piece whose phrases are three bars where
+    /// the judge's are four, and the Picardy close with the tune crossing below the figure, both in
+    /// eighths.
+    /// </para>
+    /// <para>
+    /// On thirty-eight passages an eleventh reviewer wrote — the same modulating passage in 9/8,
+    /// 5/8, 7/8, 2/2 and 6/8, a rubato, a pickup, a waltz, an oom-pah and an Alberti bass; four
+    /// pedals held and one struck again at every bar line; the closing chord rolled upwards,
+    /// downwards and over two bars, and figures sharing the tune's register; pieces told C that
+    /// open on vi, iii and ii — thirty-three are heard as a musician hears them and join the
+    /// fixture as a twelfth table. This road is told nothing and guesses its opening key, so the
+    /// openings were its own to answer: vi, iii and ii are chords of a key and not keys, and
+    /// Am Dm G7 C | C F G C | C F G7 C, which opened here on the A minor chord and reported C at
+    /// bar 3, is C throughout as it is to the detector told C. Seven shapes are known and unheard,
+    /// and are written up in the judge's own remarks (<see cref="KeyAreaJudge"/>): the bar of
+    /// chords of irregular length in no pattern, and of a melody alone — where this road, which
+    /// guesses its key from a profile the clock's bars cut wrong, hears no change at all and the
+    /// detector told the key hears the musician's answer; the close under a tune as quick as the
+    /// figure — a two-hand arpeggio in sixteenths under a trill, and a tune in eighths above the
+    /// held chord outlining its upper thirds; a pedal struck an eighth before the first chord,
+    /// which sounds alone at its onset and is therefore a note of the line; the opening minor
+    /// triad whose own chord sounds again anywhere later, and the major triad opening a minor
+    /// piece — Am Dm G7 C | C F G C | C Am G7 C and C G Am E7 | Am Dm E7 Am told A minor still
+    /// open this road on their first chord, and the detector told the key hears no change; and
+    /// the pedal struck oftener than once a bar, which sounds between the chords and is a chord
+    /// of its own.
     /// </para>
     /// </remarks>
     public IEnumerable<(Rational Position, KeySignature FromKey, KeySignature ToKey)> DetectModulations()

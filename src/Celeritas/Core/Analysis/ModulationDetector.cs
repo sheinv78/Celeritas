@@ -356,8 +356,10 @@ public static class ModulationDetector
     /// only when moved by less than half its length, the piece opens on its first chord — struck,
     /// arpeggiated, or an eighth behind the tune — a given key the piece does not open on is a
     /// guess, and the bars are heard from the music's accents (<see cref="KeyAreaJudge"/>).
-    /// The roads now part on one case of one thousand and thirty-eight — a D Dorian tune with its
-    /// second bar silent, where this road is told D minor and the other opens in C major — and
+    /// The roads now part on two cases of one thousand and ninety-four — a D Dorian tune with
+    /// its second bar silent, and a piece told A minor that opens on its VI with its second bar
+    /// silent, where this road is told a key and the other guesses one from the chord the piece
+    /// opens on — and
     /// miss the plan on three; the same textures struck staccato or with the melody held hear
     /// the plan everywhere (<c>TheTwoRoadsHearEveryTextureAlikeTests</c>).
     /// </para>
@@ -376,13 +378,28 @@ public static class ModulationDetector
     /// and no longer outweighs what is played over it or stands in the chord a phrase opens on; the
     /// closing figure may lie above the tune as well as below it; and the bar a phrase closes on in
     /// the key it leaves is that key's cadence and no pivot, which moved every Picardy close and
-    /// every homecoming of the fixture to the bar its own phrase begins in. Four are not heard: a
-    /// 3/4 piece whose phrases are three bars where the judge's are four; a piece told C that opens
-    /// on vi and sounds no C triad in its opening phrase, where this road told C hears one key and
-    /// the trajectory, opening on the A minor chord, hears C from bar 4; and two closes where tune
-    /// and figure share a register — the tune crossing below the figure with both in eighths, which
-    /// reaches this road as a stream of dyads with no pitches to tell the voices apart, and the last
-    /// chord rolled as a spread chord, which is heard note by note and is no chord.
+    /// every homecoming of the fixture to the bar its own phrase begins in. Two are not heard: a
+    /// 3/4 piece whose phrases are three bars where the judge's are four, and the Picardy close
+    /// with the tune crossing below the figure, both in eighths, which reaches this road as a
+    /// stream of dyads with no pitches to tell the voices apart.
+    /// </para>
+    /// <para>
+    /// On thirty-eight passages an eleventh reviewer wrote — the same modulating passage in 9/8,
+    /// 5/8, 7/8, 2/2 and 6/8, a rubato, a pickup, a waltz, an oom-pah and an Alberti bass; four
+    /// pedals held and one struck again at every bar line; the closing chord rolled upwards,
+    /// downwards and over two bars, and figures sharing the tune's register; pieces told C that
+    /// open on vi, iii and ii — thirty-three are heard as a musician hears them and join the
+    /// fixture as a twelfth table. Seven shapes are known and unheard, and are written up in the
+    /// judge's own remarks (<see cref="KeyAreaJudge"/>): the bar of chords of irregular length in
+    /// no pattern, and of a melody alone, where no gap between harmony changes has a majority and
+    /// the clock stands; the close under a tune as quick as the figure — a two-hand arpeggio in
+    /// sixteenths under a trill, and a tune in eighths above the held chord outlining its upper
+    /// thirds; a pedal struck an eighth before the first chord, which sounds alone at its onset
+    /// and is therefore a note of the line; the opening minor triad whose own chord sounds again
+    /// anywhere later, and the major triad opening a minor piece, where the opening chord still
+    /// names a key to the trajectory road and this road told the key hears no change, so that the
+    /// two part; and the pedal struck oftener than once a bar, which sounds between the chords
+    /// and is a chord of its own.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
