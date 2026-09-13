@@ -121,10 +121,11 @@ public static class ModulationDetector
     /// such chords exist, every quantized onset is a pseudo-chord — single notes included — so
     /// melodic key changes are still detected; pivot-chord identification is unavailable in that
     /// fallback. The chords are judged as <see cref="KeyTrajectory.DetectModulations"/> judges
-    /// its notes: a new key must be read over a phrase (four whole notes), be decidable and
+    /// its notes: a new key must be read over a phrase (four bars of the music, four whole notes
+    /// in common time), be decidable and
     /// clearly named, fit better than the key the music is in, sound a note it owns and the old
-    /// key lacks, and own the phrase — the notes it lacks amounting to less than a quarter note
-    /// in any bar, its own chromatic chords counted as the key's (an applied chord, a major
+    /// key lacks, and own the phrase — the notes it lacks amounting to less than a quarter of a
+    /// bar in any bar, its own chromatic chords counted as the key's (an applied chord, a major
     /// triad or a dominant seventh resolving down a fifth into a chord of the key; a borrowed
     /// chord, a major key's minor subdominant, flat sixth or flat seventh resolving into a chord
     /// of the key; an augmented sixth resolving into the dominant; a dominant seventh on the
@@ -300,9 +301,8 @@ public static class ModulationDetector
     /// modulation to A major: the closing harmony is what the accompaniment spells, and the
     /// tune over it is the line. And the piece opening on IV with its second bar silent, the
     /// lens's residual: a phrase that comes to rest on a chord opens in that chord's key, so the
-    /// trajectory opens F – C C in C as this road, told C, does. The silent 3/4 bar is not heard:
-    /// the judge knows no meter, and the 3/4 shape is a tonicization with or without the
-    /// silence. The two loops Am F G C under a tune whose B rises to C at each close stay one
+    /// trajectory opens F – C C in C as this road, told C, does. The silent 3/4 bar is heard now:
+    /// the judge reads the bar from the music's own pace and counts its phrases in 3/4 bars. The two loops Am F G C under a tune whose B rises to C at each close stay one
     /// key with A minor's cadences around them, as the same chords do without the tune: the G
     /// chord already carries the B, and a phrase opening on the minor's tonic is the minor's;
     /// the reviewer plans the major, and the lead decides. Both roads agree with the musician on
@@ -356,7 +356,7 @@ public static class ModulationDetector
     /// only when moved by less than half its length, the piece opens on its first chord — struck,
     /// arpeggiated, or an eighth behind the tune — a given key the piece does not open on is a
     /// guess, and the bars are heard from the music's accents (<see cref="KeyAreaJudge"/>).
-    /// The roads now part on one case of one thousand and twenty-six — a D Dorian tune with its
+    /// The roads now part on one case of one thousand and thirty-eight — a D Dorian tune with its
     /// second bar silent, where this road is told D minor and the other opens in C major — and
     /// miss the plan on three; the same textures struck staccato or with the melody held hear
     /// the plan everywhere (<c>TheTwoRoadsHearEveryTextureAlikeTests</c>).
@@ -369,12 +369,20 @@ public static class ModulationDetector
     /// key of its second chord, told the relative minor of a piece opening on I6, a piece opening on
     /// a lone bass note or a bare fifth; the closing chord as a two-hand arpeggio over three
     /// octaves, the melody arpeggiating it alone in sixteenths; the loop in 3/4 and over its own
-    /// pedal; a sequence through three keys in 6/8 — twenty-two are heard as a musician hears them
-    /// and join the fixture as an eleventh table. Twelve are not, in three families the remarks
-    /// state plainly: the metre, which no road passes the judge, so a 12/8 passage and a slow piece
-    /// of two-bar chords are heard late or not at all; a silent chord-bar over a held tonic pedal,
-    /// where the pedal keeps the old key owning the bar; and a closing figure that is not below the
-    /// tune — above it, crossed by it, or rolled as a spread chord — which loses the homecoming.
+    /// pedal; a sequence through three keys in 6/8 — thirty are heard as a musician hears them and
+    /// join the fixture as an eleventh table. The judge reads the bar from the music's own pace, so
+    /// the same passage is heard at its own fifth bar in 4/4, 3/4, 6/8, 2/4, 5/4 and 12/8 alike and
+    /// a slow piece of two-whole-note chords is heard at all; a pedal is one note under the harmony
+    /// and no longer outweighs what is played over it or stands in the chord a phrase opens on; the
+    /// closing figure may lie above the tune as well as below it; and the bar a phrase closes on in
+    /// the key it leaves is that key's cadence and no pivot, which moved every Picardy close and
+    /// every homecoming of the fixture to the bar its own phrase begins in. Four are not heard: a
+    /// 3/4 piece whose phrases are three bars where the judge's are four; a piece told C that opens
+    /// on vi and sounds no C triad in its opening phrase, where this road told C hears one key and
+    /// the trajectory, opening on the A minor chord, hears C from bar 4; and two closes where tune
+    /// and figure share a register — the tune crossing below the figure with both in eighths, which
+    /// reaches this road as a stream of dyads with no pitches to tell the voices apart, and the last
+    /// chord rolled as a spread chord, which is heard note by note and is no chord.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
@@ -462,7 +470,7 @@ public static class ModulationDetector
         while (nextLine < line.Count)
             sonorities.Add(LineSonority(line[nextLine++]));
 
-        var judgement = KeyAreaJudge.Judge(sonorities, candidates, startKey, KeyAreaJudge.Phrase);
+        var judgement = KeyAreaJudge.Judge(sonorities, candidates, startKey, Rational.Zero);
         var modulations = new List<ModulationEvent>();
         var currentKey = judgement.Opening;
 

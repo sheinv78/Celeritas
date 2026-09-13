@@ -6,7 +6,7 @@ using Celeritas.Core.Analysis;
 namespace Celeritas.Tests;
 
 /// <summary>
-/// The roads-disagree lens as a test. Every chord-bearing passage of the eleven tables in
+/// The roads-disagree lens as a test. Every chord-bearing passage of the twelve tables in
 /// <see cref="RealModulationsAreHeardWhereAMusicianHearsThemTests"/> is rebuilt in five
 /// textures — every chord staccato for a quarter; a melody note held across every other chord
 /// change; every chord struck twice in its bar; its second bar silent; every chord an eighth
@@ -15,8 +15,8 @@ namespace Celeritas.Tests;
 /// which change no harmony, the musician's plan must still be heard. Before the rules below,
 /// the roads parted on seventeen of the six hundred and eighty-two cases of the first five
 /// tables and missed the plan on forty-seven; the rules are each one passage here, with what
-/// the roads answered before, measured on the library as it stood. Over the eleven tables —
-/// one thousand and twenty-six cases — the roads part on one, the residual named below, and
+/// the roads answered before, measured on the library as it stood. Over the twelve tables —
+/// one thousand and thirty-eight cases — the roads part on one, the residual named below, and
 /// miss the plan on two more: the German sixth an eighth off the beat, within the bar's
 /// tolerance, and the pickup passage with its second bar silent, where the given key is a guess
 /// nothing confirms and both roads hear no change, as the fact below pins.
@@ -73,7 +73,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     private static readonly KeySignature CMajor = new(0, true);
     private static readonly KeySignature GMajor = new(7, true);
 
-    /// <summary>Every passage of the eleven tables that is built from chords — block chords, arpeggios, a melody over chords or an Alberti bass — by name.</summary>
+    /// <summary>Every passage of the twelve tables that is built from chords — block chords, arpeggios, a melody over chords or an Alberti bass — by name.</summary>
     public static TheoryData<string> ChordBearingPassages => [.. AllPassages().Where(p => p.Chords.Length > 0).Select(p => p.Name)];
 
     private static IEnumerable<RealModulationPassages.Passage> AllPassages() =>
@@ -87,7 +87,8 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
             .Concat(LoopsSilencesAndClosesPassages.Table)
             .Concat(OpeningsSequencesAndTremolosPassages.Table)
             .Concat(RefutedKeysPausesAndDecoratedClosesPassages.Table)
-            .Concat(MetresPedalsAndSharedRegistersPassages.Table);
+            .Concat(MetresPedalsAndSharedRegistersPassages.Table)
+            .Concat(BarsFromTheMusicAndSharedRegistersPassages.Table);
 
     private static RealModulationPassages.Passage Named(string name) => AllPassages().Single(p => p.Name == name);
 
@@ -123,7 +124,10 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
     /// major): the given D minor stands, as a given key the piece opens on does. The piece
     /// opening on IV with its second bar silent, the other residual of the eighth table, is
     /// resolved: a phrase that comes to rest on a chord opens in that chord's key
-    /// (<see cref="APhraseThatComesToRestOnAChordOpensInItsKey"/>).
+    /// (<see cref="APhraseThatComesToRestOnAChordOpensInItsKey"/>). The eleventh iteration's
+    /// rules do not reach it either: the tune has no chords, so its bar is the clock's as
+    /// before; it has no pedal and no figure; and the case is not a pivot bar but a given key
+    /// against a guessed one. It reads exactly as it did.
     /// </summary>
     private static readonly HashSet<(string Passage, string Texture)> TheRoadsStillDifferOn =
     [
@@ -230,7 +234,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         Assert.Equal(expected, Trajectory(blocks));
 
         using var arpeggios = OffBeat(RealModulationPassages.Named("eight bars home, eight in the dominant, eight home (arpeggios)"));
-        expected = [(new Rational(65, 8), GMajor), (new Rational(121, 8), CMajor)];
+        expected = [(new Rational(65, 8), GMajor), (new Rational(129, 8), CMajor)];
         Assert.Equal(expected, Detector(arpeggios, CMajor));
         Assert.Equal(expected, Trajectory(arpeggios));
     }
@@ -303,8 +307,8 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         // G major needed only one applied chord and was guessed by the trajectory instead.
         var aMinor = new KeySignature(9, false);
         using var chain = Blocks("9:m 2:m 4:7 9:m | 9:7 2:7 7:7 0 | 0 5 7 0");
-        Assert.Equal([(new Rational(3, 1), CMajor)], Detector(chain, aMinor));
-        Assert.Equal([(new Rational(3, 1), CMajor)], Trajectory(chain));
+        Assert.Equal([(new Rational(4, 1), CMajor)], Detector(chain, aMinor));
+        Assert.Equal([(new Rational(4, 1), CMajor)], Trajectory(chain));
 
         using var arpeggiated = Silent(RealModulationPassages.HeldOutNamed("a chain of secondary dominants (arpeggios)"));
         Assert.Empty(Detector(arpeggiated, CMajor));
@@ -364,14 +368,14 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         var aMinor = new KeySignature(9, false);
         var passage = TexturesAndHomecomingsPassages.Table.Single(p => p.Name == "A minor, its relative major, and home to A minor closing on a Picardy third (block chords)");
         using var picardy = passage.Build(0);
-        var expected = new List<(Rational, KeySignature)> { (new Rational(3, 1), CMajor), (new Rational(11, 1), aMinor) };
+        var expected = new List<(Rational, KeySignature)> { (new Rational(4, 1), CMajor), (new Rational(12, 1), aMinor) };
         Assert.Equal(expected, Detector(picardy, aMinor));
         Assert.Equal(expected, Trajectory(picardy));
         Assert.DoesNotContain(ModulationDetector.Analyze(picardy, aMinor).Modulations, m => m.Type == ModulationType.Tonicization);
 
         var cMinor = new KeySignature(0, false);
         using var hymn = Twice(RealModulationPassages.ReviewerHeldOutNamed("a hymn: minor, its relative major, minor again closing on a Picardy third (block chords)"));
-        expected = [(new Rational(3, 1), new KeySignature(3, true)), (new Rational(8, 1), cMinor)];
+        expected = [(new Rational(4, 1), new KeySignature(3, true)), (new Rational(8, 1), cMinor)];
         Assert.Equal(expected, Detector(hymn, cMinor));
         Assert.Equal(expected, Trajectory(hymn));
     }
@@ -422,7 +426,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         // roads; struck once, the same close was A minor's Picardy cadence. A final chord repeated
         // to the end with nothing between is the close, however many bars it is held for.
         var aMinor = new KeySignature(9, false);
-        var expected = new List<(Rational, KeySignature)> { (new Rational(3, 1), CMajor), (new Rational(8, 1), aMinor) };
+        var expected = new List<(Rational, KeySignature)> { (new Rational(4, 1), CMajor), (new Rational(8, 1), aMinor) };
         using var restruck = Blocks("9:m 2:m 4:7 9:m | 0 5 7 0 | 9:m 2:m 4:7 9 | 9 9");
         Assert.Equal(expected, Detector(restruck, aMinor));
         Assert.Equal(expected, Trajectory(restruck));
@@ -475,7 +479,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         var aMinor = new KeySignature(9, false);
         var passage = AccompanimentTexturesPassages.Table.Single(p => p.Name.StartsWith("A minor, its relative major, home to A minor closing on a Picardy third, the melody arpeggiating"));
         using var picardy = passage.Build(0);
-        var expected = new List<(Rational, KeySignature)> { (new Rational(3, 1), CMajor), (new Rational(8, 1), aMinor) };
+        var expected = new List<(Rational, KeySignature)> { (new Rational(4, 1), CMajor), (new Rational(8, 1), aMinor) };
         Assert.Equal(expected, Detector(picardy, aMinor));
         Assert.Equal(expected, Trajectory(picardy));
         Assert.DoesNotContain(ModulationDetector.Analyze(picardy, aMinor).Modulations, m => m.ToKey == new KeySignature(9, true));
@@ -517,8 +521,8 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         foreach (var chords in new[] { "9:m 2:m 4:7 9:m | 0 5 7 0 | 0 5 7 0", "9:m 2:m 4:7 9:m | 0 9:m 5 7 | 0 9:m 5 7", "9:m 2:m 4:7 9:m | 2:m 7 0 0 | 2:m 7 0 0" })
         {
             using var confirmed = Blocks(chords);
-            Assert.Equal([(new Rational(3, 1), CMajor)], Detector(confirmed, aMinor));
-            Assert.Equal([(new Rational(3, 1), CMajor)], Trajectory(confirmed));
+            Assert.Equal([(new Rational(4, 1), CMajor)], Detector(confirmed, aMinor));
+            Assert.Equal([(new Rational(4, 1), CMajor)], Trajectory(confirmed));
         }
 
         // The cadence closes a phrase. Am F C G | Am F C G | C F G C | C F G C: the G C at the
@@ -637,8 +641,8 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         Assert.Empty(Trajectory(resting));
 
         using var mirror = Blocks("9:m 2:m 4:7 9:m | 0 9:m 5 7 | 0 9:m 5 7 | 0 9:m 5 7");
-        Assert.Equal([(new Rational(3, 1), CMajor)], Detector(mirror, aMinor));
-        Assert.Equal([(new Rational(3, 1), CMajor)], Trajectory(mirror));
+        Assert.Equal([(new Rational(4, 1), CMajor)], Detector(mirror, aMinor));
+        Assert.Equal([(new Rational(4, 1), CMajor)], Trajectory(mirror));
     }
 
     [Fact]
@@ -674,7 +678,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         // pivot Am of bar 9, as with the chord struck once or held under a fermata.
         var aMinor = new KeySignature(9, false);
         using var tremolo = LoopsSilencesAndClosesPassages.Table.Single(p => p.Name.StartsWith("the Picardy close, the final chord in tremolo eighths")).Build(0);
-        var expected = new List<(Rational, KeySignature)> { (new Rational(3, 1), CMajor), (new Rational(8, 1), aMinor) };
+        var expected = new List<(Rational, KeySignature)> { (new Rational(4, 1), CMajor), (new Rational(8, 1), aMinor) };
         Assert.Equal(expected, Detector(tremolo, aMinor));
         Assert.Equal(expected, Trajectory(tremolo));
         Assert.DoesNotContain(ModulationDetector.Analyze(tremolo, aMinor).Modulations, m => m.ToKey == new KeySignature(9, true));
@@ -773,7 +777,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         // more is the triad restruck under the tune's note. Each close is A minor's homecoming
         // at the pivot Am of bar 9, as with the chord struck once.
         var aMinor = new KeySignature(9, false);
-        var expected = new List<(Rational, KeySignature)> { (new Rational(3, 1), CMajor), (new Rational(8, 1), aMinor) };
+        var expected = new List<(Rational, KeySignature)> { (new Rational(4, 1), CMajor), (new Rational(8, 1), aMinor) };
         foreach (var prefix in new[]
         {
             "the Picardy close, the final chord as an Alberti bass in eighths",
@@ -829,8 +833,8 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         // which is told nothing: the roads apart in all twelve keys, where a musician hears A
         // minor first and C from bar 5 on both.
         using var openingOnTheRelativeMinor = Blocks("9:m7 2:m7 4:7 9:m7 | 0 5 7 0 | 0 5 7:7 0");
-        Assert.Equal([(new Rational(3, 1), CMajor)], Detector(openingOnTheRelativeMinor, CMajor));
-        Assert.Equal([(new Rational(3, 1), CMajor)], Trajectory(openingOnTheRelativeMinor));
+        Assert.Equal([(new Rational(4, 1), CMajor)], Detector(openingOnTheRelativeMinor, CMajor));
+        Assert.Equal([(new Rational(4, 1), CMajor)], Trajectory(openingOnTheRelativeMinor));
 
         // And the everyday shapes the rule must not fire on: a loop that opens on vi and sounds
         // its C inside the opening phrase is C's with vi first, and a minor blues told C that
@@ -890,7 +894,7 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         // modulation to A major at bar 11 on both roads. A restrike carries the harmony on.
         var aMinor = new KeySignature(9, false);
         using var trill = Named("the Picardy close restruck in quarters under a TRILL on the third: C sharp D C sharp D ... (four voices)").Build(0);
-        var expected = new List<(Rational, KeySignature)> { (new Rational(3, 1), CMajor), (new Rational(8, 1), aMinor) };
+        var expected = new List<(Rational, KeySignature)> { (new Rational(4, 1), CMajor), (new Rational(8, 1), aMinor) };
         Assert.Equal(expected, Detector(trill, aMinor));
         Assert.Equal(expected, Trajectory(trill));
 
@@ -900,6 +904,124 @@ public class TheTwoRoadsHearEveryTextureAlikeTests
         expected = [(new Rational(4, 1), GMajor), (new Rational(9, 1), CMajor)];
         Assert.Equal(expected, Detector(seventh, CMajor));
         Assert.Equal(expected, Trajectory(seventh));
+    }
+
+    [Fact]
+    public void ABarIsAsLongAsTheMusicsOwnBars()
+    {
+        // The judge counted every bar as a whole note, no road passing it a metre. The same
+        // passage — C ii V7 I, then two phrases in the dominant, one chord a bar — is heard in
+        // the same bar of its own metre whatever that metre is: at bar 5 of 4/4, of 3/4, of 6/8
+        // and of 12/8 alike. Written in 12/8, whose bars are a bar and a half of the clock, the
+        // judge read four whole notes for its phrase and heard the dominant at 9, two of the
+        // music's bars late, where a musician writes it at 6; written in bars of two whole
+        // notes it heard nothing at all, its phrase being half the music's.
+        var barOf = new (string Name, Rational Bar)[]
+        {
+            ("METRE 4/4: C Dm G7 C | G C D7 G | G C D7 G, one chord a bar of four quarters (block chords)", Rational.Whole),
+            ("METRE 3/4: the same passage, one chord a bar of three quarters (block chords)", new Rational(3, 4)),
+            ("METRE 6/8: the same passage, one chord a bar struck on both dotted quarters (block chords)", new Rational(3, 4)),
+            ("METRE 12/8: the same passage, one chord a bar of a bar and a half (block chords)", new Rational(3, 2)),
+            ("a SLOW piece of twelve two-bar chords: C F G C | G C D7 G | G C D7 G (block chords)", new Rational(2, 1)),
+        };
+
+        foreach (var (name, bar) in barOf)
+        {
+            using var buffer = Named(name).Build(0);
+            var atTheFifthBar = bar * 4;
+            Assert.Equal([(atTheFifthBar, GMajor)], Detector(buffer, CMajor));
+            Assert.Equal([(atTheFifthBar, GMajor)], Trajectory(buffer));
+        }
+
+        // A harmony is what the music strikes together, and where it strikes three notes
+        // together anywhere, two are no harmony: the bass of a broken accompaniment and the
+        // tune's note over it are two voices. Counted as a harmony, they changed the harmony on
+        // every beat of a waltz under a tune in quarters, no gap had the majority, and the bar
+        // of three quarters was lost to the clock — the dominant heard at 4, a whole note after
+        // the fifth bar of 3/4 a musician writes it at, and after the same waltz's left hand
+        // alone was heard at 3.
+        using var waltz = Named("a waltz accompaniment under a melody in quarters: C then G (3/4)").Build(0);
+        Assert.Equal([(new Rational(3, 1), GMajor)], Detector(waltz, CMajor));
+        Assert.Equal([(new Rational(3, 1), GMajor)], Trajectory(waltz));
+
+        using var leftHand = Named("a waltz accompaniment, the bass on one and the chord on two and three: C then G (left hand alone, 3/4)").Build(0);
+        Assert.Equal([(new Rational(3, 1), GMajor)], Detector(leftHand, CMajor));
+        Assert.Equal([(new Rational(3, 1), GMajor)], Trajectory(leftHand));
+
+        // The shape the rule must not fire on: chords that go a whole number to the whole note
+        // are several to a bar, not bars of their own. Read as bars, C D E F sharp in half-bar
+        // chords would give each key a phrase of four of them and name four keys, where a
+        // musician hears a new chord every two bars and no key at all.
+        using var halfBars = Named("a new key every two bars, C D E F sharp (half-bar chords)").Build(0);
+        Assert.Empty(Detector(halfBars, CMajor));
+        Assert.Empty(Trajectory(halfBars));
+    }
+
+    [Fact]
+    public void APedalIsOneNoteUnderTheHarmonyNotTheHarmony()
+    {
+        // A pedal is struck once and rings under chord after chord: it weighs until the next
+        // chord is struck, and is no part of the harmony after that. Weighed to the end of its
+        // sound, the tonic C under C F G C | R | G C D7 G outweighed the dominant's whole
+        // phrase — and stood in the chord the phrase opens on, so that G's phrase opened on
+        // C E G plus a C — and neither road heard G at all, where a musician hears it from bar
+        // 6 as both roads do over a dominant pedal, which was heard only because it happened to
+        // spell the new key. The same passage in two-whole-note chords under the same pedal was
+        // C throughout as well.
+        using var tonicPedal = BlocksOver(36, new Rational(9, 1), ("0 5 7 0", 0), ("7 0 2:7 7", 5));
+        Assert.Equal([(new Rational(5, 1), GMajor)], Detector(tonicPedal, CMajor));
+        Assert.Equal([(new Rational(5, 1), GMajor)], Trajectory(tonicPedal));
+
+        // The shape the rule must not fire on: a bar with a chord struck over the pedal is
+        // still that chord's bar, and the pedal that changes with the key is heard as before.
+        using var unbroken = BlocksOver(36, new Rational(12, 1), ("0 5 7 0 | 7 0 2:7 7 | 7 0 2:7 7", 0));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Detector(unbroken, CMajor));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(unbroken));
+
+        using var changing = Named("a pedal that CHANGES with the key: C under the first phrase, G under the rest, no bar silent (four voices)").Build(0);
+        Assert.Equal([(new Rational(4, 1), GMajor)], Detector(changing, CMajor));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(changing));
+    }
+
+    [Fact]
+    public void TheFigureIsAVoiceOfItsOwnAboveTheTuneAsWellAsBelowIt()
+    {
+        // Quick single notes that spell one chord are that chord under — or over — the tune,
+        // the figure being a voice of its own: all of it below every longer note struck with
+        // it, or all of it above. Told from the tune by lying below it only, the closing chord
+        // arpeggiated two octaves above the tune over a held bass was so many single notes, the
+        // piece had no last harmony, and A minor's Picardy cadence went missing on both roads.
+        var aMinor = new KeySignature(9, false);
+        var home = new List<(Rational, KeySignature)> { (new Rational(4, 1), CMajor), (new Rational(8, 1), aMinor) };
+        using var above = Named("the Picardy close, the figure ABOVE the tune: the chord arpeggiated two octaves up over a held bass (four voices)").Build(0);
+        Assert.Equal(home, Detector(above, aMinor));
+        Assert.Equal(home, Trajectory(above));
+
+        // The shape the rule must not fire on: a tune in quarters and eighths that crosses its
+        // own register is a tune, not a figure with a tune over it, whatever its eighths spell.
+        using var tune = Named("to the dominant with escape tones and anticipations, three of the escape tones chromatic (melody over chords)").Build(0);
+        Assert.Equal([(new Rational(5, 1), GMajor)], Detector(tune, CMajor));
+        Assert.Equal([(new Rational(5, 1), GMajor)], Trajectory(tune));
+    }
+
+    [Fact]
+    public void ThePhraseTheOldKeyClosesOnIsNoPivotBar()
+    {
+        // A modulation is written at its pivot chord — the bar before the new key's own note,
+        // when the new key owns that bar whole — unless that bar closes the phrase before on
+        // the old key's own tonic chord, which is the old key's cadence. In 5/4, whose bars
+        // hold the cadential C of the first phrase whole, C F G C | G C D7 G under a tune was
+        // heard from that C, a bar before the phrase that leaves C; on the clock's bars the
+        // same reading fell inside the C chord, a whole note before the dominant.
+        using var fiveFour = Named("to the dominant in 5/4 (melody over chords)").Build(0);
+        Assert.Equal([(new Rational(5, 1), GMajor)], Detector(fiveFour, CMajor));
+        Assert.Equal([(new Rational(5, 1), GMajor)], Trajectory(fiveFour));
+
+        // The shape the rule must not fire on: a pivot bar that is no cadence of the old key's
+        // is the pivot as before — C F G C | G D7 G is written at the G, not at the D7.
+        using var pivot = Blocks("0 5 7 0 | 7 2:7 7");
+        Assert.Equal([(new Rational(4, 1), GMajor)], Detector(pivot, CMajor));
+        Assert.Equal([(new Rational(4, 1), GMajor)], Trajectory(pivot));
     }
 
     // ---------- the textures ----------

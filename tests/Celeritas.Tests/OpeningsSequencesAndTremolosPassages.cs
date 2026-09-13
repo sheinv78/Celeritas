@@ -37,11 +37,11 @@ namespace Celeritas.Tests;
 /// and opening on the A minor chord, names it the minor: the same music read alike from each
 /// opening key, and no plan can speak for both; the readings are asserted road by road in
 /// <see cref="TheTwoRoadsHearEveryTextureAlikeTests"/>. Two are not rows. A silent 3/4 bar before
-/// G C D7 G in 3/4 (the plan G at 15/4) is a tonicization on both roads, with the silence and
-/// without it: the judge knows no meter — the buffer carries none — and reads its bars and
-/// phrases in whole notes, so the three-whole-note phrase G C D7 G is shorter than its frame; a
-/// meter-free pause rule cannot reach it, and a judge that reads the bar from the harmonic rhythm
-/// is another iteration's work. And two Am F G C loops between A minor's cadences under a tune
+/// G C D7 G in 3/4 (the plan G at 15/4) was a tonicization on both roads, with the silence and
+/// without it, while the judge counted every bar a whole note: its three-whole-note phrase was
+/// shorter than the frame. The judge now reads the bar from the music's own chord changes, and
+/// both roads hear the modulation where a musician does — at 15/4 with the silence and at 3
+/// without it. And two Am F G C loops between A minor's cadences under a tune
 /// whose B rises to C at each close (the reviewer plans C at bar 5 and A minor at bar 13) stay one
 /// key on both roads, as the same chords do without the tune and as the eighth table's single loop
 /// does: the G chord already carries the B, and a phrase opening on the minor's tonic is the

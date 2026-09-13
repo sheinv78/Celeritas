@@ -478,10 +478,19 @@ follows.
   bare fifth; the closing chord as a two-hand arpeggio over three octaves, the
   melody arpeggiating it alone in sixteenths; the loop in 3/4 and over its own
   pedal; a sequence through three keys in 6/8 -- twenty-two, which join the fixture
-  as an eleventh table
+  as an eleventh table (eight more after the eleventh iteration's rules); and on an
+  eleventh reviewer's thirty-eight -- the same modulating passage in 9/8, 5/8, 7/8
+  and 2/2, a 6/8 piece with a harmony on each dotted quarter, a piece that changes
+  metre twice, a rubato whose chords drift by a sixteenth, chords on the half bar,
+  whole-bar chords with one bar of four quarters, an accompaniment in eighths under
+  whole-bar harmonies, a half-bar pickup; a pedal entering late under the pivot,
+  two pedal notes a fifth apart, a pedal in the top voice; an inner-voice figure
+  between a held bass and the tune, the tune holding one chord tone while the
+  figure moves; a piece told C that opens on ii -- twenty-five, which join the
+  fixture as a twelfth table
 - The two modulation roads agree on every texture of every chord-bearing passage
-  of the eleven tables but one: every chord struck twice in its bar, the second bar
-  silent, every chord an eighth off the beat -- 1026 cases in twelve keys; 17
+  of the twelve tables but one: every chord struck twice in its bar, the second bar
+  silent, every chord an eighth off the beat -- 1038 cases in twelve keys; 17
   disagreements and 47 misses of the musician's plan before, 1 and 3 after (the D
   Dorian tune with its second bar silent, where the given key and the guessed one
   differ), and that lens is now a test. A chord
@@ -573,6 +582,36 @@ follows.
   its harmony on, so a trill in sixteenths over the Picardy chord restruck in
   quarters no longer runs past the first quarter's harmony and closes the piece in
   A minor, not as a modulation to A major
+- Modulation judge: **a bar is as long as the music's own bars.** The judge read
+  every bar as a whole note and every phrase as four of them, whatever the music
+  did, because neither road is given a time signature; it now reads one bar length
+  per piece from the distance most of its chord changes take (notes of the line
+  excluded, and a pair of notes struck together is no harmony in a music that
+  strikes three anywhere), and every rule that said "a whole note" says "a bar of
+  this music": the phrase is four bars, a stray note is a quarter of a bar, a
+  fermata two bars, and the parenthesis, the pivot, the pauses, the restrike, the
+  arpeggio window, the harmony's reach past its notes and the phase follow. The
+  same passage -- C ii V7 I, then two phrases in the dominant -- is now heard at
+  its own fifth bar in 4/4, 3/4, 6/8, 2/4, 5/4 and 12/8 alike, where a 12/8 passage
+  of chords a bar and a half long was two of its bars late and a slow piece of
+  two-whole-note chords was not heard at all. Reading the metre from
+  `RhythmAnalyzer.DetectMeter` would not do, and the remarks say why with the
+  numbers: it calls a hundred and eighteen of the fixture's three hundred and
+  sixty-one 4/4 passages something else, the chorales among them
+- Modulation judge: a pedal is one note under the harmony, not the harmony -- a
+  note struck with a chord and still sounding when the next chord is struck weighs
+  until that chord and is no part of what sounds after it -- so `C F G C | R | G C
+  D7 G` over a held *tonic* pedal, and the same passage in two-whole-note chords,
+  reach the dominant where a musician hears it instead of reading as one key. A
+  chord held with nothing struck under it, a fermata or a chord tied across the
+  pivot, sounds on as before
+- Modulation judge: a closing figure may lie above the tune as well as below it,
+  and a modulation is no longer written on the bar that closes the previous phrase
+  in the key it leaves. The final chord arpeggiated two octaves above the tune over
+  a held bass left the piece no last harmony and lost the minor key's Picardy
+  cadence; and Picardy closes, relative-major areas and homecomings are now
+  reported at the bar their own phrase begins in -- one bar later than before in
+  every such passage of the fixture, which is the bar its plan always named
 - `ModulationDetector`: a note is rounded onto the eighth-note grid only when that
   moves it by less than half its own length, so sixteenths and thirty-seconds
   struck one after another are a line, not chords of neighbouring tones

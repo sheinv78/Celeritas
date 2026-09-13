@@ -932,10 +932,13 @@ public class AKeyHoldsForAPhraseTests
         // phrases in G reads as G major on the profile still — the dominant sounded twice, the
         // tonic once — so the plain ii V7 I home was refused for the separation that guards
         // against a wobble; nothing follows a final cadence to wobble back to. C is written at
-        // the G before the Dm, the pivot chord.
+        // the Dm that opens the closing phrase: the G before it closes G's own phrase on G's
+        // tonic, and a phrase that closes on the tonic of the key it leaves closes in that key,
+        // so that bar is G's cadence and no pivot. Written at the G, home came a bar before the
+        // phrase that is in C.
         using var home = Chords("0 5 7 0 | 7 0 2:7 7 | 7 0 2:7 7 | 2:m 7:7 0");
 
-        expected = [(new Rational(4, 1), gMajor), (new Rational(11, 1), CMajor)];
+        expected = [(new Rational(4, 1), gMajor), (new Rational(12, 1), CMajor)];
         Assert.Equal(expected, Modulations(home, CMajor));
         Assert.Equal(expected, Trajectory(home));
 
@@ -956,7 +959,9 @@ public class AKeyHoldsForAPhraseTests
 
         using var fullPhrase = Chords("0 5 7 0 | 7 0 2:7 7 | 7 0 2:7 7 | 7:7 0 0 0");
 
-        expected = [(new Rational(4, 1), gMajor), (new Rational(11, 1), CMajor)];
+        // Home at the G7 that opens the closing phrase, not at the G before it: that G closes
+        // G's own phrase on G's tonic, and is its cadence, not C's pivot.
+        expected = [(new Rational(4, 1), gMajor), (new Rational(12, 1), CMajor)];
         Assert.Equal(expected, Modulations(fullPhrase, CMajor));
         Assert.Equal(expected, Trajectory(fullPhrase));
 

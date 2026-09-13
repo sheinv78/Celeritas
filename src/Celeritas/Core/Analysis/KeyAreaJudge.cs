@@ -70,9 +70,9 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// The judge applies a musician's rules rather than a window's point estimate:
 /// </para>
 /// <list type="bullet">
-/// <item><description><b>A key holds for a phrase.</b> Evidence is read over <see cref="Phrase"/>
-/// — four whole notes, a four-bar phrase in common time — never over a window shorter than
-/// that. Two block chords in a two-bar window read as the key of the pitch class they share,
+/// <item><description><b>A key holds for a phrase.</b> Evidence is read over a phrase — four
+/// bars of this music, read from the music itself (<see cref="Evidence.Bar"/>), four whole
+/// notes in common time — never over a window shorter than that. Two block chords in a two-bar window read as the key of the pitch class they share,
 /// so I–V sounded as the dominant's key and IV–V7 as the subdominant's; a phrase reads as the
 /// key it is in.</description></item>
 /// <item><description><b>A chord is not a key.</b> A phrase whose material cannot decide a key
@@ -86,7 +86,7 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// in every D7 and G owns every note.</description></item>
 /// <item><description><b>A key owns its phrase.</b> Leaving the least of a phrase foreign is not
 /// owning it: a phrase is a key's only when the notes the key lacks amount to less than a
-/// quarter note in every bar of it — a stray note, not a chord tone (<see cref="StrayNote"/>
+/// quarter of a bar in every bar of it — a stray note, not a chord tone (<see cref="StrayNote"/>
 /// measures the passages that must pass and fail). An applied dominant is the key's chord: a
 /// dominant seventh that resolves down a fifth into a chord the key owns leaves nothing
 /// foreign, so I V7/V V I is owned by its key whole. Judged on what it left foreign relative
@@ -456,14 +456,48 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// lifted; counted only where one pitch class at most sounded on, the same passage with the
 /// fourth bar's E and G tied over its rest was no pause either and neither road heard the G. A
 /// fermata needs no exception: a chord held with nothing struck under it closes its phrase, and
-/// the count moves on at the bar the music resumes in — the same bar this reading gives it. A silent 3/4 bar before G C D7 G in 3/4 is not heard yet: the judge knows no
-/// meter — the buffer carries none, and neither road passes one — and its bars and phrases are
-/// whole notes; the same 3/4 shape without the silence is a tonicization too, the
-/// three-whole-note phrase G C D7 G being shorter than the frame. Reading the meter from
-/// <see cref="RhythmAnalyzer.DetectMeter(NoteBuffer)"/> would not do: it calls fifty-five of
-/// the fixture's hundred and forty-one 4/4 passages 2/2, 2/4, 3/4 or 6/8 — the chorales among
-/// them — at confidences of 0.47 to 0.71, and costs 28.6 ms on eight thousand block chords,
-/// as much again as the whole analysis.</description></item>
+/// the count moves on at the bar the music resumes in — the same bar this reading gives it. The
+/// bars counted are the music's own, so a silent 3/4 bar before G C D7 G in 3/4 is a pause
+/// between phrases of three quarters each, as it is in common time.</description></item>
+/// <item><description><b>A bar is as long as the music's own bars.</b> The judge is passed no
+/// metre — the buffer carries none, and neither road passes one — so it reads one from the
+/// music: a bar is the distance most of the chord changes take, and every rule that counts bars
+/// counts these (<see cref="Evidence.Bar"/>). The phrase is four of them, the stray note a
+/// quarter of one, the fermata two, the parenthesis one, and the phase of the bars is measured
+/// in eighths of one. Chords that go a whole number to the whole note are several to a bar and
+/// leave the clock standing — half-bar chords, an Alberti bass in quarters, a tremolo in
+/// sixteenths, a chord struck twice in its bar — and a melody with no chords in it keeps the
+/// clock as before. Counted in whole notes whatever the music did, a 12/8 passage of chords a
+/// bar and a half long reached the dominant two of its bars late, and a slow piece of
+/// two-whole-note chords — alone, over a pedal, and at twelve chords — never reached it at all:
+/// their phrases were half the music's and twice it. The same passage — C ii V7 I, then two
+/// phrases in the dominant — is now heard at its own fifth bar in 4/4, 3/4, 6/8, 2/4, 5/4 and
+/// 12/8 alike. Reading the metre from <see cref="RhythmAnalyzer.DetectMeter(NoteBuffer)"/> would
+/// not do: it calls a hundred and eighteen of the fixture's three hundred and sixty-one 4/4
+/// passages 2/2, 2/4, 3/4 or 6/8 — the chorales among them — at confidences of 0.42 to 0.74, and
+/// costs 15.6 ms on eight thousand block chords against some thirty-six for the whole analysis;
+/// the bar read from the chord changes is three walks over the onsets, allocates nothing, and
+/// costs nothing measurable but a twenty-fifth of a millisecond on a two-thousand-bar pedal.</description></item>
+/// <item><description><b>A pedal is one note under the harmony, not the harmony.</b> A note
+/// struck with a chord and still sounding when the next chord is struck weighs until that chord
+/// and is no part of what sounds after it: it was struck once, and what is weighed over it is
+/// what the hands play (<see cref="Evidence.WeighsTo"/>). A note of the line is not a pedal, and
+/// a chord held with nothing struck under it — a fermata, a chord tied across the pivot, inner
+/// voices held over a silent bar — sounds on as before. Weighed to the end of its sound, a tonic
+/// pedal outweighed everything struck above it and stood in the chord each phrase opened on: C F
+/// G C | R | G C D7 G with the tonic sounding underneath was C throughout on both roads, and so
+/// was the same passage in two-whole-note chords, where a musician hears the dominant from bar 6
+/// and bar 9 — as both roads hear them when the pedal is lifted, and as they hear the same
+/// passages over a dominant pedal, which was heard only because it happened to spell the new
+/// key.</description></item>
+/// <item><description><b>A phrase that closes on the old key's tonic is no pivot bar.</b> A
+/// modulation is written at its pivot chord, but the bar a phrase closes on in the key it leaves
+/// belongs to that phrase and that key, and the new key begins after it. Written at any bar
+/// before the boundary, the return home of C F G C | G C D7 G | G C D7 G | Dm G7 C fell on the G
+/// that ends the third phrase rather than on the Dm that opens the last; A minor's Picardy
+/// cadence, and the relative major of Am Dm E7 Am | C F G C, each began a bar before their own
+/// phrase; and in 5/4, whose bars hold the cadential C of the first phrase whole, C F G C | G C
+/// D7 G under a tune was G from that C.</description></item>
 /// <item><description><b>A tremolo is the chord it spells whatever its speed.</b> Strokes of
 /// two notes or more, none longer than an eighth, that spell a triad or a dominant seventh
 /// together within a bar, a half or a quarter are that chord, as an arpeggio in quick single
@@ -477,9 +511,13 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// in tremolo, the accompaniment spells the chord; the tune over it may pass, turn, or end on
 /// a note the chord does not hold without unmaking it, and is heard as the line is — a passing
 /// tone, a neighbour, an appoggiatura, or a note the key lacks. Quick single notes that spell
-/// a chord, every one of them below every longer note of the bar, are that chord under the
-/// tune (an Alberti bass in the left hand; a tune in quarters and eighths keeps its eighths in
-/// its own register and is a tune); a tremolo's strokes are the chord whatever the tune does
+/// a chord, all of them below every longer note of the bar or all of them above, are that chord
+/// under the tune or over it, the figure being a voice of its own (an Alberti bass in the left
+/// hand; the closing chord arpeggiated two octaves above the tune over a held bass; a tune in
+/// quarters and eighths crosses its own register and is a tune, whatever its eighths spell —
+/// told from the tune by lying below it only, the figure above it was so many single notes, the
+/// piece had no last harmony, and A minor's Picardy cadence went missing on both roads); a
+/// tremolo's strokes are the chord whatever the tune does
 /// over them; and a triad struck again in its bar with one note more is the triad restruck,
 /// the note the tune's — unless the note makes a seventh chord of it, C struck again with a B
 /// flat being C7; and a restrike carries the chord's harmony on, so that the line sounding over
@@ -513,11 +551,24 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 internal static class KeyAreaJudge
 {
     /// <summary>
-    /// How long a key must hold to be a key and not a chord: four whole notes, a four-bar
-    /// phrase in common time. The evidence for a change is read over this length, and a change
-    /// that does not hold for it is a tonicization.
+    /// How long a key must hold to be a key and not a chord: a phrase, which is four bars of the
+    /// music in hand — four whole notes in common time, this length. The evidence for a change is
+    /// read over the phrase, and a change that does not hold for it is a tonicization.
     /// </summary>
+    /// <remarks>
+    /// The judge reads its own phrase from the music (<see cref="Evidence.PhraseOf"/>), a bar
+    /// being as long as the music's own bars (<see cref="Evidence.Bar"/>); this is what that
+    /// comes to in common time, and the length below which a caller's window is not read.
+    /// </remarks>
     internal static readonly Rational Phrase = new(4, 1);
+
+    /// <summary>
+    /// How long a bar of <paramref name="sonorities"/> is, as the judge reads it from the music
+    /// (<see cref="Evidence.Bar"/>): the distance most of its chord changes take, or the whole
+    /// note when they agree on none. The phrase is four of these.
+    /// </summary>
+    internal static Rational BarOf(IReadOnlyList<Sonority> sonorities) =>
+        sonorities.Count == 0 ? Rational.Whole : new Evidence(sonorities).Bar;
 
     // A phrase names a key when, among the keys that own most of it, the best separates from
     // the runner-up by this margin; the margin semantics are those of
@@ -624,20 +675,27 @@ internal static class KeyAreaJudge
     /// The key changes in <paramref name="sonorities"/>, judged at each of <paramref name="candidates"/>
     /// (ascending positions at which a phrase may be read), starting from <paramref name="startKey"/>
     /// or, when that is <see langword="null"/>, from the key the opening phrase is in.
-    /// <paramref name="phrase"/> is the length a key must hold; callers pass <see cref="Phrase"/>
-    /// or their own longer window.
+    /// The length a key must hold is four bars of this music, read from the music itself
+    /// (<see cref="Evidence.Bar"/>); <paramref name="window"/> is the caller's own window, when
+    /// it reads by one longer than that, and zero when it has none.
     /// </summary>
     internal static Judgement Judge(
         IReadOnlyList<Sonority> sonorities,
         IReadOnlyList<Rational> candidates,
         KeySignature? startKey,
-        Rational phrase)
+        Rational window)
     {
         var changes = new List<KeyChange>();
         if (sonorities.Count == 0)
             return new Judgement(startKey ?? new KeySignature(0, true), changes);
 
-        var evidence = new Evidence(sonorities) { PhraseLength = phrase };
+        var phrase = window;
+
+        // A phrase is four bars of this music, and a bar is as long as the music's own bars
+        // (Evidence.Bar): the caller's length is the least it may be, not the metre.
+        var evidence = new Evidence(sonorities);
+        phrase = evidence.PhraseOf(phrase);
+        evidence.PhraseLength = phrase;
         var end = evidence.End;
         var firstOnset = evidence.FirstOnset;
         var openingByChord = false;
@@ -861,7 +919,7 @@ internal static class KeyAreaJudge
             // A7 before Dm G7 C is C's bar, the A7 its V7/ii, and C is written at the G, the
             // pivot, where a musician writes it — asked for the bar outright, the judge wrote it
             // a bar late, at the Dm.
-            var previousBar = boundary - Rational.Whole;
+            var previousBar = boundary - evidence.Bar;
             var pivot = previousBar >= floor
                 && (evidence.BarIsOwned(previousBar, next, current, Exempt.Nothing)
                     || (evidence.OpensOutright(next, previousBar) && evidence.BarIsOwned(previousBar, next, current, Exempt.Sevenths)));
@@ -939,10 +997,20 @@ internal static class KeyAreaJudge
                 continue;
             }
 
-            // A modulation is written at its pivot chord.
+            // A modulation is written at its pivot chord — unless that bar closes the phrase
+            // before on the old key's own tonic chord, which is the old key's cadence and no
+            // pivot: a phrase that closes on the tonic of the key it leaves closes in that key,
+            // and the new key begins with the phrase after it. In 5/4, where a bar holds the
+            // cadential C of the first phrase whole, C F G C | G C D7 G under a tune was G from
+            // that C, a bar before the phrase that leaves C.
             var position = boundary;
-            if (established && pivot)
+            if (established
+                && pivot
+                && !(evidence.PhraseStart(previousBar, phrase) != evidence.PhraseStart(boundary, phrase)
+                    && evidence.ClosesOnTheTonicOf(current, previousBar, boundary)))
+            {
                 position = previousBar;
+            }
 
             // A key area begins with a phrase. When the new key's own note falls later in its
             // phrase — the phrases counted from the first note — and the new key owns every bar
@@ -977,7 +1045,7 @@ internal static class KeyAreaJudge
                         var (startHolds, earlier, _) = evidence.Holds(phraseStart, ref startTo, next, current, phrase, returning ? 0f : MinSeparation);
                         var startFragment = startTo == end && startTo - phraseStart < phrase;
                         var startHomecoming = returning;
-                        var barBefore = phraseStart - Rational.Whole;
+                        var barBefore = phraseStart - evidence.Bar;
                         var startFromOldKey = evidence.BarIsOwned(barBefore, current, null)
                             || evidence.BarIsOwned(barBefore, next, current, Exempt.Sevenths);
                         if (startHolds
@@ -1284,13 +1352,27 @@ internal static class KeyAreaJudge
         private readonly double[] _harmonyEnd;
         private readonly double _harmonyReachD;
 
+        // The onset of the next chord of two pitch classes or more struck after each sonority's
+        // own chord — where a note still sounding stops weighing (WeighsTo): a pedal is one
+        // note under the harmony, not the harmony, and is heard as struck once. Infinity when
+        // no chord follows.
+        private readonly double[] _nextChord;
+
+        // How long a bar of this music is: the distance most of its chord changes take
+        // (BarOfTheChanges). A bar is as long as the music's own bars, and its bars are as long
+        // as its harmonies: every rule the judge counts bars by — a bar it owns, a pivot bar, a
+        // bar in which nothing is struck, the phrase of four bars, the stray note of a quarter
+        // of a bar, the fermata of two bars — is read in this length. The whole note, the
+        // clock, when the chord changes agree on no length and when there are no chords at all.
+        private readonly double _bar;
+
         // Where the bars begin: the phase, in whole notes, of the onsets that carry the
         // harmony. When more than half the struck chords fall the same distance after the
-        // whole-note grid — every chord late by an eighth — the bars are late by that much,
+        // bar grid — every chord late by an eighth of a bar — the bars are late by that much,
         // and every bar the judge reads (a bar it owns, a pivot bar, the start of a bar, a
         // downbeat) begins there; with no struck chords, the phase at which the most notes
         // group into arpeggiated chords. Zero — the clock — when the chords say nothing, and
-        // always a multiple of an eighth.
+        // always a multiple of an eighth of the bar.
         private readonly double _phase;
 
         // Whether each chord is a restrike of the chord before it — the same pitch classes,
@@ -1456,11 +1538,8 @@ internal static class KeyAreaJudge
             _group = new int[_sonorities.Length];
 
             // Sonorities that begin together are one chord; a sonority alone at its onset,
-            // with a pitch, is a note of the line. Every onset, an eighth at a time after the
-            // whole note, is counted for the phase of the bars.
+            // with a pitch, is a note of the line.
             var anyChord = false;
-            Span<int> phases = stackalloc int[8];
-            var onsets = 0;
             for (var i = 0; i < _sonorities.Length;)
             {
                 var next = NextChord(i);
@@ -1514,23 +1593,48 @@ internal static class KeyAreaJudge
                 }
 
                 anyChord |= BitOperations.PopCount(seen) > 1;
-                var eighths = (_onset[i] - Math.Floor(_onset[i])) * 8;
-                if (eighths == Math.Floor(eighths))
-                {
-                    phases[(int)eighths]++;
-                    onsets++;
-                }
-
                 i = next;
             }
 
             _anyChord = anyChord;
 
-            // A melody alone sets no harmony, and its scans need reach no further back.
-            _harmonyReachD = anyChord ? _longestD + 1.0 : _longestD;
+            // How long a bar of this music is, read from the music itself before anything is
+            // counted in bars; then where the bars begin, in eighths of that bar.
+            Bar = anyChord ? BarOfTheChanges() : Rational.Whole;
+            _bar = Bar.ToDouble();
 
-            _phase = anyChord ? PhaseOfTheOnsets(phases, onsets) : PhaseOfTheArpeggios();
-            Phase = new Rational((long)(_phase * 8), 8);
+            // A melody alone sets no harmony, and its scans need reach no further back.
+            _harmonyReachD = anyChord ? _longestD + _bar : _longestD;
+
+            if (anyChord)
+            {
+                // Every onset, an eighth at a time after the bar it falls in. A bar that is no
+                // whole number of eighths is no grid to read a phase on, and the clock stands.
+                Span<int> phases = stackalloc int[EighthsInABar];
+                var eighthsInABar = (int)Math.Round(_bar * 8);
+                var onsets = 0;
+                if (eighthsInABar >= 1 && eighthsInABar <= EighthsInABar && _bar * 8 == eighthsInABar)
+                {
+                    for (var i = 0; i < _sonorities.Length; i = _groupEnd[i])
+                    {
+                        var eighths = _onset[i] * 8;
+                        if (eighths == Math.Floor(eighths))
+                        {
+                            phases[(int)eighths % eighthsInABar]++;
+                            onsets++;
+                        }
+                    }
+                }
+
+                Phase = new Rational(PhaseOfTheOnsets(phases[..Math.Max(1, Math.Min(eighthsInABar, EighthsInABar))], onsets), 8);
+                _phase = Phase.ToDouble();
+            }
+            else
+            {
+                _phase = PhaseOfTheArpeggios();
+                Phase = new Rational((long)(_phase * 8), 8);
+            }
+
             MarkArpeggios();
 
             // Each chord's ordinal, for the tables kept per chord.
@@ -1551,6 +1655,7 @@ internal static class KeyAreaJudge
             // notes are, which ask what harmony holds where they resolve; a chord of two pitch
             // classes stays one with a leaning note taken out, that being taken from four.
             _harmonyEnd = new double[_sonorities.Length];
+            _nextChord = new double[_sonorities.Length];
             var nextChord = double.PositiveInfinity;
             for (var i = _sonorities.Length - 1; i >= 0; i = _groupStart[i] - 1)
             {
@@ -1562,7 +1667,11 @@ internal static class KeyAreaJudge
 
                 var isChord = BitOperations.PopCount(union) > 1;
                 for (var k = start; k < groupEnd; k++)
-                    _harmonyEnd[k] = isChord ? Math.Max(_end[k], Math.Min(nextChord, _end[k] + 1.0)) : _end[k];
+                {
+                    _harmonyEnd[k] = isChord ? Math.Max(_end[k], Math.Min(nextChord, _end[k] + _bar)) : _end[k];
+                    _nextChord[k] = nextChord;
+                }
+
                 if (isChord)
                     nextChord = _onset[start];
 
@@ -1806,11 +1915,11 @@ internal static class KeyAreaJudge
                 if (!mark && grouped + (_sonorities.Length - first) < atLeast)
                     return grouped;
 
-                var bar = Math.Floor(_onset[first] - phase) + phase;
+                var bar = (Math.Floor((_onset[first] - phase) / _bar) * _bar) + phase;
                 var last = first;
-                while (last < _sonorities.Length && _onset[last] < bar + 1)
+                while (last < _sonorities.Length && _onset[last] < bar + _bar)
                     last++;
-                grouped += MarkArpeggiosIn(first, last, bar, bar + 1, mark);
+                grouped += MarkArpeggiosIn(first, last, bar, bar + _bar, mark);
                 first = last;
             }
 
@@ -1832,7 +1941,9 @@ internal static class KeyAreaJudge
             var arpeggio = true;
             var tremolo = false;
             var highestQuick = int.MinValue;
+            var lowestQuick = int.MaxValue;
             var lowestOver = int.MaxValue;
+            var highestOver = int.MinValue;
             for (var k = first; k < last; k++)
             {
                 var pitchClasses = _sonorities[k].PitchClasses;
@@ -1840,7 +1951,10 @@ internal static class KeyAreaJudge
                 {
                     quick |= pitchClasses;
                     if (_sonorities[k].Pitch >= 0 && BitOperations.PopCount(pitchClasses) == 1)
+                    {
                         highestQuick = Math.Max(highestQuick, _sonorities[k].Pitch);
+                        lowestQuick = Math.Min(lowestQuick, _sonorities[k].Pitch);
+                    }
                     if (!_lineNote[k])
                     {
                         // A stroke of the tremolo: two pitch classes or more struck together and
@@ -1856,6 +1970,7 @@ internal static class KeyAreaJudge
                 {
                     over |= pitchClasses;
                     lowestOver = Math.Min(lowestOver, _sonorities[k].Pitch);
+                    highestOver = Math.Max(highestOver, _sonorities[k].Pitch);
                     arpeggio = false;
                 }
                 else
@@ -1873,7 +1988,7 @@ internal static class KeyAreaJudge
             // a chord, every one of them below every longer note of the bar — an Alberti bass, an
             // arpeggio in the left hand — are that chord, and the tune over them is the line; a
             // tune in quarters and eighths, its eighths in its own register, is not.
-            var figureUnderTheTune = !tremolo && over != 0 && highestQuick < lowestOver;
+            var figureUnderTheTune = !tremolo && over != 0 && (highestQuick < lowestOver || lowestQuick > highestOver);
             var oneChord = quick != 0
                 && IsTriadOrDominantSeventh(quick)
                 && (arpeggio || tremolo || figureUnderTheTune);
@@ -1900,7 +2015,7 @@ internal static class KeyAreaJudge
                 return last - first;
             }
 
-            if (to - from > 0.25)
+            if (to - from > _bar / 4)
             {
                 var middle = (from + to) / 2;
                 var split = first;
@@ -1932,16 +2047,162 @@ internal static class KeyAreaJudge
         /// eighth late, touched G twice and never arrived. Chords on the half bar, or in 3/4 and
         /// 5/4, share no phase either, and the clock stands.
         /// </remarks>
-        private static double PhaseOfTheOnsets(ReadOnlySpan<int> phases, int onsets)
+        // As many eighths as a bar the phase is read on may hold: a bar of four whole notes.
+        // A longer bar is read on the clock, its phase never asked.
+        private const int EighthsInABar = 32;
+
+        private static int PhaseOfTheOnsets(ReadOnlySpan<int> phases, int onsets)
         {
             var best = 0;
-            for (var eighth = 1; eighth < 8; eighth++)
+            for (var eighth = 1; eighth < phases.Length; eighth++)
             {
                 if (phases[eighth] > phases[best])
                     best = eighth;
             }
 
-            return phases[best] * 2 > onsets ? best / 8.0 : 0.0;
+            return phases[best] * 2 > onsets ? best : 0;
+        }
+
+        /// <summary>
+        /// How long a bar of this music is: the distance most of its chord changes take — the
+        /// commonest gap between the onsets at which the sounding harmony changes, when more
+        /// than half the gaps are that one — or the whole note, the clock, when they agree on
+        /// none. A bar is as long as the music's own bars, and a music's bars are as long as
+        /// its harmonies: a 3/4 piece of one chord a bar changes chord every three quarters, a
+        /// slow piece of two-whole-note chords every two whole notes.
+        /// </summary>
+        /// <remarks>
+        /// The judge counted every bar as a whole note, no road passing it a metre: a 12/8
+        /// passage of chords a bar and a half long reached the dominant at 9 where a musician
+        /// writes it at 6, two of its bars late; a 3/4 piece whose phrases are three bars, and a
+        /// slow piece of two-bar chords alone, over a pedal and at twelve chords, reached it
+        /// nowhere at all, their phrases being shorter or longer than the four whole notes the
+        /// judge read by. The harmony is read from the chords and not from every onset: a chord
+        /// struck twice in its bar is one harmony, so the accompaniment that strikes each chord
+        /// on both halves of its bar keeps the bar it fills; and the notes of the line between
+        /// the chords carry no harmony, so a tune in quarters over whole-note chords does not
+        /// make the bar a quarter. Nor is every pair of notes struck together a harmony
+        /// (<see cref="AHarmonyOfThisMusic"/>): the bass of a broken accompaniment and the tune's
+        /// note over it are two voices, and counted as a harmony they changed the harmony on every
+        /// beat of a waltz under a tune in quarters — no gap had the majority, the bar of three
+        /// quarters was lost to the clock, and the dominant was heard a whole note after the fifth
+        /// bar of 3/4 a musician writes it at, where the same left hand alone was heard there. The
+        /// gaps are the same when every chord is struck an eighth late, the music being moved and
+        /// not re-measured.
+        /// </remarks>
+        private Rational BarOfTheChanges()
+        {
+            // The gap most of the changes take, by the majority vote: a value that occurs in
+            // more than half the gaps survives it, and nothing else can. Two walks and no
+            // allocation, the gaps being read off the onsets each time.
+            var least = AHarmonyOfThisMusic();
+            var candidate = 0.0;
+            var votes = 0;
+            var gaps = 0;
+            var previous = -1.0;
+            ushort sounding = 0;
+            for (var i = 0; i < _sonorities.Length; i = _groupEnd[i])
+            {
+                if (!Changes(i, ref sounding, least))
+                    continue;
+
+                if (previous >= 0.0)
+                {
+                    var gap = _onset[i] - previous;
+                    gaps++;
+                    if (votes == 0)
+                    {
+                        candidate = gap;
+                        votes = 1;
+                    }
+                    else
+                    {
+                        votes += gap == candidate ? 1 : -1;
+                    }
+                }
+
+                previous = _onset[i];
+            }
+
+            if (gaps == 0)
+                return Rational.Whole;
+
+            var found = 0;
+            var earlier = -1;
+            var later = -1;
+            var previousIndex = -1;
+            sounding = 0;
+            for (var i = 0; i < _sonorities.Length; i = _groupEnd[i])
+            {
+                if (!Changes(i, ref sounding, least))
+                    continue;
+
+                if (previousIndex >= 0 && _onset[i] - _onset[previousIndex] == candidate)
+                {
+                    found++;
+                    if (earlier < 0)
+                    {
+                        earlier = previousIndex;
+                        later = i;
+                    }
+                }
+
+                previousIndex = i;
+            }
+
+            if (found * 2 <= gaps || earlier < 0)
+                return Rational.Whole;
+
+            // The gap exactly, from the rationals it was read off. Chords that go a whole
+            // number to the whole note are several to a bar and leave the clock standing:
+            // half-bar chords, an Alberti bass in quarters, a tremolo in sixteenths.
+            var length = _sonorities[later].Onset - _sonorities[earlier].Onset;
+            return (Rational.Whole / length).Denominator == 1 ? Rational.Whole : length;
+        }
+
+        /// <summary>
+        /// Whether the chord at <paramref name="index"/> sounds a harmony other than
+        /// <paramref name="sounding"/>, the harmony last struck, which it replaces: the notes
+        /// struck together that are not the line's, two pitch classes or more. A note of the
+        /// line carries no harmony, and a chord struck again is the harmony that stands.
+        /// </summary>
+        private bool Changes(int index, ref ushort sounding, int least)
+        {
+            ushort together = 0;
+            for (var k = index; k < _groupEnd[index]; k++)
+            {
+                if (!_lineNote[k])
+                    together |= _sonorities[k].PitchClasses;
+            }
+
+            if (BitOperations.PopCount(together) < least || together == sounding)
+                return false;
+
+            sounding = together;
+            return true;
+        }
+
+        /// <summary>
+        /// How many pitch classes struck together make a harmony in this music: three where the
+        /// music strikes three together anywhere, two where it never does. The bass note of a
+        /// broken accompaniment and the tune's note over it are two voices, not a harmony.
+        /// </summary>
+        private int AHarmonyOfThisMusic()
+        {
+            for (var i = 0; i < _sonorities.Length; i = _groupEnd[i])
+            {
+                ushort together = 0;
+                for (var k = i; k < _groupEnd[i]; k++)
+                {
+                    if (!_lineNote[k])
+                        together |= _sonorities[k].PitchClasses;
+                }
+
+                if (BitOperations.PopCount(together) >= 3)
+                    return 3;
+            }
+
+            return 2;
         }
 
         /// <summary>
@@ -1984,43 +2245,90 @@ internal static class KeyAreaJudge
             return best;
         }
 
-        /// <summary>The start of the bar holding <paramref name="position"/>: whole notes from <see cref="_phase"/>.</summary>
-        private double BarStartD(double position) => Math.Floor(position - _phase) + _phase;
+        /// <summary>The start of the bar holding <paramref name="position"/>: bars of <see cref="_bar"/> from <see cref="_phase"/>.</summary>
+        private double BarStartD(double position) => (Math.Floor((position - _phase) / _bar) * _bar) + _phase;
 
         /// <summary>The start of the bar holding <paramref name="position"/>, exact.</summary>
-        private Rational BarStart(Rational position) => Phase + new Rational((long)Math.Floor(position.ToDouble() - _phase), 1);
+        private Rational BarStart(Rational position) => Phase + (Bar * new Rational(BarsBefore(position), 1));
+
+        /// <summary>How many whole bars of this music lie between <see cref="Phase"/> and <paramref name="position"/>, rounded down.</summary>
+        private long BarsBefore(Rational position) => BarsBefore(position.ToDouble());
+
+        /// <summary>How many whole bars of this music lie between <see cref="Phase"/> and <paramref name="position"/>, rounded down.</summary>
+        private long BarsBefore(double position) => (long)Math.Floor((position - _phase) / _bar);
 
         /// <summary>The bar start nearest <paramref name="position"/>, the earlier of two equally near.</summary>
         private Rational NearestBarStart(Rational position)
         {
             var before = BarStart(position);
-            var after = before + Rational.Whole;
+            var after = before + Bar;
             return after - position < position - before ? after : before;
         }
 
         /// <summary>Whether <paramref name="onset"/> is the start of a bar.</summary>
         private bool IsDownbeat(Rational onset)
         {
-            var beats = onset.ToDouble() - _phase;
-            return beats == Math.Floor(beats);
+            var bars = (onset.ToDouble() - _phase) / _bar;
+            return bars == Math.Floor(bars);
         }
 
-        /// <summary>Whether <paramref name="position"/> is the start of a bar (<see cref="_phase"/>).</summary>
+        /// <summary>Whether <paramref name="position"/> is the start of a bar (<see cref="_bar"/>, <see cref="_phase"/>).</summary>
         public bool IsBarStart(Rational position) => IsDownbeat(position);
 
         /// <summary>The first bar start strictly after <paramref name="position"/>.</summary>
-        public Rational NextBarStart(Rational position) => BarStart(position) + Rational.Whole;
+        public Rational NextBarStart(Rational position) => BarStart(position) + Bar;
 
         /// <summary>
         /// The bar a candidate is read from: <paramref name="position"/> itself, unless it is a
-        /// whole note of the clock and the bars begin elsewhere (<see cref="_phase"/>), when it
-        /// is the nearest bar start.
+        /// whole note of the clock that is no bar of this music's (<see cref="_bar"/>,
+        /// <see cref="_phase"/>), when it is the nearest bar start.
         /// </summary>
         public Rational NearestBar(Rational position) =>
-            _phase != 0.0 && position.Denominator == 1 ? NearestBarStart(position) : position;
+            position.Denominator == 1 && !IsBarStart(position) ? NearestBarStart(position) : position;
 
-        /// <summary>The phase of the bars (<see cref="_phase"/>), exact: a multiple of an eighth.</summary>
+        /// <summary>
+        /// Where sonority <paramref name="index"/> stops weighing: where its notes stop, or the
+        /// next chord struck after the chord it belongs to, whichever comes first. A pedal is
+        /// one note under the harmony, not the harmony: it is struck once, and what is weighed
+        /// after it is what the hands play over it.
+        /// </summary>
+        /// <remarks>
+        /// Weighed to the end of its sound, a tonic pedal held under a whole passage outweighed
+        /// everything struck over it: C F G C | R | G C D7 G with the tonic C sounding
+        /// underneath was C throughout on both roads, and so was the same passage of two-bar
+        /// chords, where a musician hears the dominant from bar 6 and bar 9 — as both roads hear
+        /// them when the pedal is lifted, and as they hear the same passages over a dominant
+        /// pedal, which was heard only because it happened to spell the new key. A chord held
+        /// with nothing struck under it weighs every bar it sounds as before: the fermata, the
+        /// chord tied across the pivot, and the inner voices held over a silent bar are heard as
+        /// they were.
+        /// </remarks>
+        private double WeighsTo(int index)
+        {
+            if (_lineNote[index])
+                return _end[index];
+
+            var next = _nextChord[index];
+            return next < _end[index] ? next : _end[index];
+        }
+
+        /// <summary>The phase of the bars (<see cref="_phase"/>), exact: a multiple of an eighth of the bar.</summary>
         public Rational Phase { get; }
+
+        /// <summary>The length of a bar of this music (<see cref="_bar"/>), exact.</summary>
+        public Rational Bar { get; }
+
+        /// <summary>
+        /// The phrase the judge reads by: four bars of this music, or the caller's own window
+        /// when that is longer. A phrase is four bars in any metre — three whole notes in 3/4,
+        /// eight in a slow piece of two-whole-note chords — and the judge counted four whole
+        /// notes whatever the music did.
+        /// </summary>
+        public Rational PhraseOf(Rational window)
+        {
+            var phrase = Bar * 4;
+            return window > phrase ? window : phrase;
+        }
 
         /// <summary>Whether <paramref name="chord"/> is exactly a major or a minor triad, or exactly a dominant seventh.</summary>
         private static bool IsTriadOrDominantSeventh(ushort chord) => PlainChord[chord & 0x0FFF];
@@ -3121,7 +3429,7 @@ internal static class KeyAreaJudge
                     }
                 }
 
-                _run[index] = new Run(first, last, lone || direction > 0, lone || direction < 0, _sonorities[last].End - _sonorities[first].Onset <= Rational.Whole);
+                _run[index] = new Run(first, last, lone || direction > 0, lone || direction < 0, _sonorities[last].End - _sonorities[first].Onset <= Bar);
             }
 
             return _run[index];
@@ -3279,7 +3587,7 @@ internal static class KeyAreaJudge
         private bool SoundsAgainInBar(int start, int end, ushort pitchClasses)
         {
             var bar = BarStart(_sonorities[start].Onset);
-            var to = bar + Rational.Whole;
+            var to = bar + Bar;
             for (var k = FirstIndexAt(bar); k < _sonorities.Length && _sonorities[k].Onset < to; k++)
             {
                 if ((k < start || k >= end) && (_sonorities[k].PitchClasses & pitchClasses) != 0)
@@ -3513,7 +3821,7 @@ internal static class KeyAreaJudge
                 return 0;
 
             var stops = Math.Min(to.ToDouble(), _harmonyEnd[last]);
-            return stops - restsFrom >= 2.0 ? _chordPitchClasses[last] : (ushort)0;
+            return stops - restsFrom >= 2 * _bar ? _chordPitchClasses[last] : (ushort)0;
         }
 
         /// <summary>
@@ -3623,7 +3931,7 @@ internal static class KeyAreaJudge
                     break;
 
                 var start = Math.Max(_onset[i], fromD);
-                var stop = Math.Min(_end[i], toD);
+                var stop = Math.Min(WeighsTo(i), toD);
                 if (stop <= start)
                     continue;
 
@@ -4005,7 +4313,7 @@ internal static class KeyAreaJudge
                     break;
 
                 var start = Math.Max(_onset[i], fromD);
-                var stop = Math.Min(_end[i], toD);
+                var stop = Math.Min(WeighsTo(i), toD);
                 if (stop <= start)
                     continue;
 
@@ -4208,8 +4516,9 @@ internal static class KeyAreaJudge
 
             var fromD = from.ToDouble();
             var toD = to.ToDouble();
-            var firstBar = (long)Math.Floor(fromD - _phase);
-            var barCount = (int)Math.Max(0, (long)Math.Ceiling(toD - _phase) - firstBar);
+            var stray = StrayNote * (float)_bar;
+            var firstBar = BarsBefore(fromD);
+            var barCount = (int)Math.Max(0, (long)Math.Ceiling((toD - _phase) / _bar) - firstBar);
             Span<float> foreign = barCount <= 16 ? stackalloc float[16] : new float[barCount];
             foreign = foreign[..barCount];
             foreign.Clear();
@@ -4229,7 +4538,7 @@ internal static class KeyAreaJudge
                     continue;
 
                 var count = BitOperations.PopCount(lacking);
-                var bar = (long)Math.Floor(start - _phase);
+                var bar = BarsBefore(start);
 
                 // A chord released late is the bar before's: a sonority struck in the bar before
                 // that stops within an eighth of the bar line is the harmony leaving, as an
@@ -4238,14 +4547,14 @@ internal static class KeyAreaJudge
                 // G sharp that begins E major's first bar was two foreign pitch classes for an
                 // eighth — a quarter note of weight, the most a bar may lack — and E major owned
                 // nothing.
-                var barStart = bar + _phase;
-                if (_onset[i] < barStart && stop <= barStart + 0.125)
+                var barStart = (bar * _bar) + _phase;
+                if (_onset[i] < barStart && stop <= barStart + (_bar / 8))
                 {
                     var before = (int)(bar - 1 - firstBar);
                     if (before >= 0 && before < barCount)
                     {
                         foreign[before] += count * (float)(stop - start);
-                        if (foreign[before] >= StrayNote)
+                        if (foreign[before] >= stray)
                             return false;
                     }
 
@@ -4254,12 +4563,12 @@ internal static class KeyAreaJudge
 
                 for (var at = start; at < stop; bar++)
                 {
-                    var until = Math.Min(bar + 1 + _phase, stop);
+                    var until = Math.Min(((bar + 1) * _bar) + _phase, stop);
                     var index = (int)(bar - firstBar);
                     if (index >= 0 && index < barCount)
                     {
                         foreign[index] += count * (float)(until - at);
-                        if (foreign[index] >= StrayNote)
+                        if (foreign[index] >= stray)
                             return false;
                     }
 
@@ -4421,7 +4730,7 @@ internal static class KeyAreaJudge
                 if ((s.PitchClasses & pitchClasses) == 0)
                     continue;
 
-                var bar = (long)Math.Floor(_onset[i] - _phase);
+                var bar = BarsBefore(_onset[i]);
                 if (bar != lastBar)
                 {
                     bars++;
@@ -4551,7 +4860,7 @@ internal static class KeyAreaJudge
         /// of two notes or more; the melody's last note over it closes on it — is
         /// <paramref name="key"/>'s tonic chord, with or without a note above it.
         /// </summary>
-        private bool ClosesOnTheTonicOf(KeySignature key, Rational from, Rational to)
+        public bool ClosesOnTheTonicOf(KeySignature key, Rational from, Rational to)
         {
             var last = FirstIndexAt(to) - 1;
             if (last < FirstIndexAt(from))
@@ -4584,7 +4893,7 @@ internal static class KeyAreaJudge
             // piece's own count (PhraseStart), or of the piece. The G C at the seam of Am F C G
             // | C F G C — the loop's last chord and the next phrase's first — is no cadence,
             // and C begins where its phrase does, not four bars before it.
-            var after = BarStart(_sonorities[tonic].Onset) + Rational.Whole;
+            var after = BarStart(_sonorities[tonic].Onset) + Bar;
             if (after < End && !IsPhraseStart(after, phrase))
                 return false;
 
@@ -4654,7 +4963,7 @@ internal static class KeyAreaJudge
             {
                 if (_sonorities[i].Onset > position)
                     break;
-                if (_sonorities[i].End > position && !_overChord[i])
+                if (_sonorities[i].End > position && WeighsTo(i) > position.ToDouble() && !_overChord[i])
                     together |= (ushort)(_sonorities[i].PitchClasses & ~_leaning[i]);
             }
 
@@ -4742,7 +5051,7 @@ internal static class KeyAreaJudge
                 var anchor = FirstBar;
                 found.Add(anchor);
                 var nextFermata = 0;
-                for (var bar = anchor + Rational.Whole; bar < End; bar += Rational.Whole)
+                for (var bar = anchor + Bar; bar < End; bar += Bar)
                 {
                     while (nextFermata < fermatas.Count && fermatas[nextFermata] < bar)
                         nextFermata++;
@@ -4867,12 +5176,12 @@ internal static class KeyAreaJudge
 
             // The last sounding bar before the re-entry: the bar before the pause, or the
             // fermata's bar.
-            var before = later - Rational.Whole;
+            var before = later - Bar;
             while (before > FirstBar && BarPauses(before))
-                before -= Rational.Whole;
+                before -= Bar;
 
             earlier = PhraseStart(before, phrase);
-            earlierTo = before + Rational.Whole;
+            earlierTo = before + Bar;
             return earlier < later;
         }
 
@@ -4910,7 +5219,7 @@ internal static class KeyAreaJudge
                 }
 
                 var held = stops - onset;
-                var beyondThePace = held >= 2.0 && held >= 2 * pace;
+                var beyondThePace = held >= 2 * _bar && held >= 2 * pace;
                 pace = held;
                 if (!beyondThePace)
                     continue;
@@ -4950,7 +5259,7 @@ internal static class KeyAreaJudge
         /// an eighth or a quarter later, and G after a quarter-note pickup chord moved a quarter
         /// earlier when the same music started a bar later.
         /// </remarks>
-        private Rational FirstBar => _phase != 0.0 && !IsBarStart(FirstOnset) ? NextBarStart(FirstOnset) : FirstOnset;
+        private Rational FirstBar => !IsBarStart(FirstOnset) && (_phase != 0.0 || Bar != Rational.Whole) ? NextBarStart(FirstOnset) : FirstOnset;
 
         /// <summary>
         /// Where the music is home again after an excursion to <paramref name="key"/> that began
@@ -4980,9 +5289,9 @@ internal static class KeyAreaJudge
             if (ownNotes == 0 && homeNotes != 0 && FirstOnsetSounding(homeNotes, from, afterFrom: true, End, out var home))
                 until = home;
 
-            for (var bar = from; bar < until; bar += Rational.Whole)
+            for (var bar = from; bar < until; bar += Bar)
             {
-                var barTo = bar + Rational.Whole;
+                var barTo = bar + Bar;
                 ushort together = 0;
                 for (var i = FirstIndexAt(bar); i < _sonorities.Length && _sonorities[i].Onset < barTo; i++)
                 {
@@ -5013,7 +5322,7 @@ internal static class KeyAreaJudge
         public bool BarIsOwned(Rational bar, KeySignature key, KeySignature? current, Exempt exempt = Exempt.Chords)
         {
             var any = false;
-            var to = bar + Rational.Whole;
+            var to = bar + Bar;
             for (var i = FirstIndexAt(bar); i < _sonorities.Length; i++)
             {
                 var s = _sonorities[i];
@@ -5055,7 +5364,7 @@ internal static class KeyAreaJudge
 
         /// <summary>Whether no sonority begins in the bar at <paramref name="bar"/>, <paramref name="i"/> being the first index at it.</summary>
         private bool NothingIsStruckIn(Rational bar, int i) =>
-            i >= _sonorities.Length || _sonorities[i].Onset >= bar + Rational.Whole;
+            i >= _sonorities.Length || _sonorities[i].Onset >= bar + Bar;
 
         /// <summary>
         /// Whether the bar at <paramref name="bar"/> is a bar of silence for the phrase count:
@@ -5130,7 +5439,7 @@ internal static class KeyAreaJudge
         public bool BarsAreOwned(Rational from, Rational to, KeySignature key, KeySignature current)
         {
             var exempt = Exemption(key, from, to, Exempt.Chords);
-            for (var bar = from; bar < to; bar += Rational.Whole)
+            for (var bar = from; bar < to; bar += Bar)
             {
                 if (!BarIsOwned(bar, key, current, exempt) && !BarRests(bar) && !BarIsHeldBy(bar, key, current, exempt))
                     return false;
@@ -5157,7 +5466,7 @@ internal static class KeyAreaJudge
         private bool BarIsHeldBy(Rational bar, KeySignature key, KeySignature? current, Exempt exempt)
         {
             var i = FirstIndexAt(bar);
-            if (i < _sonorities.Length && _sonorities[i].Onset < bar + Rational.Whole)
+            if (i < _sonorities.Length && _sonorities[i].Onset < bar + Bar)
                 return false;
 
             var any = false;
@@ -5187,7 +5496,7 @@ internal static class KeyAreaJudge
             var exempt = Exemption(key, from, to, Exempt.Chords);
             var parenthesis = false;
             var previousOwned = false;
-            for (var bar = from; bar < to; bar += Rational.Whole)
+            for (var bar = from; bar < to; bar += Bar)
             {
                 if (BarIsOwned(bar, key, current, exempt) || BarIsHeldBy(bar, key, current, exempt))
                 {
@@ -5198,7 +5507,7 @@ internal static class KeyAreaJudge
                 if (BarRests(bar))
                     continue;
 
-                if (parenthesis || !previousOwned || bar + Rational.Whole != to && !BarIsOwned(bar + Rational.Whole, key, current, exempt))
+                if (parenthesis || !previousOwned || bar + Bar != to && !BarIsOwned(bar + Bar, key, current, exempt))
                     return false;
                 parenthesis = true;
                 previousOwned = false;

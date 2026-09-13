@@ -29,19 +29,18 @@ namespace Celeritas.Tests;
 /// musician's, in whole notes; a 4/4 bar = 1, bar k begins at position k-1; a move to the relative
 /// key is planned where a chord only the new key owns first sounds, the pivot chord a bar before
 /// it. Of the reviewer's thirty-four, twenty-eight are here, with two of this iteration's own —
-/// the pedal pair. Six the library still reads otherwise, and they are the next iteration's work:
-/// a silent 3/4 bar and two silent 6/8 bars (the judge is given no metre — neither road passes it
-/// one — so it counts phrases in whole notes, and reading the metre from
-/// <see cref="Celeritas.Core.Analysis.RhythmAnalyzer.DetectMeter"/> would poison the count, it
-/// calling fifty-five of this fixture's 4/4 passages 2/2, 2/4, 3/4 or 6/8 and costing as much
-/// again as the whole analysis); a silent chord-bar under a held TONIC pedal, where the pause is
-/// now heard but the pedal's own pitch class swamps the profile, so the new key separates from
-/// the old by nothing and both roads hear one key; the Picardy close as an Alberti bass under a
-/// scale run in eighths, where the two voices can be told apart by register on the trajectory
-/// road but not on the detector road, which fuses the figure's note and the tune's into one
-/// sonority when they are struck and released together; and the dominant-minor return closed as
-/// an Alberti bass or in quarters, whose plan asks for a key area one bar long — the same
-/// passage closed on a plain block chord reads the same way, and a key holds for a phrase.
+/// the pedal pair. Three of the six the library then read otherwise are heard now: the silent 3/4
+/// bar (at 15/4 on both roads), the silent chord-bar under a held tonic pedal, and the Picardy
+/// close whose figure lies above the tune — the judge reads the bar from the music's own chord
+/// changes, a pedal is one note under the harmony, and a figure may lie either side of the tune.
+/// Three are still the next iteration's work: the Picardy close as an Alberti bass under a scale
+/// run in eighths, where the two voices can be told apart by register on the trajectory road but
+/// not on the detector road, which fuses the figure's note and the tune's into one sonority when
+/// they are struck and released together; the dominant-minor return closed as an Alberti bass or
+/// in quarters, whose plan asks for a key area one bar long — the same passage closed on a plain
+/// block chord reads the same way, and a key holds for a phrase; and the pedal rule reaches only
+/// a pedal struck with a chord: struck three eighths before the first chord it is a note of the
+/// line again, and the passage it was written for is one key once more.
 /// </remarks>
 internal static class RefutedKeysPausesAndDecoratedClosesPassages
 {
