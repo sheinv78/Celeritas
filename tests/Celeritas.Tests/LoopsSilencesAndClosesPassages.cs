@@ -124,8 +124,8 @@ internal static class LoopsSilencesAndClosesPassages
     private static RealModulationPassages.Passage Notes(string name, NoteEvent[] notes, RealModulationPassages.PlannedModulation[] plan, bool major = true, int openingRoot = 0) =>
         new(name, RealModulationPassages.Texture.FourVoices, major, "", notes, plan) { OpeningRoot = openingRoot };
 
-    private static RealModulationPassages.Passage Blocks(string name, string chords, RealModulationPassages.PlannedModulation[] plan, bool major = true, int openingRoot = 0) =>
-        new(name, RealModulationPassages.Texture.BlockChords, major, chords, [], plan) { OpeningRoot = openingRoot };
+    private static RealModulationPassages.Passage Blocks(string name, string chords, RealModulationPassages.PlannedModulation[] plan, bool major = true, int openingRoot = 0, bool trajectoryMayHearNoChange = false) =>
+        new(name, RealModulationPassages.Texture.BlockChords, major, chords, [], plan, trajectoryMayHearNoChange) { OpeningRoot = openingRoot };
 
     // ---------- the tunes ----------
 
@@ -173,7 +173,14 @@ internal static class LoopsSilencesAndClosesPassages
 
         // ---------- the LOOP: loops that move ----------
         Blocks("Am F C G twice, then Bm G D A twice: the second loop a key of its own, told A minor (block chords)", "9:m 5 0 7 | 9:m 5 0 7 | 11:m 7 2 9 | 11:m 7 2 9", At(9, 11, false), major: false, openingRoot: 9),
-        Blocks("a loop of the relative major cadencing into the minor: C G Am E7 | Am Dm E7 Am | Am Dm E7 Am, told C — A minor from its dominant at bar 4, the Am before it the pivot (block chords)", "0 7 9:m 4:7 | 9:m 2:m 4:7 9:m | 9:m 2:m 4:7 9:m", At(4, 9, false)),
+        // Told C, the two bars of C and G are the key the caller named and A minor begins at its
+        // dominant, the Am before it the pivot. Told nothing, the trajectory opens where a
+        // musician opening cold opens: ten of the twelve bars are A minor's, the C is its III,
+        // and there is no modulation to hear. Both readings are the musician's, and they are the
+        // same music heard from a given key and from none; the trajectory may hear no change here
+        // (the thirteenth iteration, which taught the judge that a triad of either mode opening a
+        // piece is a chord of its key before it is a key).
+        Blocks("a loop of the relative major cadencing into the minor: C G Am E7 | Am Dm E7 Am | Am Dm E7 Am, told C — A minor from its dominant at bar 4, the Am before it the pivot (block chords)", "0 7 9:m 4:7 | 9:m 2:m 4:7 9:m | 9:m 2:m 4:7 9:m", At(4, 9, false), trajectoryMayHearNoChange: true),
         Blocks("A minor's cadence, then the mirror loop C Am F G three times, told A minor (block chords)", "9:m 2:m 4:7 9:m | 0 9:m 5 7 | 0 9:m 5 7 | 0 9:m 5 7", At(5, 0, true), major: false, openingRoot: 9),
         Blocks("A minor's cadence, then C Dm G Am twice closing on the minor tonic, then A minor's cadence: one key, told A minor (block chords)", "9:m 2:m 4:7 9:m | 0 2:m 7 9:m | 0 2:m 7 9:m | 9:m 2:m 4:7 9:m", Nowhere, major: false, openingRoot: 9),
         Blocks("A minor's cadence, a phrase Am F G C opening on the minor's tonic and closing on the relative major's chord, then A minor's cadence: one key, told A minor (block chords)", "9:m 2:m 4:7 9:m | 9:m 5 7 0 | 9:m 2:m 4:7 9:m", Nowhere, major: false, openingRoot: 9),

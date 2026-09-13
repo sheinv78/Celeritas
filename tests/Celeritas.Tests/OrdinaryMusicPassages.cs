@@ -10,34 +10,41 @@ namespace Celeritas.Tests;
 /// vi, iii and ii are chords of a key and not keys, that a chord spread is that chord struck at
 /// its first note, and that a pedal struck again with every chord is one note under the harmony.
 /// Four lenses: the OPENING of a piece told a key it opens away from (told the major, opening on
-/// vi, on ii, on IV, with and without the tonic triad in the first phrase; a hymn opening on a
-/// first-inversion tonic; told the minor, opening on its VI; a song whose verse is the relative
+/// vi, on iii, on ii, on IV, with and without the tonic triad in the first phrase; a hymn opening
+/// on a first-inversion tonic; a pop loop opening on vi and closing on the tonic; told the minor,
+/// opening on its III and on its VI; a song whose verse is the relative
 /// minor and whose chorus the major — where a musician does hear two keys; and the fence that
 /// matters most, a piece told the major that opens on vi and later modulates for real, to the
 /// relative minor and to the dominant, which the new rule must not swallow), the CLOSE as it is
 /// actually written (a rolled final chord under a fermata, a spread chord in a hymn's last bar,
 /// the last chord arpeggiated by both hands over two octaves, a plain block close after a rolled
 /// one earlier in the piece, a close whose tune ends on the fifth, a nocturne's pedalled left
-/// hand), the PEDAL as it is actually played (an oom-pah whose bass is the tonic throughout, a
+/// hand), the PEDAL as it is actually played (a tonic struck on every beat and repeated in
+/// eighths, an oom-pah whose bass is the tonic throughout, a
 /// drone under a folk tune, a dominant pedal struck under a cadence — and a walking bass, which is
 /// no pedal), and the EVERYDAY SHAPES the whole series leans on, in case something moved: a hymn,
 /// a waltz, a twelve-bar blues, a pop loop, a march, a folk tune to the dominant and home again.
 /// </summary>
 /// <remarks>
 /// Chord tokens are the fixture's — <c>root[:quality][h|q|t]</c> — plus <c>R</c> for a rest. The
-/// plans are a musician's, in whole notes; a 4/4 bar = 1, bar k begins at position k-1. Of the
-/// reviewer's thirty, twenty-five are here; five the library still reads otherwise, each of them
-/// ordinary music, and they are the thirteenth iteration's work — the last of this series. Three
-/// shapes, all failing identically before this iteration's rules, so that none is a regression:
-/// the fence that keeps a minor loop a minor loop is the whole rest of the piece, so ONE later vi
-/// keeps the older reading — the pop loop <c>Am F C G7</c> three times closing <c>C F G7 C</c>,
-/// told C, is C at bar 11 on the road that guesses and no change on the road that is told, and a
-/// piece told C that opens on vi and moves to a real A minor at bar 9 is heard twice over on the
-/// guessing road; the new opening rule is the minor triad's alone, so a MAJOR triad opening a
-/// minor piece (<c>C G Am E7 | Am Dm E7 Am</c> told A minor) still names the major; and the
-/// struck-pedal rule reaches only a pedal struck once a bar, where the guitar strumming the tonic
-/// on every beat and the bass playing it in eighths sound between the chords and are chords of
-/// their own.
+/// plans are a musician's, in whole notes; a 4/4 bar = 1, bar k begins at position k-1. All
+/// thirty of the reviewer's passages are here: the thirteenth iteration — the last of this series
+/// — added the last five, and they are the three shapes the twelfth left. The fence that keeps a
+/// minor loop a minor loop was the whole rest of the piece, so one later vi kept the older
+/// reading; it is now a loop that the piece keeps to, and the pop loop <c>Am F C G7</c> three
+/// times closing <c>C F G7 C</c> is C with a vi first on both roads. The opening rule was the
+/// minor triad's alone; it now reads a triad of either mode, so <c>C G Am E7 | Am Dm E7 Am</c>
+/// told A minor is A minor throughout with a III first. And the struck pedal reached only a pedal
+/// struck once a bar; the guitar strumming the tonic on every beat and the bass repeating it in
+/// eighths are now one note under the harmony too.
+/// <para>
+/// What the table still does not hold, because the judge does not hear it, is written in the
+/// remarks of <see cref="Celeritas.Core.Analysis.ModulationDetector"/>'s <c>Analyze</c> and of the
+/// key trajectory's <c>DetectModulations</c>, and at length in the judge's own class remarks:
+/// four shapes, each named there with the reading both roads give, the reading a musician
+/// gives, and why no rule reaches it. There is no fourteenth iteration; those four are the
+/// library's documented limits.
+/// </para>
 /// </remarks>
 internal static class OrdinaryMusicPassages
 {
@@ -303,5 +310,17 @@ internal static class OrdinaryMusicPassages
             + "D5/4 G5/4 B4/4 D5/4 | F#5/4 A5/4 D5/4 C5/4 | B4/4 D5/4 G5/4 B5/4 | A5/4 F#5/4 D5/2 | "
             + "E5/4 G5/4 C6/4 G5/4 | F5/4 A5/4 C6/4 F5/4 | D5/4 F5/4 B4/4 D5/4 | C5/4 E5/4 G5/2",
             [new(5, 7, true), new(9, 0, true)]),
+
+        // ---------- the thirteenth iteration's five: the LOOP, the OPENING TRIAD, the PEDAL ----------
+        Blocks("told C, a POP LOOP opening on vi four times over, closing on the tonic: Am F C G7 x3 | C F G7 C (block chords)",
+            "9:m 5 0 7:7 | 9:m 5 0 7:7 | 9:m 5 0 7:7 | 0 5 7:7 0", Nowhere),
+        Blocks("THE FENCE: told C, opening on vi and moving to a REAL A minor at bar 9 (block chords)",
+            "9:m 2:m 7:7 0 | 0 5 7 0 | 9:m 2:m 4:7 9:m | 9:m 2:m 4:7 9:m", At(9, 9, false)),
+        Blocks("told A minor, opening on its III: C G Am E7 | Am Dm E7 Am | Am Dm E7 Am (block chords)",
+            "0 7 9:m 4:7 | 9:m 2:m 4:7 9:m | 9:m 2:m 4:7 9:m", Nowhere, major: false, openingRoot: 9),
+        Notes("a tonic pedal STRUCK ON EVERY BEAT, four to the bar, under C F Dm C | G D7 G D7 | G D7 G G (four voices)",
+            Together(Block(ToTheDominant), Restruck(36, Rational.Zero, Rational.Quarter, 48)), At(5, 7, true)),
+        Notes("a tonic bass note REPEATED IN EIGHTHS under the same twelve bars (four voices)",
+            Together(Block(ToTheDominant), Restruck(36, Rational.Zero, Rational.Eighth, 96)), At(5, 7, true)),
     ];
 }

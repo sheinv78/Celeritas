@@ -1165,7 +1165,9 @@ public sealed class KeyTrajectory
     /// octaves, the melody arpeggiating it alone in sixteenths; the loop in 3/4 and over its own
     /// pedal; a sequence through three keys in 6/8 — thirty are heard as a musician hears them and
     /// join the fixture as an eleventh table. The judge reads the bar from the music's own pace, so
-    /// the same passage is heard at its own fifth bar in 4/4, 3/4, 6/8, 2/4, 5/4 and 12/8 alike and
+    /// the same passage is heard at its own fifth bar in 4/4, 3/4, 6/8, 5/4 and 12/8 alike, and in
+    /// 2/4 while it stays where it goes (a 2/4 piece of four-bar sections that comes home is among
+    /// the limitations below), and
     /// a slow piece of two-whole-note chords is heard at all; a pedal is one note under the harmony
     /// and no longer outweighs what is played over it; the closing figure may lie above the tune as
     /// well as below it; and the bar a phrase closes on in the key it leaves is that key's cadence
@@ -1183,19 +1185,38 @@ public sealed class KeyTrajectory
     /// fixture as a twelfth table. This road is told nothing and guesses its opening key, so the
     /// openings were its own to answer: vi, iii and ii are chords of a key and not keys, and
     /// Am Dm G7 C | C F G C | C F G7 C, which opened here on the A minor chord and reported C at
-    /// bar 3, is C throughout as it is to the detector told C. Seven shapes are known and unheard,
-    /// and are written up in the judge's own remarks (<see cref="KeyAreaJudge"/>): the bar of
-    /// chords of irregular length in no pattern, and of a melody alone — where this road, which
-    /// guesses its key from a profile the clock's bars cut wrong, hears no change at all and the
-    /// detector told the key hears the musician's answer; the close under a tune as quick as the
-    /// figure — a two-hand arpeggio in sixteenths under a trill, and a tune in eighths above the
-    /// held chord outlining its upper thirds; a pedal struck an eighth before the first chord,
-    /// which sounds alone at its onset and is therefore a note of the line; the opening minor
-    /// triad whose own chord sounds again anywhere later, and the major triad opening a minor
-    /// piece — Am Dm G7 C | C F G C | C Am G7 C and C G Am E7 | Am Dm E7 Am told A minor still
-    /// open this road on their first chord, and the detector told the key hears no change; and
-    /// the pedal struck oftener than once a bar, which sounds between the chords and is a chord
-    /// of its own.
+    /// bar 3, is C throughout as it is to the detector told C.
+    /// </para>
+    /// <para>
+    /// On thirty more a twelfth reviewer wrote — ordinary music only: pieces told a key they open
+    /// away from, closes as they are actually written, pedals as they are actually played, and the
+    /// everyday shapes of hymn, waltz, blues, pop loop, march and folk tune — all thirty are heard
+    /// as a musician hears them and join the fixture as a thirteenth table. This road is told
+    /// nothing and guesses its opening key, so the openings were again its own to answer: the chord
+    /// a piece opens on is a chord of its key before it is a key, whichever its mode, and III and
+    /// VI of a minor key are its chords as vi and iii are the major's — C G Am E7 | Am Dm E7 Am |
+    /// Am Dm E7 Am, which opened here in C major and reported A minor at bar 3, is A minor
+    /// throughout with a III first; a loop is a chord coming back at the music's own phrase length
+    /// and not a chord that sounds once more somewhere later, so the pop loop Am F C G7 three times
+    /// over closing on C F G7 C, which opened here in A minor and reported C at bar 12, is C with a
+    /// vi first; and a pedal is one note under the harmony however often it is struck, so a tonic
+    /// strummed on every beat or repeated in eighths is heard as one is that is struck once a bar.
+    /// Six shapes are known and unheard, and are written up in the judge's own remarks
+    /// (<see cref="KeyAreaJudge"/>): the bar of chords of irregular length in no pattern, and of a
+    /// melody alone — where this road, which guesses its key from a profile the clock's bars cut
+    /// wrong, hears no change at all and the detector told the key hears the musician's answer; the
+    /// close under a tune as quick as the figure — a two-hand arpeggio in sixteenths under a trill,
+    /// and a tune in eighths above the held chord outlining its upper thirds; a pedal struck an
+    /// eighth before the first chord, which sounds alone at its onset and is therefore a note of
+    /// the line; and the piece whose opening phrase is the relative major's and whose rest is the
+    /// minor's, told the major — C G Am E7 | Am Dm E7 Am | Am Dm E7 Am told C, where this road,
+    /// told nothing, hears one key in A minor as a musician told nothing does, and the detector,
+    /// told C, hears A minor at bar 3 as a musician told C does; the piece in 2/4 that leaves and
+    /// comes home, whose four-bar sections are two whole notes and shorter than the evidence a key
+    /// is asked for — a march or a polka in block chords or oom-pah alike; and the bass note
+    /// struck once a bar under a broken-chord accompaniment, which makes a chord of its own with
+    /// the notes above it where the same note held, or taken away, is heard rightly. There is no
+    /// further iteration of this work: those six are the library's documented limits.
     /// </para>
     /// </remarks>
     public IEnumerable<(Rational Position, KeySignature FromKey, KeySignature ToKey)> DetectModulations()

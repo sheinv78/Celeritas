@@ -471,8 +471,9 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// bar and a half long reached the dominant two of its bars late, and a slow piece of
 /// two-whole-note chords — alone, over a pedal, and at twelve chords — never reached it at all:
 /// their phrases were half the music's and twice it. The same passage — C ii V7 I, then two
-/// phrases in the dominant — is now heard at its own fifth bar in 4/4, 3/4, 6/8, 2/4, 5/4 and
-/// 12/8 alike. Reading the metre from <see cref="RhythmAnalyzer.DetectMeter(NoteBuffer)"/> would
+/// phrases in the dominant — is now heard at its own fifth bar in 4/4, 3/4, 6/8, 5/4 and 12/8
+/// alike, and in 2/4 while it stays in the dominant; a 2/4 piece of four-bar sections that comes
+/// home again is heard on neither road, and is written up below. Reading the metre from <see cref="RhythmAnalyzer.DetectMeter(NoteBuffer)"/> would
 /// not do: it calls a hundred and eighteen of the fixture's three hundred and sixty-one 4/4
 /// passages 2/2, 2/4, 3/4 or 6/8 — the chorales among them — at confidences of 0.42 to 0.74, and
 /// costs 15.6 ms on eight thousand block chords against some thirty-six for the whole analysis;
@@ -546,27 +547,52 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// refuted every chord-opened key another key's phrase could own moved ten table rows — C G |
 /// D7 G C D7 G G told C is C then G at bar 3, and C G C G | C G D7 G | C G C G | C G7 C C
 /// told C is C throughout, as before.</description></item>
-/// <item><description><b>vi, iii and ii are chords of a key, not keys.</b> A minor triad
-/// opening a piece names its key only where the music makes that key its own: where the opening
-/// phrase comes to rest on it, where the minor's own dominant sounds — its raised leading tone
-/// no major key owns, so no major owns the phrase outright — or where that chord sounds again
-/// anywhere after the phrase, as the loop Am F C G returns to its Am every fourth bar; one
-/// later vi is enough, and what that costs is written below. Where none of
-/// those is so and one major key owns the phrase outright, the opening chord names nothing and
-/// the phrase is read as any other is. Named by its first chord, Am Dm G7 C | C F G C | C F G7
-/// C opened in A minor on the trajectory road, which is told nothing, and reported C at bar 3,
-/// where the detector told C heard no change and a musician hears C throughout with a vi first;
-/// so did Am Dm F G | … and, opening on iii, Em Am C G | … . Am Dm E7 Am | C F G C is A minor
-/// to bar 5 still, and the told-A-minor loops are A minor still.</description></item>
+/// <item><description><b>A triad opening a piece is a chord of its key before it is a key.</b>
+/// vi, iii and ii are chords of a major key and not keys, and III, VI and VII are chords of a
+/// minor key as much. A triad of either mode opening a piece names its key only where the music
+/// makes that key its own: where the opening phrase comes to rest on it, or where the chord
+/// comes back as a loop the piece keeps to — the chord opening the phrase after the opening
+/// phrase, at the music's own phrase length, and the loop not running on to the last phrase to
+/// cadence there in the other key. Where none of those is so and a key of the other mode owns
+/// the phrase outright and holds the chord among its own chords, the opening chord names
+/// nothing, and the phrase is read in that key when its own tonic chord sounds in it, and as any
+/// other phrase is when it does not. A minor key must sound the chords that are its own to be
+/// heard from a phrase — its tonic chord and its dominant seventh, whose raised leading tone no
+/// major key owns — because a minor key owns both its sevenths and would else own every phrase
+/// in the major that touches its vi; a major key needs no such witness, and a phrase that closes
+/// on a major key's own V7 – I is that key's whatever it opened on — where G C is VII III as
+/// much as V I — unless the piece turns straight back to the chord it opened on at the next
+/// phrase and ends there, as a minor song that reaches its III at the close of its first phrase
+/// does: Am Dm G7 C | Am Dm E7 Am | Am Dm E7 Am is A minor throughout, where Am Dm G7 C | Am F
+/// G C | C F G7 C is C major with a vi first. Named by its first chord, Am Dm G7 C | C F G C |
+/// C F G7 C opened in A minor on the trajectory road, which is told nothing, and reported C at
+/// bar 3, where the detector told C heard no change and a musician hears C throughout with a vi
+/// first; so did Am Dm F G | … and, opening on iii, Em Am C G | … . With the fence the whole
+/// rest of the piece, one later vi was enough to keep the older reading: the commonest pop loop
+/// of all, Am F C G7 three times over and then C F G7 C, was A minor to bar 12 on that road, and
+/// a piece told C that opens on vi, comes home at bar 4 and moves to a real A minor at bar 9 was
+/// heard twice over. And the rule being the minor triad's alone, C G Am E7 | Am Dm E7 Am | Am Dm
+/// E7 Am, told A minor, opened in C major and reported A minor at bar 3, where the detector told
+/// A minor heard no change. Am Dm E7 Am | C F G C is A minor to bar 5 still; the told-A-minor
+/// loops are A minor still, and so are Am F C G twice then C F G C twice, which breaks off into
+/// a section of its own, and Am F C G twice then the same loop transposed.</description></item>
 /// <item><description><b>A pedal struck again with every chord is still one note under the
 /// harmony.</b> The same pitch class sounding in every chord of a piece, which in two chords or
 /// more turns a plain triad or a dominant seventh into a chord that is neither, is a pedal: in
 /// those chords the harmony is what sounds above it, and the pedal weighs nothing there. It is
 /// named by its pitch classes and not by its register, because that is all the detector road
 /// has — a note struck with the chord and stopping with it is merged into one part with no
-/// pitch at all. Read as harmony, a tonic C struck afresh at every bar line under C Dm G7 C |
-/// G C D7 G | G C D7 G made Dm7 of the ii and a G7 with an added fourth of the V, and both
-/// roads heard one key where a musician hears the dominant from bar 5.</description></item>
+/// pitch at all. It sounds in a chord whether the harmony holds it or not: a note struck with a
+/// chord that the chord does not hold has been heard as a note of the line over it, and is the
+/// pedal all the same. And it is one note however often it is struck — its strokes between the
+/// chords, the guitar strumming it on every beat or the bass repeating it in eighths, are that
+/// note struck again and weigh nothing either, being no chord of their own; only a stroke before
+/// the first chord sounds under no harmony, and that one is a note of the line. Read as harmony,
+/// a tonic C struck afresh at every bar line under C Dm G7 C | G C D7 G | G C D7 G made Dm7 of
+/// the ii and a G7 with an added fourth of the V; weighed stroke by stroke, the same tonic struck
+/// on every beat, or in eighths, under C F Dm C | G D7 G D7 | G D7 G G outweighed the two phrases
+/// in the dominant. Both roads heard one key where a musician hears the dominant from bar
+/// 5.</description></item>
 /// <item><description><b>A chord spread is that chord struck at its first note.</b> Single
 /// notes struck one after another within a bar — three strokes or more — all still sounding
 /// when the last is struck and all released within an eighth of one another, whose pitch
@@ -581,43 +607,51 @@ internal readonly record struct Judgement(KeySignature Opening, List<KeyChange> 
 /// heard on neither road.</description></item>
 /// </list>
 /// <para>
-/// <b>What the judge does not hear.</b> Five shapes are known and unheard, and no rule here
-/// reaches them. <b>The bar where the chord changes have no majority:</b> the bar is voted for
-/// by the gaps between harmony changes, so chords of irregular length in no pattern — one bar,
-/// two bars, half a bar — leave no gap with a majority, the clock stands, and C F G C | G C D7
-/// G written that way is heard at the dominant three bars late, at the seventh whole note
-/// instead of the fourth; and a melody ALONE has no chord changes to read a bar from at all, so
-/// a melody in 3/4 keeps the clock, and the roads part on it — the detector, told C, hears the
-/// dominant where a musician does, and the trajectory, which guesses its key from a profile the
-/// clock's bars cut wrong, hears no change. <b>The close under a tune as quick as the figure:</b>
-/// the figure is told from the tune by lying below it, above it, or running the span through
-/// while the tune moves, and a tune as quick as the figure answers to none of those. A two-hand
-/// arpeggio in sixteenths under a trill spells, trill and all, no chord; a tune in eighths above
-/// the held chord outlining its upper thirds — C sharp, E, G sharp over A major — runs the span
-/// through itself and is read as the chord those thirds make. Both close A minor's Picardy piece
-/// on a chord that is not A minor's, and the return home at bar 9 is lost on both roads.
-/// <b>The pedal struck an eighth before the first chord:</b> a pedal is a note under a harmony,
-/// and one struck before any harmony sounds alone at its onset, which is a note of the line.
-/// C F G C | R | G C D7 G over a tonic struck an eighth early reads as one key on both roads,
-/// where the same pedal struck with the first chord, or held from it, is heard as a pedal and
-/// the dominant is heard where a musician hears it.
-/// <b>The opening chord that sounds again later, and the major triad opening a minor piece:</b>
-/// a minor triad opening a piece is read as a chord of the major, and not as a key, only where
-/// its own chord does not sound again at all after the opening phrase, so one vi or one iii
-/// anywhere later keeps the older reading: Am Dm G7 C | C F G C | C Am G7 C parts the roads in
-/// every key where Am Dm G7 C | C F G C | C F G7 C no longer does, and so do the loop
-/// Am F C G7 three times over closing on C F G7 C, and a piece told C that opens on vi and moves
-/// to a real A minor at bar 9 — the trajectory, told nothing, opens in A minor and hears C at
-/// bar 3, where the detector told C does not. And the rule is the minor triad's alone: a MAJOR
-/// triad opening a minor piece is untouched, so C G Am E7 | Am Dm E7 Am | Am Dm E7 Am, told
-/// A minor and opening on its III, opens the trajectory road in C major and puts A minor at
-/// bar 3, where the detector told A minor hears no change. The fence that keeps the loop
-/// Am F C G a minor loop is what costs all of these, and no rule here tells the two apart.
-/// <b>The pedal struck oftener than once a bar:</b> the pedal taken out of the harmony is the
-/// pitch class sounding in every chord, and a note struck again inside the bar sounds between
-/// the chords as a chord of its own, so a tonic struck on every beat, or in eighths, under
-/// C F Dm C | G D7 G D7 | G D7 G G reads as one key on both roads, where the same pedal struck
-/// once a bar, or held, is heard and the dominant is heard from bar 5.
+/// <b>What the judge does not hear.</b> Six shapes are known and unheard, and no rule here
+/// reaches them. There is no further iteration of this work: these six are the library's
+/// documented limits, each measured on both roads in twelve keys. <b>The bar where the chord changes have no majority:</b> the bar is voted
+/// for by the gaps between harmony changes, so chords of irregular length in no pattern — one
+/// bar, two bars, half a bar — leave no gap with a majority, the clock stands, and C F G C |
+/// G C D7 G written that way is heard at the dominant three bars late, at the seventh whole note
+/// instead of the fourth, on both roads; and a melody ALONE has no chord changes to read a bar
+/// from at all, so a melody in 3/4 keeps the clock, and the roads part on it — the detector,
+/// told C, hears the dominant where a musician does, at the third whole note, and the
+/// trajectory, which guesses its key from a profile the clock's bars cut wrong, hears no change.
+/// <b>The close under a tune as quick as the figure:</b> the figure is told from the tune by
+/// lying below it, above it, or running the span through while the tune moves, and a tune as
+/// quick as the figure answers to none of those. A two-hand arpeggio in sixteenths under a trill
+/// spells, trill and all, no chord; a tune in eighths above the held chord outlining its upper
+/// thirds — C sharp, E, G sharp over A major — runs the span through itself and is read as the
+/// chord those thirds make. Both close A minor's Picardy piece on a chord that is not A minor's:
+/// both roads hear the relative major at bar 5 and neither hears the return home at bar 9, where
+/// a musician hears both. <b>The pedal struck an eighth before the first chord:</b> a pedal is a
+/// note under a harmony, and one struck before any harmony sounds alone at its onset, which is a
+/// note of the line. C F G C | R | G C D7 G over a tonic struck an eighth early reads as one key
+/// on both roads, where a musician hears the dominant from the bar the second phrase opens in,
+/// as he does when the pedal is struck with the first chord or held from it — and as both roads
+/// then hear it. <b>The piece whose opening phrase is the relative major's and whose rest is
+/// the minor's, told the major:</b> here the two roads answer differently because one is told a
+/// key and the other is not, and both answers are a musician's. C G Am E7 | Am Dm E7 Am | Am Dm
+/// E7 Am told C major is, to a musician told C, two bars of C and then A minor from its dominant
+/// at bar 3, which is what the detector hears; to a musician told nothing it is A minor
+/// throughout with a III first — ten of its twelve bars are A minor's — which is what the
+/// trajectory, told nothing, hears, and what the same piece told A minor asks for. No rule can
+/// give one answer to both: the music is the same, and only the caller's key differs.
+/// <b>The piece in 2/4 that leaves and comes home:</b> a march whose bar is a half note —
+/// C F Dm C | G D7 G D7 | C F G7 C, twelve bars of two beats — is heard on neither road, where a
+/// musician hears the dominant at its fifth bar and home at its ninth. The bar is read rightly as
+/// a half note, so the piece is six whole notes in all and each of its sections two: a key has a
+/// phrase of the music's own bars to be established in, and two whole notes of evidence is less
+/// than the judge asks of any key. The same progression in 4/4, 3/4 and 6/8 is heard exactly; the
+/// same 2/4 piece that stays in the dominant is heard, its dominant having the rest of the piece;
+/// and the same 2/4 piece written in eight-bar sections is heard. It is the commonest metre of the
+/// march and the polka, and it fails as block chords and as an oom-pah bass alike.
+/// <b>The bass note struck under a broken-chord accompaniment:</b> a left hand breaking the chord
+/// under the sustaining pedal, with the tonic struck once a bar beneath it, is heard on neither
+/// road, in either register. Take the bass note away and both roads are right; hold it instead of
+/// striking it and both roads are right — struck, it is read as harmony against the broken chord
+/// above it, where a pedal rule reaches only a note that sounds in every chord and this one makes
+/// a chord of its own with the arpeggio's notes.
 /// </para>
 /// </remarks>
 internal static class KeyAreaJudge
@@ -2499,10 +2533,11 @@ internal static class KeyAreaJudge
         /// one pitch class that sounds in every chord of the piece and that, in two chords or more,
         /// turns a plain triad or a dominant seventh into a chord that is neither. In those chords
         /// the harmony is what sounds above it, and the pedal weighs nothing; where the chord is
-        /// plain with it, it is a note of that chord and weighs as one. The pedal must be struck
-        /// with the chords and not between them: struck oftener than once a bar it sounds alone
-        /// between them, is a chord of its own, and is no pedal here — a limitation written up
-        /// in the class remarks with the rest.
+        /// plain with it, it is a note of that chord and weighs as one. It is one note however
+        /// often it is struck: its strokes that fall between the chords — the guitar strumming it
+        /// on every beat, the bass repeating it in eighths — weigh nothing either and are no
+        /// chord of their own. Only a stroke before the first chord sounds under no harmony, and
+        /// that one is a note of the line — a limitation written up in the class remarks.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -2518,7 +2553,8 @@ internal static class KeyAreaJudge
         /// register, because that is all the detector road has.
         /// </para>
         /// <para>
-        /// The note must sound in every chord of the piece, the piece must have four chords or
+        /// The note must sound in every chord of the piece — in its harmony, or struck over it as
+        /// a note of the line — the piece must have four chords or
         /// more and three harmonies or more, and taking the note away must leave a plain chord
         /// where there was none: a walking bass changes its note and names no pedal, a two-chord
         /// vamp sharing a tone is left alone because both its chords are plain already, and a
@@ -2538,7 +2574,10 @@ internal static class KeyAreaJudge
                 if (BitOperations.PopCount(chord) < 2)
                     continue;
 
-                common &= chord;
+                // The pedal sounds in the chord whether the harmony holds it or not: a note
+                // struck with a chord that the chord does not hold has been heard as a note of
+                // the line over it, and is the pedal all the same.
+                common &= Struck(i);
                 if (common == 0)
                     return;
 
@@ -2561,7 +2600,7 @@ internal static class KeyAreaJudge
                 var freed = 0;
                 for (var i = 0; i < _sonorities.Length; i = _groupEnd[i])
                 {
-                    if (FreedByThePedal(_chordPitchClasses[i], bit) != 0)
+                    if (FreedByThePedal(_chordPitchClasses[i], bit) != 0 || OverTheHarmony(i, bit))
                         freed++;
                 }
 
@@ -2578,20 +2617,62 @@ internal static class KeyAreaJudge
             if (best < 2)
                 return;
 
+            // The pedal is one note under the harmony however often it is struck, and its
+            // strokes between the chords — the guitar strumming it on every beat, the bass
+            // repeating it in eighths — are that note struck again: they weigh nothing, as the
+            // strokes that fall with the chords do, and are no chord of their own. A stroke
+            // before the first chord sounds under no harmony and is a note of the line, as the
+            // pedal struck an eighth early is (the class remarks).
+            var sounding = false;
             for (var i = 0; i < _sonorities.Length; i = _groupEnd[i])
             {
-                var harmony = FreedByThePedal(_chordPitchClasses[i], pedal);
-                if (harmony == 0)
+                if (BitOperations.PopCount(_chordPitchClasses[i]) >= 2)
+                {
+                    sounding = true;
+                    var harmony = FreedByThePedal(_chordPitchClasses[i], pedal);
+                    if (harmony == 0 && !OverTheHarmony(i, pedal))
+                        continue;
+
+                    for (var k = i; k < _groupEnd[i]; k++)
+                    {
+                        if (harmony != 0)
+                            _chordPitchClasses[k] = harmony;
+                        _weighs[k] &= (ushort)~pedal;
+                        _sonorities[k] = _sonorities[k] with { PitchClasses = (ushort)(_sonorities[k].PitchClasses & ~pedal) };
+                    }
+
+                    continue;
+                }
+
+                if (!sounding || _groupEnd[i] != i + 1 || _sonorities[i].PitchClasses != pedal)
                     continue;
 
-                for (var k = i; k < _groupEnd[i]; k++)
-                {
-                    _chordPitchClasses[k] = harmony;
-                    _weighs[k] &= (ushort)~pedal;
-                    _sonorities[k] = _sonorities[k] with { PitchClasses = (ushort)(_sonorities[k].PitchClasses & ~pedal) };
-                }
+                _chordPitchClasses[i] = 0;
+                _weighs[i] = 0;
+                _sonorities[i] = _sonorities[i] with { PitchClasses = 0 };
             }
         }
+
+        /// <summary>The pitch classes struck together at sonority <paramref name="index"/> — the harmony and the notes heard over it alike.</summary>
+        private ushort Struck(int index)
+        {
+            var struck = (ushort)0;
+            for (var k = index; k < _groupEnd[index]; k++)
+                struck |= _sonorities[k].PitchClasses;
+
+            return struck;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="pedal"/> is struck with the chord at sonority
+        /// <paramref name="index"/> and is no note of that chord's harmony: a note the harmony
+        /// does not hold, heard over it as a note of the line, which in chord after chord is the
+        /// pedal the harmony is played over.
+        /// </summary>
+        private bool OverTheHarmony(int index, ushort pedal) =>
+            BitOperations.PopCount(_chordPitchClasses[index]) >= 3
+            && (_chordPitchClasses[index] & pedal) == 0
+            && (Struck(index) & pedal) != 0;
 
         /// <summary>
         /// The plain chord <paramref name="chord"/> becomes when <paramref name="pedal"/> is
@@ -3977,8 +4058,11 @@ internal static class KeyAreaJudge
         /// chord, i7 or Imaj7 (<see cref="IsTonicSeventhChord"/>); the profile's favourite among
         /// them when several qualify — provided it owns [0, <paramref name="to"/>) or leaves as
         /// little of it foreign as any key does, an applied dominant seventh counted as the
-        /// key's. Failing that, when the piece opens on a triad and exactly one major key owns
-        /// the phrase outright, that key: G C F G opens in C, on its dominant.
+        /// key's. Failing that — where the opening chord is a chord of its key and not the key,
+        /// so that it names nothing — the key of the other mode that owns the phrase outright,
+        /// holds the opening chord among its own chords and sounds its own tonic chord in it; and
+        /// failing that, when the piece opens on a triad and exactly one major key owns the phrase
+        /// outright, that key: G C F G opens in C, on its dominant.
         /// <see langword="null"/> when the piece opens on a single note, or when nothing above
         /// decides.
         /// </summary>
@@ -4042,23 +4126,40 @@ internal static class KeyAreaJudge
                 }
             }
 
-            // vi, iii and ii are chords of a key, not keys. A minor triad opening a piece names
-            // its key only where the music makes that key its own: where the opening phrase
-            // comes to rest on it (Am Dm G Am is A minor), where the minor's own dominant
-            // sounds, whose raised leading tone no major key owns, so that no major key owns
-            // the phrase outright (Am Dm E7 Am | C F G C is A minor to bar 5), or where the
-            // chord comes back after the phrase — the loop Am F C G returns to its Am every
-            // fourth bar, and is A minor to a road told nothing, as the fixture pins it. Where
-            // none of those is so and the phrase is some major key's outright, the opening
-            // chord names nothing, and the phrase is read as any other is — by what it rests
-            // on, by the one major key that owns it, or by its profile: Am Dm G7 C | C F G C |
-            // C F G7 C is C major throughout, with a vi first, as it is to the detector told C,
-            // and so are Am Dm F G | … and Em Am C G | … , whose opening phrase two major keys
-            // own and whose second phrase only one does.
-            if (byOpening is { IsMajor: false } && !bySeventh && !RestsOnTheTonicOf(byOpening.Value, to)
-                && !SoundsTheTonicChordOf(byOpening.Value, to, End)
-                && OwnedOutrightByAMajorHoldingIt(reading, foreign, tolerance, chord))
+            // A triad opening a piece is a chord of its key before it is a key: vi, iii and ii
+            // are chords of a major key, and III, VI and VII of a minor key, and neither is the
+            // key. A triad of either mode names its key only where the music makes that key its
+            // own: where the opening phrase comes to rest on it (Am Dm G Am is A minor), where
+            // the minor's own dominant sounds, whose raised leading tone no major key owns, so
+            // that no major key owns the phrase outright (Am Dm E7 Am | C F G C is A minor to
+            // bar 5), or where the chord comes back as a loop the piece keeps to — the loop
+            // Am F C G returns to its Am every fourth bar and is A minor to a road told nothing,
+            // where the pop loop Am F C G7 three times over and then C F G7 C runs to its last
+            // phrase and cadences there in C (ComesBackAsItsOwnKey). Where none of those is so
+            // and a key of the other mode owns the phrase outright and holds the chord among its
+            // own chords, the opening chord names nothing: Am Dm G7 C | C F G C | C F G7 C is C
+            // major throughout with a vi first, as it is to the detector told C, and so are
+            // Am Dm F G | … and Em Am C G | … , whose opening phrase two major keys own and whose
+            // second phrase only one does. A minor key must sound the chords that are its own —
+            // its tonic chord and its dominant seventh — to be heard from a phrase this way,
+            // because a minor key owns both its sevenths and would else own every phrase in the
+            // major that touches its vi: C F | E7 Am | F G | C C is a tonicization of vi in C,
+            // and C G C G | G D7 G G is C going to the dominant. The phrase is then read in the
+            // key that owns it when that key's own tonic chord sounds in it — C G Am E7 | Am Dm
+            // E7 Am | Am Dm E7 Am is A minor with a III first — and as any other phrase is when
+            // it does not: by what it rests on, by the one major key that owns it, or by its
+            // profile. Either way it is a reading of the phrase, refutable as a guess is, and
+            // not a chord's naming.
+            KeySignature? phraseKey = null;
+            if (byOpening is { } opens && !bySeventh && !RestsOnTheTonicOf(opens, to)
+                && OwnerOutrightHoldingIt(reading, foreign, tolerance, chord, to, major: !opens.IsMajor) is { } owningKey
+                && (!opens.IsMajor || (SoundsTheTonicChordOf(owningKey, Rational.Zero, to) && SoundsTheDominantSeventhOf(owningKey, Rational.Zero, to)))
+                && !ComesBackAsItsOwnKey(opens, owningKey, to))
+            {
                 byOpening = null;
+                if (SoundsTheTonicChordOf(owningKey, Rational.Zero, to))
+                    phraseKey = owningKey;
+            }
 
             // A phrase that comes to rest on a chord — its last two chords one tonic chord,
             // held or restruck — is heard in that chord's key when that key owns the phrase as
@@ -4092,6 +4193,16 @@ internal static class KeyAreaJudge
                 return byOpening;
             }
 
+            // The key the phrase is in, whose own tonic chord sounds in it: the chord the piece
+            // opens on is that key's, and the phrase is read in it. A reading of the phrase, as
+            // the rest it comes to is, and refutable as a guessed opening is — not a chord's
+            // naming. C G Am E7 | Am Dm E7 Am | Am Dm E7 Am, whose C is A minor's III and whose
+            // every other bar is A minor's own, opened in C major on the trajectory road, which
+            // is told nothing, and reported A minor at bar 3, where the detector told A minor
+            // heard no change and a musician hears A minor throughout with a III first.
+            if (phraseKey is { } owned)
+                return owned;
+
             if (BitOperations.PopCount(chord) > 3 || least > tolerance)
                 return null;
 
@@ -4101,20 +4212,106 @@ internal static class KeyAreaJudge
         }
 
         /// <summary>
-        /// Whether some major key owns the phrase outright — leaves nothing of it foreign — and
-        /// holds <paramref name="chord"/> among its own chords: whether the chord the piece opens
-        /// on is a chord of a major key the phrase is in.
+        /// The key of the mode <paramref name="major"/> asks for that owns the phrase outright —
+        /// leaves nothing of it foreign — and holds <paramref name="chord"/> among its own
+        /// chords: the key the phrase is in that the chord the piece opens on is a chord of, the
+        /// profile's favourite among them, or <see langword="null"/> when there is none.
         /// </summary>
-        private static bool OwnedOutrightByAMajorHoldingIt(KeyDetectionResult reading, ReadOnlySpan<float> foreign, float tolerance, ushort chord)
+        private KeySignature? OwnerOutrightHoldingIt(KeyDetectionResult reading, ReadOnlySpan<float> foreign, float tolerance, ushort chord, Rational to, bool major)
         {
+            KeySignature? owner = null;
             for (var i = 0; i < reading.AllCorrelations.Length && i < 24; i++)
             {
                 var candidate = reading.AllCorrelations[i].Key;
-                if (candidate.IsMajor && foreign[i] <= tolerance && (Owned(candidate) & chord) == chord)
-                    return true;
+                if (candidate.IsMajor != major || foreign[i] > tolerance || (Owned(candidate) & chord) != chord)
+                    continue;
+
+                if (SoundsTheTonicChordOf(candidate, Rational.Zero, to))
+                    return candidate;
+
+                owner ??= candidate;
             }
 
-            return false;
+            return owner;
+        }
+
+        /// <summary>
+        /// Whether the chord the piece opens on, <paramref name="key"/>'s tonic chord, comes back
+        /// after the opening phrase as a chord of its own key: it sounds again somewhere after
+        /// <paramref name="to"/> (<see cref="SoundsTheTonicChordOf"/>), the opening phrase does
+        /// not itself cadence in <paramref name="other"/>, and the piece is no loop on the chord
+        /// that runs to its last phrase and cadences there in <paramref name="other"/>
+        /// (<see cref="LoopEndsInTheOtherKey"/>).
+        /// </summary>
+        /// <remarks>
+        /// A chord that sounds once more somewhere later was enough by itself, and one vi is not a
+        /// key. A piece told C that opens on vi, comes home to C at bar 4 and moves to a real A
+        /// minor at bar 9 was heard twice over on the trajectory road — C at bar 3 and A minor at
+        /// bar 9 — where the detector told C hears the one modulation a musician hears; so was
+        /// Am Dm G7 C | C F G C | C Am G7 C, whose one later vi parted the roads in every key
+        /// where the same piece without it did not. Their opening phrase is the major's own: it
+        /// ends on the major's authentic cadence, and a phrase that cadences in a key is that
+        /// key's, whatever it opens on. And the commonest pop loop of all, Am F C G7 three times
+        /// over and then C F G7 C, is a loop that runs to its last phrase and cadences there in
+        /// the relative major: named by its first chord, it opened in A minor on the trajectory
+        /// road and reported C at its twelfth bar, where the detector told C heard nothing and a
+        /// musician hears C throughout with a vi first. The loops that end on their own fourth
+        /// chord — Am F C G, Am F C E7, Am G F E — are the minor's as before, and so are the
+        /// loops that break off into a section of their own: Am F C G twice then C F G C twice is
+        /// A minor and then the relative major at bar 9, and Am F C G twice then the same loop a
+        /// fourth up is A minor and then D minor, both on both roads.
+        /// </remarks>
+        private bool ComesBackAsItsOwnKey(KeySignature key, KeySignature other, Rational to) =>
+            SoundsTheTonicChordOf(key, to, End)
+            && !(other.IsMajor && !TurnsBackToTheChord(key, other, to)
+                && ClosesWithACadence(other, Rational.Zero, to, PhraseLength, seventh: true))
+            && !LoopEndsInTheOtherKey(key, other, to);
+
+        /// <summary>
+        /// Whether the piece turns straight back to the chord it opened on and keeps it: the
+        /// chord opens the phrase at <paramref name="to"/> and the piece does not close on
+        /// <paramref name="other"/>'s tonic chord at all.
+        /// </summary>
+        /// <remarks>
+        /// A phrase that closes on a major key's own V7 - I is that key's whatever it opened on,
+        /// unless the piece turns back at once to the chord it opened on and ends there: a minor
+        /// song that reaches its relative major at the close of its first phrase and begins the
+        /// second phrase on its own tonic chord again is the minor's - Am Dm G7 C | Am Dm E7 Am |
+        /// Am Dm E7 Am is A minor throughout, with a cadence to its III closing the first phrase,
+        /// where Am Dm G7 C | Am F G C | C F G7 C, which ends in the major, is C major with a vi
+        /// first.
+        /// </remarks>
+        private bool TurnsBackToTheChord(KeySignature key, KeySignature other, Rational to) =>
+            OpensOn(key, to) && !ClosesOnTheTonicOf(other, to, End);
+
+        /// <summary>
+        /// Whether the piece is a loop on <paramref name="key"/>'s tonic chord that runs to its
+        /// last phrase and cadences there in <paramref name="other"/>: the chord opens the phrase
+        /// at <paramref name="to"/> and every phrase after it but the last (<see cref="OpensOn"/>),
+        /// and the last phrase closes the piece on <paramref name="other"/>'s tonic. A loop that
+        /// ends in the relative major was the major's all along, with a vi first; a loop that ends
+        /// on its own fourth chord, or that breaks off into a section of its own, is not this.
+        /// </summary>
+        private bool LoopEndsInTheOtherKey(KeySignature key, KeySignature other, Rational to)
+        {
+            if (!OpensOn(key, to))
+                return false;
+
+            // Counted to the phrase the last note falls in, not to the end of its sound: a piece
+            // whose chords are an eighth off the beat ends an eighth after its last bar line, and
+            // counted to the end of the sound the last phrase was asked to open on the chord too.
+            var phrase = PhraseLength;
+            var lastOnset = _sonorities[^1].Onset;
+            var last = to;
+            while (last + phrase <= lastOnset)
+            {
+                if (last != to && !OpensOn(key, last))
+                    return false;
+
+                last += phrase;
+            }
+
+            return ClosesOnTheTonicOf(other, last, End);
         }
 
         /// <summary>
@@ -4228,6 +4425,25 @@ internal static class KeyAreaJudge
                 if (_sonorities[i].Onset >= to)
                     break;
                 if (BitOperations.PopCount(_chordPitchClasses[i]) >= 2 && IsTonicChordOf(key, i))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Whether a chord in [<paramref name="from"/>, <paramref name="to"/>) is
+        /// <paramref name="key"/>'s dominant seventh and nothing else: the chord that names a
+        /// minor key against its relative major, whose raised leading tone no major key owns.
+        /// </summary>
+        public bool SoundsTheDominantSeventhOf(KeySignature key, Rational from, Rational to)
+        {
+            var dominant = DominantSeventh(PitchMath.Fold(key.Root + 7));
+            for (var i = FirstIndexAt(from); i < _sonorities.Length; i = _groupEnd[i])
+            {
+                if (_sonorities[i].Onset >= to)
+                    break;
+                if (_chordPitchClasses[i] == dominant)
                     return true;
             }
 
@@ -5230,10 +5446,19 @@ internal static class KeyAreaJudge
         /// authentic cadence: the last chord in it is the key's tonic chord — with or without a
         /// melody note above it — closing a phrase of the piece's count (<see cref="PhraseStart"/>)
         /// or the piece, and the chord before that, a chord of two notes or more that differs from
-        /// it, is the key's dominant, plain or with its seventh. A cadence in chords; a melody
-        /// alone closes in its key by its frame (<see cref="FramedBy"/>).
+        /// it, is the key's dominant, plain or with its seventh — with its seventh only, where
+        /// <paramref name="seventh"/> asks for it. A cadence in chords; a melody alone closes in
+        /// its key by its frame (<see cref="FramedBy"/>).
         /// </summary>
-        public bool ClosesWithACadence(KeySignature key, Rational from, Rational to, Rational phrase)
+        /// <remarks>
+        /// The seventh is asked for where the cadence must name a key against its relative minor,
+        /// which owns the plain dominant triad as its VII: G C is VII III as much as V I, where
+        /// G7 C is the major's own close — Am Dm G C is a loop of either key and Am Dm G7 C a
+        /// phrase of C with a vi first, unless the piece turns straight back to its opening chord
+        /// at the next phrase and ends there (<see cref="TurnsBackToTheChord"/>), the seventh
+        /// being A natural minor's VII7 as much as the major's V7.
+        /// </remarks>
+        public bool ClosesWithACadence(KeySignature key, Rational from, Rational to, Rational phrase, bool seventh = false)
         {
             var last = FirstIndexAt(to) - 1;
             if (last < FirstIndexAt(from))
@@ -5259,7 +5484,8 @@ internal static class KeyAreaJudge
                 var chord = _chordPitchClasses[i];
                 if (BitOperations.PopCount(chord) < 2 || chord == _chordPitchClasses[tonic])
                     continue;
-                return (chord & dominant) == dominant && (chord & ~dominantSeventh) == 0;
+                return (chord & dominant) == dominant && (chord & ~dominantSeventh) == 0
+                    && (!seventh || chord == dominantSeventh);
             }
 
             return false;

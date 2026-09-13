@@ -356,12 +356,12 @@ public static class ModulationDetector
     /// only when moved by less than half its length, the piece opens on its first chord — struck,
     /// arpeggiated, or an eighth behind the tune — a given key the piece does not open on is a
     /// guess, and the bars are heard from the music's accents (<see cref="KeyAreaJudge"/>).
-    /// The roads now part on two cases of one thousand and ninety-four — a D Dorian tune with
-    /// its second bar silent, and a piece told A minor that opens on its VI with its second bar
-    /// silent, where this road is told a key and the other guesses one from the chord the piece
-    /// opens on — and
-    /// miss the plan on three; the same textures struck staccato or with the melody held hear
-    /// the plan everywhere (<c>TheTwoRoadsHearEveryTextureAlikeTests</c>).
+    /// The roads now part on five cases of one thousand one hundred and forty-three — a D Dorian tune
+    /// with its second bar silent, and C G Am E7 | Am Dm E7 Am | Am Dm E7 Am told C in each of
+    /// its four textures, where this road is told a key and the other guesses one from the music
+    /// — and miss the plan on seven, which are those five, a pickup passage whose second bar is
+    /// silent and a German sixth an eighth off the beat, an eighth outside the bar's tolerance
+    /// (<c>TheTwoRoadsHearEveryTextureAlikeTests</c>).
     /// </para>
     /// <para>
     /// On thirty-four passages a tenth reviewer wrote — one modulating passage in four metres and a
@@ -373,7 +373,9 @@ public static class ModulationDetector
     /// octaves, the melody arpeggiating it alone in sixteenths; the loop in 3/4 and over its own
     /// pedal; a sequence through three keys in 6/8 — thirty are heard as a musician hears them and
     /// join the fixture as an eleventh table. The judge reads the bar from the music's own pace, so
-    /// the same passage is heard at its own fifth bar in 4/4, 3/4, 6/8, 2/4, 5/4 and 12/8 alike and
+    /// the same passage is heard at its own fifth bar in 4/4, 3/4, 6/8, 5/4 and 12/8 alike, and in
+    /// 2/4 while it stays where it goes (a 2/4 piece of four-bar sections that comes home is among
+    /// the limitations below), and
     /// a slow piece of two-whole-note chords is heard at all; a pedal is one note under the harmony
     /// and no longer outweighs what is played over it or stands in the chord a phrase opens on; the
     /// closing figure may lie above the tune as well as below it; and the bar a phrase closes on in
@@ -389,17 +391,30 @@ public static class ModulationDetector
     /// pedals held and one struck again at every bar line; the closing chord rolled upwards,
     /// downwards and over two bars, and figures sharing the tune's register; pieces told C that
     /// open on vi, iii and ii — thirty-three are heard as a musician hears them and join the
-    /// fixture as a twelfth table. Seven shapes are known and unheard, and are written up in the
-    /// judge's own remarks (<see cref="KeyAreaJudge"/>): the bar of chords of irregular length in
-    /// no pattern, and of a melody alone, where no gap between harmony changes has a majority and
-    /// the clock stands; the close under a tune as quick as the figure — a two-hand arpeggio in
-    /// sixteenths under a trill, and a tune in eighths above the held chord outlining its upper
-    /// thirds; a pedal struck an eighth before the first chord, which sounds alone at its onset
-    /// and is therefore a note of the line; the opening minor triad whose own chord sounds again
-    /// anywhere later, and the major triad opening a minor piece, where the opening chord still
-    /// names a key to the trajectory road and this road told the key hears no change, so that the
-    /// two part; and the pedal struck oftener than once a bar, which sounds between the chords
-    /// and is a chord of its own.
+    /// fixture as a twelfth table. On thirty more a twelfth reviewer wrote — ordinary music only:
+    /// pieces told a key they open away from, closes as they are actually written, pedals as they
+    /// are actually played, and the everyday shapes of hymn, waltz, blues, pop loop, march and folk
+    /// tune — all thirty are heard as a musician hears them and join the fixture as a thirteenth
+    /// table. The chord a piece opens on is a chord of its key before it is a key, whichever its
+    /// mode: a loop is a chord coming back at the music's own phrase length and not a chord that
+    /// sounds once more somewhere later, so the pop loop Am F C G7 three times over closing on
+    /// C F G7 C is C with a vi first; and a pedal is one note under the harmony however often it is
+    /// struck, so a tonic strummed on every beat or repeated in eighths is heard as one is that is
+    /// struck once a bar. Six shapes are known and unheard, and are written up in the judge's own
+    /// remarks (<see cref="KeyAreaJudge"/>): the bar of chords of irregular length in no pattern,
+    /// and of a melody alone, where no gap between harmony changes has a majority and the clock
+    /// stands; the close under a tune as quick as the figure — a two-hand arpeggio in sixteenths
+    /// under a trill, and a tune in eighths above the held chord outlining its upper thirds; a
+    /// pedal struck an eighth before the first chord, which sounds alone at its onset and is
+    /// therefore a note of the line; and the piece whose opening phrase is the relative major's
+    /// and whose rest is the minor's, told the major — C G Am E7 | Am Dm E7 Am | Am Dm E7 Am told
+    /// C, where this road, told C, hears A minor at bar 3 as a musician told C does, and the
+    /// trajectory, told nothing, hears one key in A minor as a musician told nothing does. the piece in 2/4
+    /// that leaves and comes home, whose four-bar sections are two whole notes and shorter than
+    /// the evidence a key is asked for — a march or a polka in block chords or oom-pah alike; and
+    /// the bass note struck once a bar under a broken-chord accompaniment, which makes a chord of
+    /// its own with the notes above it where the same note held, or taken away, is heard rightly.
+    /// There is no further iteration of this work: those six are the library's documented limits.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
