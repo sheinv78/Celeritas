@@ -1095,6 +1095,46 @@ public sealed class KeyTrajectory
     /// <c>TheTwoRoadsHearEveryTextureAlikeTests</c> pins road by road.
     /// </para>
     /// <para>
+    /// Of the eighth reviewer's eight passages the library still read otherwise, six are heard
+    /// now, and the lens's residual besides. The minor blues in sevenths told C was C going to A minor at its E7 on the detector road,
+    /// where this road heard A minor from bar 1: the given C was taken for opened on, its
+    /// tonic with a note above it being what Am7 read as — a seventh chord is the tonic of its
+    /// root's key alone, and a given major key whose tonic chord never sounds before its
+    /// relative minor is read was the caller's guess; C Dm G Am7 twice between A minor's
+    /// cadences, whose G → Am7 read as C's V–I6, is one key as the loop with a plain A minor
+    /// triad is. Two silent bars after a fifth bar of tonic — a pause off the phrase grid —
+    /// and a two-bar fermata after a silent bar each left G a tonicization: a pause between
+    /// phrases is heard wherever it falls once a phrase has sounded, both counts of the phrases
+    /// are kept, a fermata closes its phrase, and a held chord's second bar is its own. The
+    /// Picardy chord as an Alberti bass, restruck in quarters under a melody ending on its
+    /// second, and in tremolo eighths under a passing tone each closed the piece as a
+    /// modulation to A major: the closing harmony is what the accompaniment spells, and the
+    /// tune over it is the line. And the piece opening on IV with its second bar silent, the
+    /// lens's residual: a phrase that comes to rest on a chord opens in that chord's key, so this
+    /// road opens F – C C in C as the detector, told C, does. The silent 3/4 bar is not heard:
+    /// the judge knows no meter, and the 3/4 shape is a tonicization with or without the
+    /// silence. The two loops Am F G C under a tune whose B rises to C at each close stay one
+    /// key with A minor's cadences around them, as the same chords do without the tune: the G
+    /// chord already carries the B, and a phrase opening on the minor's tonic is the minor's;
+    /// the reviewer plans the major, and the lead decides. Both roads agree with the musician on
+    /// the forty-one of the ninth table, and with each other on every passage of the nine tables
+    /// in every texture but the Dorian tune with its second bar silent.
+    /// </para>
+    /// <para>
+    /// On thirty-four passages a ninth reviewer wrote — a piece told its relative major or minor,
+    /// its dominant, its subdominant, a tritone away, or the key of its own ii7, vi7 or IVmaj7; a
+    /// tonic voiced as a sixth chord and followed by plain triads; a half-bar rest, a fermata then
+    /// silence, a general pause in the new key, silence before the return home; closes decorated
+    /// with quarters under the seventh and the ninth, tremolo under a passing tone, an appoggiatura;
+    /// 2/4 half notes; the loops under tunes carrying a leading tone or a raised sixth — a piece
+    /// whose tonic is voiced as a sixth chord had opened in the relative minor and heard its plain
+    /// triads as a modulation, the four notes of A C E G being A minor's i7 and C major's tonic with
+    /// a sixth on it alike. An opening named by a seventh chord is a reading of a voicing, which the
+    /// music may refute as it refutes a guess. Both roads agree with the musician on the twenty-six
+    /// that join the fixture as a tenth table, and with each other on every passage of the ten
+    /// tables in every texture but the Dorian tune with its second bar silent.
+    /// </para>
+    /// <para>
     /// The window no longer limits what is heard: a one-bar window over arpeggiated triads has
     /// undecidable points, and the modulation is still found, because the phrase is read from
     /// the notes. The points remain the per-window readings they always were.

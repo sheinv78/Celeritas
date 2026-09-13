@@ -459,13 +459,21 @@ follows.
   inside a phrase and at its end -- thirty-five, which join the fixture as a ninth
   table (the four transposed loops told C are the major with vi first on the
   detector road and the minor on the trajectory, which opens on the A minor chord,
-  and are pinned road by road instead)
+  and are pinned road by road instead; six more join after the ninth iteration's
+  rules); and on a ninth reviewer's thirty-four -- a piece told its relative major
+  or minor, its dominant, its subdominant, a tritone away, or the key of its own
+  ii7, vi7 or IVmaj7; a tonic voiced as a sixth chord and followed by plain triads;
+  a half-bar rest, a fermata then silence, a general pause in the new key, silence
+  before the return home; closes decorated with quarters under the seventh and the
+  ninth, tremolo under a passing tone, an appoggiatura; 2/4 half notes; the loops
+  under tunes carrying a leading tone or a raised sixth -- twenty-six, which join
+  the fixture as a tenth table
 - The two modulation roads agree on every texture of every chord-bearing passage
-  of the nine tables but two: every chord struck twice in its bar, the second bar
-  silent, every chord an eighth off the beat -- 982 cases in twelve keys; 17
-  disagreements and 47 misses of the musician's plan before, 2 and 3 after (a D
-  Dorian tune and a piece opening on IV, each with its second bar silent, where
-  the given key and the guessed one differ), and that lens is now a test. A chord
+  of the ten tables but one: every chord struck twice in its bar, the second bar
+  silent, every chord an eighth off the beat -- 1014 cases in twelve keys; 17
+  disagreements and 47 misses of the musician's plan before, 1 and 3 after (the D
+  Dorian tune with its second bar silent, where the given key and the guessed one
+  differ), and that lens is now a test. A chord
   struck twice in its bar is one harmony; a melody note struck with a chord and
   let go before it is the line's; the bars are heard
   from the music's accents -- when every onset is an eighth late the bars are, a
@@ -516,7 +524,31 @@ follows.
   from its IV -- `Am Dm E7 Am | F G C Am | F G C C` -- is left with its debate
   documented: the reviewer plans C from bar 5, the judge hears it from the
   cadencing phrase at bar 9 with the Am of bar 8 its pivot, because a phrase
-  closing on the minor's tonic is the minor's
+  closing on the minor's tonic is the minor's. A seventh chord is the tonic of its
+  root's key alone -- `Am7` is A minor's i7, not C major's tonic with a note above
+  it -- wherever a chord is asked whose tonic it is, and a piece that opens on a
+  seventh chord is heard in its root's key as a reading of a voicing, which the
+  music may refute, so a tonic voiced as a sixth chord and followed by plain triads
+  is one key; a given major key whose tonic chord never sounds before its relative
+  minor is read is the caller's guess, so the minor twelve-bar blues in sevenths
+  told C is A minor throughout on both roads (the detector heard C going to A minor
+  at the E7) and `C Dm G Am7` twice between A minor's cadences is one key. A pause
+  between phrases -- a whole bar or more of silence once a phrase has sounded -- is
+  heard wherever it falls, the judge keeping both counts of the phrases, and a
+  fermata (a chord held two whole notes or more, beyond the music's pace) closes
+  its phrase, a held chord's second bar being its own: `C F G C | C | R | R | G C
+  D7 G` is G from bar 8 and `C F G C | R | G held two bars | G C D7 G` is G from
+  the fermata, where both were tonicizations. The closing harmony is what the
+  accompaniment spells and the tune over it is the line -- an Alberti figure below
+  the tune, a tremolo whatever the tune does over it, a triad restruck with one
+  note of the tune on it -- so the Picardy close as an Alberti bass, restruck in
+  quarters under `E D B`, and in tremolo eighths under a passing D is A minor's
+  homecoming on both roads, where each was a modulation to A major. And a phrase
+  that comes to rest on a chord -- one tonic chord through its last two whole
+  notes -- opens in that chord's key when that key owns the phrase as well, so
+  `F G C C | F G C C | Dm G C C` with its second bar silent is C throughout on the
+  trajectory road, as the detector told C hears it; it had opened in F and gone to
+  C at bar 5
 - `ModulationDetector`: a note is rounded onto the eighth-note grid only when that
   moves it by less than half its own length, so sixteenths and thirty-seconds
   struck one after another are a line, not chords of neighbouring tones

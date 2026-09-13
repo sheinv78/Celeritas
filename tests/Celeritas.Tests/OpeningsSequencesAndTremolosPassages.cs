@@ -9,35 +9,43 @@ namespace Celeritas.Tests;
 /// eighth reviewer's passages, written after a seventh chord came to open the key of its root, a
 /// sequence to keep the reading of its model, a loop coming to rest on the old tonic to stay the
 /// old key's, the phrase count to restart at a re-entry after silence and a tremolo to be the
-/// chord it spells — and folded in afterwards. Five lenses: the OPENING (a piece opening on a
-/// seventh chord — the tonic's, ii's, vi's, V's — or on ii or IV as a triad, or told a key it never
-/// sounds a chord of; a major blues told its relative minor), the SEQUENCE (the same loop moved up
-/// a tone, a fourth, a minor third, twice and three times, told the minor; a real sequence through
-/// three keys; a circle of fifths that is no modulation; a loop whose transposition carries a
-/// leading tone; a loop cadencing into its relative major, and its copy's repeat, one key each),
-/// SILENCE (three bars; a re-entry in the old key; two silent bars between two old-key phrases),
-/// TREMOLO (tremolo eighths for a whole passage, alone and under the tune; on a major piece's
-/// close; on the dominant sevenths; the close in tremolo quarters; a trill on the Picardy third)
-/// and the RELATIVE-MAJOR boundary (ii V I in the major; the major's V I inside a phrase that
-/// closes on the minor's tonic; the major's cadence at the phrase end).
+/// chord it spells — and folded in afterwards, the last six once a seventh chord was the tonic of
+/// its root's key alone, a pause between phrases was heard wherever it fell, a fermata closed its
+/// phrase and the tune over the closing accompaniment was the line. Five lenses: the OPENING (a
+/// piece opening on a seventh chord — the tonic's, ii's, vi's, V's — or on ii or IV as a triad, or
+/// told a key it never sounds a chord of; a major blues told its relative minor, and a minor blues
+/// in sevenths told its relative major), the SEQUENCE (the same loop moved up a tone, a fourth, a
+/// minor third, twice and three times, told the minor; a real sequence through three keys; a
+/// circle of fifths that is no modulation; a loop whose transposition carries a leading tone; a
+/// loop cadencing into its relative major, and its copy's repeat, one key each), SILENCE (three
+/// bars; a re-entry in the old key; two silent bars between two old-key phrases; a silent bar then
+/// a two-bar fermata; two silent bars off the phrase grid after a fifth bar of tonic), TREMOLO and
+/// the decorated close (tremolo eighths for a whole passage, alone and under the tune; on a major
+/// piece's close; on the dominant sevenths; the Picardy close in tremolo quarters, as an Alberti
+/// bass, restruck in quarters under a melody ending on its second, in tremolo eighths under a
+/// passing tone; a trill on the Picardy third) and the RELATIVE-MAJOR boundary (ii V I in the
+/// major; the major's V I inside a phrase that closes on the minor's tonic; the major's cadence at
+/// the phrase end).
 /// </summary>
 /// <remarks>
 /// Chord tokens are the fixture's — <c>root[:quality][h|q|t]</c> — plus <c>R</c> for a bar of
 /// silence. The plans are a musician's, in whole notes; a 4/4 bar = 1, bar k begins at position
 /// k-1; a move to the relative key is planned where a chord only the new key owns first sounds,
-/// the pivot chord a bar before it. Of the reviewer's forty-seven, thirty-five are here. Four are
+/// the pivot chord a bar before it. Of the reviewer's forty-seven, forty-one are here. Four are
 /// the transposed loop told C — a fourth up, a minor third up, a tone up twice, moved once — where
 /// the detector, told C, names the copy the major with vi first and the trajectory, told nothing
 /// and opening on the A minor chord, names it the minor: the same music read alike from each
 /// opening key, and no plan can speak for both; the readings are asserted road by road in
-/// <see cref="TheTwoRoadsHearEveryTextureAlikeTests"/>. Eight the library still reads otherwise
-/// and are the next iteration's work: the minor blues in sevenths told C (the detector's own test
-/// of the given key still takes Am7 for C's tonic with a note above it, and hears A minor only at
-/// the E7); a silent bar then the new key on a two-bar fermata, a silent 3/4 bar, and two silent
-/// bars off the phrase grid (the count restarts only at a pause that begins where a phrase would);
-/// the Picardy chord as an Alberti bass, restruck in quarters under a melody ending on its second,
-/// and in tremolo eighths under a passing tone; and two Am F G C loops under a tune whose B rises
-/// to C at each close (debatable: the loop opens on the minor's tonic, the tune says the major).
+/// <see cref="TheTwoRoadsHearEveryTextureAlikeTests"/>. Two are not rows. A silent 3/4 bar before
+/// G C D7 G in 3/4 (the plan G at 15/4) is a tonicization on both roads, with the silence and
+/// without it: the judge knows no meter — the buffer carries none — and reads its bars and
+/// phrases in whole notes, so the three-whole-note phrase G C D7 G is shorter than its frame; a
+/// meter-free pause rule cannot reach it, and a judge that reads the bar from the harmonic rhythm
+/// is another iteration's work. And two Am F G C loops between A minor's cadences under a tune
+/// whose B rises to C at each close (the reviewer plans C at bar 5 and A minor at bar 13) stay one
+/// key on both roads, as the same chords do without the tune and as the eighth table's single loop
+/// does: the G chord already carries the B, and a phrase opening on the minor's tonic is the
+/// minor's; the reading is debatable, and the lead decides.
 /// </remarks>
 internal static class OpeningsSequencesAndTremolosPassages
 {
@@ -80,7 +88,7 @@ internal static class OpeningsSequencesAndTremolosPassages
     // ---------- builders ----------
 
     /// <summary>Block chords in close root position from C3, each for its written length; R is a bar of silence.</summary>
-    private static NoteEvent[] Block(string chords) =>
+    internal static NoteEvent[] Block(string chords) =>
         [.. ParseChords(chords).SelectMany(c => c.Intervals.Select(i => new NoteEvent(ChordRegister + c.Root + i, c.Offset, c.Duration)))];
 
     /// <summary>Every chord in tremolo eighths for its written length: root and third against fifth and octave (or seventh), alternating.</summary>
@@ -124,6 +132,22 @@ internal static class OpeningsSequencesAndTremolosPassages
                 notes.Add(new NoteEvent(ChordRegister + c.Root + i, from + (Rational.Quarter * k), Rational.Quarter));
         return [.. notes];
     }
+
+    /// <summary>One chord from <paramref name="from"/> as an Alberti bass in eighths — root, fifth, third, fifth — for <paramref name="length"/>.</summary>
+    private static NoteEvent[] Alberti(string chord, Rational from, Rational length)
+    {
+        var c = ParseChords(chord)[0];
+        int[] pattern = [c.Intervals[0], c.Intervals[2], c.Intervals[1], c.Intervals[2]];
+        var count = (int)(length / Rational.Eighth).ToDouble();
+        var notes = new List<NoteEvent>();
+        for (var k = 0; k < count; k++)
+            notes.Add(new NoteEvent(ChordRegister + c.Root + pattern[k % 4], from + (Rational.Eighth * k), Rational.Eighth));
+        return [.. notes];
+    }
+
+    /// <summary>One chord held from <paramref name="from"/> for <paramref name="length"/> — a fermata.</summary>
+    private static NoteEvent[] Fermata(string chord, Rational from, Rational length) =>
+        [.. ParseChords(chord).SelectMany(c => c.Intervals.Select(i => new NoteEvent(ChordRegister + c.Root + i, from, length)))];
 
     private static NoteEvent[] Notated(string notation) => MusicNotation.Parse(notation);
 
@@ -170,6 +194,7 @@ internal static class OpeningsSequencesAndTremolosPassages
         Blocks("a piece opening on vi7: Am7 Dm7 G7 Cmaj7 twice, told C (block chords)", "9:m7 2:m7 7:7 0:maj7 | 9:m7 2:m7 7:7 0:maj7", Nowhere),
         Blocks("a piece opening on ii7 in G: Am7 D7 G G twice, told G (block chords)", "9:m7 2:7 7 7 | 9:m7 2:7 7 7", Nowhere, openingRoot: 7),
         Blocks("a lone V7 pickup bar, then the piece: G7 C Am F | G7 C F C, told C (block chords)", "7:7 0 9:m 5 | 7:7 0 5 0", Nowhere),
+        Blocks("a minor twelve-bar blues in sevenths, told the relative MAJOR: Am7 | Dm7 Am7 | E7 Dm7 Am7 E7, told C (block chords)", "9:m7 9:m7 9:m7 9:m7 | 2:m7 2:m7 9:m7 9:m7 | 4:7 2:m7 9:m7 4:7", Nowhere),
         Blocks("a major twelve-bar blues in sevenths told its relative minor: C7 | F7 C7 | G7 F7 C7 G7, told A minor (block chords)", "0:7 0:7 0:7 0:7 | 5:7 5:7 0:7 0:7 | 7:7 5:7 0:7 7:7", Nowhere, major: false, openingRoot: 9),
         Blocks("a piece opening on IV: F G C C | F G C C | Dm G C C, told C (block chords)", "5 7 0 0 | 5 7 0 0 | 2:m 7 0 0", Nowhere),
         Blocks("a piece opening on ii as a triad: Dm G C C twice, told C (block chords)", "2:m 7 0 0 | 2:m 7 0 0", Nowhere),
@@ -193,6 +218,8 @@ internal static class OpeningsSequencesAndTremolosPassages
 
         // ---------- SILENCE: the phrase counted from the re-entry ----------
         Notes("three bars of silence before the new key: C F G C | R | R | R | G C D7 G (block chords as notes)", Block("0 5 7 0 | R | R | R | 7 0 2:7 7"), At(8, 7, true)),
+        Notes("a silent bar, then the new key entering on a two-bar fermata: C F G C | R | G(held two bars) | G C D7 G (block chords as notes)", Together(Block("0 5 7 0 | R | R | R | 7 0 2:7 7"), Fermata("7", new Rational(5, 1), new Rational(2, 1))), At(6, 7, true)),
+        Notes("a fifth bar of tonic, two silent bars off the phrase grid, then the new key: C F G C | C | R | R | G C D7 G (block chords as notes)", Block("0 5 7 0 | 0 | R | R | 7 0 2:7 7"), At(8, 7, true)),
         Notes("two silent bars, the music re-entering in the OLD key: C F G C | R | R | C F G7 C | G C D7 G (block chords as notes)", Block("0 5 7 0 | R | R | 0 5 7:7 0 | 7 0 2:7 7"), At(11, 7, true)),
         Notes("two silent bars between phrases, both in the old key, then the new: C F G C | R | R | C F G C | R | R | G C D7 G (block chords as notes)", Block("0 5 7 0 | R | R | 0 5 7 0 | R | R | 7 0 2:7 7"), At(13, 7, true)),
 
@@ -202,6 +229,12 @@ internal static class OpeningsSequencesAndTremolosPassages
         Notes("a major piece to the dominant and home, the closing chord in tremolo eighths: C F G C | G C D7 G | G C G7 C(tremolo) (block chords as notes)", Together(Block("0 5 7 0 | 7 0 2:7 7 | 7 0 7:7"), TremoloEighths("0", new Rational(11, 1), Rational.Whole)), [new(5, 7, true), new(11, 0, true)]),
         Notes("the Picardy close, a trill on the third of the final chord: C sharp D C sharp D ... over A major (four voices)",
             Together(Block(PicardyChordsOpen + " 9"), Notated(PicardyTuneOpen + "C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16 C#5/16 D5/16 C#5/2")), PicardyPlan, major: false, openingRoot: 9),
+        Notes("the Picardy close, the final chord as an Alberti bass in eighths under the melody arpeggiating up (four voices)",
+            Together(Block(PicardyChordsOpen), Alberti("9", new Rational(11, 1), Rational.Whole), Notated(PicardyTuneOpen + "C#5/4 E5/4 A5/2")), PicardyPlan, major: false, openingRoot: 9),
+        Notes("the Picardy close, the final chord restruck in quarters under a melody ending on the second, B (four voices)",
+            Together(Block(PicardyChordsOpen), Quarters("9", new Rational(11, 1), Rational.Whole), Notated(PicardyTuneOpen + "E5/4 D5/4 B4/2")), PicardyPlan, major: false, openingRoot: 9),
+        Notes("the Picardy close in tremolo eighths, a passing D in the tune over it: C sharp D E (four voices)",
+            Together(Block(PicardyChordsOpen), TremoloEighths("9", new Rational(11, 1), Rational.Whole), Notated(PicardyTuneOpen + "C#5/4 D5/4 E5/2")), PicardyPlan, major: false, openingRoot: 9),
         Notes("the dominant sevenths in tremolo eighths, the rest struck: C F G C | G C D7(tremolo) G | G C D7(tremolo) G (block chords as notes)",
             Together(Block("0 5 7 0 | 7 0 R 7 | 7 0 R 7"), TremoloEighths("2:7", new Rational(6, 1), Rational.Whole), TremoloEighths("2:7", new Rational(10, 1), Rational.Whole)), At(5, 7, true)),
         Notes("the Picardy close in tremolo QUARTERS under the melody arpeggiating up (four voices)",
